@@ -40,9 +40,11 @@ public actor RegistryLoader {
         
         // 3. Bundled Registry
         if useBundledRegistry {
-            if let bundledPath = Bundle.module.url(forResource: "BundledRegistry", withExtension: nil) {
-                try loadDirectory(at: bundledPath, into: &allMappings, loadedNames: &loadedNames)
+            let candidates = BundledRegistryLocator.candidateURLs()
+            guard let bundledPath = BundledRegistryLocator.locate(in: candidates) else {
+                throw RegistryError.bundledRegistryNotFound(candidates.map(\.path))
             }
+            try loadDirectory(at: bundledPath, into: &allMappings, loadedNames: &loadedNames)
         }
         
         self.mappings = allMappings
@@ -127,3 +129,46 @@ public actor RegistryLoader {
         }
     }
 }
+
+enum BundledRegistryLocator {
+    private static let bundleName = "PkgLift_PkgLiftRegistry.bundle"
+    private static let registryName = "BundledRegistry"
+
+    static func candidateURLs(
+        mainBundleURL: URL = Bundle.main.bundleURL,
+        executableURL: URL? = Bundle.main.executableURL,
+        containingBundleURL: URL = Bundle(for: RegistryBundleToken.self).bundleURL
+    ) -> [URL] {
+        var directories = [mainBundleURL]
+        if let executableURL {
+            directories.append(
+                executableURL
+                    .resolvingSymlinksInPath()
+                    .deletingLastPathComponent()
+            )
+        }
+        directories.append(containingBundleURL)
+        directories.append(containingBundleURL.deletingLastPathComponent())
+
+        var seenPaths: Set<String> = []
+        return directories.compactMap { directory in
+            let candidate = directory
+                .appendingPathComponent(bundleName, isDirectory: true)
+                .appendingPathComponent(registryName, isDirectory: true)
+                .standardizedFileURL
+            guard seenPaths.insert(candidate.path).inserted else { return nil }
+            return candidate
+        }
+    }
+
+    static func locate(in candidates: [URL]) -> URL? {
+        let fileManager = FileManager.default
+        return candidates.first { candidate in
+            var isDirectory: ObjCBool = false
+            return fileManager.fileExists(atPath: candidate.path, isDirectory: &isDirectory)
+                && isDirectory.boolValue
+        }
+    }
+}
+
+private final class RegistryBundleToken {}

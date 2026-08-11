@@ -22,6 +22,34 @@ final class RegistryLoaderTests: XCTestCase {
         XCTAssertEqual(firebaseAnalytics?.swiftpm.products, ["FirebaseAnalytics"])
     }
 
+    func testBundledRegistryLocatorResolvesExecutableSymlink() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftRegistrySymlink-\(UUID().uuidString)")
+        let installDirectory = root.appendingPathComponent("libexec/pkglift")
+        let binDirectory = root.appendingPathComponent("bin")
+        let registryDirectory = installDirectory
+            .appendingPathComponent("PkgLift_PkgLiftRegistry.bundle")
+            .appendingPathComponent("BundledRegistry")
+        let executable = installDirectory.appendingPathComponent("pkglift")
+        let executableSymlink = binDirectory.appendingPathComponent("pkglift")
+
+        try FileManager.default.createDirectory(at: registryDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: binDirectory, withIntermediateDirectories: true)
+        try Data().write(to: executable)
+        try FileManager.default.createSymbolicLink(at: executableSymlink, withDestinationURL: executable)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let candidates = BundledRegistryLocator.candidateURLs(
+            mainBundleURL: binDirectory,
+            executableURL: executableSymlink
+        )
+
+        XCTAssertEqual(
+            BundledRegistryLocator.locate(in: candidates)?.standardizedFileURL,
+            registryDirectory.standardizedFileURL
+        )
+    }
+
     func testInvalidLocalOverrideIsRejectedDuringNormalLoad() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("PkgLiftRegistry-\(UUID().uuidString)")

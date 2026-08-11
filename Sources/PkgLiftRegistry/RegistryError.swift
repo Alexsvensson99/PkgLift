@@ -4,6 +4,7 @@ import Foundation
 public enum RegistryError: LocalizedError, Sendable {
     case invalidPath(String)
     case unreadableDirectory(String)
+    case bundledRegistryNotFound([String])
     case validationFailed([RegistryValidationError])
     case parsingError(path: String, message: String)
     
@@ -13,6 +14,8 @@ public enum RegistryError: LocalizedError, Sendable {
             return "Invalid registry path: \(path)"
         case .unreadableDirectory(let path):
             return "Could not read registry directory: \(path)"
+        case .bundledRegistryNotFound(let searchedPaths):
+            return "Could not find the bundled registry. Searched: \(searchedPaths.joined(separator: ", "))"
         case .validationFailed(let errors):
             return "Registry validation failed with \(errors.count) error(s)."
         case .parsingError(let path, let message):
