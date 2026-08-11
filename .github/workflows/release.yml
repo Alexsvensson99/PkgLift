@@ -1,0 +1,28 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: swift test
+      - name: Validate Registry
+        run: swift run pkglift registry validate
+      - name: Build Release
+        run: swift build -c release
+      - name: Create Archive
+        run: |
+          mkdir -p release
+          cp .build/release/pkglift release/
+          tar -C release -czf release/pkglift-macos.tar.gz pkglift
+          shasum -a 256 release/pkglift-macos.tar.gz > release/pkglift-macos.tar.gz.sha256
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/pkglift-macos.tar.gz
+            release/pkglift-macos.tar.gz.sha256
+          generate_release_notes: true

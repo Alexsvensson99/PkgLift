@@ -1,0 +1,13 @@
+name: Registry Validation
+on:
+  push:
+    paths: ['Registry/**', 'Sources/PkgLiftRegistry/**', 'Tests/PkgLiftRegistryTests/**']
+  pull_request:
+    paths: ['Registry/**', 'Sources/PkgLiftRegistry/**', 'Tests/PkgLiftRegistryTests/**']
+jobs:
+  validate:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Registry
+        run: swift run pkglift registry validate

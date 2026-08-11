@@ -1,0 +1,21 @@
+# Fixtures/SimplePodfile/Podfile.lock
+PODS:
+  - Alamofire (5.6.2)
+  - Quick (5.0.1)
+  - SwiftyJSON (5.0.1)
+
+DEPENDENCIES:
+  - Alamofire (~> 5.6)
+  - Quick
+  - SwiftyJSON (~> 5.0)
+
+SPEC REPOS:
+  trunk:
+    - Alamofire
+    - Quick
+    - SwiftyJSON
+
+SPEC CHECKSUMS:
+  Alamofire: a1b2c3d4
+  Quick: e5f6g7h8
+  SwiftyJSON: i9j0k1l2

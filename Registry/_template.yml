@@ -1,0 +1,16 @@
+schemaVersion: 1
+
+pod:
+  name: PodName
+  # subspec: SubspecName
+
+swiftpm:
+  repository: https://github.com/org/repo
+  products:
+    - ProductName
+
+migration:
+  confidence: verified
+
+metadata:
+  notes: "Description of the mapping source"

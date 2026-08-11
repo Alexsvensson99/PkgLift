@@ -1,0 +1,129 @@
+# PkgLift
+
+**Modernize Apple dependencies safely.**
+
+PkgLift analyzes native Xcode projects, builds a dependency migration plan, and safely moves supported dependencies from CocoaPods to Swift Package Manager.
+
+No blind conversions. No guesswork.
+
+**Analyze → Plan → Migrate → Verify**
+
+## What PkgLift Does
+
+PkgLift automates the tedious and risky process of migrating an iOS/macOS project from CocoaPods to Swift Package Manager (SwiftPM).
+
+```bash
+$ pkglift analyze
+Analyzing project MyProject.xcodeproj...
+Found 12 dependencies in Podfile.
+Registry matches: 10/12
+Classification complete. Run `pkglift plan` to review.
+
+$ pkglift plan
+Generating migration plan...
+- Alamofire: AUTO (Supported via SwiftPM)
+- SnapKit: AUTO (Supported via SwiftPM)
+- ObscureLibrary: UNKNOWN (Not found in registry)
+Plan saved to .pkglift/plan.json. Please review.
+
+$ pkglift migrate
+Dry run mode. Add --apply to execute the migration plan.
+
+$ pkglift migrate --apply
+Applied 2 validated AUTO migrations.
+Run `pod install`, then run `pkglift verify`.
+
+$ pkglift verify
+Verifying build...
+Build succeeded!
+```
+
+## Why PkgLift Exists
+
+With CocoaPods effectively entering maintenance mode and going read-only, the Apple developer ecosystem is consolidating around Swift Package Manager. However, manual migration is risky, tedious, and prone to errors. PkgLift provides a paved, verifiable path to SwiftPM without the headache of manual dependency resolution and Xcode project file manipulation.
+
+## Safety Philosophy
+
+PkgLift operates on a strict safety model. Every dependency is classified before migration:
+- **AUTO**: The plan contains an exact pod, package URL, version requirement, product, and existing destination target. Only these entries are executable.
+- **REVIEW**: Migration requires manual intervention or review (e.g., different module name).
+- **BLOCKED**: Known incompatible dependency (e.g., pre-built static framework without SwiftPM support).
+- **UNKNOWN**: Dependency not in the registry. Needs manual mapping.
+
+We never guess. We never blindly edit your project files without a plan.
+
+## Installation
+
+Currently, PkgLift must be built from source. Homebrew support is coming soon.
+
+From a source checkout:
+
+```bash
+swift build -c release
+cp .build/release/pkglift /usr/local/bin/
+```
+
+## Quick Start
+
+1. Navigate to your project directory containing the `Podfile` and `.xcodeproj` or `.xcworkspace`.
+2. Run `pkglift analyze` to see what dependencies can be migrated.
+3. Run `pkglift plan` to generate a `.pkglift/plan.json` file.
+4. Review the plan.
+5. Run `pkglift migrate` for a validated dry run.
+6. Ensure the project is in a clean Git state when Git is present, then run `pkglift migrate --apply`.
+7. Run `pod install` so CocoaPods updates the dependencies that remain.
+8. Run `pkglift verify`; add `--build --scheme <scheme>` for a full build.
+
+## Commands
+
+- `analyze`: Scans the project and dependencies.
+- `plan`: Generates a migration plan.
+- `migrate`: Validates the saved plan and previews it; `--apply` performs only typed `AUTO` actions.
+- `verify`: Verifies the build post-migration.
+- `registry validate`: Validates the local registry mappings.
+- `version`: Prints the current version.
+
+## Registry
+
+The PkgLift Registry is an open-source database mapping CocoaPods to their SwiftPM equivalents. It handles module renaming, version requirements, and compatibility checks.
+See [Registry](Documentation/Registry.md) to learn how to contribute!
+
+## Configuration
+
+You can customize PkgLift using a `.pkglift.yml` file in your project root.
+```yaml
+# .pkglift.yml
+schemaVersion: 1
+migration:
+  allow:
+    - Alamofire
+  deny:
+    - SomeInternalPod
+```
+
+An invalid configuration is an error; PkgLift does not silently ignore it.
+
+## Limitations
+
+For v0.1.0:
+- Only CocoaPods to SwiftPM migration is supported.
+- A lockfile-resolved semantic version and exactly one matching Xcode target are required for `AUTO`.
+- Dynamic Ruby, install hooks, `use_frameworks!`, external pod sources, and ambiguous target mappings are `REVIEW` or `BLOCKED`.
+- PkgLift removes only exact migrated pod declarations. It deliberately preserves target blocks, unrelated Ruby, and CocoaPods integration for pods that remain.
+- PkgLift does not run `pod install` automatically.
+- Objective-C support is limited to standard SwiftPM integration.
+
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for our long-term vision.
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+**Note:** PkgLift is an independent open-source project and is not affiliated with Apple Inc. or the CocoaPods organization.
