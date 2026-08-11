@@ -104,17 +104,11 @@ let package = Package(
         ),
         .testTarget(
             name: "PkgLiftRegistryTests",
-            dependencies: ["PkgLiftRegistry", "PkgLiftCore"],
-            resources: [
-                .copy("Fixtures"),
-            ]
+            dependencies: ["PkgLiftRegistry", "PkgLiftCore"]
         ),
         .testTarget(
             name: "PkgLiftMigrationTests",
-            dependencies: ["PkgLiftMigration", "PkgLiftCore", "PkgLiftCocoaPods", "PkgLiftRegistry"],
-            resources: [
-                .copy("Fixtures"),
-            ]
+            dependencies: ["PkgLiftMigration", "PkgLiftCore", "PkgLiftCocoaPods", "PkgLiftRegistry"]
         ),
         .testTarget(
             name: "PkgLiftVerificationTests",
