@@ -62,14 +62,20 @@ Verify and extract a downloaded archive before installing it:
 ```bash
 shasum -a 256 -c pkglift-macos-arm64.tar.gz.sha256
 tar -xzf pkglift-macos-arm64.tar.gz
-cp pkglift /usr/local/bin/
+sudo mkdir -p /usr/local/libexec/pkglift /usr/local/bin
+sudo cp pkglift /usr/local/libexec/pkglift/
+sudo cp -R PkgLift_PkgLiftRegistry.bundle /usr/local/libexec/pkglift/
+sudo ln -sf /usr/local/libexec/pkglift/pkglift /usr/local/bin/pkglift
 ```
 
 From a source checkout:
 
 ```bash
 swift build -c release
-cp .build/release/pkglift /usr/local/bin/
+sudo mkdir -p /usr/local/libexec/pkglift /usr/local/bin
+sudo cp .build/release/pkglift /usr/local/libexec/pkglift/
+sudo cp -R .build/release/PkgLift_PkgLiftRegistry.bundle /usr/local/libexec/pkglift/
+sudo ln -sf /usr/local/libexec/pkglift/pkglift /usr/local/bin/pkglift
 ```
 
 ## Quick Start
