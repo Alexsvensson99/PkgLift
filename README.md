@@ -54,7 +54,16 @@ We never guess. We never blindly edit your project files without a plan.
 
 ## Installation
 
-Currently, PkgLift must be built from source. Homebrew support is coming soon.
+Apple Silicon release-candidate binaries are available from
+[GitHub Releases](https://github.com/Alexsvensson99/PkgLift/releases). Homebrew support is coming soon.
+
+Verify and extract a downloaded archive before installing it:
+
+```bash
+shasum -a 256 -c pkglift-macos-arm64.tar.gz.sha256
+tar -xzf pkglift-macos-arm64.tar.gz
+cp pkglift /usr/local/bin/
+```
 
 From a source checkout:
 

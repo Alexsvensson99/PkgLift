@@ -5,6 +5,8 @@ on:
 jobs:
   release:
     runs-on: macos-15
+    permissions:
+      contents: write
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:
@@ -21,12 +23,15 @@ jobs:
         run: |
           mkdir -p release
           cp .build/release/pkglift release/
-          tar -C release -czf release/pkglift-macos.tar.gz pkglift
-          shasum -a 256 release/pkglift-macos.tar.gz > release/pkglift-macos.tar.gz.sha256
+          cd release
+          tar -czf pkglift-macos-arm64.tar.gz pkglift
+          shasum -a 256 pkglift-macos-arm64.tar.gz > pkglift-macos-arm64.tar.gz.sha256
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
-            release/pkglift-macos.tar.gz
-            release/pkglift-macos.tar.gz.sha256
+            release/pkglift-macos-arm64.tar.gz
+            release/pkglift-macos-arm64.tar.gz.sha256
+          fail_on_unmatched_files: true
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
