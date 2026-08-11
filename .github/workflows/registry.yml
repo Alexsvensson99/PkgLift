@@ -6,8 +6,12 @@ on:
     paths: ['Registry/**', 'Sources/PkgLiftRegistry/**', 'Tests/PkgLiftRegistryTests/**']
 jobs:
   validate:
-    runs-on: macos-14
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - name: Swift Version
+        run: swift --version
       - name: Validate Registry
         run: swift run pkglift registry validate
