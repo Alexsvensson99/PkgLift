@@ -1,9 +1,21 @@
 name: Registry Validation
 on:
   push:
-    paths: ['Registry/**', 'Sources/PkgLiftRegistry/**', 'Tests/PkgLiftRegistryTests/**']
+    paths:
+      - '.github/workflows/registry.yml'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - 'Registry/**'
+      - 'Sources/PkgLiftRegistry/**'
+      - 'Tests/PkgLiftRegistryTests/**'
   pull_request:
-    paths: ['Registry/**', 'Sources/PkgLiftRegistry/**', 'Tests/PkgLiftRegistryTests/**']
+    paths:
+      - '.github/workflows/registry.yml'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - 'Registry/**'
+      - 'Sources/PkgLiftRegistry/**'
+      - 'Tests/PkgLiftRegistryTests/**'
 jobs:
   validate:
     runs-on: macos-15
