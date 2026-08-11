@@ -52,4 +52,11 @@ file "$smoke_directory/pkglift" | grep -q "arm64"
   ./pkglift registry validate
 )
 
+mkdir -p "$smoke_directory/bin"
+ln -s "$smoke_directory/pkglift" "$smoke_directory/bin/pkglift"
+(
+  cd /tmp
+  "$smoke_directory/bin/pkglift" registry validate
+)
+
 echo "Created and smoke-tested $output_directory/$archive_name"
