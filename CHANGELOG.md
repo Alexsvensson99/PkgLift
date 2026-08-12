@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - Unreleased
+## [Unreleased]
+### Added
+- Reproducible Developer ID signing and Apple notarization for release binaries.
+- Homebrew tap distribution for Apple Silicon on macOS 14 or later.
+- Manual distribution validation that never creates a public GitHub Release.
+
+### Changed
+- Registry validation limits Swift build parallelism and no longer runs redundantly for release tags.
+- Release packaging verifies architecture, deployment target, checksum, direct execution, symlink installation, and typed missing-bundle behavior.
+
+## [0.1.0] - 2026-08-11
 ### Added
 - Core `analyze`, `plan`, `migrate`, and `verify` commands.
 - Static Podfile parser (no Ruby execution required).
