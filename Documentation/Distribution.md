@@ -49,10 +49,12 @@ artifacts to a public GitHub Release receives `contents: write` permission.
 
 `spctl` returns exit 3 for a valid standalone Mach-O executable because it is
 not a top-level app bundle. The workflow therefore accepts only that exact
-"valid code, but not an app" classification with the expected Developer ID
-origin, and only after `notarytool` returned `Accepted` and strict `codesign`
-verification passed. The quarantine-marked CLI must then execute, report the
-expected version, and validate its adjacent registry bundle.
+"valid code, but not an app" classification, and only after `notarytool`
+returned `Accepted` and the extracted executable passed strict `codesign`
+verification for the expected Developer ID authority, team identifier,
+hardened runtime flag, and secure timestamp. The quarantine-marked CLI must
+then execute, report the expected version, and validate its adjacent registry
+bundle.
 
 Run the non-signing packaging checks locally with:
 
