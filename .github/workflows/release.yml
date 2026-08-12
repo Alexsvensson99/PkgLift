@@ -198,6 +198,12 @@ jobs:
           binary_path="$assessment_directory/pkglift"
           xattr -w com.apple.quarantine "0083;$(printf '%x' "$(date +%s)");GitHubActions;" "$binary_path"
           codesign --verify --strict --verbose=4 "$binary_path"
+          codesign -dvvv "$binary_path" 2> "$assessment_directory/codesign-details.txt"
+          cat "$assessment_directory/codesign-details.txt"
+          grep -F "Authority=$DEVELOPER_ID_APPLICATION_IDENTITY" "$assessment_directory/codesign-details.txt"
+          grep -F "TeamIdentifier=$APPLE_TEAM_ID" "$assessment_directory/codesign-details.txt"
+          grep -E 'flags=.*runtime' "$assessment_directory/codesign-details.txt"
+          grep -E '^Timestamp=' "$assessment_directory/codesign-details.txt"
 
           set +e
           assessment_output="$(spctl --assess --type execute --verbose=4 "$binary_path" 2>&1)"
@@ -213,7 +219,6 @@ jobs:
             # returned Accepted and the strict signature check passed.
             [[ $assessment_status -eq 3 ]]
             grep -F 'rejected (the code is valid but does not seem to be an app)' <<< "$assessment_output"
-            grep -F "origin=$DEVELOPER_ID_APPLICATION_IDENTITY" <<< "$assessment_output"
           fi
 
           [[ "$("$binary_path" version)" == "$PKGLIFT_VERSION" ]]
