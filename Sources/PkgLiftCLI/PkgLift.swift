@@ -4,15 +4,14 @@
 //
 
 import ArgumentParser
-
-let pkgLiftVersion = "0.1.0"
+import PkgLiftCore
 
 @main
 struct PkgLift: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "pkglift",
         abstract: "Modernize Apple dependencies safely.",
-        version: pkgLiftVersion,
+        version: PkgLiftCore.pkgLiftVersion,
         subcommands: [AnalyzeCommand.self, PlanCommand.self, MigrateCommand.self, VerifyCommand.self, RegistryCommand.self, VersionCommand.self]
     )
 }

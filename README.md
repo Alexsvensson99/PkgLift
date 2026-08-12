@@ -54,8 +54,19 @@ We never guess. We never blindly edit your project files without a plan.
 
 ## Installation
 
-Apple Silicon release-candidate binaries are available from
-[GitHub Releases](https://github.com/Alexsvensson99/PkgLift/releases). Homebrew support is coming soon.
+PkgLift v0.1.1 and later is distributed as a Developer ID-signed and Apple-notarized
+Apple Silicon binary for macOS 14 or later.
+
+Install with Homebrew:
+
+```bash
+brew install Alexsvensson99/tap/pkglift
+```
+
+Release archives are also available from
+[GitHub Releases](https://github.com/Alexsvensson99/PkgLift/releases).
+Maintainer signing, notarization, and release instructions are documented in
+[Distribution](Documentation/Distribution.md).
 
 Verify and extract a downloaded archive before installing it:
 
@@ -120,7 +131,7 @@ An invalid configuration is an error; PkgLift does not silently ignore it.
 
 ## Limitations
 
-For v0.1.0:
+For v0.1.x:
 - Only CocoaPods to SwiftPM migration is supported.
 - A lockfile-resolved semantic version and exactly one matching Xcode target are required for `AUTO`.
 - Dynamic Ruby, install hooks, `use_frameworks!`, external pod sources, and ambiguous target mappings are `REVIEW` or `BLOCKED`.
