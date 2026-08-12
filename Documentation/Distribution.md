@@ -35,9 +35,10 @@ artifacts to a public GitHub Release receives `contents: write` permission.
 
 ## Workflow contract
 
-- A manual `workflow_dispatch` run from `main` signs, notarizes,
-  Gatekeeper-assesses, and uploads a private Actions artifact. It never creates
-  a GitHub Release. Manual runs from other refs are skipped.
+- A manual `workflow_dispatch` run from `main` signs, notarizes, verifies a
+  freshly extracted quarantine-marked CLI, and uploads a private Actions
+  artifact. It never creates a GitHub Release. Manual runs from other refs are
+  skipped.
 - A `v*` tag runs the same package job and creates a GitHub Release only after
   every validation has passed and the `production-release` environment is
   approved. Tags outside `origin/main` are refused.
@@ -45,6 +46,13 @@ artifacts to a public GitHub Release receives `contents: write` permission.
   suffix such as `v0.1.1-rc.1`.
 - The notarization ZIP is a temporary submission format. Public releases contain
   only `pkglift-macos-arm64.tar.gz` and its `.sha256` file.
+
+`spctl` returns exit 3 for a valid standalone Mach-O executable because it is
+not a top-level app bundle. The workflow therefore accepts only that exact
+"valid code, but not an app" classification with the expected Developer ID
+origin, and only after `notarytool` returned `Accepted` and strict `codesign`
+verification passed. The quarantine-marked CLI must then execute, report the
+expected version, and validate its adjacent registry bundle.
 
 Run the non-signing packaging checks locally with:
 

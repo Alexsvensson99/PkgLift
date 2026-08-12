@@ -188,15 +188,36 @@ jobs:
             exit 1
           fi
 
-      - name: Verify Gatekeeper Assessment
+      - name: Verify Quarantined CLI
         shell: bash
         run: |
           set -euo pipefail
           assessment_directory="$(mktemp -d)"
           trap 'rm -rf "$assessment_directory"' EXIT
           tar -xzf release/pkglift-macos-arm64.tar.gz -C "$assessment_directory"
-          xattr -w com.apple.quarantine "0083;$(printf '%x' "$(date +%s)");GitHubActions;" "$assessment_directory/pkglift"
-          spctl --assess --type execute --verbose=4 "$assessment_directory/pkglift"
+          binary_path="$assessment_directory/pkglift"
+          xattr -w com.apple.quarantine "0083;$(printf '%x' "$(date +%s)");GitHubActions;" "$binary_path"
+          codesign --verify --strict --verbose=4 "$binary_path"
+
+          set +e
+          assessment_output="$(spctl --assess --type execute --verbose=4 "$binary_path" 2>&1)"
+          assessment_status=$?
+          set -e
+          printf '%s\n' "$assessment_output"
+
+          if (( assessment_status == 0 )); then
+            grep -F 'source=Notarized Developer ID' <<< "$assessment_output"
+          else
+            # spctl does not classify a standalone Mach-O command-line tool as
+            # an app. Accept only that exact classification after notarytool
+            # returned Accepted and the strict signature check passed.
+            [[ $assessment_status -eq 3 ]]
+            grep -F 'rejected (the code is valid but does not seem to be an app)' <<< "$assessment_output"
+            grep -F "origin=$DEVELOPER_ID_APPLICATION_IDENTITY" <<< "$assessment_output"
+          fi
+
+          [[ "$("$binary_path" version)" == "$PKGLIFT_VERSION" ]]
+          "$binary_path" registry validate
 
       - name: Upload Validated Distribution
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
