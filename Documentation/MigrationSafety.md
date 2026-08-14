@@ -7,14 +7,16 @@ PkgLift follows one rule: when information is missing or ambiguous, stop and exp
 An `AUTO` entry requires all of the following:
 
 - an exact direct pod declaration backed by a valid, verified registry mapping;
-- a representable semantic version from the lockfile;
+- a stable `major.minor.patch` version from the lockfile at or above the mapping's verified SwiftPM minimum;
 - a non-empty SwiftPM repository and product list;
 - exactly one Podfile destination target and exactly one matching Xcode target;
-- no unsupported Podfile control flow, hooks, `use_frameworks!`, or external source;
+- no unsupported Podfile control flow, hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, or external source;
 - no conflicting existing SwiftPM package requirement;
 - typed remove, add, and link actions that agree with the plan metadata.
 
 Anything less becomes `REVIEW`, `BLOCKED`, or `UNKNOWN`.
+
+Registry identifiers are exact. Declaring a base pod does not make its transitive subspecs direct dependencies, and a base mapping is never inherited by an arbitrary subspec.
 
 ## Preflight and mutation
 

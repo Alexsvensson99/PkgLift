@@ -12,7 +12,7 @@ version="$2"
 archive_sha256="$3"
 
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Version must use stable semantic version form, for example 0.1.1." >&2
+  echo "Version must use stable semantic version form, for example 1.2.3." >&2
   exit 64
 fi
 

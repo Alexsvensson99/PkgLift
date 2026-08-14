@@ -5,7 +5,9 @@ swiftpm:
   repository: https://github.com/SDWebImage/SDWebImage
   products:
     - SDWebImage
+  minimumVersion: 5.1.0
 migration:
   confidence: verified
 metadata:
-  notes: "Official mapping"
+  notes: "Verified against the official Package.swift at tag 5.1.0"
+  lastVerified: "2026-08-14"

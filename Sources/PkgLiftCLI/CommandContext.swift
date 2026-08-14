@@ -40,17 +40,7 @@ struct CommandContext: Sendable {
     }
 
     func mappedDependency(for name: String) -> CocoaPodDependency? {
-        if let exact = mappedDependencies.first(where: { $0.name == name }) {
-            return exact
-        }
-
-        if name.contains("/") {
-            let base = String(name.split(separator: "/").first ?? "")
-            return mappedDependencies.first(where: { $0.baseName == base && $0.isDirect == false })
-                ?? mappedDependencies.first(where: { $0.baseName == base })
-        }
-
-        return nil
+        mappedDependencies.first(where: { $0.name == name })
     }
 
     func migrationCandidates(includeTransitive: Bool = false) -> [PkgLiftCore.MigrationCandidate] {
@@ -60,7 +50,7 @@ struct CommandContext: Sendable {
         let dependencies = includeTransitive ? mappedDependencies : directDependencies
 
         let candidates = dependencies.map { dependency -> PkgLiftCore.MigrationCandidate in
-            let mapping = registryMappings[dependency.name] ?? registryMappings[dependency.baseName]
+            let mapping = registryMappings[dependency.name]
 
             let isAlreadyMigrated: Bool = {
                 guard let mapping = mapping else { return false }
@@ -366,9 +356,6 @@ struct CommandContext: Sendable {
         if !mappedDependencies.isEmpty {
             directDependencies = directDependencies.map { declaration in
                 let resolved = mappedDependencies.first { $0.name == declaration.name }
-                    ?? mappedDependencies.first {
-                        $0.baseName == declaration.baseName && $0.isDirect
-                    }
 
                 guard let resolved else { return declaration }
                 return CocoaPodDependency(

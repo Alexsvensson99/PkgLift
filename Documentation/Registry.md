@@ -10,17 +10,21 @@ swiftpm:
   repository: https://github.com/Alamofire/Alamofire
   products:
     - Alamofire
+  minimumVersion: 5.0.0
 migration:
   confidence: verified
 metadata:
   notes: Official mapping
+  lastVerified: "2026-08-14"
 ```
 
-Subspec mappings add `pod.subspec`. `swiftpm.minimumVersion` is optional metadata; it is not used to invent a version when the analyzed dependency lacks deterministic version evidence.
+Subspec mappings add `pod.subspec`. Identifiers are exact: a base pod mapping never applies automatically to an undeclared subspec.
+
+`swiftpm.minimumVersion` records a conservative upstream tag where the repository and listed products were verified. It must use stable `major.minor.patch` form. It is compared with the exact version resolved by `Podfile.lock`; it is never used to invent or upgrade a project version. Schema-1 mappings that omit the field remain load-compatible but are `REVIEW`-only.
 
 ## Validation
 
-Normal analysis validates every loaded entry, including local overrides, before classification. Invalid URLs, empty products, unsupported schema versions, or malformed YAML stop loading.
+Normal analysis validates every loaded entry, including local overrides, before classification. Invalid URLs, empty products, malformed minimum versions, unsupported schema versions, or malformed YAML stop loading.
 
 Run the full registry validation explicitly with:
 

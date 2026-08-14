@@ -23,4 +23,23 @@ struct PodfileLockParserTests {
         #expect(deps.count == 3)
         #expect(deps.contains(where: { $0.name == "Alamofire" && $0.version == "5.6.2" && $0.isDirect }))
     }
+
+    @Test("Only exact lockfile declarations are direct")
+    func testExactDirectDependencyIdentity() throws {
+        let yaml = """
+        PODS:
+          - SDWebImage (5.18.1):
+            - SDWebImage/Core (= 5.18.1)
+          - SDWebImage/Core (5.18.1)
+          - Firebase/Analytics (8.0.0)
+        DEPENDENCIES:
+          - SDWebImage
+          - Firebase/Analytics
+        """
+
+        let dependencies = try PodfileLockParser().parse(content: yaml)
+        #expect(dependencies.first(where: { $0.name == "SDWebImage" })?.isDirect == true)
+        #expect(dependencies.first(where: { $0.name == "SDWebImage/Core" })?.isDirect == false)
+        #expect(dependencies.first(where: { $0.name == "Firebase/Analytics" })?.isDirect == true)
+    }
 }

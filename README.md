@@ -45,7 +45,7 @@ With CocoaPods effectively entering maintenance mode and going read-only, the Ap
 ## Safety Philosophy
 
 PkgLift operates on a strict safety model. Every dependency is classified before migration:
-- **AUTO**: The plan contains an exact pod, package URL, version requirement, product, and existing destination target. Only these entries are executable.
+- **AUTO**: The plan contains an exact pod/subspec mapping, a stable lockfile version at or above the registry's verified SwiftPM minimum, a package URL, product, and existing destination target. Only these entries are executable.
 - **REVIEW**: Migration requires manual intervention or review (e.g., different module name).
 - **BLOCKED**: Known incompatible dependency (e.g., pre-built static framework without SwiftPM support).
 - **UNKNOWN**: Dependency not in the registry. Needs manual mapping.
@@ -133,8 +133,9 @@ An invalid configuration is an error; PkgLift does not silently ignore it.
 
 For v0.1.x:
 - Only CocoaPods to SwiftPM migration is supported.
-- A lockfile-resolved semantic version and exactly one matching Xcode target are required for `AUTO`.
-- Dynamic Ruby, install hooks, `use_frameworks!`, external pod sources, and ambiguous target mappings are `REVIEW` or `BLOCKED`.
+- A stable `major.minor.patch` lockfile version at or above the exact mapping's verified SwiftPM minimum and exactly one matching Xcode target are required for `AUTO`.
+- Dynamic Ruby, install hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, external pod sources, and ambiguous target mappings are `REVIEW` or `BLOCKED`.
+- Base pod mappings never apply automatically to undeclared subspecs.
 - PkgLift removes only exact migrated pod declarations. It deliberately preserves target blocks, unrelated Ruby, and CocoaPods integration for pods that remain.
 - PkgLift does not run `pod install` automatically.
 - Objective-C support is limited to standard SwiftPM integration.

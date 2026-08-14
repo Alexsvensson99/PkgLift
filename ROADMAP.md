@@ -2,17 +2,20 @@
 
 PkgLift is continuously evolving. Our long-term vision is to be the ultimate dependency modernization toolkit for the Apple ecosystem.
 
-## v0.1.0: CocoaPods → SwiftPM (Current)
+## v0.1.x: CocoaPods → SwiftPM (Current)
 - Core workflow: Analyze, Plan, Migrate, Verify.
-- Basic CocoaPods to SwiftPM mappings.
-- Safe project mutation.
+- Conservative, version-gated CocoaPods to SwiftPM mappings.
+- Safe project mutation with signed and notarized distribution.
 - JSON output for analyze, plan, and verify automation.
+- Homebrew installation support.
 
 ## v0.2.0: Improved Support & Ecosystem
-- Enhanced Xcode project support (complex target graphs, custom configurations).
-- Significantly expanded registry mappings.
-- Homebrew installation support.
-- Stronger project/workspace discovery and verification fixtures.
+- Read-only recursive project/workspace discovery.
+- Explicit project selection inside multi-project workspaces.
+- Safer workspace path normalization and containment checks.
+- Literal string and symbol target syntax support.
+- Optional build destination and configuration overrides.
+- Stronger real-project discovery, workspace, and verification fixtures.
 
 ## v0.3.0: Carthage → SwiftPM
 - Support for migrating projects using Carthage over to SwiftPM.

@@ -122,6 +122,26 @@ final class MigrationPlanPreflightTests: XCTestCase {
         }
     }
 
+    func testPlanProducedByVersion011IsRefusedByVersion012() throws {
+        let encoded = try JSONEncoder().encode(makePlan(entries: [makeEntry()]))
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        object["pkgLiftVersion"] = "0.1.1"
+        let staleData = try JSONSerialization.data(withJSONObject: object)
+        let stalePlan = try JSONDecoder().decode(MigrationPlan.self, from: staleData)
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: stalePlan,
+            availableTargets: ["App"]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .incompatiblePkgLiftVersion("0.1.1")
+            )
+        }
+    }
+
     private func makePlan(entries: [MigrationPlanEntry]) -> MigrationPlan {
         MigrationPlan(projectPath: "/tmp/App.xcodeproj", entries: entries, issues: [], readinessScore: 100)
     }

@@ -42,8 +42,8 @@ artifacts to a public GitHub Release receives `contents: write` permission.
 - A `v*` tag runs the same package job and creates a GitHub Release only after
   every validation has passed and the `production-release` environment is
   approved. Tags outside `origin/main` are refused.
-- A final tag must match the CLI version (`v0.1.1`); prerelease tags may append a
-  suffix such as `v0.1.1-rc.1`.
+- A final tag must match the CLI version (`v0.1.2`); prerelease tags may append a
+  suffix such as `v0.1.2-rc.1`.
 - The notarization ZIP is a temporary submission format. Public releases contain
   only `pkglift-macos-arm64.tar.gz` and its `.sha256` file.
 
@@ -74,7 +74,7 @@ The public tap is `Alexsvensson99/homebrew-tap`. After the GitHub Release exists
 scaffold the tap with the exact public archive SHA-256:
 
 ```bash
-bash Scripts/scaffold-homebrew-tap.sh /tmp/homebrew-tap 0.1.1 VERIFIED_SHA256
+bash Scripts/scaffold-homebrew-tap.sh /tmp/homebrew-tap 0.1.2 VERIFIED_SHA256
 ```
 
 The command refuses to overwrite an existing path and creates the tap README,
@@ -84,8 +84,8 @@ formula, and CI workflow. The generated `Formula/pkglift.rb` has this contract:
 class Pkglift < Formula
   desc "Safely migrate CocoaPods dependencies to Swift Package Manager"
   homepage "https://github.com/Alexsvensson99/PkgLift"
-  url "https://github.com/Alexsvensson99/PkgLift/releases/download/v0.1.1/pkglift-macos-arm64.tar.gz"
-  version "0.1.1"
+  url "https://github.com/Alexsvensson99/PkgLift/releases/download/v0.1.2/pkglift-macos-arm64.tar.gz"
+  version "0.1.2"
   sha256 "REPLACE_WITH_VERIFIED_RELEASE_SHA256"
   license "MIT"
 
@@ -98,7 +98,7 @@ class Pkglift < Formula
   end
 
   test do
-    assert_equal "0.1.1", shell_output("#{bin}/pkglift version").strip
+    assert_equal "0.1.2", shell_output("#{bin}/pkglift version").strip
     system bin/"pkglift", "registry", "validate"
   end
 end

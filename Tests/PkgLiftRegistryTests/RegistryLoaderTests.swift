@@ -15,11 +15,16 @@ final class RegistryLoaderTests: XCTestCase {
         XCTAssertNotNil(alamofire)
         XCTAssertEqual(alamofire?.swiftpm.repository, "https://github.com/Alamofire/Alamofire")
         XCTAssertEqual(alamofire?.swiftpm.products, ["Alamofire"])
+        XCTAssertEqual(alamofire?.swiftpm.minimumVersion, "5.0.0")
         XCTAssertEqual(alamofire?.migration.confidence, .verified)
         
         let firebaseAnalytics = await loader.lookup(name: "Firebase", subspec: "Analytics")
         XCTAssertNotNil(firebaseAnalytics)
         XCTAssertEqual(firebaseAnalytics?.swiftpm.products, ["FirebaseAnalytics"])
+        XCTAssertEqual(firebaseAnalytics?.swiftpm.minimumVersion, "8.0.0")
+
+        let undeclaredSubspec = await loader.lookup(name: "SDWebImage", subspec: "Core")
+        XCTAssertNil(undeclaredSubspec)
     }
 
     func testBundledRegistryLocatorResolvesExecutableSymlink() throws {

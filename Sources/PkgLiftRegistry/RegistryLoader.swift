@@ -63,19 +63,7 @@ public actor RegistryLoader {
     public func lookup(name: String, subspec: String? = nil) -> RegistryMapping? {
         let identifier = PodIdentifier(name: name, subspec: subspec)
         
-        // First try an exact match (name + subspec)
-        if let exact = mappings.first(where: { $0.pod == identifier }) {
-            return exact
-        }
-        
-        // If subspec is provided but no exact match, try matching just the main pod
-        if subspec != nil {
-            if let main = mappings.first(where: { $0.pod.name == name && $0.pod.subspec == nil }) {
-                return main
-            }
-        }
-        
-        return nil
+        return mappings.first(where: { $0.pod == identifier })
     }
     
     private func loadDirectory(at url: URL, into mappings: inout [RegistryMapping], loadedNames: inout Set<String>) throws {

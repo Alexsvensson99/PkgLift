@@ -190,6 +190,40 @@ final class CommandContextMigrationTests: XCTestCase {
         })
     }
 
+    func testTransitiveSubspecDoesNotInheritBasePodMapping() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'SDWebImage'\nend\n",
+            lockfile: """
+            PODS:
+              - SDWebImage (5.18.1):
+                - SDWebImage/Core (= 5.18.1)
+              - SDWebImage/Core (5.18.1)
+            DEPENDENCIES:
+              - SDWebImage
+            """,
+            targetNames: ["App"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let options = try CommonOptions.parse([
+            "--path", fixture.root.path,
+            "--project", fixture.project.path,
+        ])
+
+        let context = try await CommandContext.load(from: options)
+        let analysis = context.buildProjectAnalysis()
+        let base = try XCTUnwrap(analysis.candidates.first { $0.pod.name == "SDWebImage" })
+        let core = try XCTUnwrap(analysis.candidates.first { $0.pod.name == "SDWebImage/Core" })
+
+        XCTAssertEqual(base.classification, .auto)
+        XCTAssertTrue(base.pod.isDirect)
+        XCTAssertEqual(core.classification, .unknown)
+        XCTAssertFalse(core.pod.isDirect)
+        XCTAssertNil(core.packageCandidate)
+
+        let plan = context.buildMigrationPlan()
+        XCTAssertEqual(plan.entries.map(\.podName), ["SDWebImage"])
+    }
+
     func testDenyConfigurationPreventsAutoPlan() async throws {
         let fixture = try makeFixture(
             podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
