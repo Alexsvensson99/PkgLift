@@ -25,7 +25,7 @@ graph TD
 
 1. `CommandContext` discovers the Podfile, lockfile, workspace/project, configuration, and registry mappings.
 2. Static CocoaPods parsing combines exact Podfile declarations with lockfile versions and target mappings. Ruby is never evaluated.
-3. `MigrationClassifier` permits `AUTO` only for a verified mapping, representable version, supported Podfile, and exactly one existing target.
+3. `MigrationClassifier` permits `AUTO` only for an exact verified mapping, a strict resolved version at or above verified SwiftPM support, a supported Podfile, and exactly one existing target.
 4. `MigrationPlan` records the package candidate and typed `removePod`, `addSwiftPackage`, and `linkProduct` actions.
 5. `MigrationPlanPreflight` validates that the metadata and typed actions agree and that every destination target still exists.
 6. `MigrationEngine` edits the exact Podfile declarations and `.xcodeproj` inside `AtomicMigration`; failures restore both from backup.

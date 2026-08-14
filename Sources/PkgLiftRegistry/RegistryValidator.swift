@@ -49,6 +49,19 @@ public struct RegistryValidator: Sendable {
                 }
             }
         }
+
+        // 5. SwiftPM version evidence. Existing schema-1 mappings may omit
+        // this field, but when present it must be a strict stable version.
+        if let minimumVersion = mapping.swiftpm.minimumVersion {
+            let trimmed = minimumVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+            if minimumVersion != trimmed || SemanticVersion(rawValue: minimumVersion) == nil {
+                errors.append(RegistryValidationError(
+                    filePath: filePath,
+                    fieldPath: "swiftpm.minimumVersion",
+                    message: "Minimum version must use stable major.minor.patch form without surrounding whitespace."
+                ))
+            }
+        }
         
         return errors
     }

@@ -8,9 +8,11 @@ swiftpm:
   repository: https://github.com/org/repo
   products:
     - ProductName
+  minimumVersion: 1.0.0
 
 migration:
   confidence: verified
 
 metadata:
   notes: "Description of the mapping source"
+  lastVerified: "YYYY-MM-DD"

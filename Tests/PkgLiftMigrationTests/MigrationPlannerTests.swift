@@ -25,7 +25,8 @@ final class MigrationPlannerTests: XCTestCase {
                 pod: PodIdentifier(name: "Alamofire"),
                 swiftpm: SwiftPMPackageInfo(
                     repository: "https://github.com/Alamofire/Alamofire",
-                    products: ["Alamofire"]
+                    products: ["Alamofire"],
+                    minimumVersion: "5.0.0"
                 ),
                 migration: MigrationInfo(confidence: .verified)
             )
@@ -59,7 +60,8 @@ final class MigrationPlannerTests: XCTestCase {
             pod: PodIdentifier(name: "Alamofire"),
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire",
-                products: ["Alamofire"]
+                products: ["Alamofire"],
+                minimumVersion: "5.0.0"
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -85,7 +87,8 @@ final class MigrationPlannerTests: XCTestCase {
             pod: PodIdentifier(name: "Alamofire"),
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire",
-                products: ["Alamofire"]
+                products: ["Alamofire"],
+                minimumVersion: "5.0.0"
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -111,7 +114,8 @@ final class MigrationPlannerTests: XCTestCase {
             pod: PodIdentifier(name: "Alamofire"),
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire",
-                products: ["Alamofire"]
+                products: ["Alamofire"],
+                minimumVersion: "5.0.0"
             ),
             migration: MigrationInfo(confidence: .verified)
         )

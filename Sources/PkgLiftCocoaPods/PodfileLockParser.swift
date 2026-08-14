@@ -89,7 +89,10 @@ public struct PodfileLockParser: Sendable {
             }
         }
         
-        let isDirect = directDependencies.contains(name) || directDependencies.contains(baseName)
+        // CocoaPods lists the exact declarations from the Podfile under
+        // DEPENDENCIES. A base pod declaration must not make each of its
+        // transitive subspecs look direct and therefore removable.
+        let isDirect = directDependencies.contains(name)
         
         var source: PodSource = .registry
         

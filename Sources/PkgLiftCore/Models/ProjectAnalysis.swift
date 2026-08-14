@@ -186,7 +186,8 @@ public struct PodfileFeatures: Sendable, Codable {
     /// Whether any migration-affecting features were detected.
     public var hasRisks: Bool {
         hasPostInstallHook || hasPreInstallHook || hasScriptPhase
-            || hasDynamicRuby || useFrameworks
+            || hasDynamicRuby || useFrameworks || hasInheritSearchPaths
+            || hasAbstractTargets
     }
 }
 
