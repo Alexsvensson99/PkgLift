@@ -26,7 +26,7 @@ Available options:
 
 | Option | Purpose |
 |---|---|
-| `--scheme` | Selects the shared scheme to build. Required with `--build`. |
+| `--scheme` | Selects the shared scheme used for package resolution and the build. Required with `--build`. |
 | `--configuration` | Selects an Xcode build configuration such as `Debug` or `Release`. |
 | `--destination` | Passes an explicit destination string to `xcodebuild`. |
 | `--sdk` | Selects an SDK such as `iphonesimulator`. |
@@ -51,11 +51,13 @@ When build verification is requested, PkgLift:
 
 1. validates the scheme and every option before launching `xcodebuild`;
 2. performs structural verification;
-3. resolves Swift package dependencies;
+3. resolves Swift package dependencies with the selected project or workspace and scheme;
 4. runs the selected build;
 5. combines every check into the final verification result.
 
-Only `--derived-data-path` is passed to the package-resolution phase. Configuration, destination, and SDK are applied to the build phase.
+The validated scheme and `--derived-data-path`, when provided, are passed to the package-resolution phase. Configuration, destination, and SDK are build-only settings.
+
+PkgLift requires a scheme for workspace package resolution and whenever an explicit derived-data path is used. This fails before launching `xcodebuild` rather than relying on Xcode to infer a scheme differently across project layouts or versions.
 
 ## JSON Output and Redaction
 
@@ -81,6 +83,7 @@ Review the complete JSON before publishing it. Build errors can still contain ou
 - Build options do not edit project build settings.
 - A relative derived-data path is resolved from the explicit `--path`, not from an inferred project location.
 - PkgLift continues to require an explicit project or workspace selection when discovery is ambiguous.
+- The same validated scheme is used for workspace package resolution and the final build.
 
 ## CI Example
 
