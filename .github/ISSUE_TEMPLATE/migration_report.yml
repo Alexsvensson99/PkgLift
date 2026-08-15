@@ -48,12 +48,12 @@ body:
       label: Commands exercised
       description: Select every command used during the test.
       options:
-        - label: `pkglift analyze`
-        - label: `pkglift plan`
-        - label: `pkglift migrate` (dry run)
-        - label: `pkglift migrate --apply`
-        - label: `pkglift verify`
-        - label: `pkglift verify --build`
+        - label: "`pkglift analyze`"
+        - label: "`pkglift plan`"
+        - label: "`pkglift migrate` (dry run)"
+        - label: "`pkglift migrate --apply`"
+        - label: "`pkglift verify`"
+        - label: "`pkglift verify --build`"
 
   - type: textarea
     id: dependency_summary
