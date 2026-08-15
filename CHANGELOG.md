@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Read-only recursive discovery for Xcode projects and workspaces beneath the selected root.
+- `--workspace` and `--project` can be combined to select one referenced project from a multi-project workspace.
+
+### Security
+- Project and workspace paths are canonicalized after symlink resolution and must remain contained by `--path`.
+- Workspace `group`, `container`, `absolute`, and `self` locations are normalized without accepting unsupported location schemes.
+
+## [0.1.2] - 2026-08-15
+
 ### Security
 - `AUTO` now requires an exact pod/subspec mapping and a stable lockfile version at or above the registry's verified SwiftPM minimum version.
 - Base pod mappings can no longer be inherited by arbitrary transitive subspecs.

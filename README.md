@@ -132,7 +132,7 @@ sudo ln -sf /usr/local/libexec/pkglift/pkglift /usr/local/bin/pkglift
 
 ## Quick Start
 
-1. Navigate to the project directory containing the `Podfile` and `.xcodeproj` or `.xcworkspace`.
+1. Navigate to the repository root containing the `Podfile`; Xcode projects and workspaces may be nested beneath it.
 2. Run `pkglift analyze` to see what PkgLift can classify.
 3. Run `pkglift plan` to generate `.pkglift/plan.json`.
 4. Review every entry in the plan.
@@ -143,6 +143,16 @@ sudo ln -sf /usr/local/libexec/pkglift/pkglift /usr/local/bin/pkglift
 9. Run `pkglift verify`; add `--build --scheme <scheme>` for a full build.
 
 PkgLift deliberately refuses `--apply` when Git reports a dirty worktree. Do not bypass that safeguard to work around the generated plan file.
+
+PkgLift discovers projects and workspaces recursively while excluding generated dependency and build trees. If a workspace references multiple projects, select both the workspace and project explicitly:
+
+```bash
+pkglift analyze --path . \
+  --workspace Workspaces/Products.xcworkspace \
+  --project Projects/App.xcodeproj
+```
+
+Selection paths are standardized and resolved through symlinks beneath `--path`. Workspace references that escape that root or use unsupported location schemes are refused rather than guessed.
 
 ## Commands
 
@@ -190,6 +200,7 @@ For v0.1.x:
 - A stable `major.minor.patch` lockfile version at or above the exact mapping's verified SwiftPM minimum and exactly one matching Xcode target are required for `AUTO`.
 - Dynamic Ruby, install hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, external pod sources, and ambiguous target mappings are `REVIEW` or `BLOCKED`.
 - Base pod mappings never apply automatically to undeclared subspecs.
+- Project and workspace selection never follows a reference outside `--path`; widen `--path` explicitly if a legitimate workspace spans a broader repository root.
 - PkgLift removes only exact migrated pod declarations. It deliberately preserves target blocks, unrelated Ruby, and CocoaPods integration for pods that remain.
 - PkgLift does not run `pod install` automatically.
 - Objective-C support is limited to standard SwiftPM integration.
