@@ -60,7 +60,7 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
         case .incompleteAutoEntry(let dependency, let detail):
             return "Automatic migration refused for '\(dependency)': \(detail) PkgLift will not invent missing migration data."
         case .actionMismatch(let dependency):
-            return "Automatic migration refused for '\(dependency)': the typed plan actions do not match the package, version, products, and target recorded in the plan. Regenerate the plan."
+            return "Automatic migration refused for '\(dependency)': the typed plan actions or declaration evidence do not match the package, version, products, and target recorded in the plan. Regenerate the plan."
         case .targetNotFound(let dependency, let product, let expectedTarget):
             return "Automatic migration refused for '\(dependency)' product '\(product)': expected Xcode target '\(expectedTarget)' was not found. PkgLift will not choose another target."
         case .ambiguousTarget(let dependency, let product, let expectedTarget, let matchCount):
@@ -127,6 +127,29 @@ public struct MigrationPlanPreflight: Sendable {
                     dependency: dependency,
                     detail: "the destination Xcode target is missing or ambiguous."
                 )
+            }
+            guard let attribution = entry.targetAttribution else {
+                throw MigrationPlanPreflightError.incompleteAutoEntry(
+                    dependency: dependency,
+                    detail: "exact target-attribution evidence is missing. Regenerate the plan."
+                )
+            }
+            guard attribution.status == .exact,
+                  attribution.targets == [targetName],
+                  attribution.unresolvedDeclarationCount == 0 else {
+                throw MigrationPlanPreflightError.actionMismatch(dependency: dependency)
+            }
+            guard let declarations = entry.declarations, !declarations.isEmpty else {
+                throw MigrationPlanPreflightError.incompleteAutoEntry(
+                    dependency: dependency,
+                    detail: "literal Podfile declaration provenance is missing. Regenerate the plan."
+                )
+            }
+            guard declarations.allSatisfy({ declaration in
+                declaration.targetName == targetName
+                    && declaration.isEligibleForAutomaticMigration
+            }) else {
+                throw MigrationPlanPreflightError.actionMismatch(dependency: dependency)
             }
 
             var expectedActions: [MigrationAction] = [

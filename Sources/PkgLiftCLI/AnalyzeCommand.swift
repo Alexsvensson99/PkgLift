@@ -31,7 +31,13 @@ struct AnalyzeCommand: AsyncParsableCommand {
 
         print("Project: \(analysis.project.projectPath)")
         print("Readiness score: \(analysis.readinessScore)/100")
-        print("Direct dependencies: \(analysis.cocoaPods.directDependencies.count)")
+        let directDependencyCount = analysis.counts?.uniqueDirectDependencyCount
+            ?? analysis.cocoaPods.directDependencies.count
+        print("Direct dependencies: \(directDependencyCount)")
+        if let counts = analysis.counts,
+           counts.literalPodfileDeclarationCount != counts.uniqueDirectDependencyCount {
+            print("Literal Podfile declarations: \(counts.literalPodfileDeclarationCount)")
+        }
         print("Transitive dependencies: \(analysis.cocoaPods.transitiveDependencies.count)")
         print("Podfile detected: \(analysis.cocoaPods.hasPodfile ? "yes" : "no")")
         print("Podfile.lock detected: \(analysis.cocoaPods.hasPodfileLock ? "yes" : "no")")

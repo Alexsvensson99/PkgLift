@@ -1,0 +1,37 @@
+source 'https://cdn.cocoapods.org/'
+
+def common_pods
+  pod 'Kingfisher'
+  pod 'ExternalKit', :git => 'https://example.invalid/ExternalKit.git', :branch => 'main'
+end
+
+def app_pods
+  pod 'Moya/RxSwift'
+end
+
+target 'App' do
+  common_pods
+  app_pods
+
+  target 'AppTests' do
+    inherit! :search_paths
+  end
+end
+
+target 'NotificationServiceExtension' do
+  pod 'Kingfisher'
+  pod 'Moya'
+end
+
+target 'WidgetExtension' do
+  common_pods
+  pod 'Kingfisher'
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+    end
+  end
+end

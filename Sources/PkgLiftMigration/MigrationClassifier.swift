@@ -13,10 +13,19 @@ public typealias MigrationCategory = PkgLiftCore.MigrationClassification
 public struct MigrationClassification: Sendable, Equatable {
     public let category: MigrationCategory
     public let reason: String
+    public let reasons: [String]
     
     public init(category: MigrationCategory, reason: String) {
         self.category = category
         self.reason = reason
+        self.reasons = [reason]
+    }
+
+    public init(category: MigrationCategory, reasons: [String]) {
+        let stableReasons = deduplicated(reasons)
+        self.category = category
+        self.reason = stableReasons.first ?? "No classification reason available"
+        self.reasons = stableReasons
     }
 }
 
@@ -35,7 +44,16 @@ public struct MigrationClassifier: Sendable {
         let dependencyInfo = DependencyInfo(
             identifier: dependency.name,
             isDirect: dependency.isDirect,
-            isExternalSource: dependency.source != .registry,
+            isExternalSource: {
+                switch dependency.source {
+                case .git, .path:
+                    return true
+                case .registry, .unknown:
+                    return false
+                }
+            }(),
+            hasUnrepresentableDeclaration: dependency.source == .unknown,
+            hasLiteralDeclarationProvenance: dependency.hasLiteralMigrationProvenance,
             hasPreInstallHooks: podfileFeatures.hasPreInstallHook,
             hasPostInstallHooks: podfileFeatures.hasPostInstallHook,
             hasScriptPhase: podfileFeatures.hasScriptPhase,
@@ -44,6 +62,8 @@ public struct MigrationClassifier: Sendable {
             hasInheritSearchPaths: podfileFeatures.hasInheritSearchPaths,
             hasAbstractTargets: podfileFeatures.hasAbstractTargets,
             targetCount: dependency.targets.count,
+            targetAttributionStatus: dependency.effectiveTargetAttribution.status,
+            targetAttributionReason: dependency.effectiveTargetAttribution.reason,
             versionConstraint: dependency.version,
             resolvedVersion: dependency.version
         )
@@ -67,97 +87,141 @@ public struct MigrationClassifier: Sendable {
         isAlreadyMigrated: Bool = false,
         isTargetMappingKnown: Bool = true
     ) -> MigrationClassification {
-        guard let mapping else {
-            if dependency.isExternalSource {
-                return MigrationClassification(category: .blocked, reason: "External source without mapping")
-            }
-            return MigrationClassification(category: .unknown, reason: "No registry mapping")
-        }
+        var reasons: [String] = []
 
-        guard mapping.identifier == dependency.identifier else {
-            return MigrationClassification(category: .review, reason: "Registry mapping identifier does not exactly match dependency")
+        if mapping == nil {
+            if dependency.isExternalSource {
+                reasons.append("External source without mapping")
+                reasons.append("No registry mapping")
+            } else {
+                reasons.append("No registry mapping")
+            }
+        } else if mapping?.identifier != dependency.identifier {
+            reasons.append("Registry mapping identifier does not exactly match dependency")
         }
 
         if !dependency.isDirect {
-            return MigrationClassification(category: .review, reason: "Transitive dependency is not a removable Podfile declaration")
+            reasons.append("Transitive dependency is not a removable Podfile declaration")
         }
 
-        if dependency.isExternalSource {
-            return MigrationClassification(category: .review, reason: "External dependency source requires manual review")
+        if dependency.hasUnrepresentableDeclaration {
+            reasons.append("Podfile declaration source, options, or expressions cannot be represented safely")
         }
 
-        guard !mapping.repositoryURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              !mapping.products.isEmpty,
-              mapping.products.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
-            return MigrationClassification(category: .review, reason: "Registry mapping lacks an executable package URL or product")
+        if mapping != nil, dependency.isDirect, !dependency.hasLiteralDeclarationProvenance {
+            reasons.append("Literal Podfile declaration provenance is missing or inconsistent")
         }
-        
+
+        if dependency.isExternalSource, mapping != nil {
+            reasons.append("External dependency source requires manual review")
+        }
+
+        if let mapping,
+           mapping.repositoryURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || mapping.products.isEmpty
+            || !mapping.products.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+            reasons.append("Registry mapping lacks an executable package URL or product")
+        }
+
         if dependency.hasPreInstallHooks || dependency.hasPostInstallHooks {
-            return MigrationClassification(category: .review, reason: "Podfile install hook detected")
+            reasons.append("Podfile install hook detected")
         }
-
         if dependency.hasScriptPhase {
-            return MigrationClassification(category: .review, reason: "Podfile script_phase detected")
+            reasons.append("Podfile script_phase detected")
         }
-
         if dependency.hasDynamicLogic {
-            return MigrationClassification(category: .review, reason: "Dynamic Podfile logic detected")
+            reasons.append("Dynamic Podfile logic detected")
         }
-        
         if dependency.useFrameworks {
-            return MigrationClassification(category: .review, reason: "use_frameworks! detected")
+            reasons.append("use_frameworks! detected")
         }
-
         if dependency.hasInheritSearchPaths {
-            return MigrationClassification(category: .review, reason: "inherit! :search_paths detected")
+            reasons.append("inherit! :search_paths detected")
         }
-
         if dependency.hasAbstractTargets {
-            return MigrationClassification(category: .review, reason: "abstract_target detected")
-        }
-        
-        guard mapping.confidence == .verified else {
-            return MigrationClassification(category: .review, reason: "Registry mapping is not verified")
-        }
-        
-        if !isTargetMappingKnown || dependency.targetCount != 1 {
-            return MigrationClassification(category: .review, reason: "Target is ambiguous or mapping unknown")
-        }
-        
-        guard let resolvedVersionText = dependency.resolvedVersion,
-              let resolvedVersion = SemanticVersion(rawValue: resolvedVersionText) else {
-            return MigrationClassification(category: .review, reason: "Resolved version is missing or is not stable major.minor.patch")
+            reasons.append("abstract_target detected")
         }
 
-        guard let minimumVersionText = mapping.minimumVersion else {
-            return MigrationClassification(category: .review, reason: "Registry mapping has no verified minimum SwiftPM version")
+        if let mapping, mapping.confidence != .verified {
+            reasons.append("Registry mapping is not verified")
         }
 
-        guard let minimumVersion = SemanticVersion(rawValue: minimumVersionText) else {
-            return MigrationClassification(category: .review, reason: "Registry mapping minimum SwiftPM version is invalid")
+        switch dependency.targetAttributionStatus {
+        case .exact:
+            if !isTargetMappingKnown || dependency.targetCount != 1 {
+                reasons.append("Podfile target does not match exactly one existing Xcode target")
+            }
+        case .multiple:
+            reasons.append(dependency.targetAttributionReason ?? "Multiple Podfile targets are proven")
+        case .partial:
+            reasons.append(dependency.targetAttributionReason ?? "Target attribution is partial")
+        case .unresolved:
+            reasons.append(dependency.targetAttributionReason ?? "Target is unresolved from static Podfile structure")
         }
 
-        guard resolvedVersion >= minimumVersion else {
-            return MigrationClassification(
-                category: .review,
-                reason: "Resolved version \(resolvedVersion) predates verified SwiftPM support at \(minimumVersion)"
+        let resolvedVersion: SemanticVersion?
+        if let resolvedVersionText = dependency.resolvedVersion,
+           let parsed = SemanticVersion(rawValue: resolvedVersionText) {
+            resolvedVersion = parsed
+        } else {
+            resolvedVersion = nil
+            reasons.append("Resolved version is missing or is not stable major.minor.patch")
+        }
+
+        var minimumVersion: SemanticVersion?
+        if let mapping {
+            if let minimumVersionText = mapping.minimumVersion {
+                if let parsed = SemanticVersion(rawValue: minimumVersionText) {
+                    minimumVersion = parsed
+                } else {
+                    minimumVersion = nil
+                    reasons.append("Registry mapping minimum SwiftPM version is invalid")
+                }
+            } else {
+                minimumVersion = nil
+                reasons.append("Registry mapping has no verified minimum SwiftPM version")
+            }
+        }
+
+        if let resolvedVersion, let minimumVersion, resolvedVersion < minimumVersion {
+            reasons.append(
+                "Resolved version \(resolvedVersion) predates verified SwiftPM support at \(minimumVersion)"
             )
         }
 
-        let mapper = VersionMapper()
-        guard mapper.map(
-            constraint: dependency.versionConstraint ?? "",
-            resolvedVersion: dependency.resolvedVersion
-        ) != nil else {
-            return MigrationClassification(category: .review, reason: "Version requirement cannot be represented safely")
+        if resolvedVersion != nil,
+           VersionMapper().map(
+                constraint: dependency.versionConstraint ?? "",
+                resolvedVersion: dependency.resolvedVersion
+           ) == nil {
+            reasons.append("Version requirement cannot be represented safely")
         }
-        
-        // Deterministic evidence for AUTO
-        return MigrationClassification(
-            category: .auto,
-            reason: "Verified exact registry mapping; resolved version \(resolvedVersion) meets minimum \(minimumVersion)"
-        )
+
+        let stableReasons = deduplicated(reasons)
+        if stableReasons.isEmpty,
+           let resolvedVersion,
+           let minimumVersion {
+            return MigrationClassification(
+                category: .auto,
+                reasons: [
+                    "Verified exact registry mapping; resolved version \(resolvedVersion) meets minimum \(minimumVersion)",
+                ]
+            )
+        }
+
+        let category: MigrationCategory
+        if mapping == nil {
+            category = dependency.isExternalSource ? .blocked : .unknown
+        } else {
+            category = .review
+        }
+        return MigrationClassification(category: category, reasons: stableReasons)
     }
+}
+
+private func deduplicated(_ values: [String]) -> [String] {
+    var seen: Set<String> = []
+    return values.filter { seen.insert($0).inserted }
 }
 
 private struct RegistryMappingInfo: Sendable {
@@ -172,6 +236,8 @@ private struct DependencyInfo: Sendable {
     let identifier: String
     let isDirect: Bool
     let isExternalSource: Bool
+    let hasUnrepresentableDeclaration: Bool
+    let hasLiteralDeclarationProvenance: Bool
     let hasPreInstallHooks: Bool
     let hasPostInstallHooks: Bool
     let hasScriptPhase: Bool
@@ -180,6 +246,8 @@ private struct DependencyInfo: Sendable {
     let hasInheritSearchPaths: Bool
     let hasAbstractTargets: Bool
     let targetCount: Int
+    let targetAttributionStatus: TargetAttributionStatus
+    let targetAttributionReason: String?
     let versionConstraint: String?
     let resolvedVersion: String?
     
@@ -187,6 +255,8 @@ private struct DependencyInfo: Sendable {
         identifier: String = "",
         isDirect: Bool = true,
         isExternalSource: Bool = false,
+        hasUnrepresentableDeclaration: Bool = false,
+        hasLiteralDeclarationProvenance: Bool = false,
         hasPreInstallHooks: Bool = false,
         hasPostInstallHooks: Bool = false,
         hasScriptPhase: Bool = false,
@@ -195,12 +265,16 @@ private struct DependencyInfo: Sendable {
         hasInheritSearchPaths: Bool = false,
         hasAbstractTargets: Bool = false,
         targetCount: Int = 1,
+        targetAttributionStatus: TargetAttributionStatus = .exact,
+        targetAttributionReason: String? = nil,
         versionConstraint: String? = nil,
         resolvedVersion: String? = nil
     ) {
         self.identifier = identifier
         self.isDirect = isDirect
         self.isExternalSource = isExternalSource
+        self.hasUnrepresentableDeclaration = hasUnrepresentableDeclaration
+        self.hasLiteralDeclarationProvenance = hasLiteralDeclarationProvenance
         self.hasPreInstallHooks = hasPreInstallHooks
         self.hasPostInstallHooks = hasPostInstallHooks
         self.hasScriptPhase = hasScriptPhase
@@ -209,6 +283,8 @@ private struct DependencyInfo: Sendable {
         self.hasInheritSearchPaths = hasInheritSearchPaths
         self.hasAbstractTargets = hasAbstractTargets
         self.targetCount = targetCount
+        self.targetAttributionStatus = targetAttributionStatus
+        self.targetAttributionReason = targetAttributionReason
         self.versionConstraint = versionConstraint
         self.resolvedVersion = resolvedVersion
     }

@@ -14,9 +14,39 @@ enum PodfileStaticSyntax {
     }
 
     static func targetName(from line: String) -> String? {
+        scopeName(from: line, keyword: "target")
+    }
+
+    static func abstractTargetName(from line: String) -> String? {
+        scopeName(from: line, keyword: "abstract_target")
+    }
+
+    static func representablePodName(from line: String) -> String? {
         let source = line.trimmingCharacters(in: .whitespacesAndNewlines)
         var index = source.startIndex
-        guard consumeKeyword("target", in: source, index: &index) else { return nil }
+        guard consumeKeyword("pod", in: source, index: &index) else { return nil }
+        guard index < source.endIndex, source[index] == "'" || source[index] == "\"" else { return nil }
+        guard let name = parseQuotedLiteral(in: source, index: &index), !name.isEmpty else { return nil }
+
+        skipWhitespace(in: source, index: &index)
+        if index == source.endIndex || source[index] == "#" {
+            return name
+        }
+
+        guard source[index] == "," else { return nil }
+        index = source.index(after: index)
+        skipWhitespace(in: source, index: &index)
+        guard index < source.endIndex, source[index] == "'" || source[index] == "\"" else { return nil }
+        guard let version = parseQuotedLiteral(in: source, index: &index), !version.isEmpty else { return nil }
+        skipWhitespace(in: source, index: &index)
+        guard index == source.endIndex || source[index] == "#" else { return nil }
+        return name
+    }
+
+    private static func scopeName(from line: String, keyword: String) -> String? {
+        let source = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        var index = source.startIndex
+        guard consumeKeyword(keyword, in: source, index: &index) else { return nil }
         guard let name = parseLiteralName(in: source, index: &index), !name.isEmpty else { return nil }
 
         skipWhitespace(in: source, index: &index)

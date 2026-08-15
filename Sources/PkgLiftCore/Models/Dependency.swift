@@ -42,18 +42,186 @@ public struct CocoaPodDependency: Sendable, Codable, Equatable {
     /// The targets this pod is linked to, when deterministically known.
     public let targets: [String]
 
+    /// Literal Podfile declarations that contributed to this dependency.
+    ///
+    /// This additive field is absent when older analysis artifacts are decoded.
+    public let declarations: [PodfileDeclaration]?
+
+    /// Static target evidence for this dependency.
+    ///
+    /// `targets` is retained for schema compatibility. This field explains
+    /// whether those targets are exact, multiple, partial, or unresolved.
+    public let targetAttribution: TargetAttribution?
+
     public init(
         name: String,
         version: String? = nil,
         source: PodSource = .registry,
         isDirect: Bool = true,
-        targets: [String] = []
+        targets: [String] = [],
+        declarations: [PodfileDeclaration]? = nil,
+        targetAttribution: TargetAttribution? = nil
     ) {
         self.name = name
         self.version = version
         self.source = source
         self.isDirect = isDirect
         self.targets = targets
+        self.declarations = declarations
+        self.targetAttribution = targetAttribution
+    }
+
+    /// Target evidence with a fail-closed compatibility fallback.
+    ///
+    /// Legacy artifacts contain target names but no source declarations, so
+    /// they can never prove exact AUTO eligibility. The names remain visible
+    /// as partial context while migration requires regenerated evidence.
+    public var effectiveTargetAttribution: TargetAttribution {
+        targetAttribution ?? TargetAttribution.legacyFallback(
+            from: targets,
+            isDirect: isDirect
+        )
+    }
+
+    /// Whether this dependency carries enough source evidence for AUTO.
+    public var hasLiteralMigrationProvenance: Bool {
+        guard let targetAttribution,
+              targetAttribution.status == .exact,
+              targetAttribution.targets.count == 1,
+              targetAttribution.unresolvedDeclarationCount == 0,
+              let targetName = targetAttribution.targets.first,
+              let declarations,
+              !declarations.isEmpty else {
+            return false
+        }
+        return declarations.allSatisfy {
+            $0.targetName == targetName && $0.isEligibleForAutomaticMigration
+        }
+    }
+}
+
+// MARK: - Podfile Declaration Evidence
+
+/// The static Podfile scope that contains a literal `pod` declaration.
+public enum PodfileDeclarationScope: String, Sendable, Codable, Equatable {
+    case topLevel
+    case target
+    case rubyHelper
+    case abstractTarget
+    case dynamicScope
+}
+
+/// Source-level evidence for one literal Podfile declaration.
+public struct PodfileDeclaration: Sendable, Codable, Equatable {
+    /// One-based Podfile line number.
+    public let line: Int
+
+    /// The statically recognized declaration scope.
+    public let scope: PodfileDeclarationScope
+
+    /// Target, helper, or abstract-target name associated with the scope.
+    public let scopeName: String?
+
+    /// A proven literal Xcode target name, when one exists.
+    public let targetName: String?
+
+    /// Source syntax attached to this exact declaration.
+    public let source: PodSource
+
+    public init(
+        line: Int,
+        scope: PodfileDeclarationScope,
+        scopeName: String? = nil,
+        targetName: String? = nil,
+        source: PodSource = .registry
+    ) {
+        self.line = line
+        self.scope = scope
+        self.scopeName = scopeName
+        self.targetName = targetName
+        self.source = source
+    }
+
+    /// Whether this source origin can support an automatic migration.
+    ///
+    /// Top-level, abstract-target, and dynamic scopes cannot prove one Xcode
+    /// destination. Direct target declarations must agree with their scope;
+    /// statically resolved helpers must retain a literal helper name.
+    public var isEligibleForAutomaticMigration: Bool {
+        guard line > 0,
+              source == .registry,
+              let targetName,
+              !targetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return false
+        }
+
+        switch scope {
+        case .target:
+            return scopeName == targetName
+        case .rubyHelper:
+            guard let scopeName else { return false }
+            return !scopeName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .topLevel, .abstractTarget, .dynamicScope:
+            return false
+        }
+    }
+}
+
+/// How completely static Podfile structure proves destination targets.
+public enum TargetAttributionStatus: String, Sendable, Codable, Equatable {
+    /// Every declaration resolves to the same single literal target.
+    case exact
+
+    /// Every declaration is resolved, across more than one literal target.
+    case multiple
+
+    /// Some declaration targets are proven and some remain unresolved.
+    case partial
+
+    /// No destination target is proven.
+    case unresolved
+}
+
+/// Explicit target evidence for a dependency or plan entry.
+public struct TargetAttribution: Sendable, Codable, Equatable {
+    public let status: TargetAttributionStatus
+    public let targets: [String]
+    public let unresolvedDeclarationCount: Int
+    public let reason: String?
+
+    public init(
+        status: TargetAttributionStatus,
+        targets: [String] = [],
+        unresolvedDeclarationCount: Int = 0,
+        reason: String? = nil
+    ) {
+        self.status = status
+        self.targets = Array(Set(targets)).sorted()
+        self.unresolvedDeclarationCount = unresolvedDeclarationCount
+        self.reason = reason
+    }
+
+    /// Fail-closed interpretation of schema-legacy target arrays.
+    public static func legacyFallback(
+        from targets: [String],
+        isDirect: Bool
+    ) -> TargetAttribution {
+        let uniqueTargets = Array(Set(targets)).sorted()
+        if isDirect, !uniqueTargets.isEmpty {
+            return TargetAttribution(
+                status: .partial,
+                targets: uniqueTargets,
+                unresolvedDeclarationCount: 1,
+                reason: "Legacy target names lack literal Podfile declaration provenance."
+            )
+        }
+        return TargetAttribution(
+            status: .unresolved,
+            unresolvedDeclarationCount: isDirect ? 1 : 0,
+            reason: isDirect
+                ? "No destination target is proven from static Podfile structure."
+                : "Transitive lockfile dependency has no literal Podfile declaration."
+        )
     }
 }
 

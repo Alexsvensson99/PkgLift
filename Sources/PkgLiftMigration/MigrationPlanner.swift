@@ -20,7 +20,8 @@ public struct MigrationPlanner: Sendable {
         mappings: [String: RegistryMapping],
         projectPath: String = ".",
         podfileFeatures: PodfileFeatures = PodfileFeatures(),
-        availableTargets: [String] = []
+        availableTargets: [String] = [],
+        counts: DependencyCounts? = nil
     ) -> MigrationPlan {
         var entries: [MigrationPlanEntry] = []
         var issues: [MigrationIssue] = []
@@ -30,7 +31,10 @@ public struct MigrationPlanner: Sendable {
         for podName in dependencies.keys.sorted() {
             guard let dep = dependencies[podName] else { continue }
             let mapping = mappings[podName]
-            let targetName = dep.targets.count == 1 ? dep.targets[0] : nil
+            let attribution = dep.effectiveTargetAttribution
+            let targetName = attribution.status == .exact
+                ? attribution.targets.first
+                : nil
             let targetIsKnown = targetName.map { target in
                 availableTargets.filter { $0 == target }.count == 1
             } ?? false
@@ -87,6 +91,9 @@ public struct MigrationPlanner: Sendable {
                     MigrationIssue(
                         severity: severity,
                         message: classification.reason,
+                        detail: classification.reasons.count > 1
+                            ? classification.reasons.dropFirst().joined(separator: ". ")
+                            : nil,
                         dependency: podName
                     )
                 )
@@ -97,9 +104,11 @@ public struct MigrationPlanner: Sendable {
                 currentVersion: dep.version,
                 classification: classification.category,
                 actions: actions,
-                reasons: [classification.reason],
+                reasons: classification.reasons,
                 targetName: targetName,
-                packageCandidate: packageCandidate
+                packageCandidate: packageCandidate,
+                declarations: dep.declarations,
+                targetAttribution: attribution
             ))
         }
         
@@ -108,7 +117,11 @@ public struct MigrationPlanner: Sendable {
             projectPath: projectPath,
             entries: entries,
             issues: issues,
-            readinessScore: readinessScore
+            readinessScore: readinessScore,
+            // The dictionary API cannot prove declaration- or lockfile-level
+            // counts. Callers that own that source evidence may provide it;
+            // otherwise omitting counts is safer than publishing false totals.
+            counts: counts
         )
     }
     

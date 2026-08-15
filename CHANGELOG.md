@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Repeated declarations of the same exact pod name are represented by one deterministic dependency and plan entry while retaining every literal declaration origin.
+- Analysis and plan JSON include explicitly named source, dependency, candidate, and plan-entry counts; human analysis and diagnostics keep their direct-dependency totals scoped to unique identities.
+
+### Security
+- `AUTO` now requires explicit exact target attribution and non-empty literal registry-declaration provenance during both classification and migration preflight; older schema-1 plans without that evidence must be regenerated.
+- Parent declarations include statically proven nested targets that use default or complete inheritance, while uncertain helper dispatch, declaration options, conditions, and inheritance fail closed to review.
+
 ## [0.2.0] - 2026-08-15
 
 ### Added
