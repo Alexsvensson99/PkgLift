@@ -298,11 +298,7 @@ public struct DiagnosticsReportBuilder: Sendable {
             )
         }
         let classifications = analysis.map { DiagnosticsClassificationSummary(candidates: $0.candidates) }
-
-        let allIssues = analysis.map { value in
-            value.issues + value.candidates.flatMap(\.issues)
-        }
-        let issues = allIssues.map(DiagnosticsIssueSummary.init)
+        let issues = analysis.map { DiagnosticsIssueSummary(issues: $0.issues) }
 
         let orderedFailures = failures.sorted {
             if $0.stage.rawValue == $1.stage.rawValue {
@@ -357,6 +353,13 @@ public struct DiagnosticsReportWriter: Sendable {
             )
         }
 
+        // Check the directory entry itself before following the destination.
+        // `fileExists` returns false for a dangling link, so checking only the
+        // target would allow the atomic write to replace that link.
+        if (try? fileManager.destinationOfSymbolicLink(atPath: outputURL.path)) != nil {
+            throw DiagnosticsReportWriterError.outputIsSymbolicLink(outputURL.path)
+        }
+
         var outputIsDirectory: ObjCBool = false
         let outputExists = fileManager.fileExists(
             atPath: outputURL.path,
@@ -366,10 +369,6 @@ public struct DiagnosticsReportWriter: Sendable {
         if outputExists {
             if outputIsDirectory.boolValue {
                 throw DiagnosticsReportWriterError.outputIsDirectory(outputURL.path)
-            }
-            if let values = try? outputURL.resourceValues(forKeys: [.isSymbolicLinkKey]),
-               values.isSymbolicLink == true {
-                throw DiagnosticsReportWriterError.outputIsSymbolicLink(outputURL.path)
             }
             guard overwrite else {
                 throw DiagnosticsReportWriterError.outputExists(outputURL.path)
