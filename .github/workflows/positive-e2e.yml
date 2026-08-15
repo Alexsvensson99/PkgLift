@@ -1,0 +1,72 @@
+name: Positive End-to-End Pilot
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/positive-e2e.yml'
+      - 'Scripts/run-positive-e2e-pilot.sh'
+      - 'Scripts/run-with-timeout.py'
+      - 'Scripts/validate-pinned-pilot.rb'
+      - 'Documentation/Pilots.md'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - 'Registry/S/SDWebImage.yml'
+      - 'Sources/PkgLiftCLI/**'
+      - 'Sources/PkgLiftCore/**'
+      - 'Sources/PkgLiftCocoaPods/**'
+      - 'Sources/PkgLiftMigration/**'
+      - 'Sources/PkgLiftRegistry/**'
+      - 'Sources/PkgLiftVerification/**'
+      - 'Sources/PkgLiftXcode/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrate-and-build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Build PkgLift
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift build -c release -j 2
+          bin_directory="$(swift build -c release --show-bin-path)"
+          echo "PKGLIFT_BIN=$bin_directory/pkglift" >> "$GITHUB_ENV"
+
+      - name: Run Positive End-to-End Pilot
+        run: bash Scripts/run-positive-e2e-pilot.sh
+
+      - name: Upload Pilot Report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pkglift-positive-e2e-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/pkglift-positive-e2e-report/summary.md
+            ${{ runner.temp }}/pkglift-positive-e2e-report/environment.txt
+            ${{ runner.temp }}/pkglift-positive-e2e-report/source.txt
+            ${{ runner.temp }}/pkglift-positive-e2e-report/changed-files.txt
+            ${{ runner.temp }}/pkglift-positive-e2e-report/analysis.json
+            ${{ runner.temp }}/pkglift-positive-e2e-report/plan.json
+            ${{ runner.temp }}/pkglift-positive-e2e-report/dry-run.txt
+            ${{ runner.temp }}/pkglift-positive-e2e-report/apply.txt
+            ${{ runner.temp }}/pkglift-positive-e2e-report/verification.json
+            ${{ runner.temp }}/pkglift-positive-e2e-report/verification.stderr.txt
+            ${{ runner.temp }}/pkglift-positive-e2e-report/schemes.stderr.txt
+            ${{ runner.temp }}/pkglift-positive-e2e-report/baseline-lockfile-diff.txt
+            ${{ runner.temp }}/pkglift-positive-e2e-report/baseline-pod-install.log
+            ${{ runner.temp }}/pkglift-positive-e2e-report/migrated-pod-install.log
+            ${{ runner.temp }}/pkglift-positive-e2e-report/read-only-validation/summary.md
+          if-no-files-found: warn
+          retention-days: 14
