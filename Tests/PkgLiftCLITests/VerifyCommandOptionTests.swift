@@ -20,4 +20,24 @@ final class VerifyCommandOptionTests: XCTestCase {
         XCTAssertEqual(command.sdk, "iphonesimulator")
         XCTAssertEqual(command.derivedDataPath, ".pkglift/Derived Data")
     }
+
+    func testRelativeDerivedDataPathResolvesAgainstProjectRoot() {
+        XCTAssertEqual(
+            VerifyCommand.resolveDerivedDataPath(
+                ".pkglift/Derived Data",
+                rootPath: "/tmp/My Project"
+            ),
+            "/tmp/My Project/.pkglift/Derived Data"
+        )
+    }
+
+    func testAbsoluteDerivedDataPathRemainsAbsolute() {
+        XCTAssertEqual(
+            VerifyCommand.resolveDerivedDataPath(
+                "/tmp/Shared Derived Data",
+                rootPath: "/tmp/My Project"
+            ),
+            "/tmp/Shared Derived Data"
+        )
+    }
 }
