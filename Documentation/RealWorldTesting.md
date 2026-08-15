@@ -27,7 +27,28 @@ pkglift analyze
 
 Review the discovered project, targets, dependencies, and classifications. Stop if PkgLift selected the wrong project or if the output does not match the repository structure.
 
-### 3. Generate and inspect the plan
+### 3. Keep the generated plan from dirtying the worktree
+
+`pkglift plan` writes `.pkglift/plan.json`. In a repository that does not ignore that file, Git reports it as untracked and PkgLift correctly refuses a later `--apply` because the worktree is no longer clean.
+
+For a one-off local test, add only the generated plan file to the repository-local Git exclude file:
+
+```bash
+exclude_file="$(git rev-parse --git-path info/exclude)"
+touch "$exclude_file"
+grep -qxF '.pkglift/plan.json' "$exclude_file" ||
+  printf '%s\n' '.pkglift/plan.json' >> "$exclude_file"
+```
+
+This does not change the project's tracked `.gitignore`. For a shared repository policy, add `.pkglift/plan.json` to `.gitignore` and commit that policy change before continuing instead. Do not stage or commit a generated plan unless the repository intentionally retains migration plans and its contents have been reviewed for private information.
+
+Confirm that the worktree is clean before generating the plan:
+
+```bash
+git status --short
+```
+
+### 4. Generate and inspect the plan
 
 ```bash
 pkglift plan
@@ -44,15 +65,15 @@ Open `.pkglift/plan.json` and inspect every entry. In particular, confirm:
 
 Do not manually change an uncertain entry into an executable migration merely to make the plan proceed.
 
-### 4. Run the dry run
+### 5. Run the dry run
 
 ```bash
 pkglift migrate
 ```
 
-A dry run should explain the proposed work without modifying the project. Confirm that `git status --short` and `git diff` remain unchanged.
+A dry run should explain the proposed work without modifying tracked project content. Confirm that `git status --short` is empty and that `git diff` contains no changes.
 
-### 5. Apply only a reviewed plan
+### 6. Apply only a reviewed plan
 
 ```bash
 pkglift migrate --apply
@@ -60,7 +81,7 @@ pkglift migrate --apply
 
 Apply the plan only after reviewing it and confirming that the worktree is clean. PkgLift executes validated `AUTO` actions and preserves dependencies that require review or lack sufficient evidence.
 
-### 6. Refresh remaining CocoaPods integration
+### 7. Refresh remaining CocoaPods integration
 
 ```bash
 pod install
@@ -68,7 +89,7 @@ pod install
 
 PkgLift deliberately does not run CocoaPods automatically. Review the resulting lockfile, workspace, and project changes before continuing.
 
-### 7. Verify the result
+### 8. Verify the result
 
 ```bash
 pkglift verify
@@ -82,7 +103,7 @@ pkglift verify --build --scheme <scheme>
 
 Also run the project's normal tests or build command when it provides coverage beyond PkgLift's structural verification.
 
-### 8. Review the diff
+### 9. Review the diff
 
 Inspect the complete Git diff. Confirm that:
 
@@ -102,7 +123,7 @@ A useful report includes:
 - the commands that were exercised;
 - a redacted dependency and classification summary;
 - the expected and actual outcome;
-- whether analysis and dry run left the worktree unchanged;
+- whether analysis and dry run left tracked project content unchanged;
 - whether structural verification and the final build succeeded;
 - the smallest relevant error output;
 - a public reproduction when one can be shared safely.
