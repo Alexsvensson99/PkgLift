@@ -7,6 +7,7 @@
 [![Positive End-to-End Pilot](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Alexsvensson99/PkgLift)](https://github.com/Alexsvensson99/PkgLift/releases/latest)
 [![License: MIT](https://img.shields.io/github/license/Alexsvensson99/PkgLift)](LICENSE)
+[![Website](https://img.shields.io/badge/website-live-0a7b83)](https://www.svensson.design/PkgLift/)
 
 **Modernize Apple dependencies safely.**
 
@@ -16,7 +17,7 @@ No blind conversions. No guesswork.
 
 **Analyze → Plan → Migrate → Verify**
 
-[Installation](#installation) · [Quick Start](#quick-start) · [Safety Philosophy](#safety-philosophy) · [Diagnostics](Documentation/Diagnostics.md) · [Real-Project Pilots](Documentation/Pilots.md) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
+[Project website](https://www.svensson.design/PkgLift/) · [Installation](#installation) · [Quick Start](#quick-start) · [Safety Philosophy](#safety-philosophy) · [Diagnostics](Documentation/Diagnostics.md) · [Real-Project Pilots](Documentation/Pilots.md) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
 
 ## What PkgLift Does
 
