@@ -1,0 +1,450 @@
+name: Publish Reviewed Release Manifest
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/releases/v*.json'
+
+permissions: {}
+
+concurrency:
+  group: publish-release-manifest
+  cancel-in-progress: false
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      actions: write
+      contents: read
+    outputs:
+      version: ${{ steps.context.outputs.version }}
+      release_tag: ${{ steps.context.outputs.release_tag }}
+      target_commitish: ${{ steps.context.outputs.target_commitish }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate Release Manifest
+        id: context
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+          import sys
+
+          before = os.environ.get("BEFORE_SHA", "")
+          current = os.environ["GITHUB_SHA"]
+          output_path = pathlib.Path(os.environ["GITHUB_OUTPUT"])
+          summary_path = pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"])
+
+          if not re.fullmatch(r"[0-9a-f]{40}", before) or set(before) == {"0"}:
+              raise SystemExit("Release manifest requires a concrete previous main commit")
+          if not re.fullmatch(r"[0-9a-f]{40}", current):
+              raise SystemExit("Current workflow SHA is invalid")
+
+          main_ref = subprocess.run(
+              ["git", "ls-remote", "origin", "refs/heads/main"],
+              check=True,
+              text=True,
+              capture_output=True,
+          ).stdout.strip().split()
+          if not main_ref or main_ref[0] != current:
+              raise SystemExit(
+                  f"Release manifest must run at the current main head; expected {current}, got {main_ref[:1]}"
+              )
+
+          changed = subprocess.run(
+              [
+                  "git", "diff", "--name-only", before, current, "--",
+                  ".github/releases/v*.json",
+              ],
+              check=True,
+              text=True,
+              capture_output=True,
+          ).stdout.splitlines()
+          changed = [path for path in changed if path]
+          if len(changed) != 1:
+              raise SystemExit(
+                  f"Expected exactly one changed release manifest; found {len(changed)}: {changed}"
+              )
+
+          manifest_path = pathlib.Path(changed[0])
+          with manifest_path.open(encoding="utf-8") as handle:
+              manifest = json.load(handle)
+
+          if manifest.get("schemaVersion") != 1:
+              raise SystemExit("Release manifest schemaVersion must be 1")
+          version = manifest.get("version")
+          if not isinstance(version, str) or not re.fullmatch(
+              r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", version
+          ):
+              raise SystemExit("Release manifest version is invalid")
+
+          release_tag = f"v{version}"
+          expected_path = pathlib.Path(f".github/releases/{release_tag}.json")
+          if manifest_path != expected_path:
+              raise SystemExit(
+                  f"Manifest path must be {expected_path}, not {manifest_path}"
+              )
+
+          version_source = pathlib.Path("Sources/PkgLiftCore/Version.swift").read_text(
+              encoding="utf-8"
+          )
+          match = re.search(r'pkgLiftVersion\s*=\s*"([^"]+)"', version_source)
+          if match is None or match.group(1) != version:
+              raise SystemExit(
+                  f"Manifest version {version} does not match the source version"
+              )
+
+          changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          if f"## [{version}] -" not in changelog:
+              raise SystemExit(f"CHANGELOG.md has no dated {version} release heading")
+
+          prepared = manifest.get("sourcePreparationCommit")
+          if not isinstance(prepared, str) or not re.fullmatch(r"[0-9a-f]{40}", prepared):
+              raise SystemExit("sourcePreparationCommit must be a full commit SHA")
+          ancestor = subprocess.run(
+              ["git", "merge-base", "--is-ancestor", prepared, current]
+          )
+          if ancestor.returncode != 0:
+              raise SystemExit(
+                  f"Source preparation commit {prepared} is not an ancestor of {current}"
+              )
+
+          existing_tag = subprocess.run(
+              [
+                  "git", "ls-remote", "--exit-code", "--tags", "origin",
+                  f"refs/tags/{release_tag}",
+              ],
+              text=True,
+              capture_output=True,
+          )
+          if existing_tag.returncode == 0:
+              raise SystemExit(
+                  f"Tag {release_tag} already exists; refusing duplicate publication"
+              )
+          if existing_tag.returncode != 2:
+              sys.stderr.write(existing_tag.stderr)
+              raise SystemExit("Unable to verify release-tag availability")
+
+          with output_path.open("a", encoding="utf-8") as output:
+              output.write(f"version={version}\n")
+              output.write(f"release_tag={release_tag}\n")
+              output.write(f"target_commitish={current}\n")
+
+          with summary_path.open("a", encoding="utf-8") as summary:
+              summary.write("### Reviewed release manifest\n\n")
+              summary.write(f"- Manifest: `{manifest_path}`\n")
+              summary.write(f"- Version: `{version}`\n")
+              summary.write(f"- Tag to create after validation: `{release_tag}`\n")
+              summary.write(f"- Release target: `{current}`\n")
+              summary.write(f"- Source preparation commit: `{prepared}`\n")
+          PY
+
+      - name: Dispatch Signed Distribution Validation
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --request POST \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/dispatches" \
+            --data '{"ref":"main"}'
+
+      - name: Wait for Signed and Notarized Distribution
+        id: signing_run
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import time
+          import urllib.error
+          import urllib.request
+
+          repository = os.environ["GITHUB_REPOSITORY"]
+          head_sha = os.environ["GITHUB_SHA"]
+          token = os.environ["GITHUB_TOKEN"]
+          output_path = pathlib.Path(os.environ["GITHUB_OUTPUT"])
+          summary_path = pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"])
+          api_root = f"https://api.github.com/repos/{repository}"
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "PkgLift-release-manifest",
+          }
+
+          def get_json(url: str) -> dict:
+              request = urllib.request.Request(url, headers=headers)
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      return json.load(response)
+              except urllib.error.HTTPError as error:
+                  detail = error.read().decode("utf-8", errors="replace")
+                  raise RuntimeError(f"GitHub API {error.code}: {detail}") from error
+
+          deadline = time.monotonic() + 9_000
+          selected = None
+          previous_status = None
+
+          while time.monotonic() < deadline:
+              document = get_json(
+                  f"{api_root}/actions/workflows/release.yml/runs"
+                  "?event=workflow_dispatch&branch=main&per_page=30"
+              )
+              candidates = [
+                  run for run in document.get("workflow_runs", [])
+                  if run.get("head_sha") == head_sha
+                  and run.get("event") == "workflow_dispatch"
+              ]
+              if candidates:
+                  selected = max(candidates, key=lambda run: run.get("created_at", ""))
+                  status = (
+                      selected.get("status"),
+                      selected.get("conclusion"),
+                  )
+                  if status != previous_status:
+                      print(
+                          f"Distribution workflow {selected['id']}: "
+                          f"status={status[0]} conclusion={status[1]}"
+                      )
+                      previous_status = status
+                  if selected.get("status") == "completed":
+                      break
+              else:
+                  print("Waiting for the dispatched distribution workflow to appear...")
+              time.sleep(15)
+          else:
+              raise SystemExit("Timed out waiting for signed distribution validation")
+
+          if selected is None:
+              raise SystemExit("No matching distribution workflow run was found")
+
+          run_id = selected["id"]
+          run_url = selected["html_url"]
+          with output_path.open("a", encoding="utf-8") as output:
+              output.write(f"run_id={run_id}\n")
+              output.write(f"run_url={run_url}\n")
+
+          with summary_path.open("a", encoding="utf-8") as summary:
+              summary.write("\n### Signed distribution validation\n\n")
+              summary.write(f"- Workflow run: {run_url}\n")
+              summary.write(f"- Conclusion: `{selected.get('conclusion')}`\n")
+
+          if selected.get("conclusion") != "success":
+              raise SystemExit(
+                  f"Signed distribution workflow did not succeed: {run_url}"
+              )
+          PY
+
+      - name: Locate Validated Distribution Artifact
+        id: distribution_artifact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_RUN_ID: ${{ steps.signing_run.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import urllib.request
+
+          repository = os.environ["GITHUB_REPOSITORY"]
+          token = os.environ["GITHUB_TOKEN"]
+          run_id = os.environ["RELEASE_RUN_ID"]
+          head_sha = os.environ["GITHUB_SHA"]
+          expected_name = f"pkglift-macos-arm64-{head_sha}"
+          url = (
+              f"https://api.github.com/repos/{repository}/actions/runs/"
+              f"{run_id}/artifacts?per_page=100"
+          )
+          request = urllib.request.Request(
+              url,
+              headers={
+                  "Authorization": f"Bearer {token}",
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  "User-Agent": "PkgLift-release-manifest",
+              },
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              document = json.load(response)
+
+          matches = [
+              artifact for artifact in document.get("artifacts", [])
+              if artifact.get("name") == expected_name and not artifact.get("expired")
+          ]
+          if len(matches) != 1:
+              names = [artifact.get("name") for artifact in document.get("artifacts", [])]
+              raise SystemExit(
+                  f"Expected one artifact named {expected_name}; found {len(matches)}. "
+                  f"Available: {names}"
+              )
+
+          with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"download_url={matches[0]['archive_download_url']}\n")
+              output.write(f"artifact_id={matches[0]['id']}\n")
+          PY
+
+      - name: Download and Verify Validated Distribution
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ARTIFACT_DOWNLOAD_URL: ${{ steps.distribution_artifact.outputs.download_url }}
+        run: |
+          set -euo pipefail
+          mkdir -p downloaded release
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --location \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$ARTIFACT_DOWNLOAD_URL" \
+            --output downloaded/distribution.zip
+          unzip -q downloaded/distribution.zip -d downloaded/extracted
+
+          archive="$(find downloaded/extracted -type f -name 'pkglift-macos-arm64.tar.gz' -print -quit)"
+          checksum="$(find downloaded/extracted -type f -name 'pkglift-macos-arm64.tar.gz.sha256' -print -quit)"
+          if [[ -z "$archive" || -z "$checksum" ]]; then
+            echo 'Validated distribution artifact is incomplete.' >&2
+            find downloaded/extracted -type f -print >&2
+            exit 1
+          fi
+
+          cp "$archive" release/pkglift-macos-arm64.tar.gz
+          cp "$checksum" release/pkglift-macos-arm64.tar.gz.sha256
+          (
+            cd release
+            sha256sum --check pkglift-macos-arm64.tar.gz.sha256
+          )
+
+          contents="$(tar -tzf release/pkglift-macos-arm64.tar.gz)"
+          grep -Fx 'pkglift' <<< "$contents" >/dev/null
+          grep -E '^PkgLift_PkgLiftRegistry\.bundle/' <<< "$contents" >/dev/null
+
+      - name: Stage Validated Distribution for Publication
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pkglift-publication-input-${{ github.sha }}
+          path: |
+            release/pkglift-macos-arm64.tar.gz
+            release/pkglift-macos-arm64.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: validate-and-package
+    runs-on: ubuntu-latest
+    environment: production-release
+    permissions:
+      contents: write
+    steps:
+      - name: Download Validated Publication Input
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: pkglift-publication-input-${{ github.sha }}
+          path: release
+
+      - name: Recheck Distribution Checksum
+        run: |
+          set -euo pipefail
+          (
+            cd release
+            sha256sum --check pkglift-macos-arm64.tar.gz.sha256
+          )
+
+      - name: Create Tag and GitHub Release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
+        with:
+          tag_name: ${{ needs.validate-and-package.outputs.release_tag }}
+          target_commitish: ${{ needs.validate-and-package.outputs.target_commitish }}
+          name: PkgLift ${{ needs.validate-and-package.outputs.release_tag }}
+          files: |
+            release/pkglift-macos-arm64.tar.gz
+            release/pkglift-macos-arm64.tar.gz.sha256
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          prerelease: ${{ contains(needs.validate-and-package.outputs.release_tag, '-') }}
+
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify Published Tag and Assets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.validate-and-package.outputs.release_tag }}
+          TARGET_COMMITISH: ${{ needs.validate-and-package.outputs.target_commitish }}
+        run: |
+          set -euo pipefail
+          git fetch --force --tags origin
+          actual_target="$(git rev-list -n 1 "$RELEASE_TAG")"
+          if [[ "$actual_target" != "$TARGET_COMMITISH" ]]; then
+            echo "Published tag targets $actual_target instead of $TARGET_COMMITISH." >&2
+            exit 1
+          fi
+
+          /usr/bin/python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import urllib.request
+
+          repository = os.environ["GITHUB_REPOSITORY"]
+          release_tag = os.environ["RELEASE_TAG"]
+          token = os.environ["GITHUB_TOKEN"]
+          url = f"https://api.github.com/repos/{repository}/releases/tags/{release_tag}"
+          request = urllib.request.Request(
+              url,
+              headers={
+                  "Authorization": f"Bearer {token}",
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  "User-Agent": "PkgLift-release-manifest",
+              },
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              release = json.load(response)
+
+          if release.get("draft"):
+              raise SystemExit("Published release unexpectedly remains a draft")
+          assets = {asset["name"]: asset for asset in release.get("assets", [])}
+          expected = {
+              "pkglift-macos-arm64.tar.gz",
+              "pkglift-macos-arm64.tar.gz.sha256",
+          }
+          if set(assets) != expected:
+              raise SystemExit(f"Unexpected release assets: {sorted(assets)}")
+          for name in expected:
+              if assets[name].get("size", 0) <= 0:
+                  raise SystemExit(f"Published asset {name} is empty")
+
+          with pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
+              summary.write("### Public release verified\n\n")
+              summary.write(f"- Release: {release['html_url']}\n")
+              summary.write(f"- Tag: `{release_tag}`\n")
+              summary.write(f"- Assets: `{', '.join(sorted(assets))}`\n")
+          PY
