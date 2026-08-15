@@ -19,18 +19,110 @@ public struct BuildVerifier: Sendable {
         self.processRunner = processRunner
     }
 
+    /// Normalizes and validates an explicitly selected scheme.
+    public static func validatedScheme(_ value: String) throws -> String {
+        if value.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) {
+            throw BuildVerificationOptionsError.controlCharacter(field: "scheme")
+        }
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else {
+            throw BuildVerificationOptionsError.empty(field: "scheme")
+        }
+        return normalized
+    }
+
+    /// Creates the exact argument vector used for package resolution.
+    ///
+    /// Only the derived-data path applies to this phase. Configuration,
+    /// destination, and SDK are build settings and are intentionally omitted.
+    public static func resolvePackageArguments(
+        projectPath: String,
+        isWorkspace: Bool = false,
+        options: BuildVerificationOptions = BuildVerificationOptions()
+    ) throws -> [String] {
+        let options = try options.validated()
+        var arguments = ["-resolvePackageDependencies"]
+
+        if isWorkspace {
+            arguments += ["-workspace", projectPath]
+        } else {
+            arguments += ["-project", projectPath]
+        }
+
+        if let derivedDataPath = options.derivedDataPath {
+            arguments += ["-derivedDataPath", derivedDataPath]
+        }
+        return arguments
+    }
+
+    /// Creates the exact argument vector used for full build verification.
+    public static func buildArguments(
+        projectPath: String,
+        scheme: String,
+        isWorkspace: Bool = false,
+        options: BuildVerificationOptions = BuildVerificationOptions()
+    ) throws -> [String] {
+        let scheme = try validatedScheme(scheme)
+        let options = try options.validated()
+
+        var arguments = ["build", "-scheme", scheme]
+        if isWorkspace {
+            arguments += ["-workspace", projectPath]
+        } else {
+            arguments += ["-project", projectPath]
+        }
+
+        if let configuration = options.configuration {
+            arguments += ["-configuration", configuration]
+        }
+        if let destination = options.destination {
+            arguments += ["-destination", destination]
+        }
+        if let sdk = options.sdk {
+            arguments += ["-sdk", sdk]
+        }
+        if let derivedDataPath = options.derivedDataPath {
+            arguments += ["-derivedDataPath", derivedDataPath]
+        }
+        return arguments
+    }
+
     /// Resolves SwiftPM package dependencies.
     ///
     /// - Parameters:
     ///   - projectPath: Path to `.xcodeproj` or `.xcworkspace`.
     ///   - isWorkspace: Whether the path is a workspace.
+    ///   - options: Explicit verification options. Only derived data applies.
     /// - Returns: A `VerificationResult`.
     public func resolvePackageDependencies(
         projectPath: String,
-        isWorkspace: Bool = false
+        isWorkspace: Bool = false,
+        options: BuildVerificationOptions = BuildVerificationOptions()
     ) -> VerificationResult {
         var checks: [VerificationCheck] = []
         var issues: [MigrationIssue] = []
+
+        let arguments: [String]
+        do {
+            arguments = try Self.resolvePackageArguments(
+                projectPath: projectPath,
+                isWorkspace: isWorkspace,
+                options: options
+            )
+        } catch {
+            checks.append(VerificationCheck(
+                name: "build_options_valid",
+                description: "Build verification options are valid",
+                passed: false,
+                detail: error.localizedDescription
+            ))
+            issues.append(MigrationIssue(
+                severity: .error,
+                message: "Invalid build verification options",
+                detail: error.localizedDescription
+            ))
+            return VerificationResult(passed: false, checks: checks, issues: issues)
+        }
 
         guard let xcodebuild = processRunner.findExecutable("xcodebuild") else {
             checks.append(VerificationCheck(
@@ -40,13 +132,6 @@ public struct BuildVerifier: Sendable {
                 detail: "xcodebuild not found in PATH. Install Xcode Command Line Tools."
             ))
             return VerificationResult(passed: false, checks: checks, issues: issues)
-        }
-
-        var arguments = ["-resolvePackageDependencies"]
-        if isWorkspace {
-            arguments += ["-workspace", projectPath]
-        } else {
-            arguments += ["-project", projectPath]
         }
 
         do {
@@ -92,16 +177,56 @@ public struct BuildVerifier: Sendable {
     ///
     /// - Parameters:
     ///   - projectPath: Path to `.xcodeproj` or `.xcworkspace`.
-    ///   - scheme: The scheme to build. Required when multiple schemes exist.
+    ///   - scheme: The scheme to build. Required rather than guessed.
     ///   - isWorkspace: Whether the path is a workspace.
+    ///   - options: Explicit xcodebuild configuration and destination settings.
     /// - Returns: A `VerificationResult`.
     public func buildVerify(
         projectPath: String,
         scheme: String?,
-        isWorkspace: Bool = false
+        isWorkspace: Bool = false,
+        options: BuildVerificationOptions = BuildVerificationOptions()
     ) -> VerificationResult {
         var checks: [VerificationCheck] = []
         var issues: [MigrationIssue] = []
+
+        guard let scheme else {
+            checks.append(VerificationCheck(
+                name: "scheme_specified",
+                description: "Build scheme is specified",
+                passed: false,
+                detail: "No scheme specified. Use --scheme to select a build scheme."
+            ))
+            issues.append(MigrationIssue(
+                severity: .error,
+                message: "Build verification requires an explicit --scheme",
+                detail: "PkgLift does not guess which scheme to build."
+            ))
+            return VerificationResult(passed: false, checks: checks, issues: issues)
+        }
+
+        let arguments: [String]
+        do {
+            arguments = try Self.buildArguments(
+                projectPath: projectPath,
+                scheme: scheme,
+                isWorkspace: isWorkspace,
+                options: options
+            )
+        } catch {
+            checks.append(VerificationCheck(
+                name: "build_options_valid",
+                description: "Build verification options are valid",
+                passed: false,
+                detail: error.localizedDescription
+            ))
+            issues.append(MigrationIssue(
+                severity: .error,
+                message: "Invalid build verification options",
+                detail: error.localizedDescription
+            ))
+            return VerificationResult(passed: false, checks: checks, issues: issues)
+        }
 
         guard let xcodebuild = processRunner.findExecutable("xcodebuild") else {
             checks.append(VerificationCheck(
@@ -111,28 +236,6 @@ public struct BuildVerifier: Sendable {
                 detail: "xcodebuild not found in PATH"
             ))
             return VerificationResult(passed: false, checks: checks, issues: issues)
-        }
-
-        guard let scheme = scheme else {
-            checks.append(VerificationCheck(
-                name: "scheme_specified",
-                description: "Build scheme is specified",
-                passed: false,
-                detail: "No scheme specified. Use --scheme to select a build scheme."
-            ))
-            issues.append(MigrationIssue(
-                severity: .error,
-                message: "Build verification requires an explicit --scheme when multiple schemes may exist",
-                detail: "PkgLift does not guess which scheme to build."
-            ))
-            return VerificationResult(passed: false, checks: checks, issues: issues)
-        }
-
-        var arguments = ["build", "-scheme", scheme]
-        if isWorkspace {
-            arguments += ["-workspace", projectPath]
-        } else {
-            arguments += ["-project", projectPath]
         }
 
         do {
