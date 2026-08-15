@@ -1,7 +1,9 @@
 name: Registry Validation
+
 on:
   push:
-    branches: ['**']
+    branches:
+      - main
     paths:
       - '.github/workflows/registry.yml'
       - 'Package.swift'
@@ -17,9 +19,18 @@ on:
       - 'Registry/**'
       - 'Sources/PkgLiftRegistry/**'
       - 'Tests/PkgLiftRegistryTests/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: macos-15
+    timeout-minutes: 30
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:
