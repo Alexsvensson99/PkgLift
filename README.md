@@ -14,7 +14,7 @@ No blind conversions. No guesswork.
 
 **Analyze → Plan → Migrate → Verify**
 
-[Installation](#installation) · [Quick Start](#quick-start) · [Safety Philosophy](#safety-philosophy) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
+[Installation](#installation) · [Quick Start](#quick-start) · [Safety Philosophy](#safety-philosophy) · [Diagnostics](Documentation/Diagnostics.md) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
 
 ## What PkgLift Does
 
@@ -160,12 +160,23 @@ Selection paths are standardized and resolved through symlinks beneath `--path`.
 - `plan`: Generates a migration plan.
 - `migrate`: Validates the saved plan and previews it; `--apply` performs only typed `AUTO` actions.
 - `verify`: Verifies the project after migration and can optionally run a build.
+- `diagnostics`: Writes a local, privacy-preserving JSON report without uploading it.
 - `registry validate`: Validates local and bundled registry mappings.
 - `version`: Prints the current version.
 
 ## Share a Real-World Result
 
 Testing on varied public and private project layouts helps PkgLift improve without weakening its safety model.
+
+Generate a minimized report when it helps reproduce the result:
+
+```bash
+pkglift diagnostics \
+  --path . \
+  --output pkglift-diagnostics.json
+```
+
+Review the JSON before sharing it. The report contains counts, flags, tool versions, Git state, and typed failure stages; it excludes source code, complete Podfiles, dependency and target names, repository URLs, changed filenames, arbitrary error messages, and absolute user paths. See [Privacy-Preserving Diagnostics](Documentation/Diagnostics.md).
 
 - Use the [real-world migration report](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) for successful, partial, and intentionally refused migrations.
 - Use the [registry mapping proposal](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml) when an exact CocoaPods-to-SwiftPM mapping can be supported by official upstream evidence.

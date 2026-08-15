@@ -11,12 +11,14 @@ body:
 
         Please remove secrets, private repository names, customer information, signing identities, and proprietary source code before submitting. Successful, partial, and unsuccessful migrations are all useful.
 
+        `pkglift diagnostics --path . --output pkglift-diagnostics.json` can create a minimized local report. Open and review the JSON before attaching it. PkgLift never uploads it automatically.
+
   - type: input
     id: pkglift_version
     attributes:
       label: PkgLift version
       description: Run `pkglift version` and paste the result.
-      placeholder: 0.1.2
+      placeholder: 0.2.0
     validations:
       required: true
 
@@ -54,6 +56,7 @@ body:
         - label: "`pkglift migrate --apply`"
         - label: "`pkglift verify`"
         - label: "`pkglift verify --build`"
+        - label: "`pkglift diagnostics`"
 
   - type: textarea
     id: dependency_summary
@@ -89,6 +92,13 @@ body:
       description: Paste the smallest useful CLI output or error. Remove paths, tokens, signing data, customer names, and proprietary identifiers.
       render: shell
 
+  - type: textarea
+    id: diagnostics_report
+    attributes:
+      label: Reviewed diagnostics report
+      description: Optional. Drag the reviewed `pkglift-diagnostics.json` file here, or paste only the relevant minimized fields. Do not attach it without opening and reviewing it first.
+      placeholder: Attach the reviewed JSON file or explain why no diagnostics report is available.
+
   - type: input
     id: reproduction
     attributes:
@@ -105,5 +115,5 @@ body:
           required: true
         - label: If a plan was generated, I reviewed it before applying any changes.
           required: true
-        - label: I removed secrets and proprietary information from this report.
+        - label: I removed secrets and proprietary information from this report and any attached diagnostics JSON.
           required: true
