@@ -108,3 +108,37 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
+      - name: Smoke test published routes
+        shell: bash
+        env:
+          SITE_URL: https://www.svensson.design/PkgLift/
+        run: |
+          set -euo pipefail
+          routes=(
+            ''
+            'cocoapods-to-swiftpm/'
+            'safe-migration/'
+            'case-study/'
+            'troubleshooting/'
+            'registry/'
+            'robots.txt'
+            'sitemap.xml'
+            'assets/styles.css'
+            'assets/site.js'
+            'assets/social-card.png'
+          )
+
+          for route in "${routes[@]}"; do
+            url="${SITE_URL}${route}"
+            echo "Checking $url"
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --location \
+              --retry 8 \
+              --retry-delay 3 \
+              --retry-all-errors \
+              --output /dev/null \
+              "$url"
+          done
