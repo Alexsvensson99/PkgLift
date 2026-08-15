@@ -20,6 +20,7 @@ PkgLift is built with standard Swift tooling:
 
 ```bash
 swift build
+swift build -c release
 ```
 
 ## Running Validation
@@ -36,7 +37,15 @@ Validate every registry entry:
 swift run pkglift registry validate
 ```
 
-Registry-related pull requests must pass both commands. Other changes should still run registry validation when they can affect loading, classification, planning, migration, or release packaging.
+Validate repository workflows and issue forms:
+
+```bash
+ruby Scripts/validate-repository-yaml.rb
+```
+
+Registry-related pull requests must pass both the test suite and registry validation. Other changes should still run registry validation when they can affect loading, classification, planning, migration, or release packaging.
+
+Pull requests run independent Build, Test, Registry Validation when relevant, and Quality checks. Validation workflows use least-privilege permissions and may cancel an older run when a newer commit replaces it on the same pull request.
 
 ## Testing on a Real Project
 
@@ -96,9 +105,11 @@ See [AGENTS.md](AGENTS.md) for repository-specific guidance that also applies wh
 
 1. Create a focused branch such as `feature/my-feature` or `bugfix/issue-123`.
 2. Add or update tests that prove the intended behavior and relevant safety boundaries.
-3. Run `swift test`.
-4. Run `swift run pkglift registry validate` when applicable.
-5. Review `git diff --check` and the complete patch.
-6. Open a pull request against `main` using the repository template.
-7. Explain the user problem, implementation, safety impact, and validation performed.
-8. Address review feedback and keep unrelated changes out of the pull request.
+3. Run `swift build` and `swift build -c release`.
+4. Run `swift test`.
+5. Run `swift run pkglift registry validate` when applicable.
+6. Run `ruby Scripts/validate-repository-yaml.rb` when workflows or issue forms change.
+7. Review `git diff --check` and the complete patch.
+8. Open a pull request against `main` using the repository template.
+9. Explain the user problem, implementation, safety impact, and validation performed.
+10. Address review feedback and keep unrelated changes out of the pull request.
