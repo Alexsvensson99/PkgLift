@@ -144,7 +144,7 @@ enum PodfileStaticSyntax {
 
             if quote == "\"", character == "#" {
                 let next = source.index(after: index)
-                if next < source.endIndex, source[next] == "{" {
+                if next < source.endIndex, source[next] == "{" || source[next] == "@" || source[next] == "$" {
                     return nil
                 }
             }
