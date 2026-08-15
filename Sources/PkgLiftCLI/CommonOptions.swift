@@ -16,9 +16,15 @@ struct CommonOptions: ParsableArguments {
     @Flag(name: .long, help: "Disable colored output.")
     var noColor: Bool = false
 
-    @Option(name: .long, help: "Explicit path to the Xcode project.")
+    @Option(
+        name: .long,
+        help: "Explicit path to the Xcode project. Combine with --workspace to select one project from a multi-project workspace."
+    )
     var project: String?
 
-    @Option(name: .long, help: "Explicit path to the Xcode workspace.")
+    @Option(
+        name: .long,
+        help: "Explicit path to the Xcode workspace. Relative paths are resolved beneath --path."
+    )
     var workspace: String?
 }

@@ -18,6 +18,20 @@ Anything less becomes `REVIEW`, `BLOCKED`, or `UNKNOWN`.
 
 Registry identifiers are exact. Declaring a base pod does not make its transitive subspecs direct dependencies, and a base mapping is never inherited by an arbitrary subspec.
 
+## Project and workspace selection
+
+PkgLift discovers `.xcodeproj` and `.xcworkspace` directories recursively beneath
+`--path` without descending into generated `Pods`, `.build`, `.swiftpm`,
+`Carthage`, or `DerivedData` trees. Project bundles and workspace bundles are
+terminal discovery nodes, so internal Xcode metadata is not treated as another
+user workspace.
+
+All explicit selections and workspace project references are standardized and
+resolved through symlinks before use. They must remain inside `--path`.
+Multi-project workspaces require `--workspace` together with `--project`, and the
+selected project must be an actual non-Pods reference in that workspace.
+Unsupported workspace location schemes are refused instead of guessed.
+
 ## Preflight and mutation
 
 `pkglift migrate` is a dry run. `pkglift migrate --apply` validates the entire saved AUTO contract before the first write. It refuses stale project paths, missing Podfile declarations, missing or conflicting versions, and missing or ambiguous targets.

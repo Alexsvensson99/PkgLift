@@ -23,7 +23,7 @@ graph TD
 
 ## Migration data flow
 
-1. `CommandContext` discovers the Podfile, lockfile, workspace/project, configuration, and registry mappings.
+1. `CommandContext` discovers Xcode projects and workspaces recursively, resolves an explicit workspace/project selection, and rejects normalized or symlinked paths outside the selected root before loading project state.
 2. Static CocoaPods parsing combines exact Podfile declarations with lockfile versions and target mappings. Ruby is never evaluated.
 3. `MigrationClassifier` permits `AUTO` only for an exact verified mapping, a strict resolved version at or above verified SwiftPM support, a supported Podfile, and exactly one existing target.
 4. `MigrationPlan` records the package candidate and typed `removePod`, `addSwiftPackage`, and `linkProduct` actions.

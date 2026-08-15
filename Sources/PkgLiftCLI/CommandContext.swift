@@ -264,10 +264,15 @@ struct CommandContext: Sendable {
         let candidates = migrationCandidates(includeTransitive: true)
 
         let swiftPMState = xcodeAnalysis?.swiftPMState ?? SwiftPMState()
-        let projectInfo = xcodeAnalysis?.projectInfo ?? ProjectInfo(
+        let analyzedProjectInfo = xcodeAnalysis?.projectInfo ?? ProjectInfo(
             projectPath: resolvedProjectPath ?? discovery.rootPath,
             workspacePath: resolvedWorkspacePath,
             targets: []
+        )
+        let projectInfo = ProjectInfo(
+            projectPath: analyzedProjectInfo.projectPath,
+            workspacePath: resolvedWorkspacePath,
+            targets: analyzedProjectInfo.targets
         )
 
         return ProjectAnalysis(
@@ -398,20 +403,33 @@ struct CommandContext: Sendable {
         discoveredWorkspacePaths: [String],
         discoveredProjectPaths: [String]
     ) throws -> (projectPath: String?, workspacePath: String?, selectedWorkspace: Bool, analysis: XcodeAnalysisResult?) {
-        if projectOverride != nil && workspaceOverride != nil {
-            throw CommandContextError.conflictingProjectSelection
-        }
-
         if let explicitWorkspace = workspaceOverride {
-            let workspacePath = resolvePath(explicitWorkspace, base: rootPath)
+            let workspacePath = try resolveSelectedPath(
+                explicitWorkspace,
+                expectedExtension: "xcworkspace",
+                rootPath: rootPath
+            )
+            let explicitProjectPath = try projectOverride.map {
+                try resolveSelectedPath(
+                    $0,
+                    expectedExtension: "xcodeproj",
+                    rootPath: rootPath
+                )
+            }
             let (projectPath, analysis) = try resolveProject(
-                fromWorkspace: workspacePath
+                fromWorkspace: workspacePath,
+                rootPath: rootPath,
+                explicitProjectPath: explicitProjectPath
             )
             return (projectPath, workspacePath, true, analysis)
         }
 
         if let explicitProject = projectOverride {
-            let resolved = resolvePath(explicitProject, base: rootPath)
+            let resolved = try resolveSelectedPath(
+                explicitProject,
+                expectedExtension: "xcodeproj",
+                rootPath: rootPath
+            )
             let analyzer = XcodeProjectAnalyzer()
             let analysis = try analyzer.analyzeProject(at: resolved)
             return (resolved, nil, false, analysis)
@@ -423,7 +441,9 @@ struct CommandContext: Sendable {
 
         if let workspacePath = discoveredWorkspacePaths.first {
             let (projectPath, analysis) = try resolveProject(
-                fromWorkspace: workspacePath
+                fromWorkspace: workspacePath,
+                rootPath: rootPath,
+                explicitProjectPath: nil
             )
             return (projectPath, workspacePath, true, analysis)
         }
@@ -433,7 +453,11 @@ struct CommandContext: Sendable {
         }
 
         if let projectPath = discoveredProjectPaths.first {
-            let resolved = resolvePath(projectPath, base: rootPath)
+            let resolved = try resolveSelectedPath(
+                projectPath,
+                expectedExtension: "xcodeproj",
+                rootPath: rootPath
+            )
             let analyzer = XcodeProjectAnalyzer()
             let analysis = try analyzer.analyzeProject(at: resolved)
             return (resolved, nil, false, analysis)
@@ -442,17 +466,29 @@ struct CommandContext: Sendable {
         return (nil, nil, false, nil)
     }
 
-    private static func resolveProject(fromWorkspace workspacePath: String) throws -> (String?, XcodeAnalysisResult?) {
+    private static func resolveProject(
+        fromWorkspace workspacePath: String,
+        rootPath: String,
+        explicitProjectPath: String?
+    ) throws -> (String, XcodeAnalysisResult) {
         let analyzer = WorkspaceAnalyzer()
-        let result = try analyzer.analyzeWorkspace(at: workspacePath)
-        let workspaceDirectory = URL(fileURLWithPath: workspacePath).deletingLastPathComponent()
+        let result = try analyzer.analyzeWorkspace(
+            at: workspacePath,
+            containedIn: rootPath
+        )
+        let candidates = result.projectPaths
 
-        let candidates = result.projectPaths.filter {
-            !$0.lowercased().contains("pods.xcodeproj")
-        }.compactMap { candidatePath -> String? in
-            let normalized = normalizeWorkspaceLocation(candidatePath)
-            let absolute = workspaceDirectory.appendingPathComponent(normalized).standardized.path
-            return FileManager.default.fileExists(atPath: absolute) ? absolute : nil
+        if let explicitProjectPath {
+            guard candidates.contains(explicitProjectPath) else {
+                throw CommandContextError.projectNotInWorkspace(
+                    project: explicitProjectPath,
+                    workspace: workspacePath,
+                    projects: candidates
+                )
+            }
+
+            let analysis = try XcodeProjectAnalyzer().analyzeProject(at: explicitProjectPath)
+            return (explicitProjectPath, analysis)
         }
 
         guard candidates.count == 1, let projectPath = candidates.first else {
@@ -466,11 +502,36 @@ struct CommandContext: Sendable {
         return (projectPath, xcodeResult)
     }
 
-    private static func normalizeWorkspaceLocation(_ location: String) -> String {
-        if let idx = location.range(of: ":") {
-            return String(location[idx.upperBound...])
+    private static func resolveSelectedPath(
+        _ path: String,
+        expectedExtension: String,
+        rootPath: String
+    ) throws -> String {
+        let rootURL = URL(fileURLWithPath: rootPath, isDirectory: true)
+            .standardized
+            .resolvingSymlinksInPath()
+        let candidate = path.hasPrefix("/")
+            ? URL(fileURLWithPath: path, isDirectory: true)
+            : rootURL.appendingPathComponent(path, isDirectory: true)
+        let resolved = candidate.standardized.resolvingSymlinksInPath()
+
+        let isContained = rootURL.path == "/"
+            ? resolved.path.hasPrefix("/")
+            : resolved.path == rootURL.path || resolved.path.hasPrefix(rootURL.path + "/")
+        guard isContained else {
+            throw CommandContextError.selectionOutsideRoot(
+                path: path,
+                resolved: resolved.path,
+                root: rootURL.path
+            )
         }
-        return location
+        guard resolved.pathExtension == expectedExtension else {
+            throw CommandContextError.invalidSelectionExtension(
+                path: resolved.path,
+                expectedExtension: expectedExtension
+            )
+        }
+        return resolved.path
     }
 }
 
@@ -482,23 +543,30 @@ private func existingPackage(
     return packages.first { RepositoryIdentity.normalized($0.repositoryURL) == identity }
 }
 
-private enum CommandContextError: LocalizedError {
-    case conflictingProjectSelection
+enum CommandContextError: LocalizedError {
     case ambiguousWorkspaces([String])
     case ambiguousProjects([String])
     case ambiguousWorkspaceProjects(workspace: String, projects: [String])
+    case projectNotInWorkspace(project: String, workspace: String, projects: [String])
+    case selectionOutsideRoot(path: String, resolved: String, root: String)
+    case invalidSelectionExtension(path: String, expectedExtension: String)
 
     var errorDescription: String? {
         switch self {
-        case .conflictingProjectSelection:
-            return "Specify either --project or --workspace, not both."
         case .ambiguousWorkspaces(let paths):
             return "Multiple Xcode workspaces were found (\(paths.joined(separator: ", "))). Use --workspace to choose one explicitly."
         case .ambiguousProjects(let paths):
             return "Multiple Xcode projects were found (\(paths.joined(separator: ", "))). Use --project to choose one explicitly."
         case .ambiguousWorkspaceProjects(let workspace, let projects):
             let detail = projects.isEmpty ? "no non-Pods project" : projects.joined(separator: ", ")
-            return "Workspace '\(workspace)' does not resolve to exactly one application project (\(detail)). Use --project to choose explicitly."
+            return "Workspace '\(workspace)' does not resolve to exactly one application project (\(detail)). Use --workspace together with --project to choose explicitly."
+        case .projectNotInWorkspace(let project, let workspace, let projects):
+            let detail = projects.isEmpty ? "no selectable projects" : projects.joined(separator: ", ")
+            return "Project '\(project)' is not referenced by workspace '\(workspace)' (\(detail))."
+        case .selectionOutsideRoot(let path, let resolved, let root):
+            return "Selected path '\(path)' resolves to '\(resolved)', outside the project root '\(root)'."
+        case .invalidSelectionExtension(let path, let expectedExtension):
+            return "Selected path '\(path)' must have the .\(expectedExtension) extension."
         }
     }
 }

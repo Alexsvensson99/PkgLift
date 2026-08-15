@@ -49,6 +49,15 @@ public struct DiscoveredFiles: Sendable {
 /// This does NOT follow symlinks outside the project directory
 /// to prevent path traversal attacks.
 public struct FileDiscovery: Sendable {
+    private static let skippedDirectoryNames: Set<String> = [
+        ".build",
+        ".git",
+        ".swiftpm",
+        "carthage",
+        "deriveddata",
+        "pods",
+    ]
+
     public init() {}
 
     /// Discover relevant project files in the given directory.
@@ -58,7 +67,9 @@ public struct FileDiscovery: Sendable {
     /// - Throws: If the path does not exist or is not a directory.
     public func discover(in path: String) throws -> DiscoveredFiles {
         let fileManager = FileManager.default
-        let rootURL = URL(fileURLWithPath: path).standardized
+        let rootURL = URL(fileURLWithPath: path, isDirectory: true)
+            .standardized
+            .resolvingSymlinksInPath()
 
         // Validate the path exists and is a directory
         var isDirectory: ObjCBool = false
@@ -87,10 +98,10 @@ public struct FileDiscovery: Sendable {
             return nil
         }()
 
-        // Find Xcode projects and workspaces (only in root, not recursive)
+        // Find Xcode projects and workspaces recursively without entering
+        // generated dependency trees or Xcode package directories.
         let projectPaths = findItems(withExtension: "xcodeproj", in: rootPath)
         let workspacePaths = findItems(withExtension: "xcworkspace", in: rootPath)
-            .filter { !$0.contains("/Pods/") }  // Exclude CocoaPods-generated workspaces in Pods/
 
         return DiscoveredFiles(
             rootPath: rootPath,
@@ -118,20 +129,67 @@ public struct FileDiscovery: Sendable {
 
         guard fileManager.fileExists(atPath: path) else { return nil }
 
-        return path
+        return resolvedPath
     }
 
     private func findItems(withExtension ext: String, in directory: String) -> [String] {
         let fileManager = FileManager.default
+        let rootURL = URL(fileURLWithPath: directory, isDirectory: true)
+            .resolvingSymlinksInPath()
+            .standardized
+        let resourceKeys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey, .nameKey]
 
-        guard let contents = try? fileManager.contentsOfDirectory(atPath: directory) else {
+        guard let enumerator = fileManager.enumerator(
+            at: rootURL,
+            includingPropertiesForKeys: resourceKeys,
+            options: [.skipsPackageDescendants],
+            errorHandler: { _, _ in true }
+        ) else {
             return []
         }
 
-        return contents
-            .filter { ($0 as NSString).pathExtension == ext }
-            .map { (directory as NSString).appendingPathComponent($0) }
-            .sorted()
+        var matches: Set<String> = []
+
+        for case let itemURL as URL in enumerator {
+            guard let values = try? itemURL.resourceValues(forKeys: Set(resourceKeys)) else {
+                enumerator.skipDescendants()
+                continue
+            }
+
+            if values.isSymbolicLink == true {
+                enumerator.skipDescendants()
+                continue
+            }
+
+            guard values.isDirectory == true else { continue }
+
+            let directoryName = (values.name ?? itemURL.lastPathComponent).lowercased()
+            if Self.skippedDirectoryNames.contains(directoryName) {
+                enumerator.skipDescendants()
+                continue
+            }
+
+            let resolved = itemURL.resolvingSymlinksInPath().standardized
+            guard Self.isContained(resolved.path, in: rootURL.path) else {
+                enumerator.skipDescendants()
+                continue
+            }
+
+            let pathExtension = resolved.pathExtension
+            if pathExtension == "xcodeproj" || pathExtension == "xcworkspace" {
+                if pathExtension == ext {
+                    matches.insert(resolved.path)
+                }
+                enumerator.skipDescendants()
+            }
+        }
+
+        return matches.sorted()
+    }
+
+    private static func isContained(_ path: String, in rootPath: String) -> Bool {
+        if rootPath == "/" { return path.hasPrefix("/") }
+        return path == rootPath || path.hasPrefix(rootPath + "/")
     }
 }
 
