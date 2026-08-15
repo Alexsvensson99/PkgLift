@@ -53,7 +53,7 @@ final class DiagnosticsReportTests: XCTestCase {
                 ]
             ),
             cocoaPods: CocoaPodsState(
-                directDependencies: [pod],
+                directDependencies: [pod, pod],
                 transitiveDependencies: [],
                 hasPodfile: true,
                 hasPodfileLock: true,
@@ -74,7 +74,14 @@ final class DiagnosticsReportTests: XCTestCase {
             ),
             candidates: [candidate],
             issues: [issue],
-            readinessScore: 42
+            readinessScore: 42,
+            counts: DependencyCounts(
+                literalPodfileDeclarationCount: 2,
+                uniqueDirectDependencyCount: 1,
+                uniqueLockfileDependencyCount: 1,
+                planEntryCount: 1,
+                analysisCandidateCount: 1
+            )
         )
         let discovery = DiscoveredFiles(
             rootPath: "/Users/alex/Secret Client",

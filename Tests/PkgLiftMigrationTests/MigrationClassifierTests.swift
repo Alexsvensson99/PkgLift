@@ -15,7 +15,17 @@ final class MigrationClassifierTests: XCTestCase {
             version: "1.2.3",
             source: .registry,
             isDirect: true,
-            targets: ["App"]
+            targets: ["App"],
+            declarations: [
+                PodfileDeclaration(
+                    line: 1,
+                    scope: .target,
+                    scopeName: "App",
+                    targetName: "App",
+                    source: .registry
+                ),
+            ],
+            targetAttribution: TargetAttribution(status: .exact, targets: ["App"])
         )
         let mapping = RegistryMapping(
             pod: PodIdentifier(name: "Alamofire"),
@@ -119,6 +129,52 @@ final class MigrationClassifierTests: XCTestCase {
         XCTAssertEqual(result.category, .review)
     }
 
+    func testLegacyTargetArrayCannotBecomeAutoWithoutProvenance() {
+        let dependency = CocoaPodDependency(
+            name: "SDWebImage",
+            version: "5.18.1",
+            targets: ["App"]
+        )
+
+        let result = MigrationClassifier().classify(
+            dependency: dependency,
+            mapping: makeMapping(minimumVersion: "5.1.0")
+        )
+
+        XCTAssertEqual(result.category, .review)
+        XCTAssertTrue(result.reasons.contains(
+            "Literal Podfile declaration provenance is missing or inconsistent"
+        ))
+        XCTAssertEqual(dependency.effectiveTargetAttribution.status, .partial)
+    }
+
+    func testTopLevelDeclarationCannotForgeExactTargetProvenance() {
+        let dependency = CocoaPodDependency(
+            name: "SDWebImage",
+            version: "5.18.1",
+            targets: ["App"],
+            declarations: [
+                PodfileDeclaration(
+                    line: 1,
+                    scope: .topLevel,
+                    targetName: "App",
+                    source: .registry
+                ),
+            ],
+            targetAttribution: TargetAttribution(status: .exact, targets: ["App"])
+        )
+
+        let result = MigrationClassifier().classify(
+            dependency: dependency,
+            mapping: makeMapping(minimumVersion: "5.1.0")
+        )
+
+        XCTAssertEqual(result.category, .review)
+        XCTAssertTrue(result.reasons.contains(
+            "Literal Podfile declaration provenance is missing or inconsistent"
+        ))
+    }
+
     func testExternalSourceNeverBecomesAutoFromNameMatch() {
         let dependency = CocoaPodDependency(
             name: "Alamofire",
@@ -138,6 +194,26 @@ final class MigrationClassifierTests: XCTestCase {
 
         let result = MigrationClassifier().classify(dependency: dependency, mapping: mapping)
         XCTAssertEqual(result.category, .review)
+    }
+
+    func testUnrepresentablePodfileDeclarationIsReviewWithExplicitReason() {
+        let dependency = CocoaPodDependency(
+            name: "SDWebImage",
+            version: "5.18.1",
+            source: .unknown,
+            targets: ["App"]
+        )
+
+        let result = MigrationClassifier().classify(
+            dependency: dependency,
+            mapping: makeMapping(minimumVersion: "5.1.0")
+        )
+
+        XCTAssertEqual(result.category, .review)
+        XCTAssertTrue(result.reasons.contains(
+            "Podfile declaration source, options, or expressions cannot be represented safely"
+        ))
+        XCTAssertFalse(result.reasons.contains("External dependency source requires manual review"))
     }
 
     func testTransitiveDependencyNeverBecomesAuto() {
@@ -265,6 +341,41 @@ final class MigrationClassifierTests: XCTestCase {
         }
     }
 
+    func testReportsEveryRelevantSafetyReasonWithoutChangingBlockedClassification() {
+        var features = PodfileFeatures()
+        features.hasPostInstallHook = true
+        features.hasDynamicRuby = true
+        features.hasInheritSearchPaths = true
+        let dependency = CocoaPodDependency(
+            name: "ExternalKit",
+            version: "1.2.3",
+            source: .git(url: "https://example.invalid/ExternalKit.git", ref: nil),
+            targets: [],
+            targetAttribution: TargetAttribution(
+                status: .unresolved,
+                unresolvedDeclarationCount: 1,
+                reason: "Declaration originates in a Ruby helper; call-site target is unresolved."
+            )
+        )
+
+        let result = MigrationClassifier().classify(
+            dependency: dependency,
+            mapping: nil,
+            podfileFeatures: features
+        )
+
+        XCTAssertEqual(result.category, .blocked)
+        XCTAssertEqual(result.reason, "External source without mapping")
+        XCTAssertEqual(result.reasons, [
+            "External source without mapping",
+            "No registry mapping",
+            "Podfile install hook detected",
+            "Dynamic Podfile logic detected",
+            "inherit! :search_paths detected",
+            "Declaration originates in a Ruby helper; call-site target is unresolved.",
+        ])
+    }
+
     private func makeDependency(
         name: String = "SDWebImage",
         version: String
@@ -274,7 +385,17 @@ final class MigrationClassifierTests: XCTestCase {
             version: version,
             source: .registry,
             isDirect: true,
-            targets: ["App"]
+            targets: ["App"],
+            declarations: [
+                PodfileDeclaration(
+                    line: 1,
+                    scope: .target,
+                    scopeName: "App",
+                    targetName: "App",
+                    source: .registry
+                ),
+            ],
+            targetAttribution: TargetAttribution(status: .exact, targets: ["App"])
         )
     }
 

@@ -98,6 +98,9 @@ public struct MigrationPlan: Sendable, Codable {
     /// Migration readiness score (0-100).
     public let readinessScore: Int
 
+    /// Explicit source, dependency, candidate, and plan-entry counts.
+    public let counts: DependencyCounts?
+
     /// Entries that can be automatically migrated.
     public var autoEntries: [MigrationPlanEntry] {
         entries.filter { $0.classification == .auto }
@@ -122,7 +125,8 @@ public struct MigrationPlan: Sendable, Codable {
         projectPath: String,
         entries: [MigrationPlanEntry],
         issues: [MigrationIssue],
-        readinessScore: Int
+        readinessScore: Int,
+        counts: DependencyCounts? = nil
     ) {
         self.schemaVersion = Self.schemaVersion
         self.timestamp = Date()
@@ -131,6 +135,7 @@ public struct MigrationPlan: Sendable, Codable {
         self.entries = entries
         self.issues = issues
         self.readinessScore = readinessScore
+        self.counts = counts
     }
 }
 
@@ -159,6 +164,12 @@ public struct MigrationPlanEntry: Sendable, Codable {
     /// The proposed SwiftPM package.
     public let packageCandidate: PackageCandidate?
 
+    /// Literal declaration origins represented by this entry.
+    public let declarations: [PodfileDeclaration]?
+
+    /// Explicit static target evidence represented by this entry.
+    public let targetAttribution: TargetAttribution?
+
     public init(
         podName: String,
         currentVersion: String? = nil,
@@ -166,7 +177,9 @@ public struct MigrationPlanEntry: Sendable, Codable {
         actions: [MigrationAction] = [],
         reasons: [String] = [],
         targetName: String? = nil,
-        packageCandidate: PackageCandidate? = nil
+        packageCandidate: PackageCandidate? = nil,
+        declarations: [PodfileDeclaration]? = nil,
+        targetAttribution: TargetAttribution? = nil
     ) {
         self.podName = podName
         self.currentVersion = currentVersion
@@ -175,6 +188,8 @@ public struct MigrationPlanEntry: Sendable, Codable {
         self.reasons = reasons
         self.targetName = targetName
         self.packageCandidate = packageCandidate
+        self.declarations = declarations
+        self.targetAttribution = targetAttribution
     }
 }
 

@@ -74,6 +74,63 @@ final class CommandContextMigrationTests: XCTestCase {
         XCTAssertFalse(try String(contentsOf: podfile).contains("pod 'Alamofire'"))
     }
 
+    func testApplyRefusesWhenSavedAutoPlanNoLongerMatchesCurrentPodfile() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+        var planCommand = try PlanCommand.parse(arguments)
+        try await planCommand.run()
+
+        let podfile = fixture.root.appendingPathComponent("Podfile")
+        let changedPodfile = "target 'App' do\n  pod 'Alamofire' if ENV['USE_ALAMOFIRE']\nend\n"
+        try changedPodfile.write(to: podfile, atomically: true, encoding: .utf8)
+
+        var apply = try MigrateCommand.parse(arguments + ["--apply"])
+        do {
+            try await apply.run()
+            XCTFail("Expected stale plan refusal")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("saved plan no longer matches"))
+            XCTAssertTrue(error.localizedDescription.contains("Regenerate"))
+        }
+
+        XCTAssertEqual(try String(contentsOf: podfile), changedPodfile)
+        let analysis = try XcodeProjectAnalyzer().analyzeProject(at: fixture.project.path)
+        XCTAssertTrue(analysis.swiftPMState.packages.isEmpty)
+    }
+
+    func testApplyRefusesWhenSavedAutoTargetAttributionHasChanged() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App", "Widget"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+        var planCommand = try PlanCommand.parse(arguments)
+        try await planCommand.run()
+
+        let podfile = fixture.root.appendingPathComponent("Podfile")
+        let changedPodfile = "target 'Widget' do\n  pod 'Alamofire'\nend\n"
+        try changedPodfile.write(to: podfile, atomically: true, encoding: .utf8)
+
+        var apply = try MigrateCommand.parse(arguments + ["--apply"])
+        do {
+            try await apply.run()
+            XCTFail("Expected stale target-attribution refusal")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("saved plan no longer matches"))
+        }
+
+        XCTAssertEqual(try String(contentsOf: podfile), changedPodfile)
+        let analysis = try XcodeProjectAnalyzer().analyzeProject(at: fixture.project.path)
+        XCTAssertTrue(analysis.swiftPMState.packages.isEmpty)
+    }
+
     func testLockfileVersionAndPodfileTargetReachExecutableAutoPlan() async throws {
         let fixture = try makeFixture(
             podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
@@ -161,6 +218,8 @@ final class CommandContextMigrationTests: XCTestCase {
 
         XCTAssertEqual(entry.classification, .review)
         XCTAssertNil(entry.targetName)
+        XCTAssertEqual(entry.targetAttribution?.status, .multiple)
+        XCTAssertEqual(entry.targetAttribution?.targets, ["App", "Widget"])
         XCTAssertFalse(entry.actions.contains { action in
             if case .addSwiftPackage = action { return true }
             return false
@@ -276,6 +335,106 @@ final class CommandContextMigrationTests: XCTestCase {
         }
     }
 
+    func testBarkLikeCountsOriginsTargetsAndReasonsAreConsistent() async throws {
+        let fixture = try makeFixture(
+            podfile: Self.barkLikePodfile,
+            lockfile: Self.barkLikeLockfile,
+            targetNames: [
+                "WidgetExtension",
+                "NotificationServiceExtension",
+                "AppTests",
+                "App",
+            ]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let options = try CommonOptions.parse([
+            "--path", fixture.root.path,
+            "--project", fixture.project.path,
+        ])
+
+        let context = try await CommandContext.load(from: options)
+        let analysis = context.buildProjectAnalysis()
+        let plan = context.buildMigrationPlan()
+
+        let expectedCounts = DependencyCounts(
+            literalPodfileDeclarationCount: 6,
+            uniqueDirectDependencyCount: 4,
+            uniqueLockfileDependencyCount: 5,
+            planEntryCount: 4,
+            analysisCandidateCount: 5
+        )
+        XCTAssertEqual(analysis.counts, expectedCounts)
+        XCTAssertEqual(plan.counts, expectedCounts)
+        XCTAssertEqual(analysis.cocoaPods.directDependencies.count, 6)
+        XCTAssertEqual(analysis.candidates.count, 5)
+        XCTAssertEqual(analysis.project.targets.map(\.name).sorted(), [
+            "App",
+            "AppTests",
+            "NotificationServiceExtension",
+            "WidgetExtension",
+        ])
+        XCTAssertEqual(plan.entries.count, 4)
+        XCTAssertEqual(Set(plan.entries.map(\.podName)).count, 4)
+
+        let literalKingfisherTargets = context.directDependencies
+            .filter { $0.name == "Kingfisher" }
+            .map(\.targets)
+        XCTAssertEqual(literalKingfisherTargets, [
+            ["App"],
+            ["NotificationServiceExtension"],
+            ["WidgetExtension"],
+        ])
+
+        let kingfisher = try XCTUnwrap(plan.entries.first { $0.podName == "Kingfisher" })
+        XCTAssertEqual(kingfisher.targetAttribution?.status, .multiple)
+        XCTAssertEqual(kingfisher.targetAttribution?.targets, [
+            "App",
+            "NotificationServiceExtension",
+            "WidgetExtension",
+        ])
+        XCTAssertEqual(kingfisher.targetAttribution?.unresolvedDeclarationCount, 0)
+        XCTAssertNil(kingfisher.targetName)
+        XCTAssertEqual(kingfisher.declarations?.count, 3)
+        XCTAssertEqual(kingfisher.declarations?.map(\.targetName), [
+            "App",
+            "NotificationServiceExtension",
+            "WidgetExtension",
+        ])
+        XCTAssertTrue(kingfisher.reasons.contains("Podfile install hook detected"))
+        XCTAssertTrue(kingfisher.reasons.contains("Dynamic Podfile logic detected"))
+        XCTAssertTrue(kingfisher.reasons.contains("inherit! :search_paths detected"))
+        XCTAssertTrue(kingfisher.reasons.contains { $0.contains("Multiple statically proven") })
+
+        let moya = try XCTUnwrap(plan.entries.first { $0.podName == "Moya" })
+        let moyaRx = try XCTUnwrap(plan.entries.first { $0.podName == "Moya/RxSwift" })
+        XCTAssertEqual(moya.targetAttribution?.status, .exact)
+        XCTAssertEqual(moya.targetName, "NotificationServiceExtension")
+        XCTAssertNotNil(moya.packageCandidate)
+        XCTAssertEqual(moyaRx.targetAttribution?.status, .exact)
+        XCTAssertEqual(moyaRx.targetName, "App")
+        XCTAssertNil(moyaRx.packageCandidate)
+        XCTAssertEqual(moyaRx.classification, .unknown)
+
+        let external = try XCTUnwrap(plan.entries.first { $0.podName == "ExternalKit" })
+        XCTAssertEqual(external.classification, .blocked)
+        XCTAssertEqual(external.targetAttribution?.status, .exact)
+        XCTAssertEqual(external.targetName, "App")
+        XCTAssertEqual(external.reasons.prefix(2), [
+            "External source without mapping",
+            "No registry mapping",
+        ])
+        XCTAssertEqual(plan.autoEntries.count, 0)
+
+        XCTAssertEqual(
+            try normalizedJSON(analysis),
+            try normalizedJSON(context.buildProjectAnalysis())
+        )
+        XCTAssertEqual(
+            try normalizedJSON(plan),
+            try normalizedJSON(context.buildMigrationPlan())
+        )
+    }
+
     private func makeFixture(
         podfile: String,
         lockfile: String?,
@@ -350,6 +509,77 @@ final class CommandContextMigrationTests: XCTestCase {
             XCTFail("git failed: \(detail)")
         }
     }
+
+    private func normalizedJSON<T: Encodable>(_ value: T) throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        let encoded = try encoder.encode(value)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        object.removeValue(forKey: "timestamp")
+        return try JSONSerialization.data(
+            withJSONObject: object,
+            options: [.sortedKeys]
+        )
+    }
+
+    private static let barkLikePodfile = """
+    def pods
+      pod 'Moya/RxSwift'
+      pod 'Kingfisher'
+      pod 'ExternalKit', :git => 'https://example.invalid/ExternalKit.git', :branch => 'main'
+    end
+
+    target 'App' do
+      pods
+      target 'AppTests' do
+        inherit! :search_paths
+      end
+    end
+
+    target 'NotificationServiceExtension' do
+      pod 'Kingfisher'
+      pod 'Moya'
+    end
+
+    target 'WidgetExtension' do
+      pod 'Kingfisher'
+    end
+
+    post_install do |installer|
+      installer.pods_project.targets.each do |target|
+        target.build_configurations.each do |config|
+          config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+        end
+      end
+    end
+    """
+
+    private static let barkLikeLockfile = """
+    PODS:
+      - ExternalKit (1.0.0)
+      - Kingfisher (8.6.1)
+      - Moya (15.0.0):
+        - Moya/Core (= 15.0.0)
+      - Moya/Core (15.0.0)
+      - Moya/RxSwift (15.0.0):
+        - Moya/Core (= 15.0.0)
+    DEPENDENCIES:
+      - ExternalKit (from `https://example.invalid/ExternalKit.git`, branch `main`)
+      - Kingfisher
+      - Moya
+      - Moya/RxSwift
+    EXTERNAL SOURCES:
+      ExternalKit:
+        :branch: main
+        :git: https://example.invalid/ExternalKit.git
+    CHECKOUT OPTIONS:
+      ExternalKit:
+        :branch: main
+        :git: https://example.invalid/ExternalKit.git
+    """
 }
 
 private extension String {

@@ -17,8 +17,12 @@ struct CommandContext: Sendable {
     let configuration: PkgLiftConfiguration
     let podfileFeatures: PodfileFeatures
     let podfileContent: String?
+    /// Literal Podfile declarations, including repeated names.
     let directDependencies: [CocoaPodDependency]
-    let mappedDependencies: [CocoaPodDependency]
+    /// One entry per exact direct dependency name, with declaration evidence retained.
+    let uniqueDirectDependencies: [CocoaPodDependency]
+    /// One entry per exact lockfile dependency name.
+    let lockfileDependencies: [CocoaPodDependency]
     let registryMappings: [String: RegistryMapping]
     let resolvedProjectPath: String?
     let resolvedWorkspacePath: String?
@@ -32,7 +36,27 @@ struct CommandContext: Sendable {
     }
 
     var transitiveDependencies: [CocoaPodDependency] {
-        mappedDependencies.filter { !$0.isDirect }
+        lockfileDependencies.filter { !$0.isDirect }
+    }
+
+    var analysisDependencies: [CocoaPodDependency] {
+        guard discovery.podfileLockPath != nil else {
+            return uniqueDirectDependencies
+        }
+        let lockfileNames = Set(lockfileDependencies.map(\.name))
+        return lockfileDependencies + uniqueDirectDependencies.filter {
+            !lockfileNames.contains($0.name)
+        }
+    }
+
+    var dependencyCounts: DependencyCounts {
+        DependencyCounts(
+            literalPodfileDeclarationCount: directDependencies.count,
+            uniqueDirectDependencyCount: uniqueDirectDependencies.count,
+            uniqueLockfileDependencyCount: lockfileDependencies.count,
+            planEntryCount: uniqueDirectDependencies.count,
+            analysisCandidateCount: analysisDependencies.count
+        )
     }
 
     var projectPath: String {
@@ -40,14 +64,14 @@ struct CommandContext: Sendable {
     }
 
     func mappedDependency(for name: String) -> CocoaPodDependency? {
-        mappedDependencies.first(where: { $0.name == name })
+        analysisDependencies.first(where: { $0.name == name })
     }
 
     func migrationCandidates(includeTransitive: Bool = false) -> [PkgLiftCore.MigrationCandidate] {
         let classifier = MigrationClassifier()
         let versionMapper = VersionMapper()
 
-        let dependencies = includeTransitive ? mappedDependencies : directDependencies
+        let dependencies = includeTransitive ? analysisDependencies : uniqueDirectDependencies
 
         let candidates = dependencies.map { dependency -> PkgLiftCore.MigrationCandidate in
             let mapping = registryMappings[dependency.name]
@@ -68,7 +92,7 @@ struct CommandContext: Sendable {
                 return targets.filter { $0.name == targetName }.count
             }()
 
-            var result = classifier.classify(
+            let result = classifier.classify(
                 dependency: dependency,
                 mapping: mapping,
                 isAlreadyMigrated: isAlreadyMigrated,
@@ -76,52 +100,24 @@ struct CommandContext: Sendable {
                 podfileFeatures: podfileFeatures
             )
 
+            var coreClassification = result.category
+            var reasons = result.reasons
+
             let denied = configuration.migration?.deny ?? []
             let allowed = configuration.migration?.allow
             if denied.contains(dependency.name) || denied.contains(dependency.baseName) {
-                result = MigrationClassification(
-                    category: .blocked,
-                    reason: "Dependency is denied by .pkglift.yml"
-                )
+                coreClassification = .blocked
+                reasons.insert("Dependency is denied by .pkglift.yml", at: 0)
             } else if let allowed,
                       !allowed.contains(dependency.name),
                       !allowed.contains(dependency.baseName) {
-                result = MigrationClassification(
-                    category: .review,
-                    reason: "Dependency is not in the .pkglift.yml migration allow list"
-                )
-            }
-
-            var coreClassification: PkgLiftCore.MigrationClassification
-            switch result.category {
-            case .auto:
-                coreClassification = .auto
-            case .review:
-                coreClassification = .review
-            case .blocked:
-                coreClassification = .blocked
-            case .unknown:
-                coreClassification = .unknown
-            }
-
-            var issues: [MigrationIssue]
-            if result.category == .auto {
-                issues = []
-            } else {
-                let severity: MigrationIssue.Severity = result.category == .blocked ? .error : .warning
-                var details: [String] = [result.reason]
-                if dependency.source != .registry {
-                    details.append("Dependency source is not CocoaPods registry")
+                if coreClassification != .blocked {
+                    coreClassification = .review
                 }
-
-                issues = [
-                    MigrationIssue(
-                        severity: severity,
-                        message: details[0],
-                        detail: details.count > 1 ? details.dropFirst().joined(separator: ". ") : nil,
-                        dependency: dependency.name
-                    )
-                ]
+                reasons.insert(
+                    "Dependency is not in the .pkglift.yml migration allow list",
+                    at: 0
+                )
             }
 
             let mappedPackage: PkgLiftCore.PackageCandidate?
@@ -150,38 +146,53 @@ struct CommandContext: Sendable {
             if coreClassification == .auto,
                (mappedPackage?.versionRequirement == nil ||
                 mappedPackage?.products.isEmpty != false ||
+                !dependency.hasLiteralMigrationProvenance ||
                 dependency.targets.count != 1 ||
                 matchingTargetCount != 1) {
                 coreClassification = .review
-                issues.append(MigrationIssue(
-                    severity: .warning,
-                    message: "Automatic migration data is incomplete or ambiguous",
-                    detail: "PkgLift requires an explicit version, package product, and exactly one existing Xcode target. It deliberately refused to invent missing values.",
-                    dependency: dependency.name
-                ))
+                reasons.append("Automatic migration data is incomplete or ambiguous")
             }
 
-            if coreClassification == .auto,
-               let mappedPackage,
+            if let mappedPackage,
                let existingPackage = existingPackage(
                     matching: mappedPackage.repositoryURL,
                     in: xcodeAnalysis?.swiftPMState.packages ?? []
                ),
                existingPackage.requirement != mappedPackage.versionRequirement {
-                coreClassification = .review
-                issues.append(MigrationIssue(
-                    severity: .warning,
-                    message: "Existing SwiftPM package uses a different or unknown version requirement",
-                    detail: "PkgLift will not silently replace or reinterpret the existing package requirement.",
+                if coreClassification == .auto {
+                    coreClassification = .review
+                }
+                reasons.append("Existing SwiftPM package uses a different or unknown version requirement")
+            }
+
+            if result.category == .auto, coreClassification != .auto {
+                let successfulAutoEvidence = Set(result.reasons)
+                reasons.removeAll { successfulAutoEvidence.contains($0) }
+            }
+            reasons = stableDeduplicated(reasons)
+            let issues: [MigrationIssue]
+            if coreClassification == .auto {
+                issues = []
+            } else {
+                let severity: MigrationIssue.Severity = coreClassification == .blocked
+                    ? .error
+                    : .warning
+                let primaryReason = reasons.first ?? "Manual review is required"
+                issues = [MigrationIssue(
+                    severity: severity,
+                    message: primaryReason,
+                    detail: reasons.count > 1
+                        ? reasons.dropFirst().joined(separator: ". ")
+                        : nil,
                     dependency: dependency.name
-                ))
+                )]
             }
 
             return PkgLiftCore.MigrationCandidate(
                 pod: dependency,
                 classification: coreClassification,
                 packageCandidate: mappedPackage,
-                reasons: [result.reason],
+                reasons: reasons,
                 issues: issues
             )
         }
@@ -195,7 +206,7 @@ struct CommandContext: Sendable {
 
         return readiness.score(
             autoCount: candidates.filter { $0.classification == .auto }.count,
-            totalDirectCount: directDependencies.count,
+            totalDirectCount: uniqueDirectDependencies.count,
             blockedDirectCount: candidates.filter { $0.classification == .blocked }.count,
             hasPostInstallHook: podfileFeatures.hasPostInstallHook,
             hasPreInstallHook: podfileFeatures.hasPreInstallHook,
@@ -214,9 +225,14 @@ struct CommandContext: Sendable {
         let entries: [PkgLiftCore.MigrationPlanEntry] = candidates.map { candidate in
             var actions: [PkgLiftCore.MigrationAction] = []
 
+            let attribution = candidate.pod.effectiveTargetAttribution
+            let targetName = attribution.status == .exact && attribution.targets.count == 1
+                ? attribution.targets[0]
+                : nil
+
             if let packageCandidate = candidate.packageCandidate,
                let requirement = packageCandidate.versionRequirement,
-               let targetName = candidate.pod.targets.count == 1 ? candidate.pod.targets[0] : nil,
+               let targetName,
                candidate.classification == .auto {
                 actions.append(.removePod(name: candidate.pod.name))
                 actions.append(.addSwiftPackage(
@@ -234,9 +250,12 @@ struct CommandContext: Sendable {
                     )
                 }
             } else {
+                let description = candidate.packageCandidate == nil
+                    ? "No exact executable registry mapping is available; see reasons."
+                    : "Automatic migration is refused; manual review is required for the listed safety reasons."
                 actions.append(
                     .manual(
-                        description: "No compatible package candidate available for automatic migration."
+                        description: description
                     )
                 )
             }
@@ -247,8 +266,10 @@ struct CommandContext: Sendable {
                 classification: candidate.classification,
                 actions: actions,
                 reasons: candidate.reasons,
-                targetName: candidate.pod.targets.count == 1 ? candidate.pod.targets[0] : nil,
-                packageCandidate: candidate.packageCandidate
+                targetName: targetName,
+                packageCandidate: candidate.packageCandidate,
+                declarations: candidate.pod.declarations,
+                targetAttribution: attribution
             )
         }
 
@@ -256,7 +277,8 @@ struct CommandContext: Sendable {
             projectPath: projectPath,
             entries: entries,
             issues: candidates.flatMap { $0.issues },
-            readinessScore: migrationReadinessScore()
+            readinessScore: migrationReadinessScore(),
+            counts: dependencyCounts
         )
     }
 
@@ -288,7 +310,8 @@ struct CommandContext: Sendable {
             swiftPM: swiftPMState,
             candidates: candidates,
             issues: candidates.flatMap(\.issues),
-            readinessScore: migrationReadinessScore()
+            readinessScore: migrationReadinessScore(),
+            counts: dependencyCounts
         )
     }
 
@@ -332,46 +355,36 @@ struct CommandContext: Sendable {
 
         let parser = PodfileParser()
         var features = PodfileFeatures()
-        var directDependencies: [CocoaPodDependency] = []
+        var parsedDeclarations: [CocoaPodDependency] = []
         var podfileContent: String?
 
         if let podfilePath = discovery.podfilePath {
             let podfileURL = URL(fileURLWithPath: podfilePath)
             let parsed = try parser.parse(fileURL: podfileURL)
             features = parsed.features
-            directDependencies = parsed.directDependencies
-            podfileContent = try String(contentsOf: podfileURL)
+            parsedDeclarations = parsed.directDependencies
+            podfileContent = try String(contentsOf: podfileURL, encoding: .utf8)
         }
 
         let lockParser = PodfileLockParser()
         let mapper = PodfileTargetMapper()
-        var mappedDependencies: [CocoaPodDependency] = []
+        var parsedLockfileDependencies: [CocoaPodDependency] = []
 
         if let lockPath = discovery.podfileLockPath {
-            let lockDeps = try lockParser.parse(fileURL: URL(fileURLWithPath: lockPath))
-            if let podfileContent = podfileContent {
-                mappedDependencies = mapper.map(podfileContent: podfileContent, lockfileDependencies: lockDeps)
-            } else {
-                mappedDependencies = lockDeps
-            }
-        } else {
-            mappedDependencies = directDependencies
+            parsedLockfileDependencies = try lockParser.parse(
+                fileURL: URL(fileURLWithPath: lockPath)
+            )
         }
 
-        if !mappedDependencies.isEmpty {
-            directDependencies = directDependencies.map { declaration in
-                let resolved = mappedDependencies.first { $0.name == declaration.name }
-
-                guard let resolved else { return declaration }
-                return CocoaPodDependency(
-                    name: declaration.name,
-                    version: resolved.version,
-                    source: resolved.source,
-                    isDirect: true,
-                    targets: resolved.targets
-                )
-            }
-        }
+        let directDependencies = mapper.mapDeclarations(
+            parsedDeclarations,
+            lockfileDependencies: parsedLockfileDependencies
+        )
+        let uniqueDirectDependencies = mapper.aggregateDirectDependencies(directDependencies)
+        let lockfileDependencies = mapper.mapLockfileDependencies(
+            parsedLockfileDependencies,
+            declarations: directDependencies
+        )
 
         let selection = try resolveXcodeTarget(
             projectOverride: options.project,
@@ -387,7 +400,8 @@ struct CommandContext: Sendable {
             podfileFeatures: features,
             podfileContent: podfileContent,
             directDependencies: directDependencies,
-            mappedDependencies: mappedDependencies,
+            uniqueDirectDependencies: uniqueDirectDependencies,
+            lockfileDependencies: lockfileDependencies,
             registryMappings: mappingByName,
             resolvedProjectPath: selection.projectPath,
             resolvedWorkspacePath: selection.workspacePath,
@@ -576,4 +590,9 @@ private func resolvePath(_ path: String, base: String) -> String {
         return path
     }
     return URL(fileURLWithPath: base).appendingPathComponent(path).path
+}
+
+private func stableDeduplicated(_ values: [String]) -> [String] {
+    var seen: Set<String> = []
+    return values.filter { seen.insert($0).inserted }
 }

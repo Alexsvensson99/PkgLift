@@ -14,9 +14,54 @@ enum PodfileStaticSyntax {
     }
 
     static func targetName(from line: String) -> String? {
+        scopeName(from: line, keyword: "target")
+    }
+
+    static func abstractTargetName(from line: String) -> String? {
+        scopeName(from: line, keyword: "abstract_target")
+    }
+
+    static func representablePodName(from line: String) -> String? {
         let source = line.trimmingCharacters(in: .whitespacesAndNewlines)
         var index = source.startIndex
-        guard consumeKeyword("target", in: source, index: &index) else { return nil }
+        guard consumeKeyword("pod", in: source, index: &index) else { return nil }
+        guard index < source.endIndex, source[index] == "'" || source[index] == "\"" else { return nil }
+        guard let name = parseQuotedLiteral(in: source, index: &index), !name.isEmpty else { return nil }
+
+        skipWhitespace(in: source, index: &index)
+        if index == source.endIndex || source[index] == "#" {
+            return name
+        }
+
+        guard source[index] == "," else { return nil }
+        index = source.index(after: index)
+        skipWhitespace(in: source, index: &index)
+
+        if isStaticModularHeadersOption(in: source, from: index) {
+            return name
+        }
+
+        guard index < source.endIndex,
+              source[index] == "'" || source[index] == "\"",
+              let version = parseQuotedLiteral(in: source, index: &index),
+              !version.isEmpty else {
+            return nil
+        }
+        skipWhitespace(in: source, index: &index)
+        if index == source.endIndex || source[index] == "#" {
+            return name
+        }
+
+        guard source[index] == "," else { return nil }
+        index = source.index(after: index)
+        skipWhitespace(in: source, index: &index)
+        return isStaticModularHeadersOption(in: source, from: index) ? name : nil
+    }
+
+    private static func scopeName(from line: String, keyword: String) -> String? {
+        let source = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        var index = source.startIndex
+        guard consumeKeyword(keyword, in: source, index: &index) else { return nil }
         guard let name = parseLiteralName(in: source, index: &index), !name.isEmpty else { return nil }
 
         skipWhitespace(in: source, index: &index)
@@ -69,6 +114,17 @@ enum PodfileStaticSyntax {
         guard source.hasPrefix(keyword) else { return false }
         let boundary = source.index(source.startIndex, offsetBy: keyword.count)
         return boundary < source.endIndex && source[boundary].isWhitespace
+    }
+
+    private static func isStaticModularHeadersOption(
+        in source: String,
+        from index: String.Index
+    ) -> Bool {
+        let remainder = String(source[index...])
+        return remainder.range(
+            of: #"^(?:modular_headers\s*:\s*true|:modular_headers\s*=>\s*true)\s*(?:#.*)?$"#,
+            options: .regularExpression
+        ) != nil
     }
 
     private static func consumeKeyword(_ keyword: String, in source: String, index: inout String.Index) -> Bool {

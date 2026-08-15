@@ -286,7 +286,10 @@ public struct DiagnosticsReportBuilder: Sendable {
             hasPodfile: analysis?.cocoaPods.hasPodfile ?? (discovery?.podfilePath != nil),
             hasPodfileLock: analysis?.cocoaPods.hasPodfileLock ?? (discovery?.podfileLockPath != nil),
             hasManifestLock: analysis?.cocoaPods.hasManifestLock ?? (discovery?.manifestLockPath != nil),
-            directDependencyCount: analysis?.cocoaPods.directDependencies.count,
+            directDependencyCount: analysis.map {
+                $0.counts?.uniqueDirectDependencyCount
+                    ?? $0.cocoaPods.directDependencies.count
+            },
             transitiveDependencyCount: analysis?.cocoaPods.transitiveDependencies.count,
             features: analysis.map { DiagnosticsPodfileFeaturesSummary($0.cocoaPods.podfileFeatures) }
         )

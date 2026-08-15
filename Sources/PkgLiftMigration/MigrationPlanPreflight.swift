@@ -50,6 +50,7 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
     case targetNotFound(dependency: String, product: String, expectedTarget: String)
     case ambiguousTarget(dependency: String, product: String, expectedTarget: String, matchCount: Int)
     case conflictingRequirements(repositoryURL: String)
+    case staleAutoEntry(dependency: String)
 
     public var errorDescription: String? {
         switch self {
@@ -60,13 +61,15 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
         case .incompleteAutoEntry(let dependency, let detail):
             return "Automatic migration refused for '\(dependency)': \(detail) PkgLift will not invent missing migration data."
         case .actionMismatch(let dependency):
-            return "Automatic migration refused for '\(dependency)': the typed plan actions do not match the package, version, products, and target recorded in the plan. Regenerate the plan."
+            return "Automatic migration refused for '\(dependency)': the typed plan actions or declaration evidence do not match the package, version, products, and target recorded in the plan. Regenerate the plan."
         case .targetNotFound(let dependency, let product, let expectedTarget):
             return "Automatic migration refused for '\(dependency)' product '\(product)': expected Xcode target '\(expectedTarget)' was not found. PkgLift will not choose another target."
         case .ambiguousTarget(let dependency, let product, let expectedTarget, let matchCount):
             return "Automatic migration refused for '\(dependency)' product '\(product)': target '\(expectedTarget)' matched \(matchCount) targets. PkgLift requires exactly one destination."
         case .conflictingRequirements(let repositoryURL):
             return "Automatic migration refused: package '\(repositoryURL)' has conflicting version requirements in the plan."
+        case .staleAutoEntry(let dependency):
+            return "Automatic migration refused for '\(dependency)': the saved plan no longer matches the current Podfile, lockfile, registry mapping, configuration, or target evidence. Regenerate the plan."
         }
     }
 }
@@ -74,6 +77,21 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
 /// Validates the complete AUTO contract before any project file is mutated.
 public struct MigrationPlanPreflight: Sendable {
     public init() {}
+
+    /// Validates both the saved plan contract and a plan regenerated from the
+    /// current project state before returning any executable operations.
+    public func prepare(
+        plan: MigrationPlan,
+        currentPlan: MigrationPlan,
+        availableTargets: [String]
+    ) throws -> PreparedMigration {
+        let prepared = try prepare(plan: plan, availableTargets: availableTargets)
+        try validateSavedAutoEntries(
+            plan.autoEntries,
+            against: currentPlan.entries
+        )
+        return prepared
+    }
 
     public func prepare(plan: MigrationPlan, availableTargets: [String]) throws -> PreparedMigration {
         guard plan.schemaVersion == MigrationPlan.schemaVersion else {
@@ -127,6 +145,29 @@ public struct MigrationPlanPreflight: Sendable {
                     dependency: dependency,
                     detail: "the destination Xcode target is missing or ambiguous."
                 )
+            }
+            guard let attribution = entry.targetAttribution else {
+                throw MigrationPlanPreflightError.incompleteAutoEntry(
+                    dependency: dependency,
+                    detail: "exact target-attribution evidence is missing. Regenerate the plan."
+                )
+            }
+            guard attribution.status == .exact,
+                  attribution.targets == [targetName],
+                  attribution.unresolvedDeclarationCount == 0 else {
+                throw MigrationPlanPreflightError.actionMismatch(dependency: dependency)
+            }
+            guard let declarations = entry.declarations, !declarations.isEmpty else {
+                throw MigrationPlanPreflightError.incompleteAutoEntry(
+                    dependency: dependency,
+                    detail: "literal Podfile declaration provenance is missing. Regenerate the plan."
+                )
+            }
+            guard declarations.allSatisfy({ declaration in
+                declaration.targetName == targetName
+                    && declaration.isEligibleForAutomaticMigration
+            }) else {
+                throw MigrationPlanPreflightError.actionMismatch(dependency: dependency)
             }
 
             var expectedActions: [MigrationAction] = [
@@ -190,6 +231,32 @@ public struct MigrationPlanPreflight: Sendable {
             packagesToAdd: packageOrder.compactMap { packagesByIdentity[$0] },
             productsToLink: productLinks
         )
+    }
+
+    private func validateSavedAutoEntries(
+        _ savedEntries: [MigrationPlanEntry],
+        against currentEntries: [MigrationPlanEntry]
+    ) throws {
+        let currentByName = Dictionary(grouping: currentEntries, by: \.podName)
+        var seenNames: Set<String> = []
+
+        for saved in savedEntries {
+            guard seenNames.insert(saved.podName).inserted,
+                  let matches = currentByName[saved.podName],
+                  matches.count == 1,
+                  let current = matches.first,
+                  current.classification == .auto,
+                  current.currentVersion == saved.currentVersion,
+                  current.actions == saved.actions,
+                  current.targetName == saved.targetName,
+                  current.packageCandidate == saved.packageCandidate,
+                  current.declarations == saved.declarations,
+                  current.targetAttribution == saved.targetAttribution else {
+                throw MigrationPlanPreflightError.staleAutoEntry(
+                    dependency: saved.podName
+                )
+            }
+        }
     }
 
 }

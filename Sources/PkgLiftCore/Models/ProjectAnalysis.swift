@@ -40,13 +40,20 @@ public struct ProjectAnalysis: Sendable, Codable {
     /// Migration readiness score (0-100).
     public let readinessScore: Int
 
+    /// Explicitly named dependency and artifact counts.
+    ///
+    /// Optional so schema-v1 artifacts produced before this additive field
+    /// remain decodable.
+    public let counts: DependencyCounts?
+
     public init(
         project: ProjectInfo,
         cocoaPods: CocoaPodsState,
         swiftPM: SwiftPMState,
         candidates: [MigrationCandidate],
         issues: [MigrationIssue],
-        readinessScore: Int
+        readinessScore: Int,
+        counts: DependencyCounts? = nil
     ) {
         self.schemaVersion = Self.schemaVersion
         self.timestamp = Date()
@@ -57,6 +64,30 @@ public struct ProjectAnalysis: Sendable, Codable {
         self.candidates = candidates
         self.issues = issues
         self.readinessScore = readinessScore
+        self.counts = counts
+    }
+}
+
+/// Counts whose names distinguish source declarations from unique identities.
+public struct DependencyCounts: Sendable, Codable, Equatable {
+    public let literalPodfileDeclarationCount: Int
+    public let uniqueDirectDependencyCount: Int
+    public let uniqueLockfileDependencyCount: Int
+    public let planEntryCount: Int
+    public let analysisCandidateCount: Int
+
+    public init(
+        literalPodfileDeclarationCount: Int,
+        uniqueDirectDependencyCount: Int,
+        uniqueLockfileDependencyCount: Int,
+        planEntryCount: Int,
+        analysisCandidateCount: Int
+    ) {
+        self.literalPodfileDeclarationCount = literalPodfileDeclarationCount
+        self.uniqueDirectDependencyCount = uniqueDirectDependencyCount
+        self.uniqueLockfileDependencyCount = uniqueLockfileDependencyCount
+        self.planEntryCount = planEntryCount
+        self.analysisCandidateCount = analysisCandidateCount
     }
 }
 
@@ -115,7 +146,7 @@ public struct TargetInfo: Sendable, Codable, Equatable {
 
 /// Current CocoaPods dependency state of the project.
 public struct CocoaPodsState: Sendable, Codable {
-    /// Direct dependencies declared in the Podfile.
+    /// Literal direct dependency declarations in Podfile source order.
     public let directDependencies: [CocoaPodDependency]
 
     /// Transitive dependencies from Podfile.lock.
@@ -133,7 +164,9 @@ public struct CocoaPodsState: Sendable, Codable {
     /// Detected Podfile features/risks.
     public let podfileFeatures: PodfileFeatures
 
-    /// Total dependency count.
+    /// Legacy row count: literal direct declarations plus transitive lockfile rows.
+    ///
+    /// Use `ProjectAnalysis.counts` when unique dependency identities are needed.
     public var totalDependencies: Int {
         directDependencies.count + transitiveDependencies.count
     }

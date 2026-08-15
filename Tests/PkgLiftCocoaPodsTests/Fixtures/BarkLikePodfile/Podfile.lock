@@ -1,0 +1,33 @@
+PODS:
+  - ExternalKit (1.0.0)
+  - Kingfisher (8.6.1)
+  - Moya (15.0.0):
+    - Moya/Core (= 15.0.0)
+  - Moya/Core (15.0.0)
+  - Moya/RxSwift (15.0.0):
+    - Moya/Core (= 15.0.0)
+
+DEPENDENCIES:
+  - ExternalKit (from `https://example.invalid/ExternalKit.git`, branch `main`)
+  - Kingfisher
+  - Moya
+  - Moya/RxSwift
+
+EXTERNAL SOURCES:
+  ExternalKit:
+    :branch: main
+    :git: https://example.invalid/ExternalKit.git
+
+CHECKOUT OPTIONS:
+  ExternalKit:
+    :branch: main
+    :git: https://example.invalid/ExternalKit.git
+
+SPEC CHECKSUMS:
+  ExternalKit: 0000000000000000000000000000000000000000
+  Kingfisher: 1111111111111111111111111111111111111111
+  Moya: 2222222222222222222222222222222222222222
+
+PODFILE CHECKSUM: 3333333333333333333333333333333333333333
+
+COCOAPODS: 1.16.2
