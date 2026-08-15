@@ -103,7 +103,7 @@ body:
       options:
         - label: I tested on a clean Git worktree, disposable branch, or copy of the project.
           required: true
-        - label: I reviewed the generated plan before applying changes.
+        - label: If a plan was generated, I reviewed it before applying any changes.
           required: true
         - label: I removed secrets and proprietary information from this report.
           required: true
