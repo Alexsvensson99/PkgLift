@@ -83,12 +83,20 @@ struct PodfileParserTests {
         end
         target :"My #{suffix}" do
         end
+        target :"#@target" do
+        end
+        target :"#$target" do
+        end
+        target :MyApp do
+          pod "#@dependency"
+          pod "#$dependency"
+        end
         """#
 
         let (features, dependencies, targets) = PodfileParser().parse(content: content)
         #expect(features.hasDynamicRuby == true)
         #expect(dependencies.isEmpty)
-        #expect(targets.isEmpty)
+        #expect(targets == ["MyApp"])
     }
 
     @Test("Parse escaped literal pod names without interpolation")
