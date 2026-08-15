@@ -19,6 +19,18 @@ public struct BuildVerifier: Sendable {
         self.processRunner = processRunner
     }
 
+    /// Normalizes and validates an explicitly selected scheme.
+    public static func validatedScheme(_ value: String) throws -> String {
+        if value.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) {
+            throw BuildVerificationOptionsError.controlCharacter(field: "scheme")
+        }
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else {
+            throw BuildVerificationOptionsError.empty(field: "scheme")
+        }
+        return normalized
+    }
+
     /// Creates the exact argument vector used for package resolution.
     ///
     /// Only the derived-data path applies to this phase. Configuration,
@@ -50,7 +62,7 @@ public struct BuildVerifier: Sendable {
         isWorkspace: Bool = false,
         options: BuildVerificationOptions = BuildVerificationOptions()
     ) throws -> [String] {
-        let scheme = try normalizedScheme(scheme)
+        let scheme = try validatedScheme(scheme)
         let options = try options.validated()
 
         var arguments = ["build", "-scheme", scheme]
@@ -263,16 +275,5 @@ public struct BuildVerifier: Sendable {
 
         let allPassed = checks.allSatisfy { $0.passed }
         return VerificationResult(passed: allPassed, checks: checks, issues: issues)
-    }
-
-    private static func normalizedScheme(_ value: String) throws -> String {
-        if value.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) {
-            throw BuildVerificationOptionsError.controlCharacter(field: "scheme")
-        }
-        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalized.isEmpty else {
-            throw BuildVerificationOptionsError.empty(field: "scheme")
-        }
-        return normalized
     }
 }
