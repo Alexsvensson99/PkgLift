@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - `AUTO` now requires explicit exact target attribution and non-empty literal registry-declaration provenance during both classification and migration preflight; older schema-1 plans without that evidence must be regenerated.
-- Parent declarations include statically proven nested targets that use default or complete inheritance, while uncertain helper dispatch, declaration options, conditions, and inheritance fail closed to review.
+- Parent declarations include statically proven nested targets that use default or complete inheritance; the literal CocoaPods-only option `modular_headers: true` remains migratable, while uncertain helper dispatch, other declaration options, conditions, and inheritance fail closed to review.
 
 ## [0.2.0] - 2026-08-15
 

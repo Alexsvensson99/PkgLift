@@ -6,7 +6,7 @@ PkgLift follows one rule: when information is missing or ambiguous, stop and exp
 
 An `AUTO` entry requires all of the following:
 
-- an unconditional literal direct pod declaration, with at most a literal version constraint, backed by a valid, verified registry mapping;
+- an unconditional literal direct pod declaration, with at most a literal version constraint and the supported static CocoaPods-only option `modular_headers: true`, backed by a valid, verified registry mapping;
 - a stable `major.minor.patch` version from the lockfile at or above the mapping's verified SwiftPM minimum;
 - a non-empty SwiftPM repository and product list;
 - exactly one Podfile destination target and exactly one matching Xcode target;

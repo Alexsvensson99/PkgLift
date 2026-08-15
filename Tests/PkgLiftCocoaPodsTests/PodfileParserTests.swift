@@ -350,9 +350,13 @@ struct PodfileParserTests {
         target 'App' do
           pod 'SafePod'
           pod 'VersionedPod', '~> 1.2'
+          pod 'ModularPod', '~> 5.0', modular_headers: true
+          pod 'LegacyModularPod', :modular_headers => true
           pod 'ConditionalPod' if enabled
           pod 'UnlessPod' unless disabled
           pod 'ConfiguredPod', :configurations => ['Debug']
+          pod 'NonModularPod', modular_headers: false
+          pod 'DynamicModularPod', modular_headers: enabled
           pod 'DynamicVersionPod', version_name
           pod 'SemicolonPod'; puts 'side effect'
           pod 'ExternalPod', :git => 'https://example.invalid/ExternalPod.git'
@@ -362,7 +366,7 @@ struct PodfileParserTests {
         let parsed = PodfileParser().parse(content: content)
         #expect(parsed.features.hasDynamicRuby == false)
 
-        for name in ["SafePod", "VersionedPod"] {
+        for name in ["SafePod", "VersionedPod", "ModularPod", "LegacyModularPod"] {
             let dependency = try #require(parsed.directDependencies.first { $0.name == name })
             #expect(dependency.source == .registry)
             #expect(dependency.targets == ["App"])
@@ -373,6 +377,8 @@ struct PodfileParserTests {
             "ConditionalPod",
             "UnlessPod",
             "ConfiguredPod",
+            "NonModularPod",
+            "DynamicModularPod",
             "DynamicVersionPod",
             "SemicolonPod",
         ] {
