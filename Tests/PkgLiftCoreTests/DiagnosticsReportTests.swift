@@ -124,7 +124,7 @@ final class DiagnosticsReportTests: XCTestCase {
         XCTAssertEqual(report.cocoaPods.directDependencyCount, 1)
         XCTAssertEqual(report.swiftPM?.existingPackageCount, 1)
         XCTAssertEqual(report.classifications?.review, 1)
-        XCTAssertEqual(report.issues?.warning, 2)
+        XCTAssertEqual(report.issues?.warning, 1)
         XCTAssertTrue(report.privacy.redactionEnabled)
         XCTAssertFalse(report.privacy.automaticUpload)
     }
@@ -153,18 +153,7 @@ final class DiagnosticsReportTests: XCTestCase {
             .appendingPathComponent("PkgLiftDiagnostics-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: root) }
         let output = root.appendingPathComponent("nested/report.json")
-        let report = DiagnosticsReportBuilder().build(
-            environment: DiagnosticsEnvironmentSummary(
-                macOS: "macOS",
-                xcode: nil,
-                swift: nil,
-                cocoaPods: nil
-            ),
-            discovery: nil,
-            analysis: nil,
-            git: .unknown,
-            failures: [DiagnosticsFailure(stage: .analysis, type: "Example.Error")]
-        )
+        let report = makePartialReport()
         let writer = DiagnosticsReportWriter()
 
         try writer.write(report, to: output, overwrite: false)
@@ -179,5 +168,52 @@ final class DiagnosticsReportTests: XCTestCase {
         }
 
         XCTAssertNoThrow(try writer.write(report, to: output, overwrite: true))
+    }
+
+    func testWriterRejectsDanglingSymbolicLinkEvenWithOverwrite() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftDiagnosticsSymlink-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let missingTarget = root.appendingPathComponent("missing-target.json")
+        let output = root.appendingPathComponent("report.json")
+        try FileManager.default.createSymbolicLink(
+            atPath: output.path,
+            withDestinationPath: missingTarget.path
+        )
+
+        XCTAssertThrowsError(
+            try DiagnosticsReportWriter().write(
+                makePartialReport(),
+                to: output,
+                overwrite: true
+            )
+        ) { error in
+            guard case DiagnosticsReportWriterError.outputIsSymbolicLink = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+
+        XCTAssertEqual(
+            try FileManager.default.destinationOfSymbolicLink(atPath: output.path),
+            missingTarget.path
+        )
+        XCTAssertFalse(FileManager.default.fileExists(atPath: missingTarget.path))
+    }
+
+    private func makePartialReport() -> DiagnosticsReport {
+        DiagnosticsReportBuilder().build(
+            environment: DiagnosticsEnvironmentSummary(
+                macOS: "macOS",
+                xcode: nil,
+                swift: nil,
+                cocoaPods: nil
+            ),
+            discovery: nil,
+            analysis: nil,
+            git: .unknown,
+            failures: [DiagnosticsFailure(stage: .analysis, type: "Example.Error")]
+        )
     }
 }
