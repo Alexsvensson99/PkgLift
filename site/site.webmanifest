@@ -1,0 +1,11 @@
+{
+  "name": "PkgLift",
+  "short_name": "PkgLift",
+  "description": "Safe CocoaPods to Swift Package Manager migration.",
+  "start_url": "/PkgLift/",
+  "scope": "/PkgLift/",
+  "display": "standalone",
+  "background_color": "#0a0f15",
+  "theme_color": "#0a0f15",
+  "icons": [{"src": "/PkgLift/assets/logo.svg", "sizes": "any", "type": "image/svg+xml"}]
+}

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PkgLift — Safe CocoaPods to SwiftPM migration</title>
+  <meta name="description" content="Migrate supported CocoaPods dependencies to Swift Package Manager with a reviewable plan, conservative safety checks, dry runs, and build verification.">
+  <meta name="theme-color" content="#0a0f15">
+  <meta name="color-scheme" content="dark light">
+  <link rel="canonical" href="https://alexsvensson99.github.io/PkgLift/">
+  <link rel="icon" href="/PkgLift/assets/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/PkgLift/site.webmanifest">
+  <link rel="stylesheet" href="/PkgLift/assets/styles.css">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PkgLift">
+  <meta property="og:title" content="PkgLift — Safe CocoaPods to SwiftPM migration">
+  <meta property="og:description" content="Migrate supported CocoaPods dependencies to Swift Package Manager with a reviewable plan, conservative safety checks, dry runs, and build verification.">
+  <meta property="og:url" content="https://alexsvensson99.github.io/PkgLift/">
+  <meta property="og:image" content="https://alexsvensson99.github.io/PkgLift/assets/social-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PkgLift — safe CocoaPods to Swift Package Manager migration">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PkgLift — Safe CocoaPods to SwiftPM migration">
+  <meta name="twitter:description" content="Migrate supported CocoaPods dependencies to Swift Package Manager with a reviewable plan, conservative safety checks, dry runs, and build verification.">
+  <meta name="twitter:image" content="https://alexsvensson99.github.io/PkgLift/assets/social-card.png">
+  <meta name="twitter:image:alt" content="PkgLift — safe CocoaPods to Swift Package Manager migration">
+  <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "PkgLift",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS 14 or later on Apple Silicon",
+  "softwareVersion": "0.2.0",
+  "description": "A conservative command-line tool for migrating supported CocoaPods dependencies to Swift Package Manager.",
+  "url": "https://alexsvensson99.github.io/PkgLift/",
+  "downloadUrl": "https://github.com/Alexsvensson99/PkgLift/releases/latest",
+  "codeRepository": "https://github.com/Alexsvensson99/PkgLift",
+  "license": "https://opensource.org/license/mit"
+}</script>
+  <script src="/PkgLift/assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/PkgLift/" aria-label="PkgLift home"><img src="/PkgLift/assets/logo.svg" alt="" width="36" height="36"><span>PkgLift</span></a>
+    <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-navigation">Menu</button>
+    <nav class="site-nav" id="site-navigation" data-nav aria-label="Primary navigation"><a href="/PkgLift/" aria-current="page">Home</a><a href="/PkgLift/cocoapods-to-swiftpm/">Migration guide</a><a href="/PkgLift/safe-migration/">Safety</a><a href="/PkgLift/case-study/">Case study</a><a href="/PkgLift/troubleshooting/">Troubleshooting</a><a href="/PkgLift/registry/">Registry</a><a class="github-link" href="https://github.com/Alexsvensson99/PkgLift">GitHub ↗</a></nav>
+  </div>
+</header>
+<main id="main">
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="eyebrow">CocoaPods → Swift Package Manager</div>
+      <h1>Move dependencies.<br><span>Keep the certainty.</span></h1>
+      <p class="lead">PkgLift analyzes native Xcode projects, creates a reviewable migration plan, and applies only dependency changes backed by exact evidence.</p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/">Start the migration guide</a>
+        <a class="button" href="https://github.com/Alexsvensson99/PkgLift">View on GitHub</a>
+      </div>
+      <div class="command-card"><code>brew install Alexsvensson99/tap/pkglift</code><button class="copy-button" type="button" data-copy="brew install Alexsvensson99/tap/pkglift">Copy</button></div>
+      <p class="fine-print" style="margin-top:.8rem">Apple Silicon · macOS 14 or later · MIT licensed</p>
+    </div>
+    <div class="terminal" aria-label="Example PkgLift terminal session">
+      <div class="terminal-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="terminal-title">migration — zsh</span></div>
+      <pre><span class="prompt">$</span> pkglift analyze
+<span class="dim">Scanning MyApp.xcworkspace…</span>
+Found 3 direct CocoaPods dependencies.
+
+<span class="prompt">$</span> pkglift plan
+<span class="auto">AUTO</span>     Alamofire 5.9.1
+         exact mapping + supported lockfile version
+<span class="review">REVIEW</span>   LegacyAnalytics
+         external source requires human review
+<span class="unknown">UNKNOWN</span>  InternalUI
+         no exact registry evidence
+
+Plan saved to .pkglift/plan.json
+
+<span class="prompt">$</span> pkglift migrate
+Dry run complete. No project files changed.
+
+<span class="prompt">$</span> pkglift migrate --apply
+Applied 1 reviewed AUTO migration.
+Preserved 2 CocoaPods dependencies.
+
+<span class="prompt">$</span> pkglift verify --build --scheme MyApp
+✓ package linkage
+✓ SwiftPM resolution
+✓ Xcode build</pre>
+    </div>
+  </div>
+</section>
+<section class="section-tight">
+  <div class="container proof-grid" aria-label="Project qualities">
+    <div class="proof-item"><strong>Dry-run first</strong><span>Preview and prove a clean diff before apply.</span></div>
+    <div class="proof-item"><strong>Fail closed</strong><span>Ambiguity becomes review—not a guessed edit.</span></div>
+    <div class="proof-item"><strong>Real-project pilots</strong><span>Positive, mixed, and conservative outcomes.</span></div>
+    <div class="proof-item"><strong>Signed & notarized</strong><span>Developer ID distribution for macOS.</span></div>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <div class="eyebrow">Workflow</div>
+    <h2>Four deliberate steps</h2>
+    <p class="lead">PkgLift separates discovery, decision-making, mutation, and verification so every risky transition remains visible.</p>
+    <div class="grid-4" style="margin-top:2rem">
+      <article class="card"><div class="card-number">1</div><h3>Analyze</h3><p class="subtle">Discover nested projects, workspaces, Podfiles, targets, and locked dependency versions.</p></article>
+      <article class="card"><div class="card-number">2</div><h3>Plan</h3><p class="subtle">Classify every direct dependency and save a reviewable, typed migration plan.</p></article>
+      <article class="card"><div class="card-number">3</div><h3>Migrate</h3><p class="subtle">Dry-run by default. Apply only the reviewed entries classified as <code>AUTO</code>.</p></article>
+      <article class="card"><div class="card-number">4</div><h3>Verify</h3><p class="subtle">Check package-product-target linkage, resolve SwiftPM, and optionally run an Xcode build.</p></article>
+    </div>
+  </div>
+</section>
+<section class="section section-border">
+  <div class="container">
+    <div class="eyebrow">Safety model</div>
+    <h2>Not every dependency should move automatically</h2>
+    <div class="grid-4" style="margin-top:2rem">
+      <article class="card"><span class="tag tag-auto">AUTO</span><h3 style="margin-top:1rem">Evidence is complete</h3><p class="subtle">Exact mapping, supported locked version, verified product, and an unambiguous destination target.</p></article>
+      <article class="card"><span class="tag tag-review">REVIEW</span><h3 style="margin-top:1rem">Human context matters</h3><p class="subtle">A plausible path exists, but unsupported project context or judgment is required.</p></article>
+      <article class="card"><span class="tag tag-blocked">BLOCKED</span><h3 style="margin-top:1rem">Known unsafe shape</h3><p class="subtle">The project contains a construct that prevents a safe automatic migration.</p></article>
+      <article class="card"><span class="tag tag-unknown">UNKNOWN</span><h3 style="margin-top:1rem">No exact evidence</h3><p class="subtle">PkgLift does not invent a repository URL, product, target, or compatible version.</p></article>
+    </div>
+    <div class="callout callout-warning" style="margin-top:1rem"><strong>A refusal is a successful safety outcome.</strong> Dynamic Ruby, install hooks, external pod sources, ambiguous targets, or unsupported subspecs remain visible instead of being forced into an automatic conversion.</div>
+  </div>
+</section>
+<section class="section section-border">
+  <div class="container grid-2" style="align-items:center">
+    <div>
+      <div class="eyebrow">Verified case study</div>
+      <h2>One pod moved. One pod stayed. The app still built.</h2>
+      <p class="lead">In a pinned Amazon IVS sample, PkgLift migrated only <code>SDWebImage 5.18.1</code> to SwiftPM while preserving <code>AmazonIVSPlayer 1.40.0</code> under CocoaPods.</p>
+      <a class="button" href="/PkgLift/case-study/">Read the end-to-end evidence</a>
+    </div>
+    <div class="card">
+      <div class="timeline">
+        <div class="timeline-item"><h3>Baseline</h3><p class="subtle">Pinned CocoaPods versions and simulator build passed.</p></div>
+        <div class="timeline-item"><h3>Reviewed plan</h3><p class="subtle">The complete <code>AUTO</code> set was exactly SDWebImage.</p></div>
+        <div class="timeline-item"><h3>Partial migration</h3><p class="subtle">The remaining pod stayed pinned and functional.</p></div>
+        <div class="timeline-item"><h3>Verification</h3><p class="subtle">SwiftPM resolution, structural checks, and final build passed.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="section section-border">
+  <div class="container">
+    <div class="eyebrow">Guides</div><h2>Go deeper without digging through source</h2>
+    <div class="grid-3" style="margin-top:2rem">
+      <a class="card" href="/PkgLift/cocoapods-to-swiftpm/" style="text-decoration:none;color:inherit"><h3>Migration guide →</h3><p class="subtle">A practical, review-first path from installation to verified build.</p></a>
+      <a class="card" href="/PkgLift/troubleshooting/" style="text-decoration:none;color:inherit"><h3>Troubleshooting →</h3><p class="subtle">Resolve dirty worktrees, ambiguous projects, missing schemes, and conservative refusals.</p></a>
+      <a class="card" href="/PkgLift/registry/" style="text-decoration:none;color:inherit"><h3>Dependency Registry →</h3><p class="subtle">Understand exact mappings and contribute upstream-backed evidence.</p></a>
+    </div>
+  </div>
+</section>
+<section class="section">
+  <div class="container cta">
+    <div class="eyebrow">Ready to inspect your project?</div>
+    <h2>Start with analysis. Change nothing yet.</h2>
+    <p class="lead">Install PkgLift, run <code>analyze</code>, and review what can move safely before generating a plan.</p>
+    <div class="hero-actions"><a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/">Open the guide</a><a class="button" href="https://github.com/Alexsvensson99/PkgLift/releases/latest">Download latest release</a></div>
+  </div>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div>PkgLift is open source under the MIT License.</div>
+    <div class="footer-links">
+      <a href="https://github.com/Alexsvensson99/PkgLift">GitHub</a>
+      <a href="https://github.com/Alexsvensson99/PkgLift/releases/latest">Releases</a>
+      <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/SECURITY.md">Security</a>
+      <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/CONTRIBUTING.md">Contributing</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

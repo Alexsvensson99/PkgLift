@@ -1,0 +1,13 @@
+schemaVersion: 1
+pod:
+  name: SnapKit
+swiftpm:
+  repository: https://github.com/SnapKit/SnapKit
+  products:
+    - SnapKit
+  minimumVersion: 5.0.0
+migration:
+  confidence: verified
+metadata:
+  notes: "Verified against the official Package.swift at tag 5.0.0"
+  lastVerified: "2026-08-14"

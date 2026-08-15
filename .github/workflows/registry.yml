@@ -1,0 +1,41 @@
+name: Registry Validation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/registry.yml'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - 'Registry/**'
+      - 'Sources/PkgLiftRegistry/**'
+      - 'Tests/PkgLiftRegistryTests/**'
+  pull_request:
+    paths:
+      - '.github/workflows/registry.yml'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - 'Registry/**'
+      - 'Sources/PkgLiftRegistry/**'
+      - 'Tests/PkgLiftRegistryTests/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Swift Version
+        run: swift --version
+      - name: Validate Registry
+        run: swift run -j 2 pkglift registry validate

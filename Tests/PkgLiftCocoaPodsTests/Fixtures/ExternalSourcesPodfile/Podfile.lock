@@ -1,0 +1,5 @@
+PODS:
+  - LocalPod (1.0.0)
+EXTERNAL SOURCES:
+  LocalPod:
+    :path: ../LocalPod

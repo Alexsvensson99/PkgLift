@@ -1,0 +1,3 @@
+PODS:
+  - Firebase/Analytics (8.0.0)
+  - Firebase/Crashlytics (8.0.0)
