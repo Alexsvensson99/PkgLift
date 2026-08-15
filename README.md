@@ -2,7 +2,9 @@
 
 [![Build](https://github.com/Alexsvensson99/PkgLift/actions/workflows/build.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/build.yml)
 [![Test](https://github.com/Alexsvensson99/PkgLift/actions/workflows/test.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/test.yml)
+[![Quality](https://github.com/Alexsvensson99/PkgLift/actions/workflows/quality.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/quality.yml)
 [![Registry Validation](https://github.com/Alexsvensson99/PkgLift/actions/workflows/registry.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/registry.yml)
+[![Positive End-to-End Pilot](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Alexsvensson99/PkgLift)](https://github.com/Alexsvensson99/PkgLift/releases/latest)
 [![License: MIT](https://img.shields.io/github/license/Alexsvensson99/PkgLift)](LICENSE)
 
@@ -14,7 +16,7 @@ No blind conversions. No guesswork.
 
 **Analyze → Plan → Migrate → Verify**
 
-[Installation](#installation) · [Quick Start](#quick-start) · [Safety Philosophy](#safety-philosophy) · [Diagnostics](Documentation/Diagnostics.md) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
+[Installation](#installation) · [Quick Start](#quick-start) · [Safety Philosophy](#safety-philosophy) · [Diagnostics](Documentation/Diagnostics.md) · [Real-Project Pilots](Documentation/Pilots.md) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
 
 ## What PkgLift Does
 
@@ -70,6 +72,17 @@ After review, only the `AUTO` entry may be added as a Swift package. The unknown
 
 With CocoaPods effectively entering maintenance mode and going read-only, the Apple developer ecosystem is consolidating around Swift Package Manager. However, manual migration is risky, tedious, and prone to errors. PkgLift provides a paved, verifiable path to SwiftPM without the headache of manual dependency resolution and Xcode project file manipulation.
 
+## What Is New in v0.2.0
+
+- Recursive discovery supports nested Xcode projects and workspaces while excluding generated dependency and build trees.
+- Explicit `--workspace` and `--project` selection handles ambiguous and multi-project repository layouts without guessing.
+- Static Podfile parsing recognizes additional literal string and symbol target syntax without evaluating Ruby.
+- Build verification accepts an explicit scheme, configuration, destination, SDK, and derived-data path and uses the validated scheme during SwiftPM resolution.
+- `pkglift diagnostics` creates a local, deterministic, privacy-preserving report for real-world issue triage.
+- Pinned public-project pilots continuously verify positive, mixed, and conservative outcomes; a licensed end-to-end pilot proves a reviewed migration can resolve and build.
+
+See the [v0.2.0 changelog](CHANGELOG.md), [build-verification guide](Documentation/BuildVerification.md), and [real-project pilot documentation](Documentation/Pilots.md) for the complete evidence.
+
 ## Safety Philosophy
 
 PkgLift operates on a strict safety model. Every dependency is classified before migration:
@@ -92,14 +105,14 @@ We never guess. We never blindly edit project files without a reviewed plan.
 | Host | macOS 14 or later |
 | Release architecture | Apple Silicon (`arm64`) |
 | Dependency migration | CocoaPods → SwiftPM |
-| Project types | Native Xcode projects and supported workspaces |
+| Project types | Native Xcode projects and supported workspaces, including nested repository layouts |
 | Distribution | Developer ID-signed and Apple-notarized binary, Homebrew, or source build |
 
-See [Limitations](#limitations) for the intentionally conservative v0.1.x boundaries.
+See [Limitations](#limitations) for the intentionally conservative v0.2.0 boundaries.
 
 ## Installation
 
-PkgLift v0.1.1 and later is distributed as a Developer ID-signed and Apple-notarized Apple Silicon binary for macOS 14 or later.
+PkgLift v0.2.0 is distributed as a Developer ID-signed and Apple-notarized Apple Silicon binary for macOS 14 or later.
 
 Install with Homebrew:
 
@@ -154,12 +167,26 @@ pkglift analyze --path . \
 
 Selection paths are standardized and resolved through symlinks beneath `--path`. Workspace references that escape that root or use unsupported location schemes are refused rather than guessed.
 
+For a reproducible full build, pass the same explicit settings used by the project or CI:
+
+```bash
+pkglift verify \
+  --path . \
+  --workspace MyApp.xcworkspace \
+  --project MyApp.xcodeproj \
+  --build \
+  --scheme MyApp \
+  --configuration Debug \
+  --destination 'generic/platform=iOS Simulator' \
+  --derived-data-path .pkglift/DerivedData
+```
+
 ## Commands
 
 - `analyze`: Scans the project and dependencies.
 - `plan`: Generates a migration plan.
 - `migrate`: Validates the saved plan and previews it; `--apply` performs only typed `AUTO` actions.
-- `verify`: Verifies the project after migration and can optionally run a build.
+- `verify`: Verifies the project after migration and can optionally resolve packages and run a build.
 - `diagnostics`: Writes a local, privacy-preserving JSON report without uploading it.
 - `registry validate`: Validates local and bundled registry mappings.
 - `version`: Prints the current version.
@@ -205,7 +232,7 @@ An invalid configuration is an error; PkgLift does not silently ignore it.
 
 ## Limitations
 
-For v0.1.x:
+For v0.2.0:
 
 - Only CocoaPods-to-SwiftPM migration is supported.
 - A stable `major.minor.patch` lockfile version at or above the exact mapping's verified SwiftPM minimum and exactly one matching Xcode target are required for `AUTO`.
@@ -218,7 +245,7 @@ For v0.1.x:
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) and the [v0.2.0 roadmap tracker](https://github.com/Alexsvensson99/PkgLift/issues/26) for planned work.
+See [ROADMAP.md](ROADMAP.md) for future work and the [v0.2.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/26) for the completed implementation and release evidence.
 
 ## Contributing
 

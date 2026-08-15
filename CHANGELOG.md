@@ -7,19 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-15
+
 ### Added
 - Read-only recursive discovery for Xcode projects and workspaces beneath the selected root.
-- `--workspace` and `--project` can be combined to select one referenced project from a multi-project workspace.
-- Static Podfile parsing now recognizes single-quoted, double-quoted, simple symbol, and quoted-symbol target names, including escaped quote literals.
-- Build verification accepts explicit configuration, destination, SDK, and derived-data overrides through separate `xcodebuild` arguments.
-- `pkglift diagnostics` writes a local, deterministic JSON report containing only tool versions, counts, safety flags, Git state, and typed failure stages.
+- Explicit `--workspace` and `--project` selection, including selection of one referenced project from a multi-project workspace.
+- Static Podfile parsing for single-quoted, double-quoted, simple-symbol, and quoted-symbol target names, including conservative escaped-quote support.
+- Build verification overrides for configuration, destination, SDK, and derived-data path.
+- `pkglift diagnostics`, which writes a local, deterministic, versioned JSON report containing minimized toolchain, project-shape, classification, issue, readiness, and Git-state summaries.
+- A pinned real-project pilot matrix covering a positive migration, mixed classifications, and a conservative refusal.
+- A licensed positive end-to-end pilot that establishes a CocoaPods baseline build, reviews the complete `AUTO` set, proves a mutation-free dry run, applies only `SDWebImage`, refreshes the remaining pod, resolves SwiftPM, and builds the migrated workspace.
+
+### Changed
+- Project and workspace discovery now skips generated dependency and build trees while supporting nested repository layouts.
+- Workspace package resolution receives the already validated scheme and derived-data path instead of relying on Xcode inference.
+- CI uses least-privilege permissions, pinned Actions, concurrency controls, bounded jobs, debug and release builds, repository-quality validation, and non-duplicated pull-request execution.
+- README onboarding, migration-report intake, registry-contribution guidance, build-verification documentation, and pilot documentation now reflect the conservative real-project workflow.
+
+### Fixed
+- Relative derived-data paths are resolved beneath the explicit `--path` rather than the process working directory.
+- Workspace package resolution no longer fails when Xcode requires an explicit scheme.
+- Double-quoted Ruby interpolation forms such as `#@variable` and `#$global` remain dynamic instead of being misclassified as literal target names.
+- Diagnostics count aggregated analysis issues once and refuse both valid and dangling symbolic-link output paths.
 
 ### Security
 - Project and workspace paths are canonicalized after symlink resolution and must remain contained by `--path`.
 - Workspace `group`, `container`, `absolute`, and `self` locations are normalized without accepting unsupported location schemes.
 - Computed target or pod names remain dynamic and are never inferred by the static parser.
-- Build verification rejects empty or control-character option values and redacts derived-data paths from recorded settings.
+- Build verification rejects empty or control-character option values, passes every setting as a separate process argument, and redacts derived-data paths from recorded settings.
 - Diagnostics omit source code, Podfile contents, names, URLs, changed filenames, arbitrary error messages, and absolute user paths; reports are written atomically with mode `0600` and are never uploaded automatically.
+- Real-project pilots use immutable upstream commits, no write credentials, no repository secrets, explicit licensing boundaries, reviewed `AUTO` sets, and strict mutation/diff checks.
 
 ## [0.1.2] - 2026-08-15
 
