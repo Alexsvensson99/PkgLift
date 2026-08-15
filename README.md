@@ -94,11 +94,14 @@ sudo ln -sf /usr/local/libexec/pkglift/pkglift /usr/local/bin/pkglift
 1. Navigate to your project directory containing the `Podfile` and `.xcodeproj` or `.xcworkspace`.
 2. Run `pkglift analyze` to see what dependencies can be migrated.
 3. Run `pkglift plan` to generate a `.pkglift/plan.json` file.
-4. Review the plan.
+4. Review every entry in the plan.
 5. Run `pkglift migrate` for a validated dry run.
-6. Ensure the project is in a clean Git state when Git is present, then run `pkglift migrate --apply`.
-7. Run `pod install` so CocoaPods updates the dependencies that remain.
-8. Run `pkglift verify`; add `--build --scheme <scheme>` for a full build.
+6. Keep the generated `.pkglift/plan.json` from appearing as an untracked change. For a one-off test, add only that file to the repository-local Git exclude; for a shared policy, add it to `.gitignore` and commit the policy change. See [Testing PkgLift on a Real Project](Documentation/RealWorldTesting.md) for the safe commands and review flow.
+7. Confirm that `git status --short` is empty, then run `pkglift migrate --apply`.
+8. Run `pod install` so CocoaPods updates the dependencies that remain.
+9. Run `pkglift verify`; add `--build --scheme <scheme>` for a full build.
+
+PkgLift deliberately refuses `--apply` when Git reports a dirty worktree. Do not bypass that safeguard to work around the generated plan file.
 
 ## Commands
 
