@@ -177,24 +177,39 @@ struct VerifyCommand: AsyncParsableCommand {
         try finish(checks: checks, issues: issues)
     }
 
-    private func normalizedBuildOptions() throws -> BuildVerificationOptions {
-        let resolvedDerivedDataPath: String?
-        if let derivedDataPath {
-            let rootURL = URL(fileURLWithPath: common.path, isDirectory: true).standardizedFileURL
-            let rawURL = URL(fileURLWithPath: derivedDataPath)
-            resolvedDerivedDataPath = rawURL.path.hasPrefix("/")
-                ? rawURL.standardizedFileURL.path
-                : rootURL.appendingPathComponent(derivedDataPath).standardizedFileURL.path
-        } else {
-            resolvedDerivedDataPath = nil
+    static func resolveDerivedDataPath(_ value: String?, rootPath: String) -> String? {
+        guard let value else { return nil }
+
+        if (value as NSString).isAbsolutePath {
+            return URL(fileURLWithPath: value, isDirectory: true)
+                .standardizedFileURL
+                .path
         }
 
-        return try BuildVerificationOptions(
+        return URL(fileURLWithPath: rootPath, isDirectory: true)
+            .standardizedFileURL
+            .appendingPathComponent(value, isDirectory: true)
+            .standardizedFileURL
+            .path
+    }
+
+    private func normalizedBuildOptions() throws -> BuildVerificationOptions {
+        let rawOptions = try BuildVerificationOptions(
             configuration: configuration,
             destination: destination,
             sdk: sdk,
-            derivedDataPath: resolvedDerivedDataPath
+            derivedDataPath: derivedDataPath
         ).validated()
+
+        return BuildVerificationOptions(
+            configuration: rawOptions.configuration,
+            destination: rawOptions.destination,
+            sdk: rawOptions.sdk,
+            derivedDataPath: Self.resolveDerivedDataPath(
+                rawOptions.derivedDataPath,
+                rootPath: common.path
+            )
+        )
     }
 
     @discardableResult
