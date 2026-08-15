@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /PkgLift/
 
-Sitemap: https://alexsvensson99.github.io/PkgLift/sitemap.xml
+Sitemap: https://www.svensson.design/PkgLift/sitemap.xml
