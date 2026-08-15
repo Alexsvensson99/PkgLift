@@ -35,6 +35,7 @@ struct MigrateCommand: AsyncParsableCommand {
         let availableTargets = context.xcodeAnalysis?.projectInfo.targets.map(\.name) ?? []
         let prepared = try MigrationPlanPreflight().prepare(
             plan: plan,
+            currentPlan: context.buildMigrationPlan(),
             availableTargets: availableTargets
         )
 

@@ -74,6 +74,63 @@ final class CommandContextMigrationTests: XCTestCase {
         XCTAssertFalse(try String(contentsOf: podfile).contains("pod 'Alamofire'"))
     }
 
+    func testApplyRefusesWhenSavedAutoPlanNoLongerMatchesCurrentPodfile() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+        var planCommand = try PlanCommand.parse(arguments)
+        try await planCommand.run()
+
+        let podfile = fixture.root.appendingPathComponent("Podfile")
+        let changedPodfile = "target 'App' do\n  pod 'Alamofire' if ENV['USE_ALAMOFIRE']\nend\n"
+        try changedPodfile.write(to: podfile, atomically: true, encoding: .utf8)
+
+        var apply = try MigrateCommand.parse(arguments + ["--apply"])
+        do {
+            try await apply.run()
+            XCTFail("Expected stale plan refusal")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("saved plan no longer matches"))
+            XCTAssertTrue(error.localizedDescription.contains("Regenerate"))
+        }
+
+        XCTAssertEqual(try String(contentsOf: podfile), changedPodfile)
+        let analysis = try XcodeProjectAnalyzer().analyzeProject(at: fixture.project.path)
+        XCTAssertTrue(analysis.swiftPMState.packages.isEmpty)
+    }
+
+    func testApplyRefusesWhenSavedAutoTargetAttributionHasChanged() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App", "Widget"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+        var planCommand = try PlanCommand.parse(arguments)
+        try await planCommand.run()
+
+        let podfile = fixture.root.appendingPathComponent("Podfile")
+        let changedPodfile = "target 'Widget' do\n  pod 'Alamofire'\nend\n"
+        try changedPodfile.write(to: podfile, atomically: true, encoding: .utf8)
+
+        var apply = try MigrateCommand.parse(arguments + ["--apply"])
+        do {
+            try await apply.run()
+            XCTFail("Expected stale target-attribution refusal")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("saved plan no longer matches"))
+        }
+
+        XCTAssertEqual(try String(contentsOf: podfile), changedPodfile)
+        let analysis = try XcodeProjectAnalyzer().analyzeProject(at: fixture.project.path)
+        XCTAssertTrue(analysis.swiftPMState.packages.isEmpty)
+    }
+
     func testLockfileVersionAndPodfileTargetReachExecutableAutoPlan() async throws {
         let fixture = try makeFixture(
             podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",

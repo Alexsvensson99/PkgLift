@@ -50,6 +50,7 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
     case targetNotFound(dependency: String, product: String, expectedTarget: String)
     case ambiguousTarget(dependency: String, product: String, expectedTarget: String, matchCount: Int)
     case conflictingRequirements(repositoryURL: String)
+    case staleAutoEntry(dependency: String)
 
     public var errorDescription: String? {
         switch self {
@@ -67,6 +68,8 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
             return "Automatic migration refused for '\(dependency)' product '\(product)': target '\(expectedTarget)' matched \(matchCount) targets. PkgLift requires exactly one destination."
         case .conflictingRequirements(let repositoryURL):
             return "Automatic migration refused: package '\(repositoryURL)' has conflicting version requirements in the plan."
+        case .staleAutoEntry(let dependency):
+            return "Automatic migration refused for '\(dependency)': the saved plan no longer matches the current Podfile, lockfile, registry mapping, configuration, or target evidence. Regenerate the plan."
         }
     }
 }
@@ -74,6 +77,21 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
 /// Validates the complete AUTO contract before any project file is mutated.
 public struct MigrationPlanPreflight: Sendable {
     public init() {}
+
+    /// Validates both the saved plan contract and a plan regenerated from the
+    /// current project state before returning any executable operations.
+    public func prepare(
+        plan: MigrationPlan,
+        currentPlan: MigrationPlan,
+        availableTargets: [String]
+    ) throws -> PreparedMigration {
+        let prepared = try prepare(plan: plan, availableTargets: availableTargets)
+        try validateSavedAutoEntries(
+            plan.autoEntries,
+            against: currentPlan.entries
+        )
+        return prepared
+    }
 
     public func prepare(plan: MigrationPlan, availableTargets: [String]) throws -> PreparedMigration {
         guard plan.schemaVersion == MigrationPlan.schemaVersion else {
@@ -213,6 +231,32 @@ public struct MigrationPlanPreflight: Sendable {
             packagesToAdd: packageOrder.compactMap { packagesByIdentity[$0] },
             productsToLink: productLinks
         )
+    }
+
+    private func validateSavedAutoEntries(
+        _ savedEntries: [MigrationPlanEntry],
+        against currentEntries: [MigrationPlanEntry]
+    ) throws {
+        let currentByName = Dictionary(grouping: currentEntries, by: \.podName)
+        var seenNames: Set<String> = []
+
+        for saved in savedEntries {
+            guard seenNames.insert(saved.podName).inserted,
+                  let matches = currentByName[saved.podName],
+                  matches.count == 1,
+                  let current = matches.first,
+                  current.classification == .auto,
+                  current.currentVersion == saved.currentVersion,
+                  current.actions == saved.actions,
+                  current.targetName == saved.targetName,
+                  current.packageCandidate == saved.packageCandidate,
+                  current.declarations == saved.declarations,
+                  current.targetAttribution == saved.targetAttribution else {
+                throw MigrationPlanPreflightError.staleAutoEntry(
+                    dependency: saved.podName
+                )
+            }
+        }
     }
 
 }

@@ -44,7 +44,7 @@ Unsupported workspace location schemes are refused instead of guessed.
 
 ## Preflight and mutation
 
-`pkglift migrate` is a dry run. `pkglift migrate --apply` validates the entire saved AUTO contract before the first write. It refuses stale project paths, missing Podfile declarations, missing or conflicting versions, and missing or ambiguous targets. Every AUTO entry must carry non-empty literal declaration provenance and explicit exact target attribution that agree with the typed actions.
+`pkglift migrate` is a dry run. `pkglift migrate --apply` validates the entire saved AUTO contract before the first write. It regenerates the current migration evidence in memory and refuses when the saved AUTO entry no longer exactly matches the current Podfile, lockfile, registry mapping, configuration, actions, or target attribution. It also refuses stale project paths, missing Podfile declarations, missing or conflicting versions, and missing or ambiguous targets. Every AUTO entry must carry non-empty literal declaration provenance and explicit exact target attribution that agree with the typed actions.
 
 Older schema-1 plans remain decodable, but legacy target arrays are treated only as partial context. An AUTO entry without current provenance is refused and must be regenerated before migration.
 
