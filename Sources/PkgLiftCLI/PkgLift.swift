@@ -12,6 +12,14 @@ struct PkgLift: AsyncParsableCommand {
         commandName: "pkglift",
         abstract: "Modernize Apple dependencies safely.",
         version: PkgLiftCore.pkgLiftVersion,
-        subcommands: [AnalyzeCommand.self, PlanCommand.self, MigrateCommand.self, VerifyCommand.self, RegistryCommand.self, VersionCommand.self]
+        subcommands: [
+            AnalyzeCommand.self,
+            PlanCommand.self,
+            MigrateCommand.self,
+            VerifyCommand.self,
+            DiagnosticsCommand.self,
+            RegistryCommand.self,
+            VersionCommand.self,
+        ]
     )
 }
