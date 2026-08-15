@@ -22,6 +22,7 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const targetShas = new Set([
+              "313f5828cdcccdf8517b7ae5a5b38356acfd2b8f",
               "1cd532d5908987afccb29d0b7d2f456a856ccdad",
               "4050bbd5d0b02ed53ffb91783cb0ca6f58c5700c",
             ]);
