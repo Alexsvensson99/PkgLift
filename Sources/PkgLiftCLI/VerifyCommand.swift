@@ -132,6 +132,12 @@ struct VerifyCommand: AsyncParsableCommand {
                     isWorkspace: context.isWorkspaceSelected,
                     options: buildOptions
                 )
+                _ = try BuildVerifier.resolvePackageArguments(
+                    projectPath: projectToVerify,
+                    scheme: validatedScheme,
+                    isWorkspace: context.isWorkspaceSelected,
+                    options: buildOptions
+                )
             } catch {
                 checks.append(VerificationCheck(
                     name: "build_options_valid",
@@ -158,6 +164,7 @@ struct VerifyCommand: AsyncParsableCommand {
             let buildVerifier = BuildVerifier()
             let packageVerification = buildVerifier.resolvePackageDependencies(
                 projectPath: projectToVerify,
+                scheme: validatedScheme,
                 isWorkspace: context.isWorkspaceSelected,
                 options: buildOptions
             )
