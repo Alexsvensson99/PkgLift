@@ -1,0 +1,112 @@
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'Scripts/validate-pages-site.py'
+      - '.github/workflows/pages.yml'
+  pull_request:
+    paths:
+      - 'site/**'
+      - 'Scripts/validate-pages-site.py'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Validate static site
+        run: python3 Scripts/validate-pages-site.py --site site
+
+  pages-enabled:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      pages: read
+    outputs:
+      enabled: ${{ steps.status.outputs.enabled }}
+    steps:
+      - name: Check GitHub Pages configuration
+        id: status
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$RUNNER_TEMP/pages.json"
+          status="$({
+            curl \
+              --silent \
+              --show-error \
+              --output "$response" \
+              --write-out '%{http_code}' \
+              --header "Authorization: Bearer $GITHUB_TOKEN" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/pages"
+          })"
+
+          case "$status" in
+            200)
+              build_type="$(python3 - "$response" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding='utf-8') as handle:
+    print(json.load(handle).get('build_type', ''))
+PY
+              )"
+              if [[ "$build_type" != 'workflow' ]]; then
+                echo "GitHub Pages is enabled with build_type=$build_type, not workflow." >&2
+                exit 1
+              fi
+              echo 'enabled=true' >> "$GITHUB_OUTPUT"
+              ;;
+            404)
+              echo 'enabled=false' >> "$GITHUB_OUTPUT"
+              echo '::notice title=GitHub Pages setup required::Open Settings → Pages and select GitHub Actions as the source, then run this workflow manually.'
+              ;;
+            *)
+              cat "$response" >&2 || true
+              echo "Unable to inspect GitHub Pages configuration (HTTP $status)." >&2
+              exit 1
+              ;;
+          esac
+
+  deploy:
+    if: needs.pages-enabled.outputs.enabled == 'true'
+    needs: [validate, pages-enabled]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
