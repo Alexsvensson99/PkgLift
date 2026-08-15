@@ -12,7 +12,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 BASE_PATH = "/PkgLift/"
-BASE_URL = "https://alexsvensson99.github.io/PkgLift/"
+BASE_URL = "https://www.svensson.design/PkgLift/"
 SOCIAL_IMAGE = BASE_URL + "assets/social-card.png"
 
 
