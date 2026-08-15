@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Read-only recursive discovery for Xcode projects and workspaces beneath the selected root.
 - `--workspace` and `--project` can be combined to select one referenced project from a multi-project workspace.
+- Static Podfile parsing now recognizes single-quoted, double-quoted, simple symbol, and quoted-symbol target names, including escaped quote literals.
 
 ### Security
 - Project and workspace paths are canonicalized after symlink resolution and must remain contained by `--path`.
 - Workspace `group`, `container`, `absolute`, and `self` locations are normalized without accepting unsupported location schemes.
+- Computed target or pod names remain dynamic and are never inferred by the static parser.
 
 ## [0.1.2] - 2026-08-15
 

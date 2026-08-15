@@ -11,7 +11,7 @@ public struct PodfileParser: Sendable {
     }
 
     public init() {}
-    
+
     /// Parses a Podfile from file URL.
     public func parse(fileURL: URL) throws -> (features: PodfileFeatures, directDependencies: [CocoaPodDependency], targets: [String]) {
         let content: String
@@ -22,19 +22,19 @@ public struct PodfileParser: Sendable {
         }
         return parse(content: content)
     }
-    
+
     /// Parses a Podfile from string content.
     public func parse(content: String) -> (features: PodfileFeatures, directDependencies: [CocoaPodDependency], targets: [String]) {
         var features = PodfileFeatures()
         var directDependencies: [CocoaPodDependency] = []
         var targets: [String] = []
-        
+
         let lines = content.components(separatedBy: .newlines)
-        
+
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.hasPrefix("#") { continue }
-            
+
             if trimmed.contains("use_frameworks!") {
                 features.useFrameworks = true
             }
@@ -53,7 +53,7 @@ public struct PodfileParser: Sendable {
             if trimmed.contains("script_phase") {
                 features.hasScriptPhase = true
             }
-            
+
             // Conservative detection for Ruby constructs whose control flow or
             // values this static parser cannot prove. Any such construct keeps
             // migration out of AUTO.
@@ -82,32 +82,36 @@ public struct PodfileParser: Sendable {
                 || trimmed.contains("`") {
                 features.hasDynamicRuby = true
             }
-            
+
             if trimmed.hasPrefix("abstract_target") {
                 features.hasAbstractTargets = true
             }
-            
-            // Extract pod declarations: pod 'Name' or pod "Name"
-            if let match = trimmed.range(of: "^pod\\s+(['\"])(.*?)\\1", options: .regularExpression) {
-                let podDeclaration = trimmed[match]
-                let parts = podDeclaration.split(separator: " ", maxSplits: 1)
-                if parts.count > 1 {
-                    let name = String(parts[1]).trimmingCharacters(in: CharacterSet(charactersIn: "'\""))
-                    let dep = CocoaPodDependency(name: name, version: nil, source: .registry, isDirect: true, targets: [])
-                    directDependencies.append(dep)
-                }
+
+            let podName = PodfileStaticSyntax.podName(from: trimmed)
+            if PodfileStaticSyntax.isPodDeclaration(trimmed), podName == nil {
+                features.hasDynamicRuby = true
             }
-            
-            // Extract target declarations: target 'Name' do
-            if let match = trimmed.range(of: "^target\\s+(['\"])(.*?)\\1\\s+do", options: .regularExpression) {
-                let targetDeclaration = trimmed[match]
-                if let nameMatch = targetDeclaration.range(of: "['\"](.*?)['\"]", options: .regularExpression) {
-                    let name = String(targetDeclaration[nameMatch]).trimmingCharacters(in: CharacterSet(charactersIn: "'\""))
-                    targets.append(name)
-                }
+            if let podName {
+                directDependencies.append(
+                    CocoaPodDependency(
+                        name: podName,
+                        version: nil,
+                        source: .registry,
+                        isDirect: true,
+                        targets: []
+                    )
+                )
+            }
+
+            let targetName = PodfileStaticSyntax.targetName(from: trimmed)
+            if PodfileStaticSyntax.isTargetDeclaration(trimmed), targetName == nil {
+                features.hasDynamicRuby = true
+            }
+            if let targetName {
+                targets.append(targetName)
             }
         }
-        
+
         return (features, directDependencies, targets)
     }
 }
