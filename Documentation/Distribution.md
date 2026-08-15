@@ -42,8 +42,8 @@ artifacts to a public GitHub Release receives `contents: write` permission.
 - A `v*` tag runs the same package job and creates a GitHub Release only after
   every validation has passed and the `production-release` environment is
   approved. Tags outside `origin/main` are refused.
-- A final tag must match the CLI version (`v0.1.2`); prerelease tags may append a
-  suffix such as `v0.1.2-rc.1`.
+- A final v0.2.0 tag must match the CLI version (`v0.2.0`); prerelease tags may
+  append a suffix such as `v0.2.0-rc.1`.
 - The notarization ZIP is a temporary submission format. Public releases contain
   only `pkglift-macos-arm64.tar.gz` and its `.sha256` file.
 
@@ -71,21 +71,22 @@ when the registry bundle is absent.
 ## Homebrew tap
 
 The public tap is `Alexsvensson99/homebrew-tap`. After the GitHub Release exists,
-scaffold the tap with the exact public archive SHA-256:
+update the formula with the exact public archive SHA-256. For a new tap checkout,
+the scaffold command is:
 
 ```bash
-bash Scripts/scaffold-homebrew-tap.sh /tmp/homebrew-tap 0.1.2 VERIFIED_SHA256
+bash Scripts/scaffold-homebrew-tap.sh /tmp/homebrew-tap 0.2.0 VERIFIED_SHA256
 ```
 
 The command refuses to overwrite an existing path and creates the tap README,
-formula, and CI workflow. The generated `Formula/pkglift.rb` has this contract:
+formula, and CI workflow. The v0.2.0 `Formula/pkglift.rb` contract is:
 
 ```ruby
 class Pkglift < Formula
   desc "Safely migrate CocoaPods dependencies to Swift Package Manager"
   homepage "https://github.com/Alexsvensson99/PkgLift"
-  url "https://github.com/Alexsvensson99/PkgLift/releases/download/v0.1.2/pkglift-macos-arm64.tar.gz"
-  version "0.1.2"
+  url "https://github.com/Alexsvensson99/PkgLift/releases/download/v0.2.0/pkglift-macos-arm64.tar.gz"
+  version "0.2.0"
   sha256 "REPLACE_WITH_VERIFIED_RELEASE_SHA256"
   license "MIT"
 
@@ -98,7 +99,7 @@ class Pkglift < Formula
   end
 
   test do
-    assert_equal "0.1.2", shell_output("#{bin}/pkglift version").strip
+    assert_equal "0.2.0", shell_output("#{bin}/pkglift version").strip
     system bin/"pkglift", "registry", "validate"
   end
 end
@@ -116,6 +117,6 @@ pkglift registry validate
 brew uninstall pkglift
 ```
 
-Creating the public tap, pushing the final tag, creating the GitHub Release, and
-publishing the formula require explicit approval after the private distribution
-artifact has passed all acceptance checks.
+Creating the final tag, creating the GitHub Release, and publishing the formula
+require explicit approval after the private distribution artifact has passed all
+acceptance checks.
