@@ -1,0 +1,94 @@
+name: Registry mapping proposal
+description: Propose a verified CocoaPods-to-SwiftPM mapping for the PkgLift registry.
+title: "[Registry mapping]: "
+labels:
+  - enhancement
+  - help wanted
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Registry entries must be based on official upstream evidence. PkgLift does not guess repository URLs, products, pod identifiers, or compatible versions.
+
+        A proposal may be submitted before the YAML mapping is implemented, but it must contain enough evidence for another contributor to verify it.
+
+  - type: input
+    id: pod_identifier
+    attributes:
+      label: Exact CocoaPods identifier
+      description: Include the exact subspec when applicable.
+      placeholder: Firebase/Analytics
+    validations:
+      required: true
+
+  - type: input
+    id: podspec_evidence
+    attributes:
+      label: Official podspec evidence
+      description: Link to the official podspec or CocoaPods source that defines the identifier.
+      placeholder: https://github.com/example/project/blob/1.2.3/Example.podspec
+    validations:
+      required: true
+
+  - type: input
+    id: package_repository
+    attributes:
+      label: Official Swift package repository
+      placeholder: https://github.com/example/project
+    validations:
+      required: true
+
+  - type: input
+    id: package_manifest
+    attributes:
+      label: Package.swift evidence
+      description: Link to an official tagged Package.swift file that exports the proposed product.
+      placeholder: https://github.com/example/project/blob/1.2.3/Package.swift
+    validations:
+      required: true
+
+  - type: input
+    id: swiftpm_products
+    attributes:
+      label: Exact SwiftPM product name or names
+      description: List the products exactly as exported by Package.swift.
+      placeholder: ExampleKit
+    validations:
+      required: true
+
+  - type: input
+    id: minimum_version
+    attributes:
+      label: Conservative minimum SwiftPM version
+      description: Use stable major.minor.patch form and cite a tag where every proposed product exists.
+      placeholder: 1.2.3
+    validations:
+      required: true
+
+  - type: textarea
+    id: module_mapping
+    attributes:
+      label: Module-name or subspec notes
+      description: Explain module renames, subspec behavior, product differences, platform constraints, or other migration caveats.
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation performed
+      description: Describe any registry validation, fixture testing, or real-project testing already completed.
+      placeholder: |
+        swift run pkglift registry validate
+        swift test
+        Tested against a clean sample project using version 1.2.3.
+
+  - type: checkboxes
+    id: evidence_confirmation
+    attributes:
+      label: Evidence confirmation
+      options:
+        - label: The repository and podspec links are official upstream sources.
+          required: true
+        - label: The proposed product names are copied from the tagged Package.swift manifest.
+          required: true
+        - label: The minimum version is supported by concrete upstream evidence rather than an assumption.
+          required: true
