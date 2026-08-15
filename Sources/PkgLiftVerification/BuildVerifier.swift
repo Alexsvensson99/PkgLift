@@ -5,13 +5,6 @@ import Foundation
 import PkgLiftCore
 
 /// Verifies a project builds correctly after migration.
-///
-/// Uses `xcodebuild` for:
-/// - Package dependency resolution
-/// - Optional full build verification
-///
-/// When multiple schemes exist and none is specified,
-/// reports ambiguity rather than guessing.
 public struct BuildVerifier: Sendable {
     private let processRunner: ProcessRunner
 
@@ -33,22 +26,34 @@ public struct BuildVerifier: Sendable {
 
     /// Creates the exact argument vector used for package resolution.
     ///
-    /// Only the derived-data path applies to this phase. Configuration,
-    /// destination, and SDK are build settings and are intentionally omitted.
+    /// Configuration, destination, and SDK are build-only settings. The selected
+    /// scheme is still passed because Xcode requires it for workspace resolution
+    /// and whenever a derived-data path is supplied.
     public static func resolvePackageArguments(
         projectPath: String,
+        scheme: String? = nil,
         isWorkspace: Bool = false,
         options: BuildVerificationOptions = BuildVerificationOptions()
     ) throws -> [String] {
         let options = try options.validated()
-        var arguments = ["-resolvePackageDependencies"]
+        let validatedScheme = try scheme.map(validatedScheme)
 
+        if isWorkspace && validatedScheme == nil {
+            throw BuildVerificationOptionsError.schemeRequiredForWorkspaceResolution
+        }
+        if options.derivedDataPath != nil && validatedScheme == nil {
+            throw BuildVerificationOptionsError.schemeRequiredForDerivedDataResolution
+        }
+
+        var arguments = ["-resolvePackageDependencies"]
         if isWorkspace {
             arguments += ["-workspace", projectPath]
         } else {
             arguments += ["-project", projectPath]
         }
-
+        if let validatedScheme {
+            arguments += ["-scheme", validatedScheme]
+        }
         if let derivedDataPath = options.derivedDataPath {
             arguments += ["-derivedDataPath", derivedDataPath]
         }
@@ -71,7 +76,6 @@ public struct BuildVerifier: Sendable {
         } else {
             arguments += ["-project", projectPath]
         }
-
         if let configuration = options.configuration {
             arguments += ["-configuration", configuration]
         }
@@ -88,14 +92,9 @@ public struct BuildVerifier: Sendable {
     }
 
     /// Resolves SwiftPM package dependencies.
-    ///
-    /// - Parameters:
-    ///   - projectPath: Path to `.xcodeproj` or `.xcworkspace`.
-    ///   - isWorkspace: Whether the path is a workspace.
-    ///   - options: Explicit verification options. Only derived data applies.
-    /// - Returns: A `VerificationResult`.
     public func resolvePackageDependencies(
         projectPath: String,
+        scheme: String? = nil,
         isWorkspace: Bool = false,
         options: BuildVerificationOptions = BuildVerificationOptions()
     ) -> VerificationResult {
@@ -106,6 +105,7 @@ public struct BuildVerifier: Sendable {
         do {
             arguments = try Self.resolvePackageArguments(
                 projectPath: projectPath,
+                scheme: scheme,
                 isWorkspace: isWorkspace,
                 options: options
             )
@@ -118,7 +118,7 @@ public struct BuildVerifier: Sendable {
             ))
             issues.append(MigrationIssue(
                 severity: .error,
-                message: "Invalid build verification options",
+                message: "Invalid package-resolution options",
                 detail: error.localizedDescription
             ))
             return VerificationResult(passed: false, checks: checks, issues: issues)
@@ -135,20 +135,14 @@ public struct BuildVerifier: Sendable {
         }
 
         do {
-            let result = try processRunner.run(
-                executable: xcodebuild,
-                arguments: arguments
-            )
-
-            let passed = result.succeeded
+            let result = try processRunner.run(executable: xcodebuild, arguments: arguments)
             checks.append(VerificationCheck(
                 name: "resolve_dependencies",
                 description: "SwiftPM package dependencies resolve successfully",
-                passed: passed,
-                detail: passed ? nil : result.stderr
+                passed: result.succeeded,
+                detail: result.succeeded ? nil : result.stderr
             ))
-
-            if !passed {
+            if !result.succeeded {
                 issues.append(MigrationIssue(
                     severity: .error,
                     message: "Package dependency resolution failed",
@@ -169,18 +163,14 @@ public struct BuildVerifier: Sendable {
             ))
         }
 
-        let allPassed = checks.allSatisfy { $0.passed }
-        return VerificationResult(passed: allPassed, checks: checks, issues: issues)
+        return VerificationResult(
+            passed: checks.allSatisfy(\.passed),
+            checks: checks,
+            issues: issues
+        )
     }
 
     /// Runs a full build verification.
-    ///
-    /// - Parameters:
-    ///   - projectPath: Path to `.xcodeproj` or `.xcworkspace`.
-    ///   - scheme: The scheme to build. Required rather than guessed.
-    ///   - isWorkspace: Whether the path is a workspace.
-    ///   - options: Explicit xcodebuild configuration and destination settings.
-    /// - Returns: A `VerificationResult`.
     public func buildVerify(
         projectPath: String,
         scheme: String?,
@@ -239,20 +229,14 @@ public struct BuildVerifier: Sendable {
         }
 
         do {
-            let result = try processRunner.run(
-                executable: xcodebuild,
-                arguments: arguments
-            )
-
-            let passed = result.succeeded
+            let result = try processRunner.run(executable: xcodebuild, arguments: arguments)
             checks.append(VerificationCheck(
                 name: "build",
                 description: "Project builds successfully with scheme '\(scheme)'",
-                passed: passed,
-                detail: passed ? nil : String(result.stderr.prefix(500))
+                passed: result.succeeded,
+                detail: result.succeeded ? nil : String(result.stderr.prefix(500))
             ))
-
-            if !passed {
+            if !result.succeeded {
                 issues.append(MigrationIssue(
                     severity: .error,
                     message: "Build failed for scheme '\(scheme)'",
@@ -273,7 +257,10 @@ public struct BuildVerifier: Sendable {
             ))
         }
 
-        let allPassed = checks.allSatisfy { $0.passed }
-        return VerificationResult(passed: allPassed, checks: checks, issues: issues)
+        return VerificationResult(
+            passed: checks.allSatisfy(\.passed),
+            checks: checks,
+            issues: issues
+        )
     }
 }

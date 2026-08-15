@@ -45,8 +45,8 @@ struct BuildVerifierTests {
         ])
     }
 
-    @Test("Package resolution uses only the derived-data override")
-    func packageResolutionUsesOnlyDerivedData() throws {
+    @Test("Workspace package resolution includes scheme and derived data")
+    func workspacePackageResolutionIncludesScheme() throws {
         let options = BuildVerificationOptions(
             configuration: "Release",
             destination: "generic/platform=iOS Simulator",
@@ -56,6 +56,7 @@ struct BuildVerifierTests {
 
         let arguments = try BuildVerifier.resolvePackageArguments(
             projectPath: "App.xcworkspace",
+            scheme: " App ",
             isWorkspace: true,
             options: options
         )
@@ -63,8 +64,48 @@ struct BuildVerifierTests {
         #expect(arguments == [
             "-resolvePackageDependencies",
             "-workspace", "App.xcworkspace",
+            "-scheme", "App",
             "-derivedDataPath", "/tmp/Derived",
         ])
+    }
+
+    @Test("Simple project package resolution remains compatible without scheme")
+    func projectPackageResolutionWithoutScheme() throws {
+        let arguments = try BuildVerifier.resolvePackageArguments(
+            projectPath: "App.xcodeproj"
+        )
+
+        #expect(arguments == [
+            "-resolvePackageDependencies",
+            "-project", "App.xcodeproj",
+        ])
+    }
+
+    @Test("Workspace and derived-data resolution reject missing schemes")
+    func packageResolutionRejectsMissingSchemes() {
+        do {
+            _ = try BuildVerifier.resolvePackageArguments(
+                projectPath: "App.xcworkspace",
+                isWorkspace: true
+            )
+            Issue.record("Expected workspace resolution without a scheme to fail")
+        } catch let error as BuildVerificationOptionsError {
+            #expect(error == .schemeRequiredForWorkspaceResolution)
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+
+        do {
+            _ = try BuildVerifier.resolvePackageArguments(
+                projectPath: "App.xcodeproj",
+                options: BuildVerificationOptions(derivedDataPath: "/tmp/Derived")
+            )
+            Issue.record("Expected derived-data resolution without a scheme to fail")
+        } catch let error as BuildVerificationOptionsError {
+            #expect(error == .schemeRequiredForDerivedDataResolution)
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
     }
 
     @Test("Validation rejects empty and control-character values")

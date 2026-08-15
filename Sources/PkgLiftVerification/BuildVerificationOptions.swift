@@ -70,6 +70,8 @@ public struct BuildVerificationOptions: Sendable, Equatable {
 public enum BuildVerificationOptionsError: LocalizedError, Sendable, Equatable {
     case empty(field: String)
     case controlCharacter(field: String)
+    case schemeRequiredForWorkspaceResolution
+    case schemeRequiredForDerivedDataResolution
 
     public var errorDescription: String? {
         switch self {
@@ -77,6 +79,10 @@ public enum BuildVerificationOptionsError: LocalizedError, Sendable, Equatable {
             return "Build verification option --\(field) cannot be empty."
         case .controlCharacter(let field):
             return "Build verification option --\(field) cannot contain control characters."
+        case .schemeRequiredForWorkspaceResolution:
+            return "Workspace package resolution requires an explicit scheme."
+        case .schemeRequiredForDerivedDataResolution:
+            return "Package resolution with a derived-data path requires an explicit scheme."
         }
     }
 }
