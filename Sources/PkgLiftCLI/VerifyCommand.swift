@@ -119,7 +119,8 @@ struct VerifyCommand: AsyncParsableCommand {
                     message: "Build verification requires an explicit --scheme",
                     detail: "PkgLift does not guess which scheme to build."
                 ))
-                return try finish(checks: checks, issues: issues)
+                try finish(checks: checks, issues: issues)
+                return
             }
 
             let validatedScheme: String
@@ -143,7 +144,8 @@ struct VerifyCommand: AsyncParsableCommand {
                     message: "Invalid build verification options",
                     detail: error.localizedDescription
                 ))
-                return try finish(checks: checks, issues: issues)
+                try finish(checks: checks, issues: issues)
+                return
             }
 
             checks.append(VerificationCheck(
