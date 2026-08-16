@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repository="aws-samples/amazon-ivs-grid-feed-for-ios-demo"
-commit="5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d"
-workspace="Grid Feed.xcworkspace"
-project="Grid Feed.xcodeproj"
-scheme="Grid Feed"
+fixture="Fixtures/MixedLanguageSDWebImage"
+workspace="PkgLiftMixedFixture.xcworkspace"
+project="PkgLiftMixedFixture.xcodeproj"
+scheme="PkgLiftMixedFixture"
 destination="generic/platform=iOS Simulator"
 configuration="Debug"
 
@@ -19,6 +18,7 @@ report_root="$RUNNER_TEMP/pkglift-positive-e2e-report"
 baseline_derived="$RUNNER_TEMP/pkglift-positive-baseline-derived"
 verification_derived="$RUNNER_TEMP/pkglift-positive-verification-derived"
 timeout_runner=(/usr/bin/python3 "$GITHUB_WORKSPACE/Scripts/run-with-timeout.py")
+tree_hasher=(/usr/bin/python3 "$GITHUB_WORKSPACE/Scripts/hash-pilot-tree.py")
 
 rm -rf \
   "$baseline_root" \
@@ -28,7 +28,7 @@ rm -rf \
   "$verification_derived"
 mkdir -p "$report_root"
 
-echo "POSITIVE_E2E_REPORT_DIR=$report_root" >> "$GITHUB_ENV"
+echo "POSITIVE_E2E_REPORT_DIR=$report_root" >> "${GITHUB_ENV:-/dev/null}"
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -37,23 +37,13 @@ require_command() {
   fi
 }
 
-require_command git
+require_command ditto
 require_command pod
 require_command xcodebuild
 
-clone_pinned() {
+copy_fixture() {
   local destination_root="$1"
-  git init -q "$destination_root"
-  git -C "$destination_root" remote add origin "https://github.com/$repository.git"
-  git -C "$destination_root" fetch --depth 1 --no-tags origin "$commit"
-  git -C "$destination_root" checkout -q --detach FETCH_HEAD
-
-  local actual_commit
-  actual_commit="$(git -C "$destination_root" rev-parse HEAD)"
-  if [[ "$actual_commit" != "$commit" ]]; then
-    echo "Fetched $actual_commit instead of pinned commit $commit" >&2
-    exit 1
-  fi
+  ditto "$GITHUB_WORKSPACE/$fixture" "$destination_root"
 }
 
 require_locked_dependency() {
@@ -95,24 +85,53 @@ PY
 }
 
 validate_reviewed_auto_set() {
-  local plan_path="$1"
-  /usr/bin/python3 - "$plan_path" <<'PY'
+  local analysis_path="$1"
+  local plan_path="$2"
+  /usr/bin/python3 - "$analysis_path" "$plan_path" <<'PY'
 import json
 import sys
 
 with open(sys.argv[1], encoding="utf-8") as handle:
+    analysis = json.load(handle)
+with open(sys.argv[2], encoding="utf-8") as handle:
     plan = json.load(handle)
 
+auto_candidates = sorted(
+    candidate.get("pod", {}).get("name")
+    for candidate in analysis.get("candidates", [])
+    if candidate.get("pod", {}).get("isDirect") is True
+    and candidate.get("classification") == "AUTO"
+)
 auto_entries = sorted(
     entry.get("podName")
     for entry in plan.get("entries", [])
     if entry.get("classification") == "AUTO"
 )
 expected = ["SDWebImage"]
-if auto_entries != expected:
+if auto_candidates != expected or auto_entries != expected:
     raise SystemExit(
-        f"Reviewed AUTO set changed: expected {expected!r}, got {auto_entries!r}"
+        "Reviewed AUTO set changed: "
+        f"expected {expected!r}, candidates={auto_candidates!r}, entries={auto_entries!r}"
     )
+
+candidate = next(
+    candidate for candidate in analysis["candidates"]
+    if candidate.get("pod", {}).get("name") == "SDWebImage"
+)
+entry = next(entry for entry in plan["entries"] if entry.get("podName") == "SDWebImage")
+expected_languages = {"swift", "objectiveC"}
+candidate_languages = set(
+    candidate.get("packageCandidate", {}).get("supportedConsumerLanguages", [])
+)
+entry_languages = set(
+    entry.get("packageCandidate", {}).get("supportedConsumerLanguages", [])
+)
+profile = entry.get("targetSourceProfile", {})
+profile_languages = set(profile.get("languages", []))
+if candidate_languages != expected_languages or entry_languages != expected_languages:
+    raise SystemExit("SDWebImage registry language evidence changed")
+if profile.get("completeness") != "complete" or profile_languages != expected_languages:
+    raise SystemExit(f"Mixed target source profile changed: {profile!r}")
 PY
 }
 
@@ -136,50 +155,57 @@ run_build() {
       build
 }
 
-clone_pinned "$baseline_root"
-clone_pinned "$migration_root"
+copy_fixture "$baseline_root"
+copy_fixture "$migration_root"
 
 cat > "$report_root/source.txt" <<EOF
-repository=$repository
-commit=$commit
-license=MIT-0
+source=$fixture
+repository_owned=true
 workspace=$workspace
 project=$project
 scheme=$scheme
-source_redistributed=false
+upstream_repository=none
 upstream_write_credentials=false
 EOF
 
 {
   echo "pkglift=$($PKGLIFT_BIN version)"
-  echo "git=$(git --version)"
   echo "cocoapods=$(pod --version)"
   swift --version | sed 's/^/swift=/'
   xcodebuild -version | sed 's/^/xcode=/'
 } > "$report_root/environment.txt"
 
-# Build the exact upstream dependency versions before migration in a separate
-# checkout. A newer CocoaPods may normalize only its own COCOAPODS metadata;
-# the two pinned direct dependency versions remain hard requirements.
+# Establish and build the CocoaPods baseline in one disposable copy of the
+# repository-owned fixture.
 "${timeout_runner[@]}" \
   --seconds 600 \
   --cwd "$baseline_root" \
   --combined-log "$report_root/baseline-pod-install.log" \
   -- \
   pod install --clean-install
-require_locked_dependency "$baseline_root/Podfile.lock" "AmazonIVSPlayer" "1.40.0"
 require_locked_dependency "$baseline_root/Podfile.lock" "SDWebImage" "5.18.1"
-git -C "$baseline_root" diff -- Podfile.lock > "$report_root/baseline-lockfile-diff.txt"
+cp "$baseline_root/Podfile.lock" "$report_root/baseline-lockfile.txt"
 validate_scheme "$baseline_root"
 run_build "$baseline_root" "$baseline_derived" "$report_root/baseline-build.log"
 
-# Keep generated plan and local rollback material from making the disposable
-# migration checkout appear dirty. The backup is retained until job cleanup.
-printf '.pkglift/plan.json\n.pkglift/backup/\n' >> "$migration_root/.git/info/exclude"
+# Install the same locked CocoaPods baseline in the independent migration copy.
+# Only this repo-owned copy may reach PkgLift's --apply path.
+protected_hash_before="$(
+  "${tree_hasher[@]}" "$migration_root" \
+    --include App/AppDelegate.swift \
+    --include App/LegacyImageLoader.m \
+    --include App/Fixture.txt
+)"
+"${timeout_runner[@]}" \
+  --seconds 600 \
+  --cwd "$migration_root" \
+  --combined-log "$report_root/migration-baseline-pod-install.log" \
+  -- \
+  pod install --clean-install
+require_locked_dependency "$migration_root/Podfile.lock" "SDWebImage" "5.18.1"
 
 common_args=(
   --path "$migration_root"
-  --workspace "$workspace"
   --project "$project"
   --no-color
 )
@@ -187,44 +213,25 @@ common_args=(
 "$PKGLIFT_BIN" analyze "${common_args[@]}" --json > "$report_root/analysis.json"
 "$PKGLIFT_BIN" plan "${common_args[@]}" --json > "$report_root/plan-command.json"
 cp "$migration_root/.pkglift/plan.json" "$report_root/plan.json"
-"$PKGLIFT_BIN" migrate "${common_args[@]}" > "$report_root/dry-run.txt"
+validate_reviewed_auto_set "$report_root/analysis.json" "$report_root/plan.json"
 
-git -C "$migration_root" diff --exit-code --no-ext-diff
-git -C "$migration_root" diff --cached --exit-code --no-ext-diff
-if [[ -n "$(git -C "$migration_root" status --porcelain --untracked-files=all)" ]]; then
-  echo "Dry run changed the migration checkout" >&2
-  git -C "$migration_root" status --short >&2
+dry_run_tree_before="$("${tree_hasher[@]}" "$migration_root")"
+"$PKGLIFT_BIN" migrate "${common_args[@]}" > "$report_root/dry-run.txt"
+dry_run_tree_after="$("${tree_hasher[@]}" "$migration_root")"
+
+if [[ "$dry_run_tree_before" != "$dry_run_tree_after" ]]; then
+  echo "Dry run changed the repository-owned migration fixture" >&2
   exit 1
 fi
 
-# Validate both individual expectations and the complete reviewed AUTO set
-# before allowing any mutation.
-PILOT_REPOSITORY="$repository" \
-PILOT_COMMIT="$commit" \
-PILOT_WORKSPACE="$workspace" \
-PILOT_PROJECT="$project" \
-PILOT_ISSUE="23" \
-PILOT_LICENSE="MIT-0" \
-PILOT_DRY_RUN_CLEAN="true" \
-ruby "$GITHUB_WORKSPACE/Scripts/validate-pinned-pilot.rb" \
-  positive \
-  "$report_root/analysis.json" \
-  "$report_root/plan.json" \
-  "$report_root/dry-run.txt" \
-  "$migration_root" \
-  "$report_root/read-only-validation"
-validate_reviewed_auto_set "$report_root/plan.json"
-
 "$PKGLIFT_BIN" migrate "${common_args[@]}" --apply > "$report_root/apply.txt"
 
-grep -F "pod 'AmazonIVSPlayer'" "$migration_root/Podfile" >/dev/null
 if grep -F "pod 'SDWebImage'" "$migration_root/Podfile" >/dev/null; then
   echo "SDWebImage declaration remained after apply" >&2
   exit 1
 fi
 
-# Refresh only the CocoaPods dependencies that remain after PkgLift applies the
-# reviewed AUTO action. The pinned lockfile should keep AmazonIVSPlayer stable.
+# Refresh CocoaPods after PkgLift removes the fixture's only pod declaration.
 "${timeout_runner[@]}" \
   --seconds 600 \
   --cwd "$migration_root" \
@@ -232,11 +239,17 @@ fi
   -- \
   pod install --clean-install
 
-require_locked_dependency "$migration_root/Podfile.lock" "AmazonIVSPlayer" "1.40.0"
-if grep -F -- '- SDWebImage (' "$migration_root/Podfile.lock" >/dev/null; then
+if [[ -f "$migration_root/Podfile.lock" ]] && grep -F -- '- SDWebImage (' "$migration_root/Podfile.lock" >/dev/null; then
   echo "SDWebImage remained in Podfile.lock after pod install" >&2
   exit 1
 fi
+
+verification_args=(
+  --path "$migration_root"
+  --workspace "$workspace"
+  --project "$project"
+  --no-color
+)
 
 "${timeout_runner[@]}" \
   --seconds 1200 \
@@ -244,7 +257,7 @@ fi
   --stderr "$report_root/verification.stderr.txt" \
   -- \
   "$PKGLIFT_BIN" verify \
-    "${common_args[@]}" \
+    "${verification_args[@]}" \
     --build \
     --scheme "$scheme" \
     --configuration "$configuration" \
@@ -253,49 +266,45 @@ fi
     --derived-data-path "$verification_derived" \
     --json
 
-# PkgLift and CocoaPods may update only dependency configuration. Source and
-# resource changes are always unexpected in this pilot.
-changed_files="$report_root/changed-files.txt"
-: > "$changed_files"
-while IFS= read -r -d '' path; do
-  printf '%s\n' "$path" >> "$changed_files"
-done < <(git -C "$migration_root" diff --name-only -z --no-ext-diff)
-while IFS= read -r -d '' path; do
-  printf '%s\n' "$path" >> "$changed_files"
-done < <(git -C "$migration_root" ls-files --others --exclude-standard -z)
-sort -u -o "$changed_files" "$changed_files"
+# PkgLift and CocoaPods may update dependency configuration only. Source and
+# resource bytes must remain identical through apply, resolution, and build.
+protected_hash_after="$(
+  "${tree_hasher[@]}" "$migration_root" \
+    --include App/AppDelegate.swift \
+    --include App/LegacyImageLoader.m \
+    --include App/Fixture.txt
+)"
+if [[ "$protected_hash_before" != "$protected_hash_after" ]]; then
+  echo "Source or resource bytes changed during the fixture migration" >&2
+  exit 1
+fi
 
-while IFS= read -r path; do
-  [[ -z "$path" ]] && continue
-  case "$path" in
-    Podfile|Podfile.lock|"Grid Feed.xcodeproj/project.pbxproj"|"Grid Feed.xcworkspace/contents.xcworkspacedata"|*/Package.resolved)
-      ;;
-    *)
-      echo "Unexpected changed file: $path" >&2
-      exit 1
-      ;;
-  esac
-done < "$changed_files"
-
-git -C "$migration_root" diff --check
+cat > "$report_root/hashes.txt" <<EOF
+protected_before=$protected_hash_before
+protected_after=$protected_hash_after
+dry_run_tree_before=$dry_run_tree_before
+dry_run_tree_after=$dry_run_tree_after
+EOF
 
 cat > "$report_root/summary.md" <<EOF
-# Positive end-to-end pilot
+# Repository-owned mixed-language end-to-end pilot
 
-- Repository: \`$repository\`
-- Commit: \`$commit\`
-- License: \`MIT-0\`
+- Source: \`$fixture\`
+- Source ownership: repository fixture
+- Consumer languages: Swift and Objective-C in one target
 - Baseline locked dependency versions: **PASS**
 - Baseline CocoaPods build: **PASS**
 - Reviewed AUTO set: exactly \`SDWebImage\`
-- Reviewed read-only plan validation: **PASS**
+- Complete target language evidence: **PASS**
 - Mutation-free dry run: **PASS**
 - Applied migration: \`SDWebImage 5.18.1\` only
-- Remaining CocoaPod: \`AmazonIVSPlayer 1.40.0\`
-- PkgLift structural and build verification: **PASS**
+- SwiftPM resolution and simulator build verification: **PASS**
 - Source or resource files changed: **NO**
+- Upstream repositories migrated: **NO**
 - Upstream write credentials used: **NO**
 EOF
 
 cat "$report_root/summary.md"
-cat "$report_root/summary.md" >> "$GITHUB_STEP_SUMMARY"
+if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+  cat "$report_root/summary.md" >> "$GITHUB_STEP_SUMMARY"
+fi

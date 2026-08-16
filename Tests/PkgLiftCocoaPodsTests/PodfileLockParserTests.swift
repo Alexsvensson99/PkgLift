@@ -42,4 +42,28 @@ struct PodfileLockParserTests {
         #expect(dependencies.first(where: { $0.name == "SDWebImage/Core" })?.isDirect == false)
         #expect(dependencies.first(where: { $0.name == "Firebase/Analytics" })?.isDirect == true)
     }
+
+    @Test("Accept CocoaPods lockfile after the last dependency is removed")
+    func testEmptyCocoaPodsLockfile() throws {
+        let yaml = """
+        PODFILE CHECKSUM: 1f9e936cbada7b57cc466bea376ead75c3eb263f
+
+        COCOAPODS: 1.16.2
+        """
+
+        #expect(try PodfileLockParser().parse(content: yaml).isEmpty)
+    }
+
+    @Test("Reject dependencies without a PODS section")
+    func testMissingPodsSectionWithDependenciesIsMalformed() {
+        let yaml = """
+        DEPENDENCIES:
+          - SDWebImage (= 5.18.1)
+        COCOAPODS: 1.16.2
+        """
+
+        #expect(throws: PodfileLockParser.Error.self) {
+            try PodfileLockParser().parse(content: yaml)
+        }
+    }
 }

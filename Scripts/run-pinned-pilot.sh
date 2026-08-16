@@ -6,6 +6,7 @@ required_variables=(
   PILOT_CASE
   PILOT_REPOSITORY
   PILOT_COMMIT
+  PILOT_ROOT
   PILOT_WORKSPACE
   PILOT_PROJECT
   PILOT_ISSUE
@@ -20,9 +21,18 @@ for variable in "${required_variables[@]}"; do
 done
 
 case "$PILOT_CASE" in
-  positive|mixed|negative) ;;
+  positive|mixed|negative|tinode|xcodebenchmark|hammerspoon|acknowlist) ;;
   *)
     echo "Unsupported pilot case: $PILOT_CASE" >&2
+    exit 2
+    ;;
+esac
+
+case "$PILOT_ROOT" in
+  .)
+    ;;
+  ""|/*|..|../*|*/..|*/../*)
+    echo "PILOT_ROOT must be a contained relative directory: $PILOT_ROOT" >&2
     exit 2
     ;;
 esac
@@ -39,6 +49,7 @@ echo "PILOT_REPORT_DIR=$report_root" >> "${GITHUB_ENV:-/dev/null}"
 cat > "$report_root/source.txt" <<EOF
 repository=$PILOT_REPOSITORY
 commit=$PILOT_COMMIT
+root=$PILOT_ROOT
 workspace=$PILOT_WORKSPACE
 project=$PILOT_PROJECT
 tracking_issue=$PILOT_ISSUE
@@ -69,7 +80,20 @@ if [[ "$actual_commit" != "$PILOT_COMMIT" ]]; then
   exit 1
 fi
 
-printf '.pkglift/plan.json\n' >> "$source_root/.git/info/exclude"
+if [[ "$PILOT_ROOT" == "." ]]; then
+  project_root="$source_root"
+  plan_exclude=".pkglift/plan.json"
+else
+  project_root="$source_root/$PILOT_ROOT"
+  plan_exclude="$PILOT_ROOT/.pkglift/plan.json"
+fi
+
+if [[ ! -d "$project_root" ]]; then
+  echo "Pinned pilot root does not exist: $PILOT_ROOT" >&2
+  exit 1
+fi
+
+printf '%s\n' "$plan_exclude" >> "$source_root/.git/info/exclude"
 
 initial_status="$(git -C "$source_root" status --porcelain --untracked-files=all)"
 if [[ -n "$initial_status" ]]; then
@@ -79,7 +103,7 @@ if [[ -n "$initial_status" ]]; then
 fi
 
 common_args=(
-  --path "$source_root"
+  --path "$project_root"
   --workspace "$PILOT_WORKSPACE"
   --project "$PILOT_PROJECT"
   --no-color
@@ -87,7 +111,7 @@ common_args=(
 
 "$PKGLIFT_BIN" analyze "${common_args[@]}" --json > "$raw_root/analysis.json"
 "$PKGLIFT_BIN" plan "${common_args[@]}" --json > "$raw_root/plan-command.json"
-cp "$source_root/.pkglift/plan.json" "$raw_root/plan.json"
+cp "$project_root/.pkglift/plan.json" "$raw_root/plan.json"
 "$PKGLIFT_BIN" migrate "${common_args[@]}" > "$raw_root/dry-run.txt"
 
 git -C "$source_root" diff --exit-code --no-ext-diff
@@ -107,7 +131,7 @@ ruby "$GITHUB_WORKSPACE/Scripts/validate-pinned-pilot.rb" \
   "$raw_root/analysis.json" \
   "$raw_root/plan.json" \
   "$raw_root/dry-run.txt" \
-  "$source_root" \
+  "$project_root" \
   "$report_root"
 validation_status=$?
 set -e

@@ -40,6 +40,7 @@ jobs:
             issue: '23'
             repository: aws-samples/amazon-ivs-grid-feed-for-ios-demo
             commit: 5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d
+            root: .
             workspace: Grid Feed.xcworkspace
             project: Grid Feed.xcodeproj
             license: MIT-0
@@ -48,6 +49,7 @@ jobs:
             issue: '24'
             repository: ayseyurek/LoodosCase
             commit: 407b65db02469467b3317ca8dee0d8676c7e673e
+            root: .
             workspace: LoodosCase.xcworkspace
             project: LoodosCase.xcodeproj
             license: No license file detected at pinned commit; transient validation only
@@ -56,8 +58,45 @@ jobs:
             issue: '25'
             repository: Finb/V2ex-Swift
             commit: 28ef39d2e5fc11d28bc79743ba2bc5f5594ba170
+            root: .
             workspace: V2ex-Swift.xcworkspace
             project: V2ex-Swift.xcodeproj
+            license: MIT
+          - name: Tinode read-only compatibility
+            case: tinode
+            issue: local-batch-20260815
+            repository: tinode/ios
+            commit: a4db1251549c40b7aa4f269cd79234eb4c07baff
+            root: .
+            workspace: Tinodios.xcworkspace
+            project: Tinodios.xcodeproj
+            license: Apache-2.0
+          - name: XcodeBenchmark read-only compatibility
+            case: xcodebenchmark
+            issue: local-batch-20260815
+            repository: devMEremenko/XcodeBenchmark
+            commit: 60d82d23e34fd63c4cae5d26d10cbdd88f0b0ee2
+            root: .
+            workspace: XcodeBenchmark.xcworkspace
+            project: XcodeBenchmark.xcodeproj
+            license: MIT
+          - name: Hammerspoon read-only compatibility
+            case: hammerspoon
+            issue: local-batch-20260815
+            repository: Hammerspoon/hammerspoon
+            commit: 23e387e2805a9890066366e0ac96c71b27f0cfd5
+            root: .
+            workspace: Hammerspoon.xcworkspace
+            project: Hammerspoon.xcodeproj
+            license: MIT
+          - name: AcknowList read-only compatibility
+            case: acknowledist
+            issue: local-batch-20260815
+            repository: vtourraine/AcknowList
+            commit: 0288baabb859af22b9e152555fa56b56094de789
+            root: Examples/AcknowExampleCocoaPods
+            workspace: AcknowExampleCocoaPods.xcworkspace
+            project: AcknowExampleCocoaPods.xcodeproj
             license: MIT
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
@@ -65,6 +104,7 @@ jobs:
       PILOT_ISSUE: ${{ matrix.issue }}
       PILOT_REPOSITORY: ${{ matrix.repository }}
       PILOT_COMMIT: ${{ matrix.commit }}
+      PILOT_ROOT: ${{ matrix.root }}
       PILOT_WORKSPACE: ${{ matrix.workspace }}
       PILOT_PROJECT: ${{ matrix.project }}
       PILOT_LICENSE: ${{ matrix.license }}
