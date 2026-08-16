@@ -320,6 +320,20 @@ final class MigrationPlanPreflightTests: XCTestCase {
         }
     }
 
+    func testCurrentIncompleteTargetLanguageProfileRefusesSavedAutoEvidence() {
+        let plan = makePlan(entries: [makeEntry()])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: plan,
+            availableTargetInfos: [targetInfo("App", completeness: .incomplete)]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleAutoEntry(dependency: "Alamofire")
+            )
+        }
+    }
+
     func testSavedAndRegeneratedLanguageEvidenceMustAgree() {
         let saved = makePlan(entries: [makeEntry()])
         let base = makeEntry()

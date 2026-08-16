@@ -324,6 +324,13 @@ public struct XcodeProjectAnalyzer: Sendable {
             }
 
             for buildFile in sourcesBuildPhase.files ?? [] {
+                if Self.hasNonEmptyCompilerFlags(buildFile) {
+                    // Per-file flags can override the language selected by the
+                    // PBX file type (for example, `-x objective-c++`). Parsing
+                    // arbitrary compiler arguments safely is outside this
+                    // PBX-only profile, so any concrete override fails closed.
+                    completeness = .incomplete
+                }
                 guard let fileReference = buildFile.file as? PBXFileReference,
                       let fileType = fileReference.explicitFileType ?? fileReference.lastKnownFileType,
                       let language = Self.sourceLanguage(forPBXFileType: fileType) else {
@@ -340,6 +347,18 @@ public struct XcodeProjectAnalyzer: Sendable {
             languages: languages,
             completeness: completeness
         )
+    }
+
+    private static func hasNonEmptyCompilerFlags(_ buildFile: PBXBuildFile) -> Bool {
+        guard let setting = buildFile.settings?["COMPILER_FLAGS"] else { return false }
+        switch setting {
+        case .string(let value):
+            return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .array(let values):
+            return values.contains {
+                !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+        }
     }
 
     private static func sourceLanguage(forPBXFileType fileType: String) -> SourceLanguage? {
