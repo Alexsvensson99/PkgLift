@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PkgLift compatibility and integration boundaries</title>
+  <meta name="description" content="See which source languages and project integrations PkgLift can analyze, review, or migrate automatically in native Xcode projects.">
+  <meta name="theme-color" content="#0a0f15"><meta name="color-scheme" content="dark light">
+  <link rel="canonical" href="https://www.svensson.design/PkgLift/compatibility/"><link rel="icon" href="/PkgLift/assets/favicon.svg" type="image/svg+xml"><link rel="manifest" href="/PkgLift/site.webmanifest"><link rel="stylesheet" href="/PkgLift/assets/styles.css">
+  <meta property="og:type" content="article"><meta property="og:site_name" content="PkgLift"><meta property="og:title" content="PkgLift compatibility and integration boundaries"><meta property="og:description" content="See which source languages and project integrations PkgLift can analyze, review, or migrate automatically in native Xcode projects."><meta property="og:url" content="https://www.svensson.design/PkgLift/compatibility/"><meta property="og:image" content="https://www.svensson.design/PkgLift/assets/social-card.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="PkgLift — safe CocoaPods to Swift Package Manager migration">
+  <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="PkgLift compatibility and integration boundaries"><meta name="twitter:description" content="See which source languages and project integrations PkgLift can analyze, review, or migrate automatically in native Xcode projects."><meta name="twitter:image" content="https://www.svensson.design/PkgLift/assets/social-card.png"><meta name="twitter:image:alt" content="PkgLift — safe CocoaPods to Swift Package Manager migration">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"PkgLift compatibility and integration boundaries","description":"See which source languages and project integrations PkgLift can analyze, review, or migrate automatically in native Xcode projects.","url":"https://www.svensson.design/PkgLift/compatibility/","author":{"@type":"Person","name":"Alexander Svensson"},"publisher":{"@type":"Organization","name":"PkgLift"}}</script>
+  <script src="/PkgLift/assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><div class="header-inner"><a class="brand" href="/PkgLift/" aria-label="PkgLift home"><img src="/PkgLift/assets/logo.svg" alt="" width="36" height="36"><span>PkgLift</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-navigation">Menu</button><nav class="site-nav" id="site-navigation" data-nav aria-label="Primary navigation"><a href="/PkgLift/">Home</a><a href="/PkgLift/cocoapods-to-swiftpm/">Migration guide</a><a href="/PkgLift/safe-migration/">Safety</a><a href="/PkgLift/compatibility/" aria-current="page">Compatibility</a><a href="/PkgLift/case-study/">Case study</a><a href="/PkgLift/troubleshooting/">Troubleshooting</a><a href="/PkgLift/registry/">Registry</a><a class="github-link" href="https://github.com/Alexsvensson99/PkgLift">GitHub ↗</a></nav></div></header>
+<main id="main">
+<section class="page-hero"><div class="container"><div class="breadcrumb"><a href="/PkgLift/">PkgLift</a><span>/</span><span>Compatibility</span></div><div class="eyebrow">Explicit boundaries</div><h1>Compatibility is evidence, not a language assumption</h1><p class="lead">PkgLift performs partial CocoaPods-to-SwiftPM migration for native Xcode projects. It profiles consumer target sources from PBX metadata and fails closed when language or integration evidence is incomplete.</p></div></section>
+<article class="article reading">
+  <h2>Source-language matrix</h2>
+  <table><thead><tr><th>Consumer target</th><th>Analysis</th><th>AUTO requirement</th></tr></thead><tbody>
+    <tr><td>Swift</td><td>Supported</td><td>Complete target profile and a mapping that explicitly supports Swift.</td></tr>
+    <tr><td>Objective-C</td><td>Supported</td><td>Complete target profile and explicit Objective-C consumer evidence in the mapping.</td></tr>
+    <tr><td>Mixed Swift and Objective-C</td><td>Supported</td><td>The same mapping must explicitly support both languages.</td></tr>
+    <tr><td>Objective-C++, C, or C++</td><td>Profiled</td><td><code>REVIEW</code> unless the exact mapping explicitly supports every present language.</td></tr>
+    <tr><td>Incomplete or unknown PBX source profile</td><td>Reported</td><td>Never <code>AUTO</code>.</td></tr>
+  </tbody></table>
+  <p>PkgLift reads PBX metadata, not source contents. Missing file references, unknown compiled file types, and file-system-synchronized root groups make a profile incomplete. A package’s implementation language is not proof that every consumer language can import it safely.</p>
+  <h2>Project-integration matrix</h2>
+  <table><thead><tr><th>Integration</th><th>Behavior</th></tr></thead><tbody>
+    <tr><td>Native Xcode + CocoaPods</td><td>Primary scope. Supported dependencies may be migrated partially while remaining pods stay under CocoaPods.</td></tr>
+    <tr><td>Carthage</td><td>Detected from Cartfiles or Xcode integration. Confirmed presence prevents <code>AUTO</code>; PkgLift neither interprets nor changes Carthage state.</td></tr>
+    <tr><td>React Native</td><td><code>use_react_native!</code> is reported as a typed project marker and prevents <code>AUTO</code>.</td></tr>
+    <tr><td>Flutter</td><td><code>flutter_install_all_ios_pods</code> is reported as a typed project marker and prevents <code>AUTO</code>.</td></tr>
+    <tr><td>Capacitor</td><td><code>capacitor_pods</code> is reported as a typed project marker and prevents <code>AUTO</code>.</td></tr>
+    <tr><td>Kotlin Multiplatform</td><td>No speculative heuristic. Generated or local pods and dynamic declarations remain subject to existing conservative rules.</td></tr>
+  </tbody></table>
+  <div class="callout callout-warning"><strong>A detected integration is a boundary, not a migration target.</strong> PkgLift does not execute integration scripts, infer their dependency graph, or rewrite their generated state.</div>
+  <h2>CocoaPods remains usable</h2>
+  <p>CocoaPods has announced a plan to make the Specs trunk read-only, currently targeting December 2, 2026. Existing podspecs, CDN access, and builds are expected to continue. PkgLift therefore focuses on reviewable partial migration, not an emergency all-or-nothing conversion. Read the <a href="https://blog.cocoapods.org/CocoaPods-Specs-Repo/">official CocoaPods plan</a> for the current timeline.</p>
+  <p><a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/">Use the migration guide</a> <a class="button" href="/PkgLift/safe-migration/">Review the safety model</a></p>
+</article>
+</main>
+<footer class="site-footer"><div class="container footer-inner"><div>PkgLift is open source under the MIT License.</div><div class="footer-links"><a href="https://github.com/Alexsvensson99/PkgLift">GitHub</a><a href="https://github.com/Alexsvensson99/PkgLift/releases/latest">Releases</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/SUPPORT.md">Support</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/SECURITY.md">Security</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/CONTRIBUTING.md">Contributing</a></div></div></footer>
+</body>
+</html>

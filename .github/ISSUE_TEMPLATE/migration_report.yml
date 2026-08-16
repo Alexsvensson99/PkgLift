@@ -44,6 +44,33 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: consumer_languages
+    attributes:
+      label: Consumer target source languages
+      description: Choose the PBX source profile reported for the target that consumes the dependency.
+      options:
+        - Swift only
+        - Objective-C only
+        - Mixed Swift and Objective-C
+        - C, C++, or Objective-C++ present
+        - Incomplete or unknown profile
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: integrations
+    attributes:
+      label: Other dependency integrations detected
+      description: Select every integration present in the project, even if PkgLift correctly refused AUTO.
+      options:
+        - label: Carthage
+        - label: React Native (`use_react_native!`)
+        - label: Flutter (`flutter_install_all_ios_pods`)
+        - label: Capacitor (`capacitor_pods`)
+        - label: Kotlin Multiplatform or another generated integration
+        - label: None of these
+
   - type: checkboxes
     id: commands
     attributes:
@@ -115,5 +142,5 @@ body:
           required: true
         - label: If a plan was generated, I reviewed it before applying any changes.
           required: true
-        - label: I removed secrets and proprietary information from this report and any attached diagnostics JSON.
+        - label: I removed secrets and proprietary information from this report and any attached diagnostics or portable JSON.
           required: true

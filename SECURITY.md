@@ -2,6 +2,13 @@
 
 Security is a core consideration for PkgLift, as we operate on source code and dependency graphs.
 
+## Supported Versions
+
+| Version | Security support |
+|---|---|
+| Current `0.2.x` minor line | Supported |
+| `0.1.x` and older | Upgrade required |
+
 ## Threat Model and Mitigations
 
 - **Malicious Podfiles**: We never execute Ruby code. Podfiles are parsed syntactically or using non-executing techniques.
@@ -16,4 +23,6 @@ Security is a core consideration for PkgLift, as we operate on source code and d
 
 If you discover a security vulnerability within PkgLift, please do not file a public issue.
 
-Instead, please send an e-mail to the maintainers (or use GitHub Security Advisories). We will respond promptly.
+Use GitHub's [private vulnerability reporting form](https://github.com/Alexsvensson99/PkgLift/security/advisories/new). Include the affected version or commit, impact, reproduction steps, and the smallest safe supporting material. Do not include third-party secrets, proprietary source, or unrelated personal data.
+
+If private vulnerability reporting is temporarily unavailable, use the non-sensitive contact paths in [SUPPORT.md](SUPPORT.md) only to request a private channel. Do not place vulnerability details in a public issue. Reports are handled on a best-effort basis; acknowledgement and remediation timelines depend on severity, reproducibility, and maintainer availability.

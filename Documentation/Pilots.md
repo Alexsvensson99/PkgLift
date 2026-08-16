@@ -22,30 +22,34 @@ The read-only matrix does **not** run `pod install`, execute upstream scripts, a
 | Positive | `aws-samples/amazon-ivs-grid-feed-for-ios-demo` at `5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d` | `SDWebImage` is `AUTO`; `AmazonIVSPlayer` remains non-automatic | #23 |
 | Mixed | `ayseyurek/LoodosCase` at `407b65db02469467b3317ca8dee0d8676c7e673e` | Alamofire and Kingfisher are `AUTO`; older or unmapped Firebase and Lottie identifiers remain non-automatic | #24 |
 | Conservative | `Finb/V2ex-Swift` at `28ef39d2e5fc11d28bc79743ba2bc5f5594ba170` | dynamic Ruby and `post_install` force a mutation-free refusal; no direct entry becomes `AUTO` | #25 |
+| Tinode compatibility | `tinode/ios` at `a4db1251549c40b7aa4f269cd79234eb4c07baff` | 11 direct identities; dynamic Ruby and `post_install` keep every entry non-automatic | local batch `20260815` |
+| Broad mixed catalog | `devMEremenko/XcodeBenchmark` at `60d82d23e34fd63c4cae5d26d10cbdd88f0b0ee2` | 42 direct identities; hooks and dynamic Ruby keep every entry non-automatic | local batch `20260815` |
+| Objective-C/macOS shape | `Hammerspoon/hammerspoon` at `23e387e2805a9890066366e0ac96c71b27f0cfd5` | 10 direct identities; no entry becomes `AUTO` | local batch `20260815` |
+| Nested example root | `vtourraine/AcknowList` at `0288baabb859af22b9e152555fa56b56094de789` under `Examples/AcknowExampleCocoaPods` | the local `AcknowList` pod remains `BLOCKED` | local batch `20260815` |
 
-## Positive end-to-end pilot
+## Repository-owned mixed-language end-to-end pilot
 
-The Amazon IVS sample is also covered by a separate `Positive End-to-End Pilot` workflow because its pinned source is MIT-0 licensed and its Podfile has no install hooks or dynamic Ruby.
+Only `Fixtures/MixedLanguageSDWebImage` may be changed by the end-to-end workflow. It is owned by this repository and contains one iOS target with both a Swift source and an Objective-C source importing SDWebImage. Upstream pilot repositories are never passed to `migrate --apply`.
 
-The end-to-end workflow uses two isolated checkouts:
+The `Mixed-Language End-to-End Pilot` workflow uses two disposable copies:
 
-1. a baseline checkout runs `pod install --clean-install`, verifies the pinned direct dependency versions, and builds for a generic iOS Simulator destination;
-2. a separate clean checkout runs PkgLift analysis, plan validation, and dry run;
-3. the complete reviewed `AUTO` set is required to equal only `SDWebImage` before mutation;
-4. PkgLift applies that reviewed migration and retains local rollback material outside the final diff;
-5. CocoaPods refreshes the remaining `AmazonIVSPlayer 1.40.0` dependency;
-6. `pkglift verify --build` resolves SwiftPM with the validated workspace scheme and builds the migrated workspace;
-7. the final diff is restricted to dependency-configuration files, and any source or resource change fails the job.
+1. a baseline copy runs `pod install --clean-install`, verifies `SDWebImage 5.18.1`, and builds both consumers for a generic iOS Simulator destination;
+2. a separate copy records hashes for the two source files and one resource before dependency tooling runs;
+3. PkgLift analysis must report a complete `swift` plus `objectiveC` target profile and the complete reviewed `AUTO` set must equal only `SDWebImage`;
+4. a deterministic whole-tree hash proves that `migrate` dry-run changed nothing;
+5. only that repository-owned copy reaches `migrate --apply`;
+6. CocoaPods refreshes the now-empty Podfile, then `pkglift verify --build` resolves SwiftPM and builds the generated workspace;
+7. the protected source and resource hashes must remain identical.
 
-The workflow receives no secrets and has only `contents: read`. It cannot push to the upstream repository. Build execution occurs only on an ephemeral GitHub-hosted runner, with code signing disabled. Long-running external commands have explicit process-group timeouts. Artifacts contain selected validation output, not the upstream source tree.
+The workflow receives no secrets and has only `contents: read`. Code signing is disabled, external commands have process-group timeouts, and artifacts contain selected reports and hashes rather than source files.
 
-The final v0.2.0 pilot passed its CocoaPods baseline build, exact classification review, mutation-free dry run, apply, remaining-pod refresh, SwiftPM resolution, structural verification, final build, and changed-file checks:
+The v0.2.0 Amazon IVS migration remains historical release evidence:
 
 - Successful workflow: https://github.com/Alexsvensson99/PkgLift/actions/runs/31860034938
 - Implementation: PR #34
 - Verification defect found by the pilot and fixed before completion: #35 / PR #36
 
-The end-to-end job is intentionally limited to the positive licensed pilot. The mixed pilot has no detected license file at its pinned commit and therefore remains transient read-only analysis. The conservative pilot contains dynamic Ruby and an install hook; applying it would contradict the expected safe refusal.
+Starting with v0.2.1, that upstream repository remains in the read-only matrix only. The end-to-end apply boundary is the repository-owned fixture, regardless of an upstream project's license or apparent classification.
 
 ## Upstream source and licensing
 
@@ -53,13 +57,15 @@ The pilots are external projects. Their upstream repositories, histories, and li
 
 - The Amazon IVS sample reports an MIT No Attribution (`MIT-0`) license.
 - V2ex-Swift reports an MIT license.
+- Tinode reports an Apache-2.0 license.
+- XcodeBenchmark, Hammerspoon, and AcknowList report MIT licenses.
 - No license file was detected for LoodosCase at the pinned commit. Its checkout is therefore used only transiently for analysis, no source is copied into PkgLift, and no upstream source is uploaded as an artifact. Replace this pilot if its use ever requires redistribution or a broader right than transient validation.
 
 A pilot update must change the recorded commit explicitly, explain why the old commit is no longer sufficient, and review the new Podfile, lockfile, project shape, license, and expected result.
 
 ## Running the workflows
 
-The read-only matrix runs on pull requests that change migration-sensitive source, registry data, or the pilot harness. The positive end-to-end workflow runs only for changes that can affect its migration, verification, registry mapping, or harness. Maintainers can also start either workflow manually from GitHub Actions.
+The read-only matrix runs on pull requests that change migration-sensitive source, registry data, or the pilot harness. The mixed-language end-to-end workflow runs only for changes that can affect its fixture, migration, verification, registry mapping, or harness. Maintainers can also start either workflow manually from GitHub Actions.
 
 Each job writes a Markdown summary and keeps its selected validation artifact for 14 days. A failed job should be triaged into one of these outcomes:
 

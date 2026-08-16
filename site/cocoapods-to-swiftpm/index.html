@@ -38,13 +38,13 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header"><div class="header-inner"><a class="brand" href="/PkgLift/" aria-label="PkgLift home"><img src="/PkgLift/assets/logo.svg" alt="" width="36" height="36"><span>PkgLift</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-navigation">Menu</button><nav class="site-nav" id="site-navigation" data-nav aria-label="Primary navigation"><a href="/PkgLift/">Home</a><a href="/PkgLift/cocoapods-to-swiftpm/" aria-current="page">Migration guide</a><a href="/PkgLift/safe-migration/">Safety</a><a href="/PkgLift/case-study/">Case study</a><a href="/PkgLift/troubleshooting/">Troubleshooting</a><a href="/PkgLift/registry/">Registry</a><a class="github-link" href="https://github.com/Alexsvensson99/PkgLift">GitHub ↗</a></nav></div></header>
+<header class="site-header"><div class="header-inner"><a class="brand" href="/PkgLift/" aria-label="PkgLift home"><img src="/PkgLift/assets/logo.svg" alt="" width="36" height="36"><span>PkgLift</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-navigation">Menu</button><nav class="site-nav" id="site-navigation" data-nav aria-label="Primary navigation"><a href="/PkgLift/">Home</a><a href="/PkgLift/cocoapods-to-swiftpm/" aria-current="page">Migration guide</a><a href="/PkgLift/safe-migration/">Safety</a><a href="/PkgLift/compatibility/">Compatibility</a><a href="/PkgLift/case-study/">Case study</a><a href="/PkgLift/troubleshooting/">Troubleshooting</a><a href="/PkgLift/registry/">Registry</a><a class="github-link" href="https://github.com/Alexsvensson99/PkgLift">GitHub ↗</a></nav></div></header>
 <main id="main">
 <section class="page-hero"><div class="container"><div class="breadcrumb"><a href="/PkgLift/">PkgLift</a><span>/</span><span>Migration guide</span></div><div class="eyebrow">Practical guide</div><h1>How to migrate from CocoaPods to SwiftPM safely</h1><p class="lead">A migration is not complete when a Podfile line disappears. It is complete when the right package and product are linked to the right target—and the project still builds.</p></div></section>
 <article class="article reading">
   <div class="callout"><strong>What PkgLift automates:</strong> discovery, classification, planning, typed Xcode project changes, and verification for entries with complete evidence. It deliberately leaves uncertain dependencies under CocoaPods.</div>
   <h2 class="anchor-heading" id="before">Before you begin</h2>
-  <ul><li>Use an Apple Silicon Mac running macOS 14 or later.</li><li>Start from a repository with a valid baseline build.</li><li>Commit or stash every existing change. PkgLift refuses to apply a migration to a dirty Git worktree.</li><li>Know the shared Xcode scheme used by your normal build or CI.</li></ul>
+  <ul><li>Use an Apple Silicon Mac running macOS 14 or later.</li><li>Start from a native Xcode repository with a valid baseline build.</li><li>Check the <a href="/PkgLift/compatibility/">compatibility matrix</a>, especially for Objective-C, mixed-language, Carthage, or cross-platform projects.</li><li>Commit or stash every existing change. PkgLift refuses to apply a migration to a dirty Git worktree.</li><li>Know the shared Xcode scheme used by your normal build or CI.</li></ul>
   <h2 class="anchor-heading" id="install">1. Install PkgLift</h2>
   <div class="command-card"><code>brew install Alexsvensson99/tap/pkglift</code><button class="copy-button" type="button" data-copy="brew install Alexsvensson99/tap/pkglift">Copy</button></div>
   <pre><code>pkglift version
@@ -54,6 +54,7 @@ pkglift registry validate</code></pre>
   <pre><code>cd /path/to/your/repository
 pkglift analyze</code></pre>
   <p>PkgLift recursively discovers supported Xcode projects and workspaces beneath the selected root while excluding generated dependency and build trees.</p>
+  <p>For reviewable output that can move between machines, use <code>pkglift analyze --portable-json</code>. It sanitizes local paths and URL credentials, but can still contain dependency and target names; inspect it before sharing.</p>
   <p>When several candidates exist, choose explicitly instead of letting any tool guess:</p>
   <pre><code>pkglift analyze --path . \
   --workspace Workspaces/Products.xcworkspace \
@@ -61,6 +62,7 @@ pkglift analyze</code></pre>
   <h2 class="anchor-heading" id="plan">3. Generate and review the plan</h2>
   <pre><code>pkglift plan</code></pre>
   <p>The command writes <code>.pkglift/plan.json</code>. Open it and inspect every direct dependency, destination target, package URL, product, and version requirement.</p>
+  <p><code>pkglift plan --portable-json</code> prints a sanitized copy while preserving the complete executable plan in <code>.pkglift/plan.json</code>. Portable output is not a privacy-minimized diagnostics report.</p>
   <table><thead><tr><th>Classification</th><th>Your action</th></tr></thead><tbody><tr><td><span class="tag tag-auto">AUTO</span></td><td>Verify the exact mapping and target. This is the only class that apply may execute.</td></tr><tr><td><span class="tag tag-review">REVIEW</span></td><td>Investigate project-specific context or perform the migration manually.</td></tr><tr><td><span class="tag tag-blocked">BLOCKED</span></td><td>Resolve the incompatible construct before considering automation.</td></tr><tr><td><span class="tag tag-unknown">UNKNOWN</span></td><td>Keep the pod or contribute a verified mapping with official upstream evidence.</td></tr></tbody></table>
   <div class="callout callout-warning"><strong>Keep the worktree clean.</strong> The generated plan itself can appear as an untracked file. For a one-off local test, exclude only <code>.pkglift/plan.json</code> through <code>.git/info/exclude</code>; do not weaken the clean-worktree safeguard.</div>
   <h2 class="anchor-heading" id="dry-run">4. Run the migration preview</h2>
@@ -89,6 +91,6 @@ pkglift verify \
   <p><a class="button" href="https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml">Report a migration result</a></p>
 </article>
 </main>
-<footer class="site-footer"><div class="container footer-inner"><div>PkgLift is open source under the MIT License.</div><div class="footer-links"><a href="https://github.com/Alexsvensson99/PkgLift">GitHub</a><a href="https://github.com/Alexsvensson99/PkgLift/releases/latest">Releases</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/SECURITY.md">Security</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/CONTRIBUTING.md">Contributing</a></div></div></footer>
+<footer class="site-footer"><div class="container footer-inner"><div>PkgLift is open source under the MIT License.</div><div class="footer-links"><a href="https://github.com/Alexsvensson99/PkgLift">GitHub</a><a href="https://github.com/Alexsvensson99/PkgLift/releases/latest">Releases</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/SUPPORT.md">Support</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/SECURITY.md">Security</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/CONTRIBUTING.md">Contributing</a></div></div></footer>
 </body>
 </html>

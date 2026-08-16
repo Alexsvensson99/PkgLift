@@ -119,7 +119,8 @@ def validate(site: Path) -> list[str]:
         "site.webmanifest", "assets/styles.css", "assets/site.js", "assets/logo.svg",
         "assets/favicon.svg", "assets/social-card.png",
         "cocoapods-to-swiftpm/index.html", "safe-migration/index.html",
-        "case-study/index.html", "troubleshooting/index.html", "registry/index.html",
+        "compatibility/index.html", "case-study/index.html",
+        "troubleshooting/index.html", "registry/index.html",
     ]
     for relative in required:
         if not (site / relative).exists():
@@ -198,6 +199,7 @@ def validate(site: Path) -> list[str]:
             BASE_URL,
             BASE_URL + "cocoapods-to-swiftpm/",
             BASE_URL + "safe-migration/",
+            BASE_URL + "compatibility/",
             BASE_URL + "case-study/",
             BASE_URL + "troubleshooting/",
             BASE_URL + "registry/",
