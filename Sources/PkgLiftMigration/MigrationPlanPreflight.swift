@@ -83,9 +83,12 @@ public struct MigrationPlanPreflight: Sendable {
     public func prepare(
         plan: MigrationPlan,
         currentPlan: MigrationPlan,
-        availableTargets: [String]
+        availableTargetInfos: [TargetInfo]
     ) throws -> PreparedMigration {
-        let prepared = try prepare(plan: plan, availableTargets: availableTargets)
+        let prepared = try prepare(
+            plan: plan,
+            availableTargetInfos: availableTargetInfos
+        )
         try validateSavedAutoEntries(
             plan.autoEntries,
             against: currentPlan.entries
@@ -93,7 +96,26 @@ public struct MigrationPlanPreflight: Sendable {
         return prepared
     }
 
-    public func prepare(plan: MigrationPlan, availableTargets: [String]) throws -> PreparedMigration {
+    /// Backward-compatible target-name API. Names alone cannot prove source
+    /// languages, so any AUTO entry is conservatively refused.
+    public func prepare(
+        plan: MigrationPlan,
+        currentPlan: MigrationPlan,
+        availableTargets: [String]
+    ) throws -> PreparedMigration {
+        try prepare(
+            plan: plan,
+            currentPlan: currentPlan,
+            availableTargetInfos: availableTargets.map {
+                TargetInfo(name: $0, type: "unknown")
+            }
+        )
+    }
+
+    public func prepare(
+        plan: MigrationPlan,
+        availableTargetInfos: [TargetInfo]
+    ) throws -> PreparedMigration {
         guard plan.schemaVersion == MigrationPlan.schemaVersion else {
             throw MigrationPlanPreflightError.unsupportedSchemaVersion(plan.schemaVersion)
         }
@@ -139,6 +161,14 @@ public struct MigrationPlanPreflight: Sendable {
                     detail: "the SwiftPM product list is missing or invalid."
                 )
             }
+            guard let supportedLanguages = package.supportedConsumerLanguages,
+                  !supportedLanguages.isEmpty,
+                  Set(supportedLanguages).count == supportedLanguages.count else {
+                throw MigrationPlanPreflightError.incompleteAutoEntry(
+                    dependency: dependency,
+                    detail: "verified SwiftPM consumer-language evidence is missing or invalid. Regenerate the plan."
+                )
+            }
             guard let targetName = entry.targetName?.trimmingCharacters(in: .whitespacesAndNewlines),
                   !targetName.isEmpty else {
                 throw MigrationPlanPreflightError.incompleteAutoEntry(
@@ -169,6 +199,22 @@ public struct MigrationPlanPreflight: Sendable {
             }) else {
                 throw MigrationPlanPreflightError.actionMismatch(dependency: dependency)
             }
+            guard let targetSourceProfile = entry.targetSourceProfile else {
+                throw MigrationPlanPreflightError.incompleteAutoEntry(
+                    dependency: dependency,
+                    detail: "the destination target source-language profile is missing. Regenerate the plan."
+                )
+            }
+            guard targetSourceProfile.completeness == .complete,
+                  !targetSourceProfile.languages.isEmpty else {
+                throw MigrationPlanPreflightError.incompleteAutoEntry(
+                    dependency: dependency,
+                    detail: "the destination target source-language profile is incomplete or empty. Regenerate the plan."
+                )
+            }
+            guard Set(targetSourceProfile.languages).isSubset(of: Set(supportedLanguages)) else {
+                throw MigrationPlanPreflightError.actionMismatch(dependency: dependency)
+            }
 
             var expectedActions: [MigrationAction] = [
                 .removePod(name: dependency),
@@ -186,23 +232,33 @@ public struct MigrationPlanPreflight: Sendable {
                 throw MigrationPlanPreflightError.actionMismatch(dependency: dependency)
             }
 
+            let matchingTargets = availableTargetInfos.filter { $0.name == targetName }
+            guard let firstProduct = package.products.first else {
+                throw MigrationPlanPreflightError.incompleteAutoEntry(
+                    dependency: dependency,
+                    detail: "the SwiftPM product list is missing or invalid."
+                )
+            }
+            if matchingTargets.isEmpty {
+                throw MigrationPlanPreflightError.targetNotFound(
+                    dependency: dependency,
+                    product: firstProduct,
+                    expectedTarget: targetName
+                )
+            }
+            if matchingTargets.count != 1 {
+                throw MigrationPlanPreflightError.ambiguousTarget(
+                    dependency: dependency,
+                    product: firstProduct,
+                    expectedTarget: targetName,
+                    matchCount: matchingTargets.count
+                )
+            }
+            guard matchingTargets[0].sourceProfile == targetSourceProfile else {
+                throw MigrationPlanPreflightError.staleAutoEntry(dependency: dependency)
+            }
+
             for product in package.products {
-                let matches = availableTargets.filter { $0 == targetName }.count
-                if matches == 0 {
-                    throw MigrationPlanPreflightError.targetNotFound(
-                        dependency: dependency,
-                        product: product,
-                        expectedTarget: targetName
-                    )
-                }
-                if matches != 1 {
-                    throw MigrationPlanPreflightError.ambiguousTarget(
-                        dependency: dependency,
-                        product: product,
-                        expectedTarget: targetName,
-                        matchCount: matches
-                    )
-                }
                 productLinks.append(.init(
                     dependency: dependency,
                     repositoryURL: repositoryURL,
@@ -233,6 +289,20 @@ public struct MigrationPlanPreflight: Sendable {
         )
     }
 
+    /// Backward-compatible target-name API. It retains source compatibility
+    /// while refusing AUTO because names do not contain language evidence.
+    public func prepare(
+        plan: MigrationPlan,
+        availableTargets: [String]
+    ) throws -> PreparedMigration {
+        try prepare(
+            plan: plan,
+            availableTargetInfos: availableTargets.map {
+                TargetInfo(name: $0, type: "unknown")
+            }
+        )
+    }
+
     private func validateSavedAutoEntries(
         _ savedEntries: [MigrationPlanEntry],
         against currentEntries: [MigrationPlanEntry]
@@ -251,7 +321,8 @@ public struct MigrationPlanPreflight: Sendable {
                   current.targetName == saved.targetName,
                   current.packageCandidate == saved.packageCandidate,
                   current.declarations == saved.declarations,
-                  current.targetAttribution == saved.targetAttribution else {
+                  current.targetAttribution == saved.targetAttribution,
+                  current.targetSourceProfile == saved.targetSourceProfile else {
                 throw MigrationPlanPreflightError.staleAutoEntry(
                     dependency: saved.podName
                 )

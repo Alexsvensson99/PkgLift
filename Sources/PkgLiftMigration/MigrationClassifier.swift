@@ -39,6 +39,7 @@ public struct MigrationClassifier: Sendable {
         mapping: RegistryMapping?,
         isAlreadyMigrated: Bool = false,
         isTargetMappingKnown: Bool = true,
+        targetSourceProfile: TargetSourceProfile? = nil,
         podfileFeatures: PodfileFeatures = PodfileFeatures()
     ) -> MigrationClassification {
         let dependencyInfo = DependencyInfo(
@@ -74,18 +75,26 @@ public struct MigrationClassifier: Sendable {
                 confidence: $0.migration.confidence,
                 repositoryURL: $0.swiftpm.repository,
                 products: $0.swiftpm.products,
-                minimumVersion: $0.swiftpm.minimumVersion
+                minimumVersion: $0.swiftpm.minimumVersion,
+                supportedConsumerLanguages: $0.swiftpm.supportedConsumerLanguages
             )
         }
         
-        return classify(dependency: dependencyInfo, mapping: mappingInfo, isAlreadyMigrated: isAlreadyMigrated, isTargetMappingKnown: isTargetMappingKnown)
+        return classify(
+            dependency: dependencyInfo,
+            mapping: mappingInfo,
+            isAlreadyMigrated: isAlreadyMigrated,
+            isTargetMappingKnown: isTargetMappingKnown,
+            targetSourceProfile: targetSourceProfile
+        )
     }
 
     private func classify(
         dependency: DependencyInfo,
         mapping: RegistryMappingInfo?,
         isAlreadyMigrated: Bool = false,
-        isTargetMappingKnown: Bool = true
+        isTargetMappingKnown: Bool = true,
+        targetSourceProfile: TargetSourceProfile? = nil
     ) -> MigrationClassification {
         var reasons: [String] = []
 
@@ -146,6 +155,37 @@ public struct MigrationClassifier: Sendable {
             reasons.append("Registry mapping is not verified")
         }
 
+        if let mapping {
+            let supportedLanguages = mapping.supportedConsumerLanguages
+            if supportedLanguages?.isEmpty != false {
+                reasons.append("Registry mapping has no verified consumer-language support")
+            } else if let supportedLanguages,
+                      Set(supportedLanguages).count != supportedLanguages.count {
+                reasons.append("Registry mapping consumer-language evidence is invalid")
+            }
+
+            if let targetSourceProfile {
+                if targetSourceProfile.completeness != .complete {
+                    reasons.append("Target source-language profile is incomplete")
+                }
+                if targetSourceProfile.languages.isEmpty {
+                    reasons.append("Target source-language profile contains no compiled source languages")
+                }
+                if let supportedLanguages {
+                    let supported = Set(supportedLanguages)
+                    let unsupported = targetSourceProfile.languages.filter { !supported.contains($0) }
+                    if !unsupported.isEmpty {
+                        reasons.append(
+                            "Target source languages are not supported by the registry mapping: "
+                                + unsupported.map(\.rawValue).joined(separator: ", ")
+                        )
+                    }
+                }
+            } else {
+                reasons.append("Target source-language profile is missing")
+            }
+        }
+
         switch dependency.targetAttributionStatus {
         case .exact:
             if !isTargetMappingKnown || dependency.targetCount != 1 {
@@ -204,7 +244,7 @@ public struct MigrationClassifier: Sendable {
             return MigrationClassification(
                 category: .auto,
                 reasons: [
-                    "Verified exact registry mapping; resolved version \(resolvedVersion) meets minimum \(minimumVersion)",
+                    "Verified exact registry mapping and target language support; resolved version \(resolvedVersion) meets minimum \(minimumVersion)",
                 ]
             )
         }
@@ -230,6 +270,7 @@ private struct RegistryMappingInfo: Sendable {
     let repositoryURL: String
     let products: [String]
     let minimumVersion: String?
+    let supportedConsumerLanguages: [SourceLanguage]?
 }
 
 private struct DependencyInfo: Sendable {

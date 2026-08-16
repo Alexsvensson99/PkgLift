@@ -155,6 +155,11 @@ final class CommandContextMigrationTests: XCTestCase {
         XCTAssertEqual(entry.currentVersion, "5.0.0")
         XCTAssertEqual(entry.targetName, "App")
         XCTAssertEqual(entry.classification, .auto)
+        XCTAssertEqual(entry.packageCandidate?.supportedConsumerLanguages, [.swift])
+        XCTAssertEqual(
+            entry.targetSourceProfile,
+            TargetSourceProfile(languages: [.swift], completeness: .complete)
+        )
         XCTAssertEqual(entry.actions, [
             .removePod(name: "Alamofire"),
             .addSwiftPackage(
@@ -167,6 +172,77 @@ final class CommandContextMigrationTests: XCTestCase {
                 targetName: "App"
             ),
         ])
+    }
+
+    func testMixedSwiftObjectiveCTargetIsAutoOnlyWithMatchingRegistryEvidence() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'SDWebImage'\nend\n",
+            lockfile: "PODS:\n  - SDWebImage (5.18.1)\nDEPENDENCIES:\n  - SDWebImage\n",
+            targetNames: ["App"],
+            targetSourceFileTypes: [
+                "App": ["sourcecode.swift", "sourcecode.c.objc"],
+            ]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let options = try CommonOptions.parse([
+            "--path", fixture.root.path,
+            "--project", fixture.project.path,
+        ])
+
+        let context = try await CommandContext.load(from: options)
+        let entry = try XCTUnwrap(context.buildMigrationPlan().entries.first)
+
+        XCTAssertEqual(entry.classification, .auto)
+        XCTAssertEqual(entry.packageCandidate?.supportedConsumerLanguages, [.swift, .objectiveC])
+        XCTAssertEqual(
+            entry.targetSourceProfile,
+            TargetSourceProfile(
+                languages: [.swift, .objectiveC],
+                completeness: .complete
+            )
+        )
+    }
+
+    func testApplyRefusesSavedAutoPlanWithLanguageEvidenceRemoved() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+        var planCommand = try PlanCommand.parse(arguments)
+        try await planCommand.run()
+
+        let planURL = fixture.root.appendingPathComponent(".pkglift/plan.json")
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(contentsOf: planURL)) as? [String: Any]
+        )
+        var entries = try XCTUnwrap(object["entries"] as? [[String: Any]])
+        entries[0].removeValue(forKey: "targetSourceProfile")
+        var package = try XCTUnwrap(entries[0]["packageCandidate"] as? [String: Any])
+        package.removeValue(forKey: "supportedConsumerLanguages")
+        entries[0]["packageCandidate"] = package
+        object["entries"] = entries
+        try JSONSerialization.data(
+            withJSONObject: object,
+            options: [.prettyPrinted, .sortedKeys]
+        ).write(to: planURL, options: .atomic)
+
+        let podfileURL = fixture.root.appendingPathComponent("Podfile")
+        let originalPodfile = try String(contentsOf: podfileURL)
+        var apply = try MigrateCommand.parse(arguments + ["--apply"])
+        do {
+            try await apply.run()
+            XCTFail("Expected language-evidence preflight refusal")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("consumer-language evidence"))
+            XCTAssertTrue(error.localizedDescription.contains("Regenerate"))
+        }
+
+        XCTAssertEqual(try String(contentsOf: podfileURL), originalPodfile)
+        let analysis = try XcodeProjectAnalyzer().analyzeProject(at: fixture.project.path)
+        XCTAssertTrue(analysis.swiftPMState.packages.isEmpty)
     }
 
     func testNoLockfileVersionIsReviewAndNeverGetsFakeRequirement() async throws {
@@ -438,7 +514,8 @@ final class CommandContextMigrationTests: XCTestCase {
     private func makeFixture(
         podfile: String,
         lockfile: String?,
-        targetNames: [String]
+        targetNames: [String],
+        targetSourceFileTypes: [String: [String]] = [:]
     ) throws -> (root: URL, project: URL) {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("PkgLiftCLI-\(UUID().uuidString)")
@@ -453,22 +530,43 @@ final class CommandContextMigrationTests: XCTestCase {
         }
 
         let projectURL = root.appendingPathComponent("App.xcodeproj")
-        let mainGroup = PBXGroup(children: [], sourceTree: .group, name: "Main")
         let projectConfigurations = XCConfigurationList()
-        var objects: [PBXObject] = [mainGroup, projectConfigurations]
-        let targets: [PBXNativeTarget] = targetNames.map { name in
+        var objects: [PBXObject] = [projectConfigurations]
+        var sourceReferences: [PBXFileReference] = []
+        var targets: [PBXNativeTarget] = []
+        for name in targetNames {
             let configurations = XCConfigurationList()
             let frameworks = PBXFrameworksBuildPhase(files: [])
+            let references = (targetSourceFileTypes[name] ?? ["sourcecode.swift"])
+                .enumerated()
+                .map { index, fileType in
+                    PBXFileReference(
+                        sourceTree: .group,
+                        lastKnownFileType: fileType,
+                        path: "\(name)Source\(index)"
+                    )
+                }
+            let sourceBuildFiles = references.map { PBXBuildFile(file: $0) }
+            let sources = PBXSourcesBuildPhase(files: sourceBuildFiles)
             let target = PBXNativeTarget(
                 name: name,
                 buildConfigurationList: configurations,
-                buildPhases: [frameworks],
+                buildPhases: [sources, frameworks],
                 productName: "\(name).app",
                 productType: .application
             )
-            objects.append(contentsOf: [configurations, frameworks, target])
-            return target
+            sourceReferences.append(contentsOf: references)
+            targets.append(target)
+            objects.append(contentsOf: references)
+            objects.append(contentsOf: sourceBuildFiles)
+            objects.append(contentsOf: [configurations, sources, frameworks, target])
         }
+        let mainGroup = PBXGroup(
+            children: sourceReferences,
+            sourceTree: .group,
+            name: "Main"
+        )
+        objects.insert(mainGroup, at: 0)
         let rootProject = PBXProject(
             name: "App",
             buildConfigurationList: projectConfigurations,
