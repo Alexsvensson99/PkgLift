@@ -1,10 +1,12 @@
-name: Registry Validation
+name: CodeQL
 
 on:
   push:
     branches:
       - main
   pull_request:
+  schedule:
+    - cron: '41 4 * * 3'
   workflow_dispatch:
 
 permissions:
@@ -16,7 +18,7 @@ concurrency:
 
 jobs:
   changes:
-    name: Registry Changes
+    name: CodeQL Changes
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -25,7 +27,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-      - name: Detect registry-relevant changes
+      - name: Detect Swift-relevant changes
         id: filter
         env:
           PKGLIFT_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
@@ -34,51 +36,57 @@ jobs:
         run: |
           set -euo pipefail
           relevant="$(python3 Scripts/ci-paths-relevant.py \
-            '.github/workflows/registry.yml' \
+            '.github/workflows/codeql.yml' \
             'Package.swift' \
             'Package.resolved' \
-            'Registry/**' \
-            'Sources/PkgLiftCore/**' \
-            'Sources/PkgLiftRegistry/**' \
-            'Tests/PkgLiftRegistryTests/**' \
+            'Sources/**' \
             'Scripts/ci-paths-relevant.py')"
           echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
 
-  validate:
-    name: Registry Validation
+  analyze:
+    name: Swift Analysis
     needs: changes
     if: needs.changes.outputs.relevant == 'true'
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - name: Swift Version
-        run: swift --version
-      - name: Validate Registry
-        run: swift run -j 2 pkglift registry validate
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          languages: swift
+          build-mode: manual
+          queries: security-and-quality
+      - name: Build Swift package for analysis
+        run: swift build -j 2
+      - name: Analyze Swift
+        uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
 
   gate:
-    name: Registry Gate
-    needs: [changes, validate]
+    name: CodeQL
+    needs: [changes, analyze]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Require applicable registry validation
+      - name: Require applicable analysis
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
           RELEVANT: ${{ needs.changes.outputs.relevant }}
-          VALIDATE_RESULT: ${{ needs.validate.result }}
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
         shell: bash
         run: |
           set -euo pipefail
           [[ "$CHANGES_RESULT" == 'success' ]]
           if [[ "$RELEVANT" == 'true' ]]; then
-            [[ "$VALIDATE_RESULT" == 'success' ]]
-            echo 'Registry validation passed.'
+            [[ "$ANALYZE_RESULT" == 'success' ]]
+            echo 'Swift CodeQL analysis passed.'
           else
-            [[ "$VALIDATE_RESULT" == 'skipped' ]]
-            echo 'No registry-relevant changes; heavy validation was safely skipped.'
+            [[ "$ANALYZE_RESULT" == 'skipped' ]]
+            echo 'No Swift-relevant changes; CodeQL analysis was safely skipped.'
           fi

@@ -14,12 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--portable-json` for `analyze` and `plan`, with local-path and URL-secret redaction and a versioned portable-output marker.
 - A repository-owned mixed Swift/Objective-C SDWebImage fixture and four additional immutable read-only upstream pilot cases.
 - Compatibility, support, and private vulnerability-reporting guidance.
+- Weekly SwiftPM and GitHub Actions updates through Dependabot, plus SHA-pinned Swift CodeQL analysis on macOS.
 
 ### Changed
 - Repeated declarations of the same exact pod name are represented by one deterministic dependency and plan entry while retaining every literal declaration origin.
 - Analysis and plan JSON include explicitly named source, dependency, candidate, and plan-entry counts; human analysis and diagnostics keep their direct-dependency totals scoped to unique identities.
 - Xcode target environments now honor project and target xcconfig precedence across every build configuration, while targets, SwiftPM packages, and linked products use deterministic ordering.
 - End-to-end apply validation now runs only against a repository-owned fixture; all pinned upstream projects are analysis, plan, and dry-run only.
+- Registry, CodeQL, and both pilot workflows expose stable summary gates on every pull request while running expensive jobs only for relevant changes; the complete read-only pilot matrix also runs weekly.
 
 ### Fixed
 - Static helper attribution handles bounded literal calls and nested-target inheritance without assigning helper declarations to the wrong target.
@@ -32,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Parent declarations include statically proven nested targets that use default or complete inheritance; the literal CocoaPods-only option `modular_headers: true` remains migratable, while uncertain helper dispatch, other declaration options, conditions, and inheritance fail closed to review.
 - `AUTO` and preflight require a complete, non-empty target profile whose every language is explicitly supported by the exact registry mapping; older or manipulated plans without this evidence are refused.
 - Confirmed Carthage, React Native, Flutter, and Capacitor integration prevents automatic migration without parsing or modifying those ecosystems.
+- Repository validation rejects mutable third-party Action references instead of relying only on maintainer convention.
 
 ## [0.2.0] - 2026-08-15
 

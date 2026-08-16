@@ -118,6 +118,7 @@ jobs:
             ''
             'cocoapods-to-swiftpm/'
             'safe-migration/'
+            'compatibility/'
             'case-study/'
             'troubleshooting/'
             'registry/'

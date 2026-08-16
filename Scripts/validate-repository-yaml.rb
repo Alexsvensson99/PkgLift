@@ -23,6 +23,43 @@ yaml_paths.each do |path|
   errors << "#{path}: top-level YAML value must be a mapping" unless document.nil? || document.is_a?(Hash)
 end
 
+workflow_paths = Dir.glob(".github/workflows/*.{yml,yaml}").sort
+workflow_paths.each do |path|
+  File.foreach(path, encoding: "UTF-8").with_index(1) do |line, line_number|
+    match = line.match(/^\s*(?:-\s*)?uses:\s+([^\s#]+)/)
+    next if match.nil?
+
+    reference = match[1]
+    next if reference.start_with?("./", "docker://")
+
+    unless reference.match?(%r{\A[^@]+@[0-9a-f]{40}\z})
+      errors << "#{path}:#{line_number}: external action must use a full commit SHA"
+    end
+  end
+end
+
+required_gates = {
+  ".github/workflows/registry.yml" => "name: Registry Gate",
+  ".github/workflows/pilots.yml" => "name: Pinned Pilot Gate",
+  ".github/workflows/positive-e2e.yml" => "name: Mixed-Language Pilot Gate",
+  ".github/workflows/codeql.yml" => "name: CodeQL",
+}.freeze
+required_gates.each do |path, marker|
+  unless File.file?(path) && File.read(path, encoding: "UTF-8").include?(marker)
+    errors << "#{path}: missing required stable gate #{marker.inspect}"
+  end
+end
+
+dependabot = load_yaml(".github/dependabot.yml", errors)
+if dependabot.is_a?(Hash)
+  ecosystems = Array(dependabot["updates"]).map do |entry|
+    entry["package-ecosystem"] if entry.is_a?(Hash)
+  end.compact
+  %w[swift github-actions].each do |ecosystem|
+    errors << ".github/dependabot.yml: missing #{ecosystem} updates" unless ecosystems.count(ecosystem) == 1
+  end
+end
+
 issue_forms = Dir.glob(".github/ISSUE_TEMPLATE/*.{yml,yaml}")
   .reject { |path| File.basename(path) == "config.yml" }
   .sort
@@ -80,4 +117,4 @@ if errors.any?
   exit 1
 end
 
-puts "Validated #{yaml_paths.length} YAML files, including #{issue_forms.length} issue forms."
+puts "Validated #{yaml_paths.length} YAML files, #{workflow_paths.length} SHA-pinned workflows, and #{issue_forms.length} issue forms."

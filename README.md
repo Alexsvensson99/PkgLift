@@ -3,6 +3,7 @@
 [![Build](https://github.com/Alexsvensson99/PkgLift/actions/workflows/build.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/build.yml)
 [![Test](https://github.com/Alexsvensson99/PkgLift/actions/workflows/test.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/test.yml)
 [![Quality](https://github.com/Alexsvensson99/PkgLift/actions/workflows/quality.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/quality.yml)
+[![CodeQL](https://github.com/Alexsvensson99/PkgLift/actions/workflows/codeql.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/codeql.yml)
 [![Registry Validation](https://github.com/Alexsvensson99/PkgLift/actions/workflows/registry.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/registry.yml)
 [![Mixed-Language End-to-End Pilot](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Alexsvensson99/PkgLift)](https://github.com/Alexsvensson99/PkgLift/releases/latest)
