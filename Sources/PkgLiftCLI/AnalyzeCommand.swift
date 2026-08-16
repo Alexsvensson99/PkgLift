@@ -12,17 +12,30 @@ struct AnalyzeCommand: AsyncParsableCommand {
 
     @OptionGroup var common: CommonOptions
 
+    @Flag(
+        name: .customLong("portable-json"),
+        help: "Output shareable JSON with local paths and URL secrets redacted."
+    )
+    var portableJSON: Bool = false
+
+    mutating func validate() throws {
+        if common.json && portableJSON {
+            throw ValidationError("--json and --portable-json are mutually exclusive.")
+        }
+    }
+
     mutating func run() async throws {
         let context = try await CommandContext.load(from: common)
         let analysis = context.buildProjectAnalysis()
 
-        if common.json {
+        if common.json || portableJSON {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             encoder.dateEncodingStrategy = .iso8601
 
             let data = try encoder.encode(analysis)
-            guard let json = String(data: data, encoding: .utf8) else {
+            let output = try PortableJSON().output(from: data, portable: portableJSON)
+            guard let json = String(data: output, encoding: .utf8) else {
                 throw AnalysisError.encodingFailed
             }
             print(json)

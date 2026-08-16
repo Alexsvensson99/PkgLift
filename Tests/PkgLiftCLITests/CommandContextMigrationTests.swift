@@ -41,6 +41,38 @@ final class CommandContextMigrationTests: XCTestCase {
         try await verify.run()
     }
 
+    func testPortablePlanOutputRetainsFullExecutableSavedPlan() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+
+        var planCommand = try PlanCommand.parse(arguments + ["--portable-json"])
+        try await planCommand.run()
+
+        let planURL = fixture.root.appendingPathComponent(".pkglift/plan.json")
+        let savedData = try Data(contentsOf: planURL)
+        let savedJSON = try XCTUnwrap(String(data: savedData, encoding: .utf8))
+        let savedObject = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: savedData) as? [String: Any]
+        )
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let savedPlan = try decoder.decode(MigrationPlan.self, from: savedData)
+
+        XCTAssertEqual(savedPlan.projectPath, fixture.project.path)
+        XCTAssertEqual(savedPlan.autoEntries.count, 1)
+        XCTAssertEqual(savedObject["projectPath"] as? String, fixture.project.path)
+        XCTAssertFalse(savedJSON.contains("portableOutput"))
+        XCTAssertFalse(savedJSON.contains(PortableJSON.redactedPath))
+
+        var dryRun = try MigrateCommand.parse(arguments)
+        try await dryRun.run()
+    }
+
     func testDirtyGitProjectRefusesBeforeMutationAndAllowDirtyOverrides() async throws {
         let fixture = try makeFixture(
             podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",

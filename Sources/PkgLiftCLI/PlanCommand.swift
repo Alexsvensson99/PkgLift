@@ -12,6 +12,18 @@ struct PlanCommand: AsyncParsableCommand {
 
     @OptionGroup var common: CommonOptions
 
+    @Flag(
+        name: .customLong("portable-json"),
+        help: "Output a shareable redacted copy while retaining the full saved plan."
+    )
+    var portableJSON: Bool = false
+
+    mutating func validate() throws {
+        if common.json && portableJSON {
+            throw ValidationError("--json and --portable-json are mutually exclusive.")
+        }
+    }
+
     mutating func run() async throws {
         let context = try await CommandContext.load(from: common)
         let plan = context.buildMigrationPlan()
@@ -26,8 +38,9 @@ struct PlanCommand: AsyncParsableCommand {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try data.write(to: context.planURL, options: .atomic)
 
-        if common.json {
-            guard let json = String(data: data, encoding: .utf8) else {
+        if common.json || portableJSON {
+            let output = try PortableJSON().output(from: data, portable: portableJSON)
+            guard let json = String(data: output, encoding: .utf8) else {
                 throw PlanError.encodingFailed
             }
             print(json)
