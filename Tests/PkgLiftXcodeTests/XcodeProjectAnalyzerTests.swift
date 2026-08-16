@@ -815,6 +815,48 @@ final class XcodeProjectAnalyzerTests: XCTestCase {
         )
     }
 
+    func testPerFileCompilerFlagsMakeProfileIncomplete() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let project = try writeSourceProfileProject(
+            in: root,
+            fileTypes: ["sourcecode.swift", "sourcecode.c.objc"],
+            compilerFlags: [1: .string("-x objective-c++")]
+        )
+
+        let target = try analyzedTarget(in: project)
+
+        XCTAssertEqual(
+            target.sourceProfile,
+            TargetSourceProfile(
+                languages: [.swift, .objectiveC],
+                completeness: .incomplete
+            )
+        )
+    }
+
+    func testArrayPerFileCompilerFlagsMakeProfileIncomplete() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let project = try writeSourceProfileProject(
+            in: root,
+            fileTypes: ["sourcecode.c.objc"],
+            compilerFlags: [0: .array(["-x", "objective-c++"])]
+        )
+
+        let target = try analyzedTarget(in: project)
+
+        XCTAssertEqual(
+            target.sourceProfile,
+            TargetSourceProfile(
+                languages: [.objectiveC],
+                completeness: .incomplete
+            )
+        )
+    }
+
     func testFileSystemSynchronizedRootGroupMakesProfileIncomplete() throws {
         let root = try makeDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -1153,7 +1195,8 @@ final class XcodeProjectAnalyzerTests: XCTestCase {
         in root: URL,
         fileTypes: [String],
         includeMissingFileReference: Bool = false,
-        hasFileSystemSynchronizedRootGroup: Bool = false
+        hasFileSystemSynchronizedRootGroup: Bool = false,
+        compilerFlags: [Int: BuildFileSetting] = [:]
     ) throws -> URL {
         let projectURL = root.appendingPathComponent("SourceProfile.xcodeproj")
         let sourceReferences = fileTypes.enumerated().map { index, fileType in
@@ -1163,7 +1206,12 @@ final class XcodeProjectAnalyzerTests: XCTestCase {
                 path: "Source\(index)"
             )
         }
-        var buildFiles = sourceReferences.map { PBXBuildFile(file: $0) }
+        var buildFiles = sourceReferences.enumerated().map { index, reference in
+            let settings: [String: BuildFileSetting]? = compilerFlags[index].map {
+                ["COMPILER_FLAGS": $0]
+            }
+            return PBXBuildFile(file: reference, settings: settings)
+        }
         if includeMissingFileReference {
             buildFiles.append(PBXBuildFile())
         }

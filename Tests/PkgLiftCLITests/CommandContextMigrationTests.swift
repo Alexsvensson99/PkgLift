@@ -235,6 +235,40 @@ final class CommandContextMigrationTests: XCTestCase {
         )
     }
 
+    func testPerFileCompilerLanguageOverrideCannotReachAutoPlan() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'SDWebImage'\nend\n",
+            lockfile: "PODS:\n  - SDWebImage (5.18.1)\nDEPENDENCIES:\n  - SDWebImage\n",
+            targetNames: ["App"],
+            targetSourceFileTypes: [
+                "App": ["sourcecode.swift", "sourcecode.c.objc"],
+            ],
+            targetSourceCompilerFlags: [
+                "App": [1: "-x objective-c++"],
+            ]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let options = try CommonOptions.parse([
+            "--path", fixture.root.path,
+            "--project", fixture.project.path,
+        ])
+
+        let context = try await CommandContext.load(from: options)
+        let plan = context.buildMigrationPlan()
+        let entry = try XCTUnwrap(plan.entries.first)
+
+        XCTAssertEqual(entry.classification, .review)
+        XCTAssertEqual(
+            entry.targetSourceProfile,
+            TargetSourceProfile(
+                languages: [.swift, .objectiveC],
+                completeness: .incomplete
+            )
+        )
+        XCTAssertTrue(entry.reasons.contains("Target source-language profile is incomplete"))
+        XCTAssertTrue(plan.autoEntries.isEmpty)
+    }
+
     func testApplyRefusesSavedAutoPlanWithLanguageEvidenceRemoved() async throws {
         let fixture = try makeFixture(
             podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
@@ -577,7 +611,8 @@ final class CommandContextMigrationTests: XCTestCase {
         podfile: String,
         lockfile: String?,
         targetNames: [String],
-        targetSourceFileTypes: [String: [String]] = [:]
+        targetSourceFileTypes: [String: [String]] = [:],
+        targetSourceCompilerFlags: [String: [Int: String]] = [:]
     ) throws -> (root: URL, project: URL) {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("PkgLiftCLI-\(UUID().uuidString)")
@@ -608,7 +643,12 @@ final class CommandContextMigrationTests: XCTestCase {
                         path: "\(name)Source\(index)"
                     )
                 }
-            let sourceBuildFiles = references.map { PBXBuildFile(file: $0) }
+            let sourceBuildFiles = references.enumerated().map { index, reference in
+                let settings: [String: BuildFileSetting]? = targetSourceCompilerFlags[name]?[index].map {
+                    ["COMPILER_FLAGS": .string($0)]
+                }
+                return PBXBuildFile(file: reference, settings: settings)
+            }
             let sources = PBXSourcesBuildPhase(files: sourceBuildFiles)
             let target = PBXNativeTarget(
                 name: name,

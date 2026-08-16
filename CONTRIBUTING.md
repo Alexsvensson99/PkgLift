@@ -45,7 +45,7 @@ ruby Scripts/validate-repository-yaml.rb
 
 Registry-related pull requests must pass both the test suite and registry validation. Other changes should still run registry validation when they can affect loading, classification, planning, migration, or release packaging.
 
-Pull requests run independent Build, Test, Quality, CodeQL, Registry Gate, Pinned Pilot Gate, and Mixed-Language Pilot Gate checks. The stable gates are always visible; expensive registry, scan, and pilot work runs only when its owned paths changed. Validation workflows use least-privilege permissions, full commit SHA-pinned Actions, and may cancel an older run when a newer commit replaces it on the same pull request.
+Pull requests run independent Build, Test, Quality, CodeQL, Registry Gate, Pinned Pilot Gate, and Mixed-Language Pilot Gate checks. The underlying registry, CodeQL, pinned-pilot, and mixed-language jobs run on every pull request and main-branch push, and their stable gates require the actual validation job to succeed. Validation workflows use least-privilege permissions, full commit SHA-pinned Actions, and may cancel an older run when a newer commit replaces it on the same pull request.
 
 ## Testing on a Real Project
 
