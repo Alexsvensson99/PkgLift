@@ -47,12 +47,25 @@ public struct PodfileLockParser: Sendable {
         // Checkout options
         let checkoutOptions = yaml["CHECKOUT OPTIONS"] as? [String: [String: Any]] ?? [:]
         
+        // CocoaPods emits a lockfile containing only its checksum and version
+        // after the last dependency is removed. Accept that exact empty state,
+        // but continue to reject a missing or malformed PODS section whenever
+        // dependency declarations remain.
+        let pods: [Any]
+        if let rawPods = yaml["PODS"] {
+            guard let parsedPods = rawPods as? [Any] else {
+                throw Error.malformedStructure
+            }
+            pods = parsedPods
+        } else {
+            guard directDependencies.isEmpty, yaml["COCOAPODS"] != nil else {
+                throw Error.malformedStructure
+            }
+            return []
+        }
+
         // Parse PODS section
         var results: [CocoaPodDependency] = []
-        
-        guard let pods = yaml["PODS"] as? [Any] else {
-            throw Error.malformedStructure
-        }
         
         for podEntry in pods {
             if let stringEntry = podEntry as? String {

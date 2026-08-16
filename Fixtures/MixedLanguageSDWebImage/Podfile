@@ -1,0 +1,5 @@
+platform :ios, '15.0'
+
+target 'PkgLiftMixedFixture' do
+  pod 'SDWebImage', '5.18.1', :modular_headers => true
+end

@@ -48,6 +48,17 @@ def require_not_auto(errors, records, name)
   end
 end
 
+def require_no_auto(errors, records, label)
+  automatic = records.select { |_name, record| classification(record) == "AUTO" }.keys.sort
+  errors << "#{label} has AUTO dependencies: #{automatic.join(", ")}" unless automatic.empty?
+end
+
+def require_entry_count(errors, records, expected)
+  return if records.length == expected
+
+  errors << "expected #{expected} direct dependencies, got #{records.length}"
+end
+
 def replacements(project_root)
   home = ENV.fetch("HOME", "")
   runner_temp = ENV.fetch("RUNNER_TEMP", "")
@@ -106,6 +117,34 @@ when "negative"
   auto_entries = entries.select { |_name, entry| classification(entry) == "AUTO" }.keys
   errors << "negative pilot has AUTO candidates: #{auto_candidates.join(", ")}" unless auto_candidates.empty?
   errors << "negative pilot has AUTO plan entries: #{auto_entries.join(", ")}" unless auto_entries.empty?
+when "tinode"
+  require_entry_count(errors, candidates, 11)
+  require_entry_count(errors, entries, 11)
+  require_no_auto(errors, candidates, "Tinode analysis")
+  require_no_auto(errors, entries, "Tinode plan")
+  errors << "expected dynamic Ruby detection" unless features["hasDynamicRuby"] == true
+  errors << "expected post_install detection" unless features["hasPostInstallHook"] == true
+when "xcodebenchmark"
+  require_entry_count(errors, candidates, 42)
+  require_entry_count(errors, entries, 42)
+  require_no_auto(errors, candidates, "XcodeBenchmark analysis")
+  require_no_auto(errors, entries, "XcodeBenchmark plan")
+  errors << "expected dynamic Ruby detection" unless features["hasDynamicRuby"] == true
+  errors << "expected post_install detection" unless features["hasPostInstallHook"] == true
+when "hammerspoon"
+  require_entry_count(errors, candidates, 10)
+  require_entry_count(errors, entries, 10)
+  require_no_auto(errors, candidates, "Hammerspoon analysis")
+  require_no_auto(errors, entries, "Hammerspoon plan")
+  errors << "expected dynamic Ruby detection" unless features["hasDynamicRuby"] == true
+  errors << "expected post_install detection" unless features["hasPostInstallHook"] == true
+when "acknowlist"
+  require_entry_count(errors, candidates, 1)
+  require_entry_count(errors, entries, 1)
+  require_classification(errors, candidates, "AcknowList", "BLOCKED")
+  require_classification(errors, entries, "AcknowList", "BLOCKED")
+  require_no_auto(errors, candidates, "AcknowList analysis")
+  require_no_auto(errors, entries, "AcknowList plan")
 else
   errors << "unknown pilot case #{pilot_case.inspect}"
 end
@@ -138,9 +177,10 @@ rows << "| — | — | No direct dependencies parsed |" if rows.empty?
 summary = <<~MARKDOWN
   # PkgLift pinned pilot: #{pilot_case}
 
-  - Tracking issue: ##{ENV.fetch("PILOT_ISSUE", "unknown")}
+  - Tracking reference: `#{ENV.fetch("PILOT_ISSUE", "unknown")}`
   - Repository: `#{ENV.fetch("PILOT_REPOSITORY", "unknown")}`
   - Commit: `#{ENV.fetch("PILOT_COMMIT", "unknown")}`
+  - Project root: `#{ENV.fetch("PILOT_ROOT", ".")}`
   - Workspace: `#{ENV.fetch("PILOT_WORKSPACE", "unknown")}`
   - Project: `#{ENV.fetch("PILOT_PROJECT", "automatic")}`
   - Upstream license metadata: `#{ENV.fetch("PILOT_LICENSE", "unknown")}`
