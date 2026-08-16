@@ -38,6 +38,19 @@ public struct PodfileParser: Sendable {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty || trimmed.hasPrefix("#") { continue }
 
+            let integrationDirectives: [(String, ProjectIntegration)] = [
+                ("use_react_native!", .reactNative),
+                ("flutter_install_all_ios_pods", .flutter),
+                ("capacitor_pods", .capacitor),
+            ]
+            for (directive, integration) in integrationDirectives
+            where PodfileStaticSyntax.isDirectiveInvocation(directive, in: trimmed) {
+                if !features.integrationMarkers.contains(integration) {
+                    features.integrationMarkers.append(integration)
+                    features.integrationMarkers.sort()
+                }
+            }
+
             if trimmed.contains("use_frameworks!") {
                 features.useFrameworks = true
             }

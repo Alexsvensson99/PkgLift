@@ -12,12 +12,20 @@ public struct XcodeAnalysisResult: Sendable {
     public let swiftPMState: SwiftPMState
     public let targets: [TargetInfo]
     public let hasCocoaPodsIntegration: Bool
+    public let hasCarthageIntegration: Bool
     
-    public init(projectInfo: ProjectInfo, swiftPMState: SwiftPMState, targets: [TargetInfo], hasCocoaPodsIntegration: Bool) {
+    public init(
+        projectInfo: ProjectInfo,
+        swiftPMState: SwiftPMState,
+        targets: [TargetInfo],
+        hasCocoaPodsIntegration: Bool,
+        hasCarthageIntegration: Bool = false
+    ) {
         self.projectInfo = projectInfo
         self.swiftPMState = swiftPMState
         self.targets = targets
         self.hasCocoaPodsIntegration = hasCocoaPodsIntegration
+        self.hasCarthageIntegration = hasCarthageIntegration
     }
 }
 
@@ -61,6 +69,7 @@ public struct XcodeProjectAnalyzer: Sendable {
         
         var targetInfos: [TargetInfo] = []
         var hasCocoaPodsIntegration = false
+        var hasCarthageIntegration = false
 
         guard let pbxProject = try xcodeproj.pbxproj.rootProject() else {
             throw XcodeProjectAnalyzerError.invalidProject(path)
@@ -95,6 +104,9 @@ public struct XcodeProjectAnalyzer: Sendable {
                 if let phaseName = phase.name(), phaseName.hasPrefix("[CP]") {
                     hasCocoaPodsIntegration = true
                 }
+                if Self.hasCarthageEvidence(in: phase) {
+                    hasCarthageIntegration = true
+                }
             }
             
             // Looks for Pods framework references
@@ -104,6 +116,10 @@ public struct XcodeProjectAnalyzer: Sendable {
                         if let fileRef = file.file {
                             if let name = fileRef.name, name.hasPrefix("Pods_") {
                                 hasCocoaPodsIntegration = true
+                            }
+                            if Self.isCarthageBuildPath(fileRef.path)
+                                || Self.isCarthageBuildPath(fileRef.name) {
+                                hasCarthageIntegration = true
                             }
                         }
                     }
@@ -214,8 +230,48 @@ public struct XcodeProjectAnalyzer: Sendable {
             projectInfo: projectInfo,
             swiftPMState: swiftPMState,
             targets: targetInfos,
-            hasCocoaPodsIntegration: hasCocoaPodsIntegration
+            hasCocoaPodsIntegration: hasCocoaPodsIntegration,
+            hasCarthageIntegration: hasCarthageIntegration
         )
+    }
+
+    private static func hasCarthageEvidence(in phase: PBXBuildPhase) -> Bool {
+        let commonPaths = (phase.inputFileListPaths ?? []) + (phase.outputFileListPaths ?? [])
+        if commonPaths.contains(where: isCarthageBuildPath) {
+            return true
+        }
+
+        guard let shellPhase = phase as? PBXShellScriptBuildPhase else { return false }
+        if (shellPhase.inputPaths + shellPhase.outputPaths).contains(where: isCarthageBuildPath) {
+            return true
+        }
+        guard let script = shellPhase.shellScript else { return false }
+        return script.components(separatedBy: .newlines).contains { line in
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, !trimmed.hasPrefix("#") else { return false }
+            return isCarthageBuildPath(trimmed) || invokesCarthage(trimmed)
+        }
+    }
+
+    private static func isCarthageBuildPath(_ value: String?) -> Bool {
+        guard let value else { return false }
+        let normalized = value.replacingOccurrences(of: "\\", with: "/").lowercased()
+        return normalized == "carthage/build"
+            || normalized.hasPrefix("carthage/build/")
+            || normalized.hasSuffix("/carthage/build")
+            || normalized.contains("/carthage/build/")
+    }
+
+    private static func invokesCarthage(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !trimmed.hasPrefix("#") else { return false }
+        let words = trimmed.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        guard words.count >= 2 else { return false }
+        let command = words[0].trimmingCharacters(in: CharacterSet(charactersIn: "'\""))
+        guard URL(fileURLWithPath: command).lastPathComponent.lowercased() == "carthage" else {
+            return false
+        }
+        return ["bootstrap", "build", "copy-frameworks", "update"].contains(words[1])
     }
 
     /// Builds a conservative profile without opening or reading source files.

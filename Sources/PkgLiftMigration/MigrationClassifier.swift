@@ -40,6 +40,7 @@ public struct MigrationClassifier: Sendable {
         isAlreadyMigrated: Bool = false,
         isTargetMappingKnown: Bool = true,
         targetSourceProfile: TargetSourceProfile? = nil,
+        projectIntegrations: [ProjectIntegration] = [],
         podfileFeatures: PodfileFeatures = PodfileFeatures()
     ) -> MigrationClassification {
         let dependencyInfo = DependencyInfo(
@@ -85,7 +86,10 @@ public struct MigrationClassifier: Sendable {
             mapping: mappingInfo,
             isAlreadyMigrated: isAlreadyMigrated,
             isTargetMappingKnown: isTargetMappingKnown,
-            targetSourceProfile: targetSourceProfile
+            targetSourceProfile: targetSourceProfile,
+            projectIntegrations: Array(Set(
+                projectIntegrations + podfileFeatures.integrationMarkers
+            )).sorted()
         )
     }
 
@@ -94,7 +98,8 @@ public struct MigrationClassifier: Sendable {
         mapping: RegistryMappingInfo?,
         isAlreadyMigrated: Bool = false,
         isTargetMappingKnown: Bool = true,
-        targetSourceProfile: TargetSourceProfile? = nil
+        targetSourceProfile: TargetSourceProfile? = nil,
+        projectIntegrations: [ProjectIntegration] = []
     ) -> MigrationClassification {
         var reasons: [String] = []
 
@@ -150,6 +155,7 @@ public struct MigrationClassifier: Sendable {
         if dependency.hasAbstractTargets {
             reasons.append("abstract_target detected")
         }
+        reasons.append(contentsOf: projectIntegrations.sorted().map(\.reviewReason))
 
         if let mapping, mapping.confidence != .verified {
             reasons.append("Registry mapping is not verified")

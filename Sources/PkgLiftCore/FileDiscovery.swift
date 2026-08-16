@@ -31,6 +31,36 @@ public struct DiscoveredFiles: Sendable {
     /// Local registry override directory, if found.
     public let localRegistryPath: String?
 
+    /// Whether a root-level Cartfile was found without reading its contents.
+    public let hasCartfile: Bool
+
+    /// Whether a root-level Cartfile.resolved was found without reading its contents.
+    public let hasCartfileResolved: Bool
+
+    public init(
+        rootPath: String,
+        podfilePath: String?,
+        podfileLockPath: String?,
+        manifestLockPath: String?,
+        projectPaths: [String],
+        workspacePaths: [String],
+        configPath: String?,
+        localRegistryPath: String?,
+        hasCartfile: Bool = false,
+        hasCartfileResolved: Bool = false
+    ) {
+        self.rootPath = rootPath
+        self.podfilePath = podfilePath
+        self.podfileLockPath = podfileLockPath
+        self.manifestLockPath = manifestLockPath
+        self.projectPaths = projectPaths
+        self.workspacePaths = workspacePaths
+        self.configPath = configPath
+        self.localRegistryPath = localRegistryPath
+        self.hasCartfile = hasCartfile
+        self.hasCartfileResolved = hasCartfileResolved
+    }
+
     /// Whether any CocoaPods files were found.
     public var hasCocoaPods: Bool {
         podfilePath != nil || podfileLockPath != nil
@@ -39,6 +69,11 @@ public struct DiscoveredFiles: Sendable {
     /// Whether any Xcode project files were found.
     public var hasXcodeProject: Bool {
         !projectPaths.isEmpty
+    }
+
+    /// Whether root-level Carthage metadata was found.
+    public var hasCarthageFiles: Bool {
+        hasCartfile || hasCartfileResolved
     }
 }
 
@@ -87,6 +122,8 @@ public struct FileDiscovery: Sendable {
         let manifestLockPath = findFile(
             named: "Manifest.lock", in: (rootPath as NSString).appendingPathComponent("Pods"))
         let configPath = findFile(named: ".pkglift.yml", in: rootPath)
+        let hasCartfile = isRegularFile(named: "Cartfile", in: rootPath)
+        let hasCartfileResolved = isRegularFile(named: "Cartfile.resolved", in: rootPath)
 
         // Discover directories
         let localRegistryPath: String? = {
@@ -111,7 +148,9 @@ public struct FileDiscovery: Sendable {
             projectPaths: projectPaths,
             workspacePaths: workspacePaths,
             configPath: configPath,
-            localRegistryPath: localRegistryPath
+            localRegistryPath: localRegistryPath,
+            hasCartfile: hasCartfile,
+            hasCartfileResolved: hasCartfileResolved
         )
     }
 
@@ -130,6 +169,13 @@ public struct FileDiscovery: Sendable {
         guard fileManager.fileExists(atPath: path) else { return nil }
 
         return resolvedPath
+    }
+
+    private func isRegularFile(named name: String, in directory: String) -> Bool {
+        guard let path = findFile(named: name, in: directory) else { return false }
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory)
+            && !isDirectory.boolValue
     }
 
     private func findItems(withExtension ext: String, in directory: String) -> [String] {

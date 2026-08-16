@@ -37,6 +37,39 @@ struct PodfileParserTests {
         #expect(features.hasDynamicRuby == true)
     }
 
+    @Test("Detect typed cross-platform integration calls without evaluating Ruby")
+    func testDetectIntegrationMarkers() {
+        let content = """
+        target 'App' do
+          use_react_native!(path: config[:reactNativePath])
+          flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+          capacitor_pods()
+          use_react_native!
+        end
+        """
+
+        let (features, _, _) = PodfileParser().parse(content: content)
+
+        #expect(features.integrationMarkers == [.reactNative, .flutter, .capacitor])
+        #expect(features.hasRisks == true)
+    }
+
+    @Test("Ignore quoted commented and identifier-suffix integration marker text")
+    func testIntegrationMarkerFalsePositives() {
+        let content = #"""
+        # use_react_native!
+        puts "flutter_install_all_ios_pods"
+        marker = 'capacitor_pods'
+        foo_use_react_native!
+        flutter_install_all_ios_pods_helper
+        capacitor_pods_extra()
+        """#
+
+        let (features, _, _) = PodfileParser().parse(content: content)
+
+        #expect(features.integrationMarkers.isEmpty)
+    }
+
     @Test("Detect unsupported control flow before target mapping")
     func testDetectUnsupportedControlFlow() {
         let content = """

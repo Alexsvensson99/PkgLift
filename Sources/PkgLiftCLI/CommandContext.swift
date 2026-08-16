@@ -63,6 +63,20 @@ struct CommandContext: Sendable {
         resolvedProjectPath ?? discovery.rootPath
     }
 
+    var detectedProjectIntegrations: [ProjectIntegration] {
+        var integrations = Set(podfileFeatures.integrationMarkers)
+        if discovery.hasCarthageFiles || xcodeAnalysis?.hasCarthageIntegration == true {
+            integrations.insert(.carthage)
+        }
+        return integrations.sorted()
+    }
+
+    var projectIntegrationIssues: [MigrationIssue] {
+        detectedProjectIntegrations.map {
+            MigrationIssue(severity: .warning, message: $0.reviewReason)
+        }
+    }
+
     func mappedDependency(for name: String) -> CocoaPodDependency? {
         analysisDependencies.first(where: { $0.name == name })
     }
@@ -103,6 +117,7 @@ struct CommandContext: Sendable {
                 isAlreadyMigrated: isAlreadyMigrated,
                 isTargetMappingKnown: targetInfo != nil,
                 targetSourceProfile: targetInfo?.sourceProfile,
+                projectIntegrations: detectedProjectIntegrations,
                 podfileFeatures: podfileFeatures
             )
 
@@ -226,7 +241,8 @@ struct CommandContext: Sendable {
             noProjectRisks: !podfileFeatures.hasDynamicRuby &&
                 !podfileFeatures.hasPostInstallHook &&
                 !podfileFeatures.hasPreInstallHook &&
-                !podfileFeatures.hasScriptPhase
+                !podfileFeatures.hasScriptPhase &&
+                detectedProjectIntegrations.isEmpty
         )
     }
 
@@ -289,7 +305,7 @@ struct CommandContext: Sendable {
         return PkgLiftCore.MigrationPlan(
             projectPath: projectPath,
             entries: entries,
-            issues: candidates.flatMap { $0.issues },
+            issues: projectIntegrationIssues + candidates.flatMap { $0.issues },
             readinessScore: migrationReadinessScore(),
             counts: dependencyCounts
         )
@@ -322,9 +338,10 @@ struct CommandContext: Sendable {
             ),
             swiftPM: swiftPMState,
             candidates: candidates,
-            issues: candidates.flatMap(\.issues),
+            issues: projectIntegrationIssues + candidates.flatMap(\.issues),
             readinessScore: migrationReadinessScore(),
-            counts: dependencyCounts
+            counts: dependencyCounts,
+            detectedIntegrations: detectedProjectIntegrations
         )
     }
 

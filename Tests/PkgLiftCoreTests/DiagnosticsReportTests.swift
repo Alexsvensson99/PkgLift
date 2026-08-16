@@ -14,6 +14,7 @@ final class DiagnosticsReportTests: XCTestCase {
         var features = PodfileFeatures()
         features.hasPostInstallHook = true
         features.hasDynamicRuby = true
+        features.integrationMarkers = [.reactNative]
 
         let pod = CocoaPodDependency(
             name: secretPod,
@@ -81,7 +82,8 @@ final class DiagnosticsReportTests: XCTestCase {
                 uniqueLockfileDependencyCount: 1,
                 planEntryCount: 1,
                 analysisCandidateCount: 1
-            )
+            ),
+            detectedIntegrations: [.reactNative, .carthage]
         )
         let discovery = DiscoveredFiles(
             rootPath: "/Users/alex/Secret Client",
@@ -91,7 +93,8 @@ final class DiagnosticsReportTests: XCTestCase {
             projectPaths: [secretPath],
             workspacePaths: [secretWorkspace],
             configPath: nil,
-            localRegistryPath: nil
+            localRegistryPath: nil,
+            hasCartfile: true
         )
 
         let report = DiagnosticsReportBuilder().build(
@@ -128,12 +131,16 @@ final class DiagnosticsReportTests: XCTestCase {
         XCTAssertEqual(report.project.discoveredProjectCount, 1)
         XCTAssertEqual(report.project.discoveredWorkspaceCount, 1)
         XCTAssertEqual(report.project.targetCount, 1)
+        XCTAssertEqual(report.project.integrations, [.carthage, .reactNative])
+        XCTAssertEqual(report.project.integrationCount, 2)
         XCTAssertEqual(report.cocoaPods.directDependencyCount, 1)
         XCTAssertEqual(report.swiftPM?.existingPackageCount, 1)
         XCTAssertEqual(report.classifications?.review, 1)
         XCTAssertEqual(report.issues?.warning, 1)
         XCTAssertTrue(report.privacy.redactionEnabled)
         XCTAssertFalse(report.privacy.automaticUpload)
+        XCTAssertFalse(json.contains("Cartfile"))
+        XCTAssertFalse(json.contains("use_react_native!"))
     }
 
     func testEncodingIsDeterministic() throws {

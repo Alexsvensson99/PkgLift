@@ -386,6 +386,36 @@ final class CommandContextMigrationTests: XCTestCase {
         })
     }
 
+    func testConfirmedCarthageMetadataCreatesProjectIssueAndPreventsAuto() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        try Data([0xFF]).write(to: fixture.root.appendingPathComponent("Cartfile"))
+        let options = try CommonOptions.parse([
+            "--path", fixture.root.path,
+            "--project", fixture.project.path,
+        ])
+
+        let context = try await CommandContext.load(from: options)
+        let plan = context.buildMigrationPlan()
+        let analysis = context.buildProjectAnalysis()
+        let entry = try XCTUnwrap(plan.entries.first)
+
+        XCTAssertEqual(entry.classification, .review)
+        XCTAssertTrue(entry.reasons.contains(ProjectIntegration.carthage.reviewReason))
+        XCTAssertTrue(entry.actions.allSatisfy { action in
+            if case .manual = action { return true }
+            return false
+        })
+        XCTAssertEqual(analysis.detectedIntegrations, [.carthage])
+        XCTAssertTrue(plan.issues.contains {
+            $0.dependency == nil && $0.message == ProjectIntegration.carthage.reviewReason
+        })
+    }
+
     func testInvalidConfigurationIsNotSilentlyIgnored() async throws {
         let fixture = try makeFixture(
             podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",

@@ -41,6 +41,42 @@ final class FileDiscoveryTests: XCTestCase {
         XCTAssertNil(result.podfilePath)
     }
 
+    func testDetectsOnlyContainedRootCarthageMetadataWithoutReadingIt() throws {
+        let root = try makeDirectory(prefix: "PkgLiftCarthageRoot")
+        let outside = try makeDirectory(prefix: "PkgLiftCarthageOutside")
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: outside)
+        }
+
+        try Data([0xFF]).write(to: root.appendingPathComponent("Cartfile"))
+        try FileManager.default.createDirectory(
+            at: root.appendingPathComponent("Nested"),
+            withIntermediateDirectories: true
+        )
+        try "github \"Example/Dependency\"".write(
+            to: root.appendingPathComponent("Nested/Cartfile.resolved"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let outsideResolved = outside.appendingPathComponent("Cartfile.resolved")
+        try "private canary".write(
+            to: outsideResolved,
+            atomically: true,
+            encoding: .utf8
+        )
+        try FileManager.default.createSymbolicLink(
+            at: root.appendingPathComponent("Cartfile.resolved"),
+            withDestinationURL: outsideResolved
+        )
+
+        let result = try FileDiscovery().discover(in: root.path)
+
+        XCTAssertTrue(result.hasCartfile)
+        XCTAssertFalse(result.hasCartfileResolved)
+        XCTAssertTrue(result.hasCarthageFiles)
+    }
+
     func testRecursivelyDiscoversProjectsAndWorkspacesInStableOrder() throws {
         let root = try makeDirectory(prefix: "PkgLiftRecursiveDiscovery")
         defer { try? FileManager.default.removeItem(at: root) }
