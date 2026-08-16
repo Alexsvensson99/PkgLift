@@ -32,7 +32,8 @@ final class MigrationClassifierTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire.git",
                 products: ["Alamofire"],
-                minimumVersion: "1.0.0"
+                minimumVersion: "1.0.0",
+                supportedConsumerLanguages: [.swift]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -40,6 +41,7 @@ final class MigrationClassifierTests: XCTestCase {
         let result = classifier.classify(
             dependency: dependency,
             mapping: mapping,
+            targetSourceProfile: swiftProfile,
             podfileFeatures: PodfileFeatures()
         )
         XCTAssertEqual(result.category, .auto)
@@ -80,7 +82,8 @@ final class MigrationClassifierTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire.git",
                 products: ["Alamofire"],
-                minimumVersion: "1.0.0"
+                minimumVersion: "1.0.0",
+                supportedConsumerLanguages: [.swift]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -88,6 +91,7 @@ final class MigrationClassifierTests: XCTestCase {
         let result = classifier.classify(
             dependency: dependency,
             mapping: mapping,
+            targetSourceProfile: swiftProfile,
             podfileFeatures: features
         )
         XCTAssertEqual(result.category, .review)
@@ -104,7 +108,8 @@ final class MigrationClassifierTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire.git",
                 products: ["Alamofire"],
-                minimumVersion: "1.0.0"
+                minimumVersion: "1.0.0",
+                supportedConsumerLanguages: [.swift]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -120,7 +125,8 @@ final class MigrationClassifierTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire.git",
                 products: ["Alamofire"],
-                minimumVersion: "1.0.0"
+                minimumVersion: "1.0.0",
+                supportedConsumerLanguages: [.swift]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -187,7 +193,8 @@ final class MigrationClassifierTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire.git",
                 products: ["Alamofire"],
-                minimumVersion: "1.0.0"
+                minimumVersion: "1.0.0",
+                supportedConsumerLanguages: [.swift]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -228,13 +235,18 @@ final class MigrationClassifierTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire.git",
                 products: ["Alamofire"],
-                minimumVersion: "1.0.0"
+                minimumVersion: "1.0.0",
+                supportedConsumerLanguages: [.swift]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
 
         XCTAssertEqual(
-            MigrationClassifier().classify(dependency: dependency, mapping: mapping).category,
+            MigrationClassifier().classify(
+                dependency: dependency,
+                mapping: mapping,
+                targetSourceProfile: swiftProfile
+            ).category,
             .review
         )
     }
@@ -242,7 +254,8 @@ final class MigrationClassifierTests: XCTestCase {
     func testMissingMinimumVersionIsReviewOnly() {
         let result = MigrationClassifier().classify(
             dependency: makeDependency(version: "5.1.0"),
-            mapping: makeMapping(minimumVersion: nil)
+            mapping: makeMapping(minimumVersion: nil),
+            targetSourceProfile: swiftProfile
         )
 
         XCTAssertEqual(result.category, .review)
@@ -252,7 +265,8 @@ final class MigrationClassifierTests: XCTestCase {
     func testVersionBelowMinimumIsReview() {
         let result = MigrationClassifier().classify(
             dependency: makeDependency(version: "5.0.6"),
-            mapping: makeMapping(minimumVersion: "5.1.0")
+            mapping: makeMapping(minimumVersion: "5.1.0"),
+            targetSourceProfile: swiftProfile
         )
 
         XCTAssertEqual(result.category, .review)
@@ -262,7 +276,8 @@ final class MigrationClassifierTests: XCTestCase {
     func testVersionEqualToMinimumIsAuto() {
         let result = MigrationClassifier().classify(
             dependency: makeDependency(version: "5.1.0"),
-            mapping: makeMapping(minimumVersion: "5.1.0")
+            mapping: makeMapping(minimumVersion: "5.1.0"),
+            targetSourceProfile: swiftProfile
         )
 
         XCTAssertEqual(result.category, .auto)
@@ -273,7 +288,8 @@ final class MigrationClassifierTests: XCTestCase {
         XCTAssertEqual(
             MigrationClassifier().classify(
                 dependency: makeDependency(version: "5.18.1"),
-                mapping: makeMapping(minimumVersion: "5.1.0")
+                mapping: makeMapping(minimumVersion: "5.1.0"),
+                targetSourceProfile: swiftProfile
             ).category,
             .auto
         )
@@ -282,7 +298,8 @@ final class MigrationClassifierTests: XCTestCase {
     func testInvalidMinimumVersionIsReview() {
         let result = MigrationClassifier().classify(
             dependency: makeDependency(version: "5.18.1"),
-            mapping: makeMapping(minimumVersion: "5.1")
+            mapping: makeMapping(minimumVersion: "5.1"),
+            targetSourceProfile: swiftProfile
         )
 
         XCTAssertEqual(result.category, .review)
@@ -292,7 +309,8 @@ final class MigrationClassifierTests: XCTestCase {
     func testNonStableResolvedVersionIsReview() {
         let result = MigrationClassifier().classify(
             dependency: makeDependency(version: "5.1.0-beta.1"),
-            mapping: makeMapping(minimumVersion: "5.1.0")
+            mapping: makeMapping(minimumVersion: "5.1.0"),
+            targetSourceProfile: swiftProfile
         )
 
         XCTAssertEqual(result.category, .review)
@@ -305,7 +323,8 @@ final class MigrationClassifierTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/SDWebImage/SDWebImage",
                 products: ["SDWebImage"],
-                minimumVersion: "5.1.0"
+                minimumVersion: "5.1.0",
+                supportedConsumerLanguages: [.swift, .objectiveC]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -335,6 +354,7 @@ final class MigrationClassifierTests: XCTestCase {
             let result = MigrationClassifier().classify(
                 dependency: makeDependency(version: "5.18.1"),
                 mapping: makeMapping(minimumVersion: "5.1.0"),
+                targetSourceProfile: swiftProfile,
                 podfileFeatures: features
             )
             XCTAssertEqual(result.category, .review, "Expected \(label) to block AUTO")
@@ -376,6 +396,76 @@ final class MigrationClassifierTests: XCTestCase {
         ])
     }
 
+    func testMissingConsumerLanguageMetadataIsReview() {
+        let result = MigrationClassifier().classify(
+            dependency: makeDependency(version: "5.18.1"),
+            mapping: makeMapping(
+                minimumVersion: "5.1.0",
+                supportedLanguages: nil
+            ),
+            targetSourceProfile: swiftProfile
+        )
+
+        XCTAssertEqual(result.category, .review)
+        XCTAssertTrue(result.reasons.contains(
+            "Registry mapping has no verified consumer-language support"
+        ))
+    }
+
+    func testIncompleteAndEmptyTargetProfilesAreReview() {
+        let profiles = [
+            TargetSourceProfile(languages: [.swift], completeness: .incomplete),
+            TargetSourceProfile(languages: [], completeness: .complete),
+        ]
+
+        for profile in profiles {
+            let result = MigrationClassifier().classify(
+                dependency: makeDependency(version: "5.18.1"),
+                mapping: makeMapping(minimumVersion: "5.1.0"),
+                targetSourceProfile: profile
+            )
+            XCTAssertEqual(result.category, .review)
+        }
+    }
+
+    func testMixedTargetRequiresExplicitSupportForBothLanguages() {
+        let mixedProfile = TargetSourceProfile(
+            languages: [.swift, .objectiveC],
+            completeness: .complete
+        )
+        let swiftOnly = MigrationClassifier().classify(
+            dependency: makeDependency(version: "5.18.1"),
+            mapping: makeMapping(
+                minimumVersion: "5.1.0",
+                supportedLanguages: [.swift]
+            ),
+            targetSourceProfile: mixedProfile
+        )
+        let mixedSupported = MigrationClassifier().classify(
+            dependency: makeDependency(version: "5.18.1"),
+            mapping: makeMapping(minimumVersion: "5.1.0"),
+            targetSourceProfile: mixedProfile
+        )
+
+        XCTAssertEqual(swiftOnly.category, .review)
+        XCTAssertTrue(swiftOnly.reasons.contains { $0.contains("objectiveC") })
+        XCTAssertEqual(mixedSupported.category, .auto)
+    }
+
+    func testCFamilyLanguageWithoutExplicitSupportIsReview() {
+        let result = MigrationClassifier().classify(
+            dependency: makeDependency(version: "5.18.1"),
+            mapping: makeMapping(minimumVersion: "5.1.0"),
+            targetSourceProfile: TargetSourceProfile(
+                languages: [.cPlusPlus],
+                completeness: .complete
+            )
+        )
+
+        XCTAssertEqual(result.category, .review)
+        XCTAssertTrue(result.reasons.contains { $0.contains("cPlusPlus") })
+    }
+
     private func makeDependency(
         name: String = "SDWebImage",
         version: String
@@ -399,13 +489,21 @@ final class MigrationClassifierTests: XCTestCase {
         )
     }
 
-    private func makeMapping(minimumVersion: String?) -> RegistryMapping {
+    private var swiftProfile: TargetSourceProfile {
+        TargetSourceProfile(languages: [.swift], completeness: .complete)
+    }
+
+    private func makeMapping(
+        minimumVersion: String?,
+        supportedLanguages: [SourceLanguage]? = [.swift, .objectiveC]
+    ) -> RegistryMapping {
         RegistryMapping(
             pod: PodIdentifier(name: "SDWebImage"),
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/SDWebImage/SDWebImage",
                 products: ["SDWebImage"],
-                minimumVersion: minimumVersion
+                minimumVersion: minimumVersion,
+                supportedConsumerLanguages: supportedLanguages
             ),
             migration: MigrationInfo(confidence: .verified)
         )

@@ -36,7 +36,8 @@ final class MigrationPlannerTests: XCTestCase {
                 swiftpm: SwiftPMPackageInfo(
                     repository: "https://github.com/Alamofire/Alamofire",
                     products: ["Alamofire"],
-                    minimumVersion: "5.0.0"
+                    minimumVersion: "5.0.0",
+                    supportedConsumerLanguages: [.swift]
                 ),
                 migration: MigrationInfo(confidence: .verified)
             )
@@ -44,7 +45,8 @@ final class MigrationPlannerTests: XCTestCase {
         let plan = planner.generatePlan(
             dependencies: dependencies,
             mappings: mappings,
-            availableTargets: ["App"]
+            availableTargets: ["App"],
+            availableTargetInfos: [swiftTarget("App")]
         )
         
         XCTAssertEqual(plan.entries.count, 1)
@@ -62,6 +64,8 @@ final class MigrationPlannerTests: XCTestCase {
                 targetName: "App"
             ),
         ])
+        XCTAssertEqual(plan.entries[0].packageCandidate?.supportedConsumerLanguages, [.swift])
+        XCTAssertEqual(plan.entries[0].targetSourceProfile, swiftTarget("App").sourceProfile)
         XCTAssertNil(plan.counts)
     }
 
@@ -100,7 +104,8 @@ final class MigrationPlannerTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire",
                 products: ["Alamofire"],
-                minimumVersion: "5.0.0"
+                minimumVersion: "5.0.0",
+                supportedConsumerLanguages: [.swift]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -125,7 +130,8 @@ final class MigrationPlannerTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire",
                 products: ["Alamofire"],
-                minimumVersion: "5.0.0"
+                minimumVersion: "5.0.0",
+                supportedConsumerLanguages: [.swift]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -133,7 +139,8 @@ final class MigrationPlannerTests: XCTestCase {
         let entry = MigrationPlanner().generatePlan(
             dependencies: ["Alamofire": dependency],
             mappings: ["Alamofire": mapping],
-            availableTargets: ["App"]
+            availableTargets: ["App"],
+            availableTargetInfos: [swiftTarget("App")]
         ).entries[0]
 
         XCTAssertEqual(entry.classification, .review)
@@ -152,7 +159,8 @@ final class MigrationPlannerTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire",
                 products: ["Alamofire"],
-                minimumVersion: "5.0.0"
+                minimumVersion: "5.0.0",
+                supportedConsumerLanguages: [.swift]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -160,7 +168,8 @@ final class MigrationPlannerTests: XCTestCase {
         let entry = MigrationPlanner().generatePlan(
             dependencies: ["Alamofire": dependency],
             mappings: ["Alamofire": mapping],
-            availableTargets: ["App", "Widget"]
+            availableTargets: ["App", "Widget"],
+            availableTargetInfos: [swiftTarget("App"), swiftTarget("Widget")]
         ).entries[0]
 
         XCTAssertEqual(entry.classification, .review)
@@ -179,7 +188,48 @@ final class MigrationPlannerTests: XCTestCase {
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/Alamofire/Alamofire",
                 products: ["Alamofire"],
-                minimumVersion: "5.0.0"
+                minimumVersion: "5.0.0",
+                supportedConsumerLanguages: [.swift]
+            ),
+            migration: MigrationInfo(confidence: .verified)
+        )
+
+        let entry = MigrationPlanner().generatePlan(
+            dependencies: ["Alamofire": dependency],
+            mappings: ["Alamofire": mapping],
+            availableTargets: ["App"],
+            availableTargetInfos: [swiftTarget("App")]
+        ).entries[0]
+
+        XCTAssertEqual(entry.classification, .review)
+        XCTAssertTrue(entry.actions.isEmpty)
+    }
+
+    func testTargetNamesAloneCannotProduceAutoWithoutLanguageEvidence() {
+        let dependency = CocoaPodDependency(
+            name: "Alamofire",
+            version: "5.0.0",
+            source: .registry,
+            isDirect: true,
+            targets: ["App"],
+            declarations: [
+                PodfileDeclaration(
+                    line: 1,
+                    scope: .target,
+                    scopeName: "App",
+                    targetName: "App",
+                    source: .registry
+                ),
+            ],
+            targetAttribution: TargetAttribution(status: .exact, targets: ["App"])
+        )
+        let mapping = RegistryMapping(
+            pod: PodIdentifier(name: "Alamofire"),
+            swiftpm: SwiftPMPackageInfo(
+                repository: "https://github.com/Alamofire/Alamofire",
+                products: ["Alamofire"],
+                minimumVersion: "5.0.0",
+                supportedConsumerLanguages: [.swift]
             ),
             migration: MigrationInfo(confidence: .verified)
         )
@@ -191,6 +241,18 @@ final class MigrationPlannerTests: XCTestCase {
         ).entries[0]
 
         XCTAssertEqual(entry.classification, .review)
-        XCTAssertTrue(entry.actions.isEmpty)
+        XCTAssertNil(entry.targetSourceProfile)
+        XCTAssertTrue(entry.reasons.contains("Target source-language profile is missing"))
+    }
+
+    private func swiftTarget(_ name: String) -> TargetInfo {
+        TargetInfo(
+            name: name,
+            type: "application",
+            sourceProfile: TargetSourceProfile(
+                languages: [.swift],
+                completeness: .complete
+            )
+        )
     }
 }

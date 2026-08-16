@@ -53,16 +53,24 @@ public struct PackageCandidate: Sendable, Codable, Equatable {
     /// The confidence level of this mapping.
     public let confidence: MigrationConfidence
 
+    /// Consumer languages explicitly supported by the registry mapping.
+    ///
+    /// Optional for schema-1 backward decoding. Missing evidence is never
+    /// sufficient for automatic migration.
+    public let supportedConsumerLanguages: [SourceLanguage]?
+
     public init(
         repositoryURL: String,
         products: [String],
         versionRequirement: SwiftPMVersionRequirement? = nil,
-        confidence: MigrationConfidence = .verified
+        confidence: MigrationConfidence = .verified,
+        supportedConsumerLanguages: [SourceLanguage]? = nil
     ) {
         self.repositoryURL = repositoryURL
         self.products = products
         self.versionRequirement = versionRequirement
         self.confidence = confidence
+        self.supportedConsumerLanguages = supportedConsumerLanguages
     }
 }
 
@@ -170,6 +178,9 @@ public struct MigrationPlanEntry: Sendable, Codable {
     /// Explicit static target evidence represented by this entry.
     public let targetAttribution: TargetAttribution?
 
+    /// PBX-derived language evidence for the destination target.
+    public let targetSourceProfile: TargetSourceProfile?
+
     public init(
         podName: String,
         currentVersion: String? = nil,
@@ -179,7 +190,8 @@ public struct MigrationPlanEntry: Sendable, Codable {
         targetName: String? = nil,
         packageCandidate: PackageCandidate? = nil,
         declarations: [PodfileDeclaration]? = nil,
-        targetAttribution: TargetAttribution? = nil
+        targetAttribution: TargetAttribution? = nil,
+        targetSourceProfile: TargetSourceProfile? = nil
     ) {
         self.podName = podName
         self.currentVersion = currentVersion
@@ -190,6 +202,7 @@ public struct MigrationPlanEntry: Sendable, Codable {
         self.packageCandidate = packageCandidate
         self.declarations = declarations
         self.targetAttribution = targetAttribution
+        self.targetSourceProfile = targetSourceProfile
     }
 }
 

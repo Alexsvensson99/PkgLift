@@ -67,6 +67,16 @@ struct CommandContext: Sendable {
         analysisDependencies.first(where: { $0.name == name })
     }
 
+    func exactTargetInfo(for dependency: CocoaPodDependency) -> TargetInfo? {
+        let attribution = dependency.effectiveTargetAttribution
+        guard attribution.status == .exact,
+              attribution.targets.count == 1,
+              let targetName = attribution.targets.first,
+              let targets = xcodeAnalysis?.projectInfo.targets else { return nil }
+        let matches = targets.filter { $0.name == targetName }
+        return matches.count == 1 ? matches.first : nil
+    }
+
     func migrationCandidates(includeTransitive: Bool = false) -> [PkgLiftCore.MigrationCandidate] {
         let classifier = MigrationClassifier()
         let versionMapper = VersionMapper()
@@ -85,18 +95,14 @@ struct CommandContext: Sendable {
                 }
             }()
 
-            let matchingTargetCount: Int = {
-                guard dependency.targets.count == 1,
-                      let targetName = dependency.targets.first,
-                      let targets = xcodeAnalysis?.projectInfo.targets else { return 0 }
-                return targets.filter { $0.name == targetName }.count
-            }()
+            let targetInfo = exactTargetInfo(for: dependency)
 
             let result = classifier.classify(
                 dependency: dependency,
                 mapping: mapping,
                 isAlreadyMigrated: isAlreadyMigrated,
-                isTargetMappingKnown: matchingTargetCount == 1,
+                isTargetMappingKnown: targetInfo != nil,
+                targetSourceProfile: targetInfo?.sourceProfile,
                 podfileFeatures: podfileFeatures
             )
 
@@ -137,7 +143,8 @@ struct CommandContext: Sendable {
                     repositoryURL: mapping.swiftpm.repository,
                     products: mapping.swiftpm.products,
                     versionRequirement: versionRequirement,
-                    confidence: mapping.migration.confidence
+                    confidence: mapping.migration.confidence,
+                    supportedConsumerLanguages: mapping.swiftpm.supportedConsumerLanguages
                 )
             } else {
                 mappedPackage = nil
@@ -148,7 +155,11 @@ struct CommandContext: Sendable {
                 mappedPackage?.products.isEmpty != false ||
                 !dependency.hasLiteralMigrationProvenance ||
                 dependency.targets.count != 1 ||
-                matchingTargetCount != 1) {
+                targetInfo == nil ||
+                !hasCompatibleLanguageEvidence(
+                    profile: targetInfo?.sourceProfile,
+                    supportedLanguages: mappedPackage?.supportedConsumerLanguages
+                )) {
                 coreClassification = .review
                 reasons.append("Automatic migration data is incomplete or ambiguous")
             }
@@ -229,6 +240,7 @@ struct CommandContext: Sendable {
             let targetName = attribution.status == .exact && attribution.targets.count == 1
                 ? attribution.targets[0]
                 : nil
+            let targetSourceProfile = exactTargetInfo(for: candidate.pod)?.sourceProfile
 
             if let packageCandidate = candidate.packageCandidate,
                let requirement = packageCandidate.versionRequirement,
@@ -269,7 +281,8 @@ struct CommandContext: Sendable {
                 targetName: targetName,
                 packageCandidate: candidate.packageCandidate,
                 declarations: candidate.pod.declarations,
-                targetAttribution: attribution
+                targetAttribution: attribution,
+                targetSourceProfile: targetSourceProfile
             )
         }
 
@@ -555,6 +568,21 @@ private func existingPackage(
 ) -> SwiftPMDependency? {
     let identity = RepositoryIdentity.normalized(repositoryURL)
     return packages.first { RepositoryIdentity.normalized($0.repositoryURL) == identity }
+}
+
+private func hasCompatibleLanguageEvidence(
+    profile: TargetSourceProfile?,
+    supportedLanguages: [SourceLanguage]?
+) -> Bool {
+    guard let profile,
+          profile.completeness == .complete,
+          !profile.languages.isEmpty,
+          let supportedLanguages,
+          !supportedLanguages.isEmpty,
+          Set(supportedLanguages).count == supportedLanguages.count else {
+        return false
+    }
+    return Set(profile.languages).isSubset(of: Set(supportedLanguages))
 }
 
 enum CommandContextError: LocalizedError {

@@ -21,6 +21,7 @@ public struct MigrationPlanner: Sendable {
         projectPath: String = ".",
         podfileFeatures: PodfileFeatures = PodfileFeatures(),
         availableTargets: [String] = [],
+        availableTargetInfos: [TargetInfo] = [],
         counts: DependencyCounts? = nil
     ) -> MigrationPlan {
         var entries: [MigrationPlanEntry] = []
@@ -36,12 +37,20 @@ public struct MigrationPlanner: Sendable {
                 ? attribution.targets.first
                 : nil
             let targetIsKnown = targetName.map { target in
-                availableTargets.filter { $0 == target }.count == 1
+                if availableTargetInfos.isEmpty {
+                    return availableTargets.filter { $0 == target }.count == 1
+                }
+                return availableTargetInfos.filter { $0.name == target }.count == 1
             } ?? false
+            let targetSourceProfile = targetName.flatMap { target in
+                let matches = availableTargetInfos.filter { $0.name == target }
+                return matches.count == 1 ? matches[0].sourceProfile : nil
+            }
             let classification = classifier.classify(
                 dependency: dep,
                 mapping: mapping,
                 isTargetMappingKnown: targetIsKnown,
+                targetSourceProfile: targetSourceProfile,
                 podfileFeatures: podfileFeatures
             )
 
@@ -61,7 +70,8 @@ public struct MigrationPlanner: Sendable {
                     repositoryURL: $0.swiftpm.repository,
                     products: $0.swiftpm.products,
                     versionRequirement: versionRequirement,
-                    confidence: $0.migration.confidence
+                    confidence: $0.migration.confidence,
+                    supportedConsumerLanguages: $0.swiftpm.supportedConsumerLanguages
                 )
             }
             
@@ -108,7 +118,8 @@ public struct MigrationPlanner: Sendable {
                 targetName: targetName,
                 packageCandidate: packageCandidate,
                 declarations: dep.declarations,
-                targetAttribution: attribution
+                targetAttribution: attribution,
+                targetSourceProfile: targetSourceProfile
             ))
         }
         

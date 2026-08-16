@@ -32,11 +32,11 @@ struct MigrateCommand: AsyncParsableCommand {
             return
         }
 
-        let availableTargets = context.xcodeAnalysis?.projectInfo.targets.map(\.name) ?? []
+        let availableTargetInfos = context.xcodeAnalysis?.projectInfo.targets ?? []
         let prepared = try MigrationPlanPreflight().prepare(
             plan: plan,
             currentPlan: context.buildMigrationPlan(),
-            availableTargets: availableTargets
+            availableTargetInfos: availableTargetInfos
         )
 
         if !apply {
