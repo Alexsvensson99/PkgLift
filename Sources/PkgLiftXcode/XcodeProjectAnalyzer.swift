@@ -83,7 +83,8 @@ public struct XcodeProjectAnalyzer: Sendable {
                 name: targetName,
                 type: targetType,
                 platform: environment?.platform,
-                deploymentTarget: environment?.deploymentTarget
+                deploymentTarget: environment?.deploymentTarget,
+                sourceProfile: sourceProfile(for: target)
             )
             targetInfos.append(targetInfo)
             
@@ -117,7 +118,11 @@ public struct XcodeProjectAnalyzer: Sendable {
             if $0.name != $1.name { return $0.name < $1.name }
             if $0.type != $1.type { return $0.type < $1.type }
             if $0.platform != $1.platform { return ($0.platform ?? "") < ($1.platform ?? "") }
-            return ($0.deploymentTarget ?? "") < ($1.deploymentTarget ?? "")
+            if $0.deploymentTarget != $1.deploymentTarget {
+                return ($0.deploymentTarget ?? "") < ($1.deploymentTarget ?? "")
+            }
+            return sourceProfileSortKey($0.sourceProfile)
+                .lexicographicallyPrecedes(sourceProfileSortKey($1.sourceProfile))
         }
         
         let projectInfo = ProjectInfo(
@@ -211,6 +216,62 @@ public struct XcodeProjectAnalyzer: Sendable {
             targets: targetInfos,
             hasCocoaPodsIntegration: hasCocoaPodsIntegration
         )
+    }
+
+    /// Builds a conservative profile without opening or reading source files.
+    ///
+    /// A synchronized root can implicitly contribute sources that are absent
+    /// from the traditional sources build phase, so its presence makes the
+    /// PBX-only profile incomplete.
+    private func sourceProfile(for target: PBXNativeTarget) -> TargetSourceProfile {
+        var languages: [SourceLanguage] = []
+        var completeness: SourceProfileCompleteness = .complete
+
+        if target.fileSystemSynchronizedGroups?.isEmpty == false {
+            completeness = .incomplete
+        }
+
+        do {
+            guard let sourcesBuildPhase = try target.sourcesBuildPhase() else {
+                return TargetSourceProfile(
+                    languages: languages,
+                    completeness: completeness
+                )
+            }
+
+            for buildFile in sourcesBuildPhase.files ?? [] {
+                guard let fileReference = buildFile.file as? PBXFileReference,
+                      let fileType = fileReference.explicitFileType ?? fileReference.lastKnownFileType,
+                      let language = Self.sourceLanguage(forPBXFileType: fileType) else {
+                    completeness = .incomplete
+                    continue
+                }
+                languages.append(language)
+            }
+        } catch {
+            completeness = .incomplete
+        }
+
+        return TargetSourceProfile(
+            languages: languages,
+            completeness: completeness
+        )
+    }
+
+    private static func sourceLanguage(forPBXFileType fileType: String) -> SourceLanguage? {
+        switch fileType {
+        case "sourcecode.swift": .swift
+        case "sourcecode.c.objc": .objectiveC
+        case "sourcecode.cpp.objcpp": .objectiveCPlusPlus
+        case "sourcecode.c.c": .c
+        case "sourcecode.cpp.cpp": .cPlusPlus
+        default: nil
+        }
+    }
+
+    private func sourceProfileSortKey(_ profile: TargetSourceProfile?) -> [String] {
+        guard let profile else { return [""] }
+        return [profile.completeness.rawValue] + profile.languages.map(\.rawValue)
     }
 
     /// Resolves the platform settings that Xcode applies to every target configuration.

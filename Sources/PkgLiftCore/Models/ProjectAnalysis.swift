@@ -115,6 +115,62 @@ public struct ProjectInfo: Sendable, Codable {
     }
 }
 
+/// Source languages compiled by an Xcode target.
+public enum SourceLanguage: String, Sendable, Codable, CaseIterable, Comparable {
+    case swift
+    case objectiveC
+    case objectiveCPlusPlus
+    case c
+    case cPlusPlus
+
+    public static func < (lhs: SourceLanguage, rhs: SourceLanguage) -> Bool {
+        lhs.sortOrder < rhs.sortOrder
+    }
+
+    private var sortOrder: Int {
+        switch self {
+        case .swift: 0
+        case .objectiveC: 1
+        case .objectiveCPlusPlus: 2
+        case .c: 3
+        case .cPlusPlus: 4
+        }
+    }
+}
+
+/// Whether PBX metadata completely describes a target's compiled sources.
+public enum SourceProfileCompleteness: String, Sendable, Codable {
+    case complete
+    case incomplete
+}
+
+/// Deterministic source-language evidence derived only from PBX metadata.
+public struct TargetSourceProfile: Sendable, Codable, Equatable {
+    public let languages: [SourceLanguage]
+    public let completeness: SourceProfileCompleteness
+
+    public init(
+        languages: [SourceLanguage],
+        completeness: SourceProfileCompleteness
+    ) {
+        self.languages = Array(Set(languages)).sorted()
+        self.completeness = completeness
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case languages
+        case completeness
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            languages: try container.decode([SourceLanguage].self, forKey: .languages),
+            completeness: try container.decode(SourceProfileCompleteness.self, forKey: .completeness)
+        )
+    }
+}
+
 /// Information about an Xcode target.
 public struct TargetInfo: Sendable, Codable, Equatable {
     /// Target name.
@@ -129,16 +185,21 @@ public struct TargetInfo: Sendable, Codable, Equatable {
     /// Minimum deployment target version.
     public let deploymentTarget: String?
 
+    /// PBX-derived source-language evidence, when produced by a compatible analyzer.
+    public let sourceProfile: TargetSourceProfile?
+
     public init(
         name: String,
         type: String,
         platform: String? = nil,
-        deploymentTarget: String? = nil
+        deploymentTarget: String? = nil,
+        sourceProfile: TargetSourceProfile? = nil
     ) {
         self.name = name
         self.type = type
         self.platform = platform
         self.deploymentTarget = deploymentTarget
+        self.sourceProfile = sourceProfile
     }
 }
 
