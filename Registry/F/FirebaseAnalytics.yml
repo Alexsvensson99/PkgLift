@@ -7,6 +7,9 @@ swiftpm:
   products:
     - FirebaseAnalytics
   minimumVersion: 8.0.0
+  supportedConsumerLanguages:
+    - swift
+    - objectiveC
 migration:
   confidence: verified
 metadata:

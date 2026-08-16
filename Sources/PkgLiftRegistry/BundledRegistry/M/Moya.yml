@@ -6,6 +6,8 @@ swiftpm:
   products:
     - Moya
   minimumVersion: 14.0.0
+  supportedConsumerLanguages:
+    - swift
 migration:
   confidence: verified
 metadata:

@@ -65,4 +65,47 @@ final class RegistryValidatorTests: XCTestCase {
             )
         }
     }
+
+    func testConsumerLanguagesAreOptionalForLegacyMappings() {
+        let mapping = RegistryMapping(
+            pod: PodIdentifier(name: "LegacyPod"),
+            swiftpm: SwiftPMPackageInfo(
+                repository: "https://github.com/org/repo",
+                products: ["LegacyPod"]
+            ),
+            migration: MigrationInfo(confidence: .verified)
+        )
+
+        let errors = RegistryValidator().validate(mapping, filePath: "LegacyPod.yml")
+
+        XCTAssertFalse(errors.contains { $0.fieldPath == "swiftpm.supportedConsumerLanguages" })
+    }
+
+    func testEmptyAndDuplicateConsumerLanguagesAreInvalid() {
+        let packages = [
+            SwiftPMPackageInfo(
+                repository: "https://github.com/org/repo",
+                products: ["Empty"],
+                supportedConsumerLanguages: []
+            ),
+            SwiftPMPackageInfo(
+                repository: "https://github.com/org/repo",
+                products: ["Duplicate"],
+                supportedConsumerLanguages: [.swift, .swift]
+            ),
+        ]
+
+        for package in packages {
+            let mapping = RegistryMapping(
+                pod: PodIdentifier(name: "InvalidLanguages"),
+                swiftpm: package,
+                migration: MigrationInfo(confidence: .verified)
+            )
+
+            let errors = RegistryValidator().validate(mapping, filePath: "InvalidLanguages.yml")
+            XCTAssertTrue(errors.contains {
+                $0.fieldPath == "swiftpm.supportedConsumerLanguages"
+            })
+        }
+    }
 }
