@@ -5,6 +5,14 @@ import Foundation
 /// This parser deliberately recognizes only syntax whose value can be proven
 /// without evaluating Ruby. Unsupported or computed forms remain dynamic.
 enum PodfileStaticSyntax {
+    static func isDirectiveInvocation(_ directive: String, in line: String) -> Bool {
+        let source = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard source.hasPrefix(directive) else { return false }
+        let boundary = source.index(source.startIndex, offsetBy: directive.count)
+        guard boundary < source.endIndex else { return true }
+        return source[boundary].isWhitespace || source[boundary] == "("
+    }
+
     static func isTargetDeclaration(_ line: String) -> Bool {
         startsWithKeyword("target", line: line)
     }

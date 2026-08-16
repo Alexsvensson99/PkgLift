@@ -361,6 +361,20 @@ final class MigrationClassifierTests: XCTestCase {
         }
     }
 
+    func testConfirmedProjectIntegrationsPreventAutoWithStableReasons() {
+        for integration in ProjectIntegration.allCases {
+            let result = MigrationClassifier().classify(
+                dependency: makeDependency(version: "5.18.1"),
+                mapping: makeMapping(minimumVersion: "5.1.0"),
+                targetSourceProfile: swiftProfile,
+                projectIntegrations: [integration]
+            )
+
+            XCTAssertEqual(result.category, .review)
+            XCTAssertTrue(result.reasons.contains(integration.reviewReason))
+        }
+    }
+
     func testReportsEveryRelevantSafetyReasonWithoutChangingBlockedClassification() {
         var features = PodfileFeatures()
         features.hasPostInstallHook = true

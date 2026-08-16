@@ -68,18 +68,23 @@ public struct DiagnosticsProjectSummary: Sendable, Codable, Equatable {
     public let discoveredWorkspaceCount: Int
     public let selection: DiagnosticsSelectionKind
     public let targetCount: Int?
+    public let integrations: [ProjectIntegration]
+    public let integrationCount: Int
 
     public init(
         discoveredProjectCount: Int,
         discoveredWorkspaceCount: Int,
         selection: DiagnosticsSelectionKind,
-        targetCount: Int?
+        targetCount: Int?,
+        integrations: [ProjectIntegration] = []
     ) {
         self.root = "<PROJECT_ROOT>"
         self.discoveredProjectCount = discoveredProjectCount
         self.discoveredWorkspaceCount = discoveredWorkspaceCount
         self.selection = selection
         self.targetCount = targetCount
+        self.integrations = Array(Set(integrations)).sorted()
+        self.integrationCount = self.integrations.count
     }
 }
 
@@ -275,11 +280,17 @@ public struct DiagnosticsReportBuilder: Sendable {
             selection = .none
         }
 
+        var integrations = Set(analysis?.detectedIntegrations ?? [])
+        if discovery?.hasCarthageFiles == true {
+            integrations.insert(.carthage)
+        }
+
         let project = DiagnosticsProjectSummary(
             discoveredProjectCount: discovery?.projectPaths.count ?? 0,
             discoveredWorkspaceCount: discovery?.workspacePaths.count ?? 0,
             selection: selection,
-            targetCount: analysis?.project.targets.count
+            targetCount: analysis?.project.targets.count,
+            integrations: integrations.sorted()
         )
 
         let cocoaPods = DiagnosticsCocoaPodsSummary(

@@ -46,6 +46,11 @@ public struct ProjectAnalysis: Sendable, Codable {
     /// remain decodable.
     public let counts: DependencyCounts?
 
+    /// Confirmed project integrations that require manual migration review.
+    ///
+    /// Optional so older schema-1 artifacts remain decodable.
+    public let detectedIntegrations: [ProjectIntegration]?
+
     public init(
         project: ProjectInfo,
         cocoaPods: CocoaPodsState,
@@ -53,7 +58,8 @@ public struct ProjectAnalysis: Sendable, Codable {
         candidates: [MigrationCandidate],
         issues: [MigrationIssue],
         readinessScore: Int,
-        counts: DependencyCounts? = nil
+        counts: DependencyCounts? = nil,
+        detectedIntegrations: [ProjectIntegration]? = nil
     ) {
         self.schemaVersion = Self.schemaVersion
         self.timestamp = Date()
@@ -65,6 +71,43 @@ public struct ProjectAnalysis: Sendable, Codable {
         self.issues = issues
         self.readinessScore = readinessScore
         self.counts = counts
+        self.detectedIntegrations = detectedIntegrations.map {
+            Array(Set($0)).sorted()
+        }
+    }
+}
+
+/// Confirmed dependency-system or generated-project integration.
+public enum ProjectIntegration: String, Sendable, Codable, CaseIterable, Comparable {
+    case carthage
+    case reactNative
+    case flutter
+    case capacitor
+
+    public static func < (lhs: ProjectIntegration, rhs: ProjectIntegration) -> Bool {
+        lhs.sortOrder < rhs.sortOrder
+    }
+
+    private var sortOrder: Int {
+        switch self {
+        case .carthage: 0
+        case .reactNative: 1
+        case .flutter: 2
+        case .capacitor: 3
+        }
+    }
+
+    public var reviewReason: String {
+        switch self {
+        case .carthage:
+            "Carthage integration detected"
+        case .reactNative:
+            "React Native Podfile integration marker detected"
+        case .flutter:
+            "Flutter Podfile integration marker detected"
+        case .capacitor:
+            "Capacitor Podfile integration marker detected"
+        }
     }
 }
 
@@ -275,13 +318,59 @@ public struct PodfileFeatures: Sendable, Codable {
     /// Whether abstract targets are used.
     public var hasAbstractTargets: Bool = false
 
+    /// Typed generated-project or cross-platform integration markers.
+    public var integrationMarkers: [ProjectIntegration] = []
+
     public init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case useFrameworks
+        case useModularHeaders
+        case hasPostInstallHook
+        case hasPreInstallHook
+        case hasScriptPhase
+        case hasDynamicRuby
+        case hasInheritSearchPaths
+        case hasAbstractTargets
+        case integrationMarkers
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        useFrameworks = try container.decodeIfPresent(Bool.self, forKey: .useFrameworks) ?? false
+        useModularHeaders = try container.decodeIfPresent(Bool.self, forKey: .useModularHeaders) ?? false
+        hasPostInstallHook = try container.decodeIfPresent(Bool.self, forKey: .hasPostInstallHook) ?? false
+        hasPreInstallHook = try container.decodeIfPresent(Bool.self, forKey: .hasPreInstallHook) ?? false
+        hasScriptPhase = try container.decodeIfPresent(Bool.self, forKey: .hasScriptPhase) ?? false
+        hasDynamicRuby = try container.decodeIfPresent(Bool.self, forKey: .hasDynamicRuby) ?? false
+        hasInheritSearchPaths = try container.decodeIfPresent(Bool.self, forKey: .hasInheritSearchPaths) ?? false
+        hasAbstractTargets = try container.decodeIfPresent(Bool.self, forKey: .hasAbstractTargets) ?? false
+        integrationMarkers = Array(Set(
+            try container.decodeIfPresent(
+                [ProjectIntegration].self,
+                forKey: .integrationMarkers
+            ) ?? []
+        )).sorted()
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(useFrameworks, forKey: .useFrameworks)
+        try container.encode(useModularHeaders, forKey: .useModularHeaders)
+        try container.encode(hasPostInstallHook, forKey: .hasPostInstallHook)
+        try container.encode(hasPreInstallHook, forKey: .hasPreInstallHook)
+        try container.encode(hasScriptPhase, forKey: .hasScriptPhase)
+        try container.encode(hasDynamicRuby, forKey: .hasDynamicRuby)
+        try container.encode(hasInheritSearchPaths, forKey: .hasInheritSearchPaths)
+        try container.encode(hasAbstractTargets, forKey: .hasAbstractTargets)
+        try container.encode(Array(Set(integrationMarkers)).sorted(), forKey: .integrationMarkers)
+    }
 
     /// Whether any migration-affecting features were detected.
     public var hasRisks: Bool {
         hasPostInstallHook || hasPreInstallHook || hasScriptPhase
             || hasDynamicRuby || useFrameworks || hasInheritSearchPaths
-            || hasAbstractTargets
+            || hasAbstractTargets || !integrationMarkers.isEmpty
     }
 }
 

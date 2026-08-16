@@ -22,10 +22,16 @@ public struct MigrationPlanner: Sendable {
         podfileFeatures: PodfileFeatures = PodfileFeatures(),
         availableTargets: [String] = [],
         availableTargetInfos: [TargetInfo] = [],
+        projectIntegrations: [ProjectIntegration] = [],
         counts: DependencyCounts? = nil
     ) -> MigrationPlan {
         var entries: [MigrationPlanEntry] = []
-        var issues: [MigrationIssue] = []
+        let detectedIntegrations = Array(Set(
+            projectIntegrations + podfileFeatures.integrationMarkers
+        )).sorted()
+        var issues: [MigrationIssue] = detectedIntegrations.map {
+            MigrationIssue(severity: .warning, message: $0.reviewReason)
+        }
         let classifier = MigrationClassifier()
         var autoCount = 0
         
@@ -51,6 +57,7 @@ public struct MigrationPlanner: Sendable {
                 mapping: mapping,
                 isTargetMappingKnown: targetIsKnown,
                 targetSourceProfile: targetSourceProfile,
+                projectIntegrations: detectedIntegrations,
                 podfileFeatures: podfileFeatures
             )
 

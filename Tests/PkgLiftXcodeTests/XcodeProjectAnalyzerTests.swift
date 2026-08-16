@@ -746,6 +746,26 @@ final class XcodeProjectAnalyzerTests: XCTestCase {
         )
     }
 
+    func testDetectsConfirmedCarthageXcodeIntegration() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let project = try writeCarthageProject(in: root, includesCarthage: true)
+        let result = try XcodeProjectAnalyzer().analyzeProject(at: project.path)
+
+        XCTAssertTrue(result.hasCarthageIntegration)
+    }
+
+    func testDoesNotTreatUnrelatedFrameworkOrCommentAsCarthage() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let project = try writeCarthageProject(in: root, includesCarthage: false)
+        let result = try XcodeProjectAnalyzer().analyzeProject(at: project.path)
+
+        XCTAssertFalse(result.hasCarthageIntegration)
+    }
+
     private func analyzedTarget(in project: URL) throws -> TargetInfo {
         let result = try XcodeProjectAnalyzer().analyzeProject(at: project.path)
         guard let target = result.targets.first(where: { $0.name == "Example" }) else {
@@ -1095,6 +1115,68 @@ final class XcodeProjectAnalyzerTests: XCTestCase {
         objects.append(contentsOf: optionalObjects)
         objects.forEach { pbxproj.add(object: $0) }
 
+        try XcodeProj(workspace: XCWorkspace(), pbxproj: pbxproj)
+            .write(path: Path(projectURL.path))
+        return projectURL
+    }
+
+    private func writeCarthageProject(in root: URL, includesCarthage: Bool) throws -> URL {
+        let projectURL = root.appendingPathComponent("CarthageIntegration.xcodeproj")
+        let frameworkReference = PBXFileReference(
+            sourceTree: .group,
+            lastKnownFileType: "wrapper.framework",
+            path: includesCarthage
+                ? "Carthage/Build/iOS/Legacy.framework"
+                : "Vendor/Legacy.xcframework"
+        )
+        let frameworkBuildFile = PBXBuildFile(file: frameworkReference)
+        let frameworks = PBXFrameworksBuildPhase(files: [frameworkBuildFile])
+        let script = PBXShellScriptBuildPhase(
+            shellScript: includesCarthage
+                ? "/usr/local/bin/carthage copy-frameworks"
+                : "# $(SRCROOT)/Carthage/Build/Legacy.framework\n# carthage copy-frameworks\necho complete"
+        )
+        let mainGroup = PBXGroup(
+            children: [frameworkReference],
+            sourceTree: .group,
+            name: "Main"
+        )
+        let projectConfigurations = XCConfigurationList()
+        let targetConfigurations = XCConfigurationList()
+        let target = PBXNativeTarget(
+            name: "Example",
+            buildConfigurationList: targetConfigurations,
+            buildPhases: [frameworks, script],
+            productName: "Example.app",
+            productType: .application
+        )
+        let rootProject = PBXProject(
+            name: "CarthageIntegration",
+            buildConfigurationList: projectConfigurations,
+            compatibilityVersion: "Xcode 15.0",
+            preferredProjectObjectVersion: nil,
+            minimizedProjectReferenceProxies: nil,
+            mainGroup: mainGroup,
+            targets: [target]
+        )
+        let pbxproj = PBXProj(
+            rootObject: rootProject,
+            objectVersion: 56,
+            archiveVersion: 1,
+            classes: [:],
+            objects: []
+        )
+        [
+            frameworkReference,
+            frameworkBuildFile,
+            frameworks,
+            script,
+            mainGroup,
+            projectConfigurations,
+            targetConfigurations,
+            target,
+            rootProject,
+        ].forEach { pbxproj.add(object: $0) }
         try XcodeProj(workspace: XCWorkspace(), pbxproj: pbxproj)
             .write(path: Path(projectURL.path))
         return projectURL
