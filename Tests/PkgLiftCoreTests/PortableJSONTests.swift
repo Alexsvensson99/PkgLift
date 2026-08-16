@@ -72,6 +72,39 @@ final class PortableJSONTests: XCTestCase {
         XCTAssertEqual(output, original)
     }
 
+    func testPortableOutputFailsClosedForMalformedCredentialBearingURLs() throws {
+        let source: [String: Any] = [
+            "invalidPort": "https://user:password@example.com:bad/repo?token=secret#private",
+            "invalidIPv6": "https://user:password@[::1/repo?token=secret#private",
+            "opaqueUserInfo": "https:user:password@example.com/repo?token=secret#private",
+            "emptyAuthority": "https:////user:password@example.com/repo?token=secret#private",
+            "wrapped": "<https://user:password@example.com/repo?token=secret#private>",
+            "valid": "https://user:password@example.com/org/repo.git?token=secret#private",
+            "validAtSign": "https://example.com/org/repo@v1.git?token=secret#private",
+            "existingMarker": "<redacted-path>",
+        ]
+        let data = try JSONSerialization.data(withJSONObject: source, options: [.sortedKeys])
+
+        let rendered = try PortableJSON().render(data)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: rendered) as? [String: Any]
+        )
+
+        XCTAssertEqual(object["invalidPort"] as? String, "<redacted-url>")
+        XCTAssertEqual(object["invalidIPv6"] as? String, "<redacted-url>")
+        XCTAssertEqual(object["opaqueUserInfo"] as? String, "<redacted-url>")
+        XCTAssertEqual(object["emptyAuthority"] as? String, "<redacted-url>")
+        XCTAssertEqual(object["wrapped"] as? String, "https://example.com/repo")
+        XCTAssertEqual(object["valid"] as? String, "https://example.com/org/repo.git")
+        XCTAssertEqual(object["validAtSign"] as? String, "https://example.com/org/repo@v1.git")
+        XCTAssertEqual(object["existingMarker"] as? String, "<redacted-path>")
+
+        let json = try XCTUnwrap(String(data: rendered, encoding: .utf8))
+        for secret in ["user:", "password", "token=", "#private", ":bad"] {
+            XCTAssertFalse(json.contains(secret), "Portable JSON leaked \(secret)")
+        }
+    }
+
     func testPortableOutputRejectsNonObjectRoot() throws {
         let data = try JSONSerialization.data(withJSONObject: ["/private/path"])
 

@@ -10,7 +10,7 @@ PkgLift 0.2.1 strengthens the evidence required for automatic migration and broa
 - Requires a complete target profile and explicit registry support for every consumer language before `AUTO`; mixed Swift and Objective-C targets require both.
 - Adds exact `FirebaseAnalytics`, `FirebaseCrashlytics`, and `FirebaseMessaging` mappings at the verified `11.12.0` boundary.
 - Detects Carthage plus React Native, Flutter, and Capacitor integration and prevents automatic migration instead of guessing ownership.
-- Adds `--portable-json` to `analyze` and `plan`, with versioned local-path and URL-secret sanitization while preserving the full executable plan locally.
+- Adds `--portable-json` to `analyze` and `plan`, with versioned local-path and fail-closed URL-secret sanitization while preserving the full executable plan locally.
 
 ## Migration safety
 
@@ -28,7 +28,7 @@ PkgLift 0.2.1 strengthens the evidence required for automatic migration and broa
 
 ## Maintenance and security
 
-- Stable Registry, CodeQL, pinned-pilot, and mixed-language-pilot gates are visible on every pull request while expensive work runs only for relevant paths.
+- Stable Registry, CodeQL, pinned-pilot, and mixed-language-pilot gates run their required validation on every pull request and main-branch push, so candidate-controlled path filters cannot turn skipped work into a green gate.
 - The complete upstream pilot matrix runs weekly to detect Xcode-runner or pinned-source drift.
 - Dependabot monitors SwiftPM and GitHub Actions weekly.
 - Swift CodeQL analysis runs on macOS, and repository validation rejects mutable third-party Action references.

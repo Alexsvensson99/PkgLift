@@ -15,45 +15,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Registry Changes
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    outputs:
-      relevant: ${{ steps.filter.outputs.relevant }}
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          fetch-depth: 0
-      - name: Detect registry-relevant changes
-        id: filter
-        env:
-          PKGLIFT_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          PKGLIFT_HEAD_SHA: ${{ github.sha }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          relevant="$(python3 Scripts/ci-paths-relevant.py \
-            '.github/workflows/registry.yml' \
-            'Package.swift' \
-            'Package.resolved' \
-            'Registry/**' \
-            'Sources/PkgLiftCore/**' \
-            'Sources/PkgLiftRegistry/**' \
-            'Tests/PkgLiftRegistryTests/**' \
-            'Scripts/ci-paths-relevant.py')"
-          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
-
   validate:
     name: Registry Validation
-    needs: changes
-    if: needs.changes.outputs.relevant == 'true'
     runs-on: macos-15
     timeout-minutes: 30
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
       - name: Swift Version
         run: swift --version
       - name: Validate Registry
@@ -61,24 +32,16 @@ jobs:
 
   gate:
     name: Registry Gate
-    needs: [changes, validate]
+    needs: validate
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require applicable registry validation
         env:
-          CHANGES_RESULT: ${{ needs.changes.result }}
-          RELEVANT: ${{ needs.changes.outputs.relevant }}
           VALIDATE_RESULT: ${{ needs.validate.result }}
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$CHANGES_RESULT" == 'success' ]]
-          if [[ "$RELEVANT" == 'true' ]]; then
-            [[ "$VALIDATE_RESULT" == 'success' ]]
-            echo 'Registry validation passed.'
-          else
-            [[ "$VALIDATE_RESULT" == 'skipped' ]]
-            echo 'No registry-relevant changes; heavy validation was safely skipped.'
-          fi
+          [[ "$VALIDATE_RESULT" == 'success' ]]
+          echo 'Registry validation passed.'

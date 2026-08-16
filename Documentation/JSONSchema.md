@@ -69,7 +69,7 @@ The new evidence fields are additive, so older schema-1 JSON remains decodable f
 }
 ```
 
-Absolute POSIX and Windows paths, UNC paths, home paths, and explicit relative local paths are replaced without retaining the basename. `file://` locations are reduced to a redacted path marker. URL user information, passwords, queries, and fragments are removed, including from SCP-like Git syntax. Keys remain deterministically sorted.
+Absolute POSIX and Windows paths, UNC paths, home paths, and explicit relative local paths are replaced without retaining the basename. `file://` locations are reduced to a redacted path marker. URL user information, passwords, queries, and fragments are removed, including from SCP-like Git syntax. Scheme-based values that cannot be parsed safely are replaced with `<redacted-url>` instead of being returned unchanged. Keys remain deterministically sorted.
 
 `plan --portable-json` still writes the full executable `MigrationPlan` to `.pkglift/plan.json`; only stdout is portable. Portable output is intended for reproducible review, not as a privacy-minimized support report: dependency names, target names, classifications, and other project structure can remain. Use `pkglift diagnostics` when a minimized support artifact is required, and review either format before sharing it.
 

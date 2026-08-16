@@ -65,7 +65,7 @@ A pilot update must change the recorded commit explicitly, explain why the old c
 
 ## Running the workflows
 
-The always-visible pilot gates run on every pull request and main-branch push. The read-only matrix itself runs when migration-sensitive source, registry data, documentation, or the pilot harness changes, and on a weekly schedule that detects pinned-upstream or Xcode-runner drift. The mixed-language end-to-end job runs only for changes that can affect its fixture, migration, verification, registry mapping, or harness. Maintainers can also start either workflow manually from GitHub Actions.
+The pilot gates and their underlying validation run on every pull request and main-branch push. This intentionally spends more runner time so a pull request cannot modify a path filter and receive a green gate for skipped work. The complete read-only matrix also runs weekly to detect pinned-upstream or Xcode-runner drift. Maintainers can start either workflow manually from GitHub Actions.
 
 Each job writes a Markdown summary and keeps its selected validation artifact for 14 days. A failed job should be triaged into one of these outcomes:
 

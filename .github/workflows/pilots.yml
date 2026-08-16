@@ -17,46 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Pinned Pilot Changes
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    outputs:
-      relevant: ${{ steps.filter.outputs.relevant }}
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          fetch-depth: 0
-      - name: Detect pilot-relevant changes
-        id: filter
-        env:
-          PKGLIFT_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          PKGLIFT_HEAD_SHA: ${{ github.sha }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          relevant="$(python3 Scripts/ci-paths-relevant.py \
-            '.github/workflows/pilots.yml' \
-            'Scripts/run-pinned-pilot.sh' \
-            'Scripts/validate-pinned-pilot.rb' \
-            'Scripts/ci-paths-relevant.py' \
-            'Documentation/Pilots.md' \
-            'Package.swift' \
-            'Package.resolved' \
-            'Registry/**' \
-            'Sources/PkgLiftCLI/**' \
-            'Sources/PkgLiftCore/**' \
-            'Sources/PkgLiftCocoaPods/**' \
-            'Sources/PkgLiftMigration/**' \
-            'Sources/PkgLiftRegistry/**' \
-            'Sources/PkgLiftVerification/**' \
-            'Sources/PkgLiftXcode/**')"
-          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
-
   analyze:
     name: ${{ matrix.name }}
-    needs: changes
-    if: needs.changes.outputs.relevant == 'true'
     runs-on: macos-15
     timeout-minutes: 30
     strategy:
@@ -138,6 +100,8 @@ jobs:
       PILOT_LICENSE: ${{ matrix.license }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Build PkgLift
         shell: bash
@@ -161,24 +125,16 @@ jobs:
 
   gate:
     name: Pinned Pilot Gate
-    needs: [changes, analyze]
+    needs: analyze
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require applicable pinned pilots
         env:
-          CHANGES_RESULT: ${{ needs.changes.result }}
-          RELEVANT: ${{ needs.changes.outputs.relevant }}
           ANALYZE_RESULT: ${{ needs.analyze.result }}
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$CHANGES_RESULT" == 'success' ]]
-          if [[ "$RELEVANT" == 'true' ]]; then
-            [[ "$ANALYZE_RESULT" == 'success' ]]
-            echo 'All pinned read-only pilots passed.'
-          else
-            [[ "$ANALYZE_RESULT" == 'skipped' ]]
-            echo 'No pilot-relevant changes; the read-only matrix was safely skipped.'
-          fi
+          [[ "$ANALYZE_RESULT" == 'success' ]]
+          echo 'All pinned read-only pilots passed.'

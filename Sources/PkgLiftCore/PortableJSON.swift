@@ -4,6 +4,7 @@ import Foundation
 public struct PortableJSON: Sendable {
     public static let version = 1
     public static let redactedPath = "<redacted-path>"
+    public static let redactedURL = "<redacted-url>"
 
     public init() {}
 
@@ -55,12 +56,25 @@ public struct PortableJSON: Sendable {
     }
 
     private static func sanitize(_ value: String, pathContext: Bool) -> String {
-        let candidate = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !candidate.isEmpty else { return value }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return value }
 
-        if candidate.hasPrefix("<"), candidate.hasSuffix(">") {
-            return value
+        let candidate: String
+        if trimmed.hasPrefix("<"), trimmed.hasSuffix(">") {
+            let inner = String(trimmed.dropFirst().dropLast())
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if isExplicitLocalPath(inner)
+                || inner.lowercased().hasPrefix("file:")
+                || hasURLScheme(inner)
+                || sanitizedSCPURL(inner) != nil {
+                candidate = inner
+            } else {
+                return value
+            }
+        } else {
+            candidate = trimmed
         }
+
         if candidate.lowercased().hasPrefix("file:") {
             return "file://\(redactedPath)"
         }
@@ -70,14 +84,71 @@ public struct PortableJSON: Sendable {
         if let sanitizedSCP = sanitizedSCPURL(candidate) {
             return sanitizedSCP
         }
-        if var components = URLComponents(string: candidate), components.scheme != nil {
-            components.user = nil
-            components.password = nil
-            components.query = nil
-            components.fragment = nil
-            return components.string ?? value
+        if let sanitizedURL = sanitizedURL(candidate) {
+            return sanitizedURL
         }
         return value
+    }
+
+    private static func sanitizedURL(_ value: String) -> String? {
+        guard hasURLScheme(value) else { return nil }
+        guard var components = URLComponents(string: value), components.scheme != nil else {
+            return redactedURL
+        }
+
+        let colon = value.firstIndex(of: ":")
+        let suffix = colon.map { value[value.index(after: $0)...] } ?? value[...]
+        let usesAuthority = suffix.hasPrefix("//")
+        if usesAuthority {
+            guard let host = components.host, !host.isEmpty else { return redactedURL }
+        } else if value.contains("@") {
+            // An opaque or malformed scheme value has no authority boundary on
+            // which URLComponents can reliably distinguish userinfo from path.
+            return redactedURL
+        }
+
+        components.user = nil
+        components.password = nil
+        components.query = nil
+        components.fragment = nil
+
+        guard let rendered = components.string,
+              let verified = URLComponents(string: rendered),
+              verified.scheme != nil,
+              verified.user == nil,
+              verified.password == nil,
+              verified.query == nil,
+              verified.fragment == nil else {
+            return redactedURL
+        }
+
+        if usesAuthority {
+            guard let renderedColon = rendered.firstIndex(of: ":") else {
+                return redactedURL
+            }
+            let renderedSuffix = rendered[rendered.index(after: renderedColon)...]
+            guard renderedSuffix.hasPrefix("//") else { return redactedURL }
+            let authorityStart = rendered.index(renderedColon, offsetBy: 3)
+            let authorityEnd = rendered[authorityStart...].firstIndex(where: {
+                $0 == "/" || $0 == "?" || $0 == "#"
+            }) ?? rendered.endIndex
+            guard !rendered[authorityStart..<authorityEnd].contains("@") else {
+                return redactedURL
+            }
+        }
+        return rendered
+    }
+
+    private static func hasURLScheme(_ value: String) -> Bool {
+        guard let colon = value.firstIndex(of: ":"), colon > value.startIndex else {
+            return false
+        }
+
+        let scheme = value[..<colon]
+        guard let first = scheme.first, first.isLetter else { return false }
+        return scheme.dropFirst().allSatisfy {
+            $0.isLetter || $0.isNumber || "+-.".contains($0)
+        }
     }
 
     private static func isPathKey(_ key: String) -> Bool {
