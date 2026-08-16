@@ -88,6 +88,53 @@ required_gates.each do |path, (marker, heavy_job_id)|
   errors << "#{path}: gate must not accept skipped heavy validation" if gate_scripts.include?("'skipped'")
 end
 
+pilot_runner_path = "Scripts/run-pinned-pilot.sh"
+pilot_workflow_path = ".github/workflows/pilots.yml"
+pilot_runner = File.file?(pilot_runner_path) ? File.read(pilot_runner_path, encoding: "UTF-8") : ""
+pilot_case_match = pilot_runner.match(
+  /case "\$PILOT_CASE" in\s+([a-z0-9_-]+(?:\|[a-z0-9_-]+)*)\)\s*;;/
+)
+
+if pilot_case_match.nil?
+  errors << "#{pilot_runner_path}: missing statically verifiable PILOT_CASE allowlist"
+else
+  supported_pilot_cases = pilot_case_match[1].split("|")
+  pilot_workflow = load_yaml(pilot_workflow_path, errors)
+  pilot_matrix = pilot_workflow.is_a?(Hash) ? pilot_workflow.dig("jobs", "analyze", "strategy", "matrix", "include") : nil
+
+  unless pilot_matrix.is_a?(Array) && !pilot_matrix.empty?
+    errors << "#{pilot_workflow_path}: analyze matrix must have a non-empty include array"
+  else
+    workflow_pilot_cases = []
+    pilot_matrix.each_with_index do |entry, index|
+      pilot_case = entry["case"] if entry.is_a?(Hash)
+      if !pilot_case.is_a?(String) || pilot_case.empty?
+        errors << "#{pilot_workflow_path}: analyze matrix entry #{index} requires a non-empty string case"
+        next
+      end
+
+      workflow_pilot_cases << pilot_case
+    end
+
+    pilot_case_counts = Hash.new(0)
+    workflow_pilot_cases.each { |pilot_case| pilot_case_counts[pilot_case] += 1 }
+    duplicate_pilot_cases = pilot_case_counts.select { |_pilot_case, count| count > 1 }.keys.sort
+    duplicate_pilot_cases.each do |pilot_case|
+      errors << "#{pilot_workflow_path}: duplicate pilot case #{pilot_case.inspect}"
+    end
+
+    unsupported_pilot_cases = (workflow_pilot_cases - supported_pilot_cases).uniq.sort
+    unsupported_pilot_cases.each do |pilot_case|
+      errors << "#{pilot_workflow_path}: pilot case #{pilot_case.inspect} is not accepted by #{pilot_runner_path}"
+    end
+
+    missing_pilot_cases = (supported_pilot_cases - workflow_pilot_cases).sort
+    missing_pilot_cases.each do |pilot_case|
+      errors << "#{pilot_workflow_path}: missing matrix entry for supported pilot case #{pilot_case.inspect}"
+    end
+  end
+end
+
 dependabot = load_yaml(".github/dependabot.yml", errors)
 if dependabot.is_a?(Hash)
   ecosystems = Array(dependabot["updates"]).map do |entry|
