@@ -80,7 +80,7 @@ jobs:
             project: Hammerspoon.xcodeproj
             license: MIT
           - name: AcknowList read-only compatibility
-            case: acknowledist
+            case: acknowlist
             issue: local-batch-20260815
             repository: vtourraine/AcknowList
             commit: 0288baabb859af22b9e152555fa56b56094de789
