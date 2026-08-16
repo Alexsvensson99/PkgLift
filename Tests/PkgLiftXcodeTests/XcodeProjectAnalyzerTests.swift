@@ -664,6 +664,88 @@ final class XcodeProjectAnalyzerTests: XCTestCase {
         XCTAssertEqual(packages[2].linkedProducts, [])
     }
 
+    func testProfilesAllSupportedLanguagesFromPBXMetadataWithoutReadingSources() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let project = try writeSourceProfileProject(
+            in: root,
+            fileTypes: [
+                "sourcecode.cpp.cpp",
+                "sourcecode.c.objc",
+                "sourcecode.swift",
+                "sourcecode.cpp.objcpp",
+                "sourcecode.c.c",
+                "sourcecode.swift",
+            ]
+        )
+
+        let target = try analyzedTarget(in: project)
+
+        XCTAssertEqual(
+            target.sourceProfile,
+            TargetSourceProfile(
+                languages: [.swift, .objectiveC, .objectiveCPlusPlus, .c, .cPlusPlus],
+                completeness: .complete
+            )
+        )
+    }
+
+    func testUnknownTypeAndMissingFileReferenceMakeProfileIncomplete() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let project = try writeSourceProfileProject(
+            in: root,
+            fileTypes: ["sourcecode.swift", "sourcecode.unknown"],
+            includeMissingFileReference: true
+        )
+
+        let target = try analyzedTarget(in: project)
+
+        XCTAssertEqual(
+            target.sourceProfile,
+            TargetSourceProfile(languages: [.swift], completeness: .incomplete)
+        )
+    }
+
+    func testFileSystemSynchronizedRootGroupMakesProfileIncomplete() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let project = try writeSourceProfileProject(
+            in: root,
+            fileTypes: ["sourcecode.swift"],
+            hasFileSystemSynchronizedRootGroup: true
+        )
+
+        let target = try analyzedTarget(in: project)
+
+        XCTAssertEqual(
+            target.sourceProfile,
+            TargetSourceProfile(languages: [.swift], completeness: .incomplete)
+        )
+    }
+
+    func testTargetWithoutSourcesHasCompleteEmptyProfile() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let project = try writeProject(
+            in: root,
+            configurationNames: ["Debug"],
+            projectSettings: [:],
+            targetSettings: [:]
+        )
+
+        let target = try analyzedTarget(in: project)
+
+        XCTAssertEqual(
+            target.sourceProfile,
+            TargetSourceProfile(languages: [], completeness: .complete)
+        )
+    }
+
     private func analyzedTarget(in project: URL) throws -> TargetInfo {
         let result = try XcodeProjectAnalyzer().analyzeProject(at: project.path)
         guard let target = result.targets.first(where: { $0.name == "Example" }) else {
@@ -936,6 +1018,83 @@ final class XcodeProjectAnalyzerTests: XCTestCase {
             target,
             rootProject,
         ].forEach { pbxproj.add(object: $0) }
+        try XcodeProj(workspace: XCWorkspace(), pbxproj: pbxproj)
+            .write(path: Path(projectURL.path))
+        return projectURL
+    }
+
+    private func writeSourceProfileProject(
+        in root: URL,
+        fileTypes: [String],
+        includeMissingFileReference: Bool = false,
+        hasFileSystemSynchronizedRootGroup: Bool = false
+    ) throws -> URL {
+        let projectURL = root.appendingPathComponent("SourceProfile.xcodeproj")
+        let sourceReferences = fileTypes.enumerated().map { index, fileType in
+            PBXFileReference(
+                sourceTree: .group,
+                lastKnownFileType: fileType,
+                path: "Source\(index)"
+            )
+        }
+        var buildFiles = sourceReferences.map { PBXBuildFile(file: $0) }
+        if includeMissingFileReference {
+            buildFiles.append(PBXBuildFile())
+        }
+
+        let sourcesBuildPhase = PBXSourcesBuildPhase(files: buildFiles)
+        let synchronizedGroup = PBXFileSystemSynchronizedRootGroup(
+            sourceTree: .group,
+            path: "SynchronizedSources"
+        )
+        let mainGroupChildren: [PBXFileElement] = sourceReferences
+            + (hasFileSystemSynchronizedRootGroup ? [synchronizedGroup] : [])
+        let mainGroup = PBXGroup(children: mainGroupChildren, sourceTree: .group, name: "Main")
+        let projectConfigurations = XCConfigurationList()
+        let targetConfigurations = XCConfigurationList()
+        let target = PBXNativeTarget(
+            name: "Example",
+            buildConfigurationList: targetConfigurations,
+            buildPhases: [sourcesBuildPhase],
+            productName: "Example.app",
+            productType: .application
+        )
+        target.fileSystemSynchronizedGroups = hasFileSystemSynchronizedRootGroup
+            ? [synchronizedGroup]
+            : nil
+        let rootProject = PBXProject(
+            name: "SourceProfile",
+            buildConfigurationList: projectConfigurations,
+            compatibilityVersion: "Xcode 16.0",
+            preferredProjectObjectVersion: nil,
+            minimizedProjectReferenceProxies: nil,
+            mainGroup: mainGroup,
+            targets: [target]
+        )
+        let pbxproj = PBXProj(
+            rootObject: rootProject,
+            objectVersion: 77,
+            archiveVersion: 1,
+            classes: [:],
+            objects: []
+        )
+        let optionalObjects: [PBXObject] = hasFileSystemSynchronizedRootGroup
+            ? [synchronizedGroup]
+            : []
+        var objects: [PBXObject] = []
+        objects.append(contentsOf: sourceReferences)
+        objects.append(contentsOf: buildFiles)
+        objects.append(contentsOf: [
+            sourcesBuildPhase,
+            mainGroup,
+            projectConfigurations,
+            targetConfigurations,
+            target,
+            rootProject,
+        ])
+        objects.append(contentsOf: optionalObjects)
+        objects.forEach { pbxproj.add(object: $0) }
+
         try XcodeProj(workspace: XCWorkspace(), pbxproj: pbxproj)
             .write(path: Path(projectURL.path))
         return projectURL
