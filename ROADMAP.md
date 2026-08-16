@@ -24,7 +24,7 @@ PkgLift is evolving toward a comprehensive, evidence-driven dependency moderniza
 
 Release evidence and the completed work breakdown are recorded in the [v0.2.0 tracker](https://github.com/Alexsvensson99/PkgLift/issues/26).
 
-## v0.2.1: Compatibility Evidence and Release Hardening — In development
+## v0.2.1: Compatibility Evidence and Release Hardening — Released
 
 - Deterministic Swift, Objective-C, Objective-C++, C, and C++ target profiling from PBX metadata.
 - Consumer-language evidence in the registry and a fail-closed language contract for `AUTO` and migration preflight.

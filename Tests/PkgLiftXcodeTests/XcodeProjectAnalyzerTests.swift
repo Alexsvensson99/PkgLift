@@ -415,6 +415,112 @@ final class XcodeProjectAnalyzerTests: XCTestCase {
         XCTAssertNil(target.deploymentTarget)
     }
 
+    func testAbsoluteBaseConfigurationOutsideContainmentLeavesEnvironmentUnset() throws {
+        let root = try makeDirectory()
+        let externalRoot = try makeDirectory()
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: externalRoot)
+        }
+
+        let externalConfig = externalRoot.appendingPathComponent("External.xcconfig")
+        try write(
+            "SDKROOT = macosx\nMACOSX_DEPLOYMENT_TARGET = 13.0\n",
+            to: externalConfig
+        )
+        let project = try writeProject(
+            in: root,
+            configurationNames: ["Debug"],
+            projectSettings: [:],
+            targetSettings: [:],
+            projectBaseConfigurationPath: externalConfig.path
+        )
+
+        let target = try analyzedTarget(in: project)
+        XCTAssertNil(target.platform)
+        XCTAssertNil(target.deploymentTarget)
+    }
+
+    func testExplicitContainmentRootAllowsSiblingBaseConfiguration() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try write(
+            "SDKROOT = macosx\nMACOSX_DEPLOYMENT_TARGET = 13.0\n",
+            to: root.appendingPathComponent("Configs/Shared.xcconfig")
+        )
+        let project = try writeProject(
+            in: root.appendingPathComponent("App"),
+            configurationNames: ["Debug"],
+            projectSettings: [:],
+            targetSettings: [:],
+            projectBaseConfigurationPath: "../Configs/Shared.xcconfig"
+        )
+
+        let result = try XcodeProjectAnalyzer().analyzeProject(
+            at: project.path,
+            containedIn: root.path
+        )
+        let target = try XCTUnwrap(result.targets.first(where: { $0.name == "Example" }))
+        XCTAssertEqual(target.platform, "macOS")
+        XCTAssertEqual(target.deploymentTarget, "13.0")
+    }
+
+    func testXCConfigSymlinkOutsideContainmentLeavesEnvironmentUnset() throws {
+        let root = try makeDirectory()
+        let externalRoot = try makeDirectory()
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: externalRoot)
+        }
+
+        let externalConfig = externalRoot.appendingPathComponent("External.xcconfig")
+        try write(
+            "SDKROOT = macosx\nMACOSX_DEPLOYMENT_TARGET = 13.0\n",
+            to: externalConfig
+        )
+        let linkedConfig = root.appendingPathComponent("Configs/Linked.xcconfig")
+        try FileManager.default.createDirectory(
+            at: linkedConfig.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createSymbolicLink(
+            at: linkedConfig,
+            withDestinationURL: externalConfig
+        )
+        let project = try writeProject(
+            in: root,
+            configurationNames: ["Debug"],
+            projectSettings: [:],
+            targetSettings: [:],
+            projectBaseConfigurationPath: "Configs/Linked.xcconfig"
+        )
+
+        let target = try analyzedTarget(in: project)
+        XCTAssertNil(target.platform)
+        XCTAssertNil(target.deploymentTarget)
+    }
+
+    func testOversizedBaseConfigurationLeavesEnvironmentUnset() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let contents = "SDKROOT = macosx\nMACOSX_DEPLOYMENT_TARGET = 13.0\nOTHER = "
+            + String(repeating: "x", count: 1_048_576)
+        try write(contents, to: root.appendingPathComponent("Configs/Project.xcconfig"))
+        let project = try writeProject(
+            in: root,
+            configurationNames: ["Debug"],
+            projectSettings: [:],
+            targetSettings: [:],
+            projectBaseConfigurationPath: "Configs/Project.xcconfig"
+        )
+
+        let target = try analyzedTarget(in: project)
+        XCTAssertNil(target.platform)
+        XCTAssertNil(target.deploymentTarget)
+    }
+
     func testRelativeIncludeDoesNotFallBackToProjectRoot() throws {
         let root = try makeDirectory()
         defer { try? FileManager.default.removeItem(at: root) }

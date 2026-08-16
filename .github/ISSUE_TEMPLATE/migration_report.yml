@@ -18,7 +18,7 @@ body:
     attributes:
       label: PkgLift version
       description: Run `pkglift version` and paste the result.
-      placeholder: 0.2.0
+      placeholder: 0.2.1
     validations:
       required: true
 

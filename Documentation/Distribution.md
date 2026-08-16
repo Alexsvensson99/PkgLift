@@ -35,6 +35,16 @@ artifacts to a public GitHub Release receives `contents: write` permission.
 
 ## Workflow contract
 
+- Prepare and merge the complete product release first. Then create a separate
+  branch whose only product-facing change is one reviewed
+  `.github/releases/vX.Y.Z.json` manifest. Its `sourcePreparationCommit` must be
+  the full merged preparation SHA.
+- When that manifest reaches `main`, `Publish Reviewed Release Manifest`
+  verifies the manifest path, source version, dated changelog, current main
+  head, source-preparation ancestry, and absence of an existing tag. It then
+  dispatches the signed distribution workflow for that exact main SHA, waits
+  for success, rechecks the artifact checksum, and pauses at the protected
+  `production-release` environment before creating the tag and public release.
 - A manual `workflow_dispatch` run from `main` signs, notarizes, verifies a
   freshly extracted quarantine-marked CLI, and uploads a private Actions
   artifact. It never creates a GitHub Release. Manual runs from other refs are
@@ -42,8 +52,8 @@ artifacts to a public GitHub Release receives `contents: write` permission.
 - A `v*` tag runs the same package job and creates a GitHub Release only after
   every validation has passed and the `production-release` environment is
   approved. Tags outside `origin/main` are refused.
-- A final v0.2.0 tag must match the CLI version (`v0.2.0`); prerelease tags may
-  append a suffix such as `v0.2.0-rc.1`.
+- A final v0.2.1 tag must match the CLI version (`v0.2.1`); prerelease tags may
+  append a suffix such as `v0.2.1-rc.1`.
 - The notarization ZIP is a temporary submission format. Public releases contain
   only `pkglift-macos-arm64.tar.gz` and its `.sha256` file.
 
@@ -75,18 +85,18 @@ update the formula with the exact public archive SHA-256. For a new tap checkout
 the scaffold command is:
 
 ```bash
-bash Scripts/scaffold-homebrew-tap.sh /tmp/homebrew-tap 0.2.0 VERIFIED_SHA256
+bash Scripts/scaffold-homebrew-tap.sh /tmp/homebrew-tap 0.2.1 VERIFIED_SHA256
 ```
 
 The command refuses to overwrite an existing path and creates the tap README,
-formula, and CI workflow. The v0.2.0 `Formula/pkglift.rb` contract is:
+formula, and CI workflow. The v0.2.1 `Formula/pkglift.rb` contract is:
 
 ```ruby
 class Pkglift < Formula
   desc "Safely migrate CocoaPods dependencies to Swift Package Manager"
   homepage "https://github.com/Alexsvensson99/PkgLift"
-  url "https://github.com/Alexsvensson99/PkgLift/releases/download/v0.2.0/pkglift-macos-arm64.tar.gz"
-  version "0.2.0"
+  url "https://github.com/Alexsvensson99/PkgLift/releases/download/v0.2.1/pkglift-macos-arm64.tar.gz"
+  version "0.2.1"
   sha256 "REPLACE_WITH_VERIFIED_RELEASE_SHA256"
   license "MIT"
 
@@ -99,7 +109,7 @@ class Pkglift < Formula
   end
 
   test do
-    assert_equal "0.2.0", shell_output("#{bin}/pkglift version").strip
+    assert_equal "0.2.1", shell_output("#{bin}/pkglift version").strip
     system bin/"pkglift", "registry", "validate"
   end
 end
@@ -117,6 +127,8 @@ pkglift registry validate
 brew uninstall pkglift
 ```
 
-Creating the final tag, creating the GitHub Release, and publishing the formula
-require explicit approval after the private distribution artifact has passed all
-acceptance checks.
+Creating the release-manifest branch, merging its reviewed commit, approving
+the protected publication environment, creating the final tag and GitHub
+Release, and publishing the formula all require explicit approval after the
+private distribution artifact has passed every acceptance check. Do not add a
+new release manifest to the product-preparation commit.
