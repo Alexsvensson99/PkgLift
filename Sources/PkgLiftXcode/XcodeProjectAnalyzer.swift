@@ -33,6 +33,7 @@ public struct XcodeAnalysisResult: Sendable {
 public enum XcodeProjectAnalyzerError: Error, LocalizedError, Sendable {
     case projectNotFound(String)
     case invalidProject(String)
+    case projectOutsideRoot(project: String, root: String)
     
     public var errorDescription: String? {
         switch self {
@@ -40,6 +41,8 @@ public enum XcodeProjectAnalyzerError: Error, LocalizedError, Sendable {
             return "Xcode project not found at path: \(path)"
         case .invalidProject(let path):
             return "Invalid or corrupted Xcode project at path: \(path)"
+        case .projectOutsideRoot(let project, let root):
+            return "Xcode project '\(project)' is outside the selected root '\(root)'."
         }
     }
 }
@@ -51,18 +54,42 @@ public struct XcodeProjectAnalyzer: Sendable {
     
     /// Analyzes an Xcode project at the given path.
     ///
-    /// - Parameter path: The absolute path to the `.xcodeproj` file.
+    /// Project and xcconfig paths are resolved through symlinks and must remain
+    /// within `rootPath`. When omitted, the project's parent is the root.
+    ///
+    /// - Parameters:
+    ///   - path: The absolute path to the `.xcodeproj` file.
+    ///   - rootPath: The containment root for the project and its xcconfigs.
     /// - Returns: An `XcodeAnalysisResult` containing the project information and SwiftPM state.
     /// - Throws: An error if the project cannot be opened or parsed.
-    public func analyzeProject(at path: String) throws -> XcodeAnalysisResult {
-        let projectPath = Path(path)
+    public func analyzeProject(
+        at path: String,
+        containedIn rootPath: String? = nil
+    ) throws -> XcodeAnalysisResult {
+        let projectURL = URL(fileURLWithPath: path, isDirectory: true)
+            .standardized
+            .resolvingSymlinksInPath()
+        let projectPath = Path(projectURL.path)
         guard projectPath.exists else {
             throw XcodeProjectAnalyzerError.projectNotFound(path)
+        }
+
+        let rootURL = URL(
+            fileURLWithPath: rootPath ?? projectURL.deletingLastPathComponent().path,
+            isDirectory: true
+        )
+        .standardized
+        .resolvingSymlinksInPath()
+        guard Self.isContained(projectURL.path, in: rootURL.path) else {
+            throw XcodeProjectAnalyzerError.projectOutsideRoot(
+                project: projectURL.path,
+                root: rootURL.path
+            )
         }
         
         let xcodeproj: XcodeProj
         do {
-            xcodeproj = try XcodeProj(pathString: path)
+            xcodeproj = try XcodeProj(pathString: projectURL.path)
         } catch {
             throw XcodeProjectAnalyzerError.invalidProject(path)
         }
@@ -85,7 +112,8 @@ public struct XcodeProjectAnalyzer: Sendable {
             let environment = effectiveEnvironment(
                 for: target,
                 project: pbxProject,
-                projectPath: projectPath
+                projectPath: projectPath,
+                rootURL: rootURL
             )
             
             let targetInfo = TargetInfo(
@@ -339,7 +367,8 @@ public struct XcodeProjectAnalyzer: Sendable {
     private func effectiveEnvironment(
         for target: PBXNativeTarget,
         project: PBXProject,
-        projectPath: Path
+        projectPath: Path,
+        rootURL: URL
     ) -> TargetEnvironment? {
         guard let targetConfigurations = target.buildConfigurationList?.buildConfigurations,
               !targetConfigurations.isEmpty else {
@@ -364,7 +393,8 @@ public struct XcodeProjectAnalyzer: Sendable {
             guard let environment = resolveEnvironment(
                 targetConfiguration: targetConfiguration,
                 projectConfiguration: projectConfiguration,
-                projectPath: projectPath
+                projectPath: projectPath,
+                rootURL: rootURL
             ) else {
                 return nil
             }
@@ -378,15 +408,21 @@ public struct XcodeProjectAnalyzer: Sendable {
     private func resolveEnvironment(
         targetConfiguration: XCBuildConfiguration,
         projectConfiguration: XCBuildConfiguration?,
-        projectPath: Path
+        projectPath: Path,
+        rootURL: URL
     ) -> TargetEnvironment? {
         let projectBaseSettings = projectConfiguration.map {
-            baseConfigurationSettings(for: $0, projectPath: projectPath)
+            baseConfigurationSettings(
+                for: $0,
+                projectPath: projectPath,
+                rootURL: rootURL
+            )
         } ?? .known([:])
         let projectSettings = projectConfiguration.map(\.buildSettings) ?? [:]
         let targetBaseSettings = baseConfigurationSettings(
             for: targetConfiguration,
-            projectPath: projectPath
+            projectPath: projectPath,
+            rootURL: rootURL
         )
 
         let layers: [BuildSettingsLayer] = [
@@ -433,7 +469,8 @@ public struct XcodeProjectAnalyzer: Sendable {
 
     private func baseConfigurationSettings(
         for configuration: XCBuildConfiguration,
-        projectPath: Path
+        projectPath: Path,
+        rootURL: URL
     ) -> BuildSettingsLayer {
         let configurationPath: Path?
 
@@ -455,9 +492,12 @@ public struct XcodeProjectAnalyzer: Sendable {
 
         do {
             var activeIncludes = Set<String>()
+            var readBudget = XCConfigReadBudget()
             let settings = try relevantXCConfigSettings(
                 at: configurationPath,
-                activeIncludes: &activeIncludes
+                rootURL: rootURL,
+                activeIncludes: &activeIncludes,
+                readBudget: &readBudget
             )
             return .known(settings)
         } catch {
@@ -473,13 +513,18 @@ public struct XcodeProjectAnalyzer: Sendable {
     /// Unsupported constructs that could affect these settings fail closed.
     private func relevantXCConfigSettings(
         at path: Path,
-        activeIncludes: inout Set<String>
+        rootURL: URL,
+        activeIncludes: inout Set<String>,
+        readBudget: inout XCConfigReadBudget
     ) throws -> BuildSettings {
         let canonicalURL = URL(fileURLWithPath: path.string)
             .standardizedFileURL
             .resolvingSymlinksInPath()
         let canonicalPath = canonicalURL.path
 
+        guard Self.isContained(canonicalPath, in: rootURL.path) else {
+            throw XCConfigResolutionError.outsideRoot
+        }
         guard FileManager.default.fileExists(atPath: canonicalPath) else {
             throw XCConfigResolutionError.missingRequiredInclude
         }
@@ -487,6 +532,27 @@ public struct XcodeProjectAnalyzer: Sendable {
             throw XCConfigResolutionError.includeCycle
         }
         defer { activeIncludes.remove(canonicalPath) }
+
+        let resourceValues: URLResourceValues
+        do {
+            resourceValues = try canonicalURL.resourceValues(
+                forKeys: [.isRegularFileKey, .fileSizeKey]
+            )
+        } catch {
+            throw XCConfigResolutionError.unreadable
+        }
+        guard resourceValues.isRegularFile == true,
+              let fileSize = resourceValues.fileSize,
+              fileSize >= 0 else {
+            throw XCConfigResolutionError.notRegularFile
+        }
+        guard fileSize <= Self.maximumXCConfigFileBytes,
+              readBudget.fileCount < Self.maximumXCConfigFileCount,
+              readBudget.totalBytes <= Self.maximumXCConfigTotalBytes - fileSize else {
+            throw XCConfigResolutionError.readBudgetExceeded
+        }
+        readBudget.fileCount += 1
+        readBudget.totalBytes += fileSize
 
         let contents: String
         do {
@@ -563,7 +629,9 @@ public struct XcodeProjectAnalyzer: Sendable {
             ) {
                 let included = try relevantXCConfigSettings(
                     at: includePath,
-                    activeIncludes: &activeIncludes
+                    rootURL: rootURL,
+                    activeIncludes: &activeIncludes,
+                    readBudget: &readBudget
                 )
                 settings.merge(included, uniquingKeysWith: { _, included in included })
             } else if !directive.optional {
@@ -631,6 +699,11 @@ public struct XcodeProjectAnalyzer: Sendable {
     private func removingLineComment(from line: String) -> String {
         guard let comment = line.range(of: "//") else { return line }
         return String(line[..<comment.lowerBound])
+    }
+
+    private static func isContained(_ path: String, in rootPath: String) -> Bool {
+        if rootPath == "/" { return path.hasPrefix("/") }
+        return path == rootPath || path.hasPrefix(rootPath + "/")
     }
 
     private func resolve(setting name: String, from layers: [BuildSettingsLayer]) -> SettingResolution {
@@ -741,9 +814,17 @@ private extension XcodeProjectAnalyzer {
         let optional: Bool
     }
 
+    struct XCConfigReadBudget {
+        var fileCount = 0
+        var totalBytes = 0
+    }
+
     enum XCConfigResolutionError: Error {
         case includeCycle
         case missingRequiredInclude
+        case notRegularFile
+        case outsideRoot
+        case readBudgetExceeded
         case unreadable
         case unsupportedDirective
         case unsupportedRelevantSyntax
@@ -760,4 +841,8 @@ private extension XcodeProjectAnalyzer {
     static let relevantEnvironmentSettings = Set(
         deploymentTargetSettings.map(\.0) + ["SDKROOT"]
     )
+
+    static let maximumXCConfigFileBytes = 1_048_576
+    static let maximumXCConfigFileCount = 64
+    static let maximumXCConfigTotalBytes = 4_194_304
 }

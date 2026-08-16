@@ -49,7 +49,7 @@ The v0.2.0 Amazon IVS migration remains historical release evidence:
 - Implementation: PR #34
 - Verification defect found by the pilot and fixed before completion: #35 / PR #36
 
-Starting with v0.2.1, that upstream repository remains in the read-only matrix only. The end-to-end apply boundary is the repository-owned fixture, regardless of an upstream project's license or apparent classification.
+In v0.2.1 and later, that upstream repository remains in the read-only matrix only. The end-to-end apply boundary is the repository-owned fixture, regardless of an upstream project's license or apparent classification.
 
 ## Upstream source and licensing
 

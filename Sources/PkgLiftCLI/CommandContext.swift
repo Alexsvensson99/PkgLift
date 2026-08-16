@@ -475,7 +475,7 @@ struct CommandContext: Sendable {
                 rootPath: rootPath
             )
             let analyzer = XcodeProjectAnalyzer()
-            let analysis = try analyzer.analyzeProject(at: resolved)
+            let analysis = try analyzer.analyzeProject(at: resolved, containedIn: rootPath)
             return (resolved, nil, false, analysis)
         }
 
@@ -503,7 +503,7 @@ struct CommandContext: Sendable {
                 rootPath: rootPath
             )
             let analyzer = XcodeProjectAnalyzer()
-            let analysis = try analyzer.analyzeProject(at: resolved)
+            let analysis = try analyzer.analyzeProject(at: resolved, containedIn: rootPath)
             return (resolved, nil, false, analysis)
         }
 
@@ -531,7 +531,10 @@ struct CommandContext: Sendable {
                 )
             }
 
-            let analysis = try XcodeProjectAnalyzer().analyzeProject(at: explicitProjectPath)
+            let analysis = try XcodeProjectAnalyzer().analyzeProject(
+                at: explicitProjectPath,
+                containedIn: rootPath
+            )
             return (explicitProjectPath, analysis)
         }
 
@@ -542,7 +545,10 @@ struct CommandContext: Sendable {
             )
         }
 
-        let xcodeResult = try XcodeProjectAnalyzer().analyzeProject(at: projectPath)
+        let xcodeResult = try XcodeProjectAnalyzer().analyzeProject(
+            at: projectPath,
+            containedIn: rootPath
+        )
         return (projectPath, xcodeResult)
     }
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-16
+
 ### Added
 - Deterministic target source profiles for Swift, Objective-C, Objective-C++, C, and C++ based only on PBX metadata.
 - Explicit registry consumer-language evidence, including direct Firebase Analytics, Crashlytics, and Messaging mappings verified from `11.12.0`.
@@ -34,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Parent declarations include statically proven nested targets that use default or complete inheritance; the literal CocoaPods-only option `modular_headers: true` remains migratable, while uncertain helper dispatch, other declaration options, conditions, and inheritance fail closed to review.
 - `AUTO` and preflight require a complete, non-empty target profile whose every language is explicitly supported by the exact registry mapping; older or manipulated plans without this evidence are refused.
 - Confirmed Carthage, React Native, Flutter, and Capacitor integration prevents automatic migration without parsing or modifying those ecosystems.
+- Xcode environment inference reads only regular xcconfig files contained by the selected project root and refuses symlink escapes or bounded-read violations.
 - Repository validation rejects mutable third-party Action references instead of relying only on maintainer convention.
 
 ## [0.2.0] - 2026-08-15

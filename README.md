@@ -74,7 +74,7 @@ After review, only the `AUTO` entry may be added as a Swift package. The unknown
 
 CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on December 2, 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). The plan explicitly keeps existing trunk and CDN builds available, and does not mean CocoaPods itself or private spec repositories stop working. PkgLift provides a reviewable path for native Xcode projects that want to move supported dependencies to SwiftPM without pretending every pod or project shape can be converted automatically.
 
-## Preparing v0.2.1
+## What Is New in v0.2.1
 
 - Xcode targets are profiled deterministically from PBX metadata as Swift, Objective-C, Objective-C++, C, or C++ without reading source contents.
 - `AUTO` requires a complete target language profile and registry evidence for every consumer language; mixed Swift/Objective-C targets require both.
@@ -82,7 +82,7 @@ CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on Dece
 - `analyze --portable-json` and `plan --portable-json` redact local paths and URL credentials for reviewable, portable output.
 - Seven immutable upstream pilots remain read-only, while a repository-owned mixed-language fixture is the only end-to-end target that may be migrated.
 
-See the [unreleased changelog](CHANGELOG.md), [migration-safety guide](Documentation/MigrationSafety.md), and [real-project pilot documentation](Documentation/Pilots.md) for the complete evidence.
+See the [v0.2.1 release notes](Documentation/ReleaseNotes-0.2.1.md), [changelog](CHANGELOG.md), [migration-safety guide](Documentation/MigrationSafety.md), and [real-project pilot documentation](Documentation/Pilots.md) for the complete evidence.
 
 ## Safety Philosophy
 
@@ -119,7 +119,7 @@ Host support remains macOS 14 or later on Apple Silicon (`arm64`). Distribution 
 
 ## Installation
 
-PkgLift v0.2.0 is distributed as a Developer ID-signed and Apple-notarized Apple Silicon binary for macOS 14 or later.
+PkgLift v0.2.1 is distributed as a Developer ID-signed and Apple-notarized Apple Silicon binary for macOS 14 or later.
 
 Install with Homebrew:
 
