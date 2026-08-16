@@ -6,6 +6,9 @@ swiftpm:
   products:
     - SDWebImage
   minimumVersion: 5.1.0
+  supportedConsumerLanguages:
+    - swift
+    - objectiveC
 migration:
   confidence: verified
 metadata:

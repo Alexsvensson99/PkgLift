@@ -6,6 +6,8 @@ swiftpm:
   products:
     - Kingfisher
   minimumVersion: 5.15.8
+  supportedConsumerLanguages:
+    - swift
 migration:
   confidence: verified
 metadata:

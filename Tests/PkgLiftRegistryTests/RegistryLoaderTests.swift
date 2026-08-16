@@ -16,12 +16,32 @@ final class RegistryLoaderTests: XCTestCase {
         XCTAssertEqual(alamofire?.swiftpm.repository, "https://github.com/Alamofire/Alamofire")
         XCTAssertEqual(alamofire?.swiftpm.products, ["Alamofire"])
         XCTAssertEqual(alamofire?.swiftpm.minimumVersion, "5.0.0")
+        XCTAssertEqual(alamofire?.swiftpm.supportedConsumerLanguages, [.swift])
         XCTAssertEqual(alamofire?.migration.confidence, .verified)
         
         let firebaseAnalytics = await loader.lookup(name: "Firebase", subspec: "Analytics")
         XCTAssertNotNil(firebaseAnalytics)
         XCTAssertEqual(firebaseAnalytics?.swiftpm.products, ["FirebaseAnalytics"])
         XCTAssertEqual(firebaseAnalytics?.swiftpm.minimumVersion, "8.0.0")
+        XCTAssertEqual(
+            firebaseAnalytics?.swiftpm.supportedConsumerLanguages,
+            [.swift, .objectiveC]
+        )
+
+        let directFirebaseMappings = [
+            ("FirebaseAnalytics", "FirebaseAnalytics"),
+            ("FirebaseCrashlytics", "FirebaseCrashlytics"),
+            ("FirebaseMessaging", "FirebaseMessaging"),
+        ]
+        for (podName, productName) in directFirebaseMappings {
+            let mapping = await loader.lookup(name: podName)
+            XCTAssertEqual(mapping?.swiftpm.products, [productName])
+            XCTAssertEqual(mapping?.swiftpm.minimumVersion, "11.12.0")
+            XCTAssertEqual(
+                mapping?.swiftpm.supportedConsumerLanguages,
+                [.swift, .objectiveC]
+            )
+        }
 
         let undeclaredSubspec = await loader.lookup(name: "SDWebImage", subspec: "Core")
         XCTAssertNil(undeclaredSubspec)
@@ -138,6 +158,39 @@ final class RegistryLoaderTests: XCTestCase {
         } catch let error as RegistryError {
             guard case .validationFailed = error else {
                 return XCTFail("Expected validationFailed, got \(error)")
+            }
+        }
+    }
+
+    func testUnknownConsumerLanguageIsRejectedDuringLoad() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftRegistryLanguages-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let mapping = """
+        schemaVersion: 1
+        pod:
+          name: UnknownLanguagePod
+        swiftpm:
+          repository: https://example.com/owner/repository
+          products: [UnknownLanguagePod]
+          supportedConsumerLanguages: [swift, kotlin]
+        migration:
+          confidence: verified
+        """
+        try mapping.write(
+            to: directory.appendingPathComponent("UnknownLanguagePod.yml"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let loader = RegistryLoader(configPaths: [directory], useBundledRegistry: false)
+
+        do {
+            try await loader.load()
+            XCTFail("Expected unknown consumer language to be rejected")
+        } catch let error as RegistryError {
+            guard case .parsingError = error else {
+                return XCTFail("Expected parsingError, got \(error)")
             }
         }
     }

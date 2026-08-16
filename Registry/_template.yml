@@ -9,6 +9,8 @@ swiftpm:
   products:
     - ProductName
   minimumVersion: 1.0.0
+  supportedConsumerLanguages:
+    - swift
 
 migration:
   confidence: verified

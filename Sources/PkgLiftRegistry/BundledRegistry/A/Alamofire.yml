@@ -6,6 +6,8 @@ swiftpm:
   products:
     - Alamofire
   minimumVersion: 5.0.0
+  supportedConsumerLanguages:
+    - swift
 migration:
   confidence: verified
 metadata:

@@ -84,14 +84,22 @@ public struct SwiftPMPackageInfo: Sendable, Codable, Equatable {
     /// Minimum version, if known.
     public let minimumVersion: String?
 
+    /// Consumer source languages verified for the mapped SwiftPM products.
+    ///
+    /// Optional so existing external schema-1 mappings remain decodable. A
+    /// missing value is absence of evidence and must not be treated as support.
+    public let supportedConsumerLanguages: [SourceLanguage]?
+
     public init(
         repository: String,
         products: [String],
-        minimumVersion: String? = nil
+        minimumVersion: String? = nil,
+        supportedConsumerLanguages: [SourceLanguage]? = nil
     ) {
         self.repository = repository
         self.products = products
         self.minimumVersion = minimumVersion
+        self.supportedConsumerLanguages = supportedConsumerLanguages
     }
 }
 

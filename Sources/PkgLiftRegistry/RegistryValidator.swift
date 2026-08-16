@@ -62,6 +62,25 @@ public struct RegistryValidator: Sendable {
                 ))
             }
         }
+
+        // 6. Consumer-language evidence is additive for schema 1. Absence is
+        // allowed for backward decoding, while AUTO classification treats it
+        // as missing evidence. When present, it must be meaningful and unique.
+        if let languages = mapping.swiftpm.supportedConsumerLanguages {
+            if languages.isEmpty {
+                errors.append(RegistryValidationError(
+                    filePath: filePath,
+                    fieldPath: "swiftpm.supportedConsumerLanguages",
+                    message: "Supported consumer languages cannot be empty when provided."
+                ))
+            } else if Set(languages).count != languages.count {
+                errors.append(RegistryValidationError(
+                    filePath: filePath,
+                    fieldPath: "swiftpm.supportedConsumerLanguages",
+                    message: "Supported consumer languages cannot contain duplicates."
+                ))
+            }
+        }
         
         return errors
     }

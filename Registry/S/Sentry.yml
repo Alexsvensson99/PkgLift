@@ -6,6 +6,9 @@ swiftpm:
   products:
     - Sentry
   minimumVersion: 7.0.0
+  supportedConsumerLanguages:
+    - swift
+    - objectiveC
 migration:
   confidence: verified
 metadata:
