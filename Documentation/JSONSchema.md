@@ -14,6 +14,8 @@ These are versioned JSON contracts, not embedded JSON Schema documents: output d
 
 The explicitly named count fields distinguish literal Podfile rows from unique direct dependencies, lockfile identities, analysis candidates, and plan entries. For schema compatibility, `cocoaPods.directDependencies` remains a source-ordered list of literal declaration rows; consumers that need unique identities should use `counts.uniqueDirectDependencyCount`. A direct dependency may also contain additive `declarations` and `targetAttribution` evidence. Each declaration records its one-based Podfile line, static scope, optional scope and target names, and source kind. Target attribution records whether all declaration destinations are `exact`, `multiple`, `partial`, or `unresolved`.
 
+Target platform and deployment values apply project xcconfig, project settings, target xcconfig, and target settings in increasing precedence. They are emitted only when the relevant values resolve statically and agree across every target build configuration; unsupported macros or conditions, unreadable include graphs, unsupported syntax, or configuration mismatches leave both fields unset. Target, SwiftPM package, and linked-product arrays are deterministically ordered.
+
 ## Plan
 
 `pkglift plan --json` writes the same `MigrationPlan` object to stdout and `.pkglift/plan.json`. Important top-level fields are `projectPath`, `entries`, `issues`, `readinessScore`, and optional `counts`.
