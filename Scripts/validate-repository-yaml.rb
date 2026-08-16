@@ -39,15 +39,53 @@ workflow_paths.each do |path|
 end
 
 required_gates = {
-  ".github/workflows/registry.yml" => "name: Registry Gate",
-  ".github/workflows/pilots.yml" => "name: Pinned Pilot Gate",
-  ".github/workflows/positive-e2e.yml" => "name: Mixed-Language Pilot Gate",
-  ".github/workflows/codeql.yml" => "name: CodeQL",
+  ".github/workflows/registry.yml" => ["name: Registry Gate", "validate"],
+  ".github/workflows/pilots.yml" => ["name: Pinned Pilot Gate", "analyze"],
+  ".github/workflows/positive-e2e.yml" => ["name: Mixed-Language Pilot Gate", "migrate-and-build"],
+  ".github/workflows/codeql.yml" => ["name: CodeQL", "analyze"],
 }.freeze
-required_gates.each do |path, marker|
-  unless File.file?(path) && File.read(path, encoding: "UTF-8").include?(marker)
+required_gates.each do |path, (marker, heavy_job_id)|
+  content = File.file?(path) ? File.read(path, encoding: "UTF-8") : ""
+  unless content.include?(marker)
     errors << "#{path}: missing required stable gate #{marker.inspect}"
   end
+
+  errors << "#{path}: pull requests must run the heavy validation" unless content.match?(/^  pull_request:\s*$/)
+  errors << "#{path}: pull_request_target must not execute candidate code" if content.match?(/^  pull_request_target:\s*$/)
+  errors << "#{path}: path relevance must not control a required gate" if content.include?("ci-paths-relevant.py")
+  errors << "#{path}: required gates must not accept skipped heavy validation" if content.include?("safely skipped")
+
+  workflow = load_yaml(path, errors)
+  jobs = workflow.is_a?(Hash) ? workflow["jobs"] : nil
+  next unless jobs.is_a?(Hash)
+
+  heavy_job = jobs[heavy_job_id]
+  gate_job = jobs["gate"]
+  unless heavy_job.is_a?(Hash)
+    errors << "#{path}: missing heavy job #{heavy_job_id.inspect}"
+    next
+  end
+  unless gate_job.is_a?(Hash)
+    errors << "#{path}: missing gate job"
+    next
+  end
+
+  errors << "#{path}: heavy job #{heavy_job_id.inspect} must run unconditionally" if heavy_job.key?("if")
+  unless Array(gate_job["needs"]).include?(heavy_job_id)
+    errors << "#{path}: gate must require heavy job #{heavy_job_id.inspect}"
+  end
+  errors << "#{path}: gate must use always()" unless gate_job["if"] == "always()"
+
+  gate_steps = Array(gate_job["steps"])
+  gate_result_refs = gate_steps.map { |step| step["env"] if step.is_a?(Hash) }.compact
+    .flat_map(&:values)
+    .select { |value| value.is_a?(String) }
+  unless gate_result_refs.any? { |value| value.include?("needs.#{heavy_job_id}.result") }
+    errors << "#{path}: gate must inspect the result of #{heavy_job_id.inspect}"
+  end
+  gate_scripts = gate_steps.map { |step| step["run"] if step.is_a?(Hash) }.compact.join("\n")
+  errors << "#{path}: gate must require a successful heavy job" unless gate_scripts.include?("== 'success'")
+  errors << "#{path}: gate must not accept skipped heavy validation" if gate_scripts.include?("'skipped'")
 end
 
 dependabot = load_yaml(".github/dependabot.yml", errors)

@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deterministic target source profiles for Swift, Objective-C, Objective-C++, C, and C++ based only on PBX metadata.
 - Explicit registry consumer-language evidence, including direct Firebase Analytics, Crashlytics, and Messaging mappings verified from `11.12.0`.
 - Conservative Carthage, React Native, Flutter, and Capacitor integration detection with typed, privacy-minimized diagnostics summaries.
-- `--portable-json` for `analyze` and `plan`, with local-path and URL-secret redaction and a versioned portable-output marker.
+- `--portable-json` for `analyze` and `plan`, with local-path and fail-closed URL-secret redaction and a versioned portable-output marker.
 - A repository-owned mixed Swift/Objective-C SDWebImage fixture and four additional immutable read-only upstream pilot cases.
 - Compatibility, support, and private vulnerability-reporting guidance.
 - Weekly SwiftPM and GitHub Actions updates through Dependabot, plus SHA-pinned Swift CodeQL analysis on macOS.
@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Analysis and plan JSON include explicitly named source, dependency, candidate, and plan-entry counts; human analysis and diagnostics keep their direct-dependency totals scoped to unique identities.
 - Xcode target environments now honor project and target xcconfig precedence across every build configuration, while targets, SwiftPM packages, and linked products use deterministic ordering.
 - End-to-end apply validation now runs only against a repository-owned fixture; all pinned upstream projects are analysis, plan, and dry-run only.
-- Registry, CodeQL, and both pilot workflows expose stable summary gates on every pull request while running expensive jobs only for relevant changes; the complete read-only pilot matrix also runs weekly.
+- Registry, CodeQL, and both pilot workflows run their required validation on every pull request and main-branch push; candidate-controlled path filters cannot turn skipped work into a green gate, and the complete read-only pilot matrix also runs weekly.
 
 ### Fixed
 - Static helper attribution handles bounded literal calls and nested-target inheritance without assigning helper declarations to the wrong target.

@@ -17,36 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: CodeQL Changes
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    outputs:
-      relevant: ${{ steps.filter.outputs.relevant }}
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          fetch-depth: 0
-      - name: Detect Swift-relevant changes
-        id: filter
-        env:
-          PKGLIFT_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          PKGLIFT_HEAD_SHA: ${{ github.sha }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          relevant="$(python3 Scripts/ci-paths-relevant.py \
-            '.github/workflows/codeql.yml' \
-            'Package.swift' \
-            'Package.resolved' \
-            'Sources/**' \
-            'Scripts/ci-paths-relevant.py')"
-          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
-
   analyze:
     name: Swift Analysis
-    needs: changes
-    if: needs.changes.outputs.relevant == 'true'
     runs-on: macos-15
     timeout-minutes: 45
     permissions:
@@ -56,6 +28,8 @@ jobs:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
       - name: Initialize CodeQL
         uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
         with:
@@ -69,24 +43,16 @@ jobs:
 
   gate:
     name: CodeQL
-    needs: [changes, analyze]
+    needs: analyze
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require applicable analysis
         env:
-          CHANGES_RESULT: ${{ needs.changes.result }}
-          RELEVANT: ${{ needs.changes.outputs.relevant }}
           ANALYZE_RESULT: ${{ needs.analyze.result }}
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$CHANGES_RESULT" == 'success' ]]
-          if [[ "$RELEVANT" == 'true' ]]; then
-            [[ "$ANALYZE_RESULT" == 'success' ]]
-            echo 'Swift CodeQL analysis passed.'
-          else
-            [[ "$ANALYZE_RESULT" == 'skipped' ]]
-            echo 'No Swift-relevant changes; CodeQL analysis was safely skipped.'
-          fi
+          [[ "$ANALYZE_RESULT" == 'success' ]]
+          echo 'Swift CodeQL analysis passed.'
