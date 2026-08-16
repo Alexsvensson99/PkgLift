@@ -4,24 +4,24 @@
 [![Test](https://github.com/Alexsvensson99/PkgLift/actions/workflows/test.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/test.yml)
 [![Quality](https://github.com/Alexsvensson99/PkgLift/actions/workflows/quality.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/quality.yml)
 [![Registry Validation](https://github.com/Alexsvensson99/PkgLift/actions/workflows/registry.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/registry.yml)
-[![Positive End-to-End Pilot](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml)
+[![Mixed-Language End-to-End Pilot](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Alexsvensson99/PkgLift)](https://github.com/Alexsvensson99/PkgLift/releases/latest)
 [![License: MIT](https://img.shields.io/github/license/Alexsvensson99/PkgLift)](LICENSE)
 [![Website](https://img.shields.io/badge/website-live-0a7b83)](https://www.svensson.design/PkgLift/)
 
 **Modernize Apple dependencies safely.**
 
-PkgLift analyzes native Xcode projects, builds a dependency migration plan, and safely moves supported dependencies from CocoaPods to Swift Package Manager.
+PkgLift analyzes native Xcode projects, builds a dependency migration plan, and safely moves the supported subset of CocoaPods dependencies to Swift Package Manager.
 
 No blind conversions. No guesswork.
 
 **Analyze → Plan → Migrate → Verify**
 
-[Project website](https://www.svensson.design/PkgLift/) · [Installation](#installation) · [Quick Start](#quick-start) · [Safety Philosophy](#safety-philosophy) · [Diagnostics](Documentation/Diagnostics.md) · [Real-Project Pilots](Documentation/Pilots.md) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
+[Project website](https://www.svensson.design/PkgLift/) · [Installation](#installation) · [Quick Start](#quick-start) · [Compatibility](#compatibility) · [Safety Philosophy](#safety-philosophy) · [Diagnostics](Documentation/Diagnostics.md) · [Real-Project Pilots](Documentation/Pilots.md) · [Support](SUPPORT.md) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
 
 ## What PkgLift Does
 
-PkgLift automates the tedious and risky parts of moving an iOS or macOS project from CocoaPods to Swift Package Manager (SwiftPM), while keeping uncertain cases visible for human review.
+PkgLift automates the evidence-backed parts of moving a native iOS or macOS Xcode project from CocoaPods to Swift Package Manager (SwiftPM), while preserving uncertain dependencies under CocoaPods for human review.
 
 ```bash
 $ pkglift analyze
@@ -71,18 +71,17 @@ After review, only the `AUTO` entry may be added as a Swift package. The unknown
 
 ## Why PkgLift Exists
 
-With CocoaPods effectively entering maintenance mode and going read-only, the Apple developer ecosystem is consolidating around Swift Package Manager. However, manual migration is risky, tedious, and prone to errors. PkgLift provides a paved, verifiable path to SwiftPM without the headache of manual dependency resolution and Xcode project file manipulation.
+CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on December 2, 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). The plan explicitly keeps existing trunk and CDN builds available, and does not mean CocoaPods itself or private spec repositories stop working. PkgLift provides a reviewable path for native Xcode projects that want to move supported dependencies to SwiftPM without pretending every pod or project shape can be converted automatically.
 
-## What Is New in v0.2.0
+## Preparing v0.2.1
 
-- Recursive discovery supports nested Xcode projects and workspaces while excluding generated dependency and build trees.
-- Explicit `--workspace` and `--project` selection handles ambiguous and multi-project repository layouts without guessing.
-- Static Podfile parsing recognizes additional literal string and symbol target syntax without evaluating Ruby.
-- Build verification accepts an explicit scheme, configuration, destination, SDK, and derived-data path and uses the validated scheme during SwiftPM resolution.
-- `pkglift diagnostics` creates a local, deterministic, privacy-preserving report for real-world issue triage.
-- Pinned public-project pilots continuously verify positive, mixed, and conservative outcomes; a licensed end-to-end pilot proves a reviewed migration can resolve and build.
+- Xcode targets are profiled deterministically from PBX metadata as Swift, Objective-C, Objective-C++, C, or C++ without reading source contents.
+- `AUTO` requires a complete target language profile and registry evidence for every consumer language; mixed Swift/Objective-C targets require both.
+- Carthage and typed React Native, Flutter, and Capacitor integration evidence prevent automatic migration instead of being inferred away.
+- `analyze --portable-json` and `plan --portable-json` redact local paths and URL credentials for reviewable, portable output.
+- Seven immutable upstream pilots remain read-only, while a repository-owned mixed-language fixture is the only end-to-end target that may be migrated.
 
-See the [v0.2.0 changelog](CHANGELOG.md), [build-verification guide](Documentation/BuildVerification.md), and [real-project pilot documentation](Documentation/Pilots.md) for the complete evidence.
+See the [unreleased changelog](CHANGELOG.md), [migration-safety guide](Documentation/MigrationSafety.md), and [real-project pilot documentation](Documentation/Pilots.md) for the complete evidence.
 
 ## Safety Philosophy
 
@@ -90,7 +89,7 @@ PkgLift operates on a strict safety model. Every dependency is classified before
 
 | Classification | Meaning | Executed automatically |
 |---|---|---:|
-| **AUTO** | Exact pod or subspec mapping, supported locked version, verified package product, and unambiguous destination target | Yes, after plan review and `--apply` |
+| **AUTO** | Exact pod or subspec mapping, supported locked version, verified package product, exact destination target, and complete supported consumer-language evidence | Yes, after plan review and `--apply` |
 | **REVIEW** | A plausible migration exists, but human judgment or unsupported project context is involved | No |
 | **BLOCKED** | A known incompatibility or unsafe project construct prevents automatic migration | No |
 | **UNKNOWN** | PkgLift lacks exact registry evidence | No |
@@ -101,15 +100,21 @@ We never guess. We never blindly edit project files without a reviewed plan.
 
 ## Compatibility
 
-| Item | Current support |
-|---|---|
-| Host | macOS 14 or later |
-| Release architecture | Apple Silicon (`arm64`) |
-| Dependency migration | CocoaPods → SwiftPM |
-| Project types | Native Xcode projects and supported workspaces, including nested repository layouts |
-| Distribution | Developer ID-signed and Apple-notarized binary, Homebrew, or source build |
+PkgLift targets partial CocoaPods-to-SwiftPM migration in native Xcode projects. A language or ecosystem listed as detected is not necessarily eligible for automatic migration.
 
-See [Limitations](#limitations) for the intentionally conservative v0.2.0 boundaries.
+| Project or integration | Current behavior |
+|---|---|
+| Swift-only target | `AUTO`-eligible when the complete target profile and exact registry mapping both support Swift |
+| Objective-C-only target | `AUTO`-eligible only when the exact mapping explicitly supports Objective-C |
+| Mixed Swift/Objective-C target | `AUTO`-eligible only when the same mapping explicitly supports both languages |
+| Objective-C++, C, or C++ target | Detected from PBX metadata; currently `REVIEW` unless a mapping explicitly supports every detected language |
+| Carthage | Root metadata and confirmed Xcode integration are detected; Carthage dependencies are not parsed, migrated, or modified, and confirmed presence prevents `AUTO` |
+| React Native | `use_react_native!` is detected as an unsupported project integration and prevents `AUTO` |
+| Flutter | `flutter_install_all_ios_pods` is detected as an unsupported project integration and prevents `AUTO` |
+| Capacitor | `capacitor_pods` is detected as an unsupported project integration and prevents `AUTO` |
+| Kotlin Multiplatform (KMP) | No heuristic detection is claimed; local pods and dynamic generation remain non-automatic under existing safety rules |
+
+Host support remains macOS 14 or later on Apple Silicon (`arm64`). Distribution is through a Developer ID-signed and Apple-notarized binary, Homebrew, or a source build. See [Limitations](#limitations) for the intentionally conservative boundaries.
 
 ## Installation
 
@@ -192,6 +197,8 @@ pkglift verify \
 - `registry validate`: Validates local and bundled registry mappings.
 - `version`: Prints the current version.
 
+`analyze` and `plan` accept `--portable-json` as an alternative to `--json`. Portable output removes local paths and URL credentials and adds `portableOutput.version = 1`, but still contains dependency and target names. `plan --portable-json` prints the redacted representation while keeping the full executable plan in `.pkglift/plan.json`.
+
 ## Share a Real-World Result
 
 Testing on varied public and private project layouts helps PkgLift improve without weakening its safety model.
@@ -233,24 +240,27 @@ An invalid configuration is an error; PkgLift does not silently ignore it.
 
 ## Limitations
 
-For v0.2.0:
+For the current v0.2.x line:
 
 - Only CocoaPods-to-SwiftPM migration is supported.
-- A stable `major.minor.patch` lockfile version at or above the exact mapping's verified SwiftPM minimum and exactly one matching Xcode target are required for `AUTO`.
+- Migration is partial: non-automatic pods and their CocoaPods integration are preserved.
+- A stable `major.minor.patch` lockfile version at or above the exact mapping's verified SwiftPM minimum, exactly one matching Xcode target, a complete non-empty target language profile, and mapping support for every detected language are required for `AUTO`.
 - Dynamic Ruby, install hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, external pod sources, and ambiguous target mappings are `REVIEW` or `BLOCKED`.
+- Confirmed Carthage integration and React Native, Flutter, or Capacitor Podfile markers prevent `AUTO`; PkgLift does not migrate or remove those integrations.
+- KMP is not detected through speculative file or name heuristics.
 - Base pod mappings never apply automatically to undeclared subspecs.
 - Project and workspace selection never follows a reference outside `--path`; widen `--path` explicitly if a legitimate workspace spans a broader repository root.
 - PkgLift removes only exact migrated pod declarations. It deliberately preserves target blocks, unrelated Ruby, and CocoaPods integration for pods that remain.
 - PkgLift does not run `pod install` automatically.
-- Objective-C support is limited to standard SwiftPM integration.
+- Objective-C and mixed targets are automatic only for mappings with explicit matching consumer-language evidence. Current bundled C-family coverage is intentionally limited.
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for future work and the [v0.2.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/26) for the completed implementation and release evidence.
+See [ROADMAP.md](ROADMAP.md) for future work and the [v0.2.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/26) for the previous release evidence.
 
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started and [SUPPORT.md](SUPPORT.md) to choose the correct support or reporting path.
 
 ## License
 

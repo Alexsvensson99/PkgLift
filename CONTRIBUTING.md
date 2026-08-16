@@ -60,15 +60,16 @@ The registry maps exact CocoaPods identifiers to verified SwiftPM repositories a
 1. Verify the official upstream repository and podspec.
 2. Verify the exact pod or subspec identifier.
 3. Verify the exact product exported by a tagged `Package.swift` manifest.
-4. Identify a conservative stable `major.minor.patch` version where that product exists.
-5. Copy `Registry/_template.yml` into the matching alphabetical folder.
-6. Add the same mapping to the bundled registry resource when required by the repository structure.
-7. Run registry validation and the full test suite.
-8. Include upstream evidence in the pull request description.
+4. Verify every consumer source language claimed by the mapping using official guidance or a reproducible compiling fixture.
+5. Identify a conservative stable `major.minor.patch` version where that product and language support exist.
+6. Copy `Registry/_template.yml` into the matching alphabetical folder.
+7. Add the same mapping to the bundled registry resource when required by the repository structure.
+8. Run registry validation and the full test suite.
+9. Include upstream evidence in the pull request description.
 
 See [Contributing Registry Mappings](Documentation/ContributingMappings.md) for the detailed rules. A mapping can also be proposed through the [registry mapping form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml).
 
-Do not guess repository URLs, products, versions, module names, subspec behavior, or compatibility. Incomplete evidence should remain review-only rather than becoming `AUTO`.
+Do not guess repository URLs, products, versions, module names, subspec behavior, consumer-language support, or compatibility. A package implemented in Swift is not automatically safe to consume from Objective-C. Incomplete evidence should remain review-only rather than becoming `AUTO`.
 
 ## Reporting Bugs
 
@@ -93,6 +94,8 @@ PkgLift follows the [Swift API Design Guidelines](https://swift.org/documentatio
 Preserve these invariants:
 
 - never classify a dependency as `AUTO` without exact evidence;
+- require a complete PBX source profile and explicit registry support for every consumer target language before `AUTO`;
+- treat detected Carthage, React Native, Flutter, and Capacitor integration as a project-level automatic-migration boundary;
 - never weaken a safety check merely to make a fixture pass;
 - use typed errors instead of traps or forced assumptions;
 - keep analysis and dry-run paths mutation-free;

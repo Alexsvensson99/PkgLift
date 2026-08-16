@@ -65,6 +65,28 @@ body:
     validations:
       required: true
 
+  - type: checkboxes
+    id: supported_consumer_languages
+    attributes:
+      label: Verified consumer source languages
+      description: Select only languages proven by official documentation or a reproducible compiling fixture. C-family languages require explicit evidence.
+      options:
+        - label: Swift
+        - label: Objective-C
+        - label: Objective-C++
+        - label: C
+        - label: C++
+    validations:
+      required: true
+
+  - type: textarea
+    id: language_evidence
+    attributes:
+      label: Consumer-language evidence
+      description: Link to official import guidance or describe the smallest reproducible build proving every selected language.
+    validations:
+      required: true
+
   - type: textarea
     id: module_mapping
     attributes:
@@ -91,4 +113,6 @@ body:
         - label: The proposed product names are copied from the tagged Package.swift manifest.
           required: true
         - label: The minimum version is supported by concrete upstream evidence rather than an assumption.
+          required: true
+        - label: Every selected consumer language is supported by concrete evidence rather than inference from implementation language.
           required: true

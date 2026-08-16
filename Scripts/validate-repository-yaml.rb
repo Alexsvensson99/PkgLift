@@ -23,7 +23,9 @@ yaml_paths.each do |path|
   errors << "#{path}: top-level YAML value must be a mapping" unless document.nil? || document.is_a?(Hash)
 end
 
-issue_forms = Dir.glob(".github/ISSUE_TEMPLATE/*.{yml,yaml}").sort
+issue_forms = Dir.glob(".github/ISSUE_TEMPLATE/*.{yml,yaml}")
+  .reject { |path| File.basename(path) == "config.yml" }
+  .sort
 allowed_types = %w[markdown input textarea dropdown checkboxes].freeze
 
 issue_forms.each do |path|

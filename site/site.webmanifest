@@ -1,7 +1,7 @@
 {
   "name": "PkgLift",
   "short_name": "PkgLift",
-  "description": "Safe CocoaPods to Swift Package Manager migration.",
+  "description": "Conservative partial CocoaPods to Swift Package Manager migration for native Xcode projects.",
   "start_url": "/PkgLift/",
   "scope": "/PkgLift/",
   "display": "standalone",

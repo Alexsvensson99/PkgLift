@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Usage and support
+    url: https://github.com/Alexsvensson99/PkgLift/blob/main/SUPPORT.md
+    about: Choose the correct support path and review the privacy guidance before posting.
+  - name: Report a security vulnerability privately
+    url: https://github.com/Alexsvensson99/PkgLift/security/advisories/new
+    about: Do not disclose security vulnerabilities in a public issue.

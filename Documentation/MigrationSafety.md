@@ -10,7 +10,10 @@ An `AUTO` entry requires all of the following:
 - a stable `major.minor.patch` version from the lockfile at or above the mapping's verified SwiftPM minimum;
 - a non-empty SwiftPM repository and product list;
 - exactly one Podfile destination target and exactly one matching Xcode target;
+- a complete, non-empty source-language profile for that target, built only from PBX metadata;
+- registry support for every detected target language;
 - no unsupported Podfile control flow, hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, or external source;
+- no confirmed Carthage, React Native, Flutter, or Capacitor project integration;
 - no conflicting existing SwiftPM package requirement;
 - typed remove, add, and link actions that agree with the plan metadata.
 
@@ -28,6 +31,18 @@ PkgLift records every literal Podfile declaration that contributes to an exact p
 
 Only bounded static Ruby helpers are analyzed: calls and supported directives must be literal, and dynamic dispatch marks the affected helper evidence unresolved. PkgLift still never executes the Podfile as Ruby.
 
+## Consumer-language evidence
+
+PkgLift profiles compiled source types from the Xcode project graph without opening source files. Supported profile values are `swift`, `objectiveC`, `objectiveCPlusPlus`, `c`, and `cPlusPlus`. Missing file references, unknown compiled file types, and file-system-synchronized root groups make the profile incomplete.
+
+A Swift-only target needs a mapping that supports Swift. An Objective-C-only target needs Objective-C support. A mixed target needs every language in the same mapping; supporting only one side is not enough. Empty, incomplete, missing, or changed language evidence forces review or causes migration preflight to refuse the saved plan. The bundled registry currently has no C-family mapping coverage beyond explicitly listed language values, so such targets remain non-automatic unless concrete mapping evidence is added.
+
+## Unsupported project integrations
+
+PkgLift detects root `Cartfile` or `Cartfile.resolved` metadata and confirmed Carthage paths or build phases in the Xcode project. It does not read Carthage dependency declarations, turn them into migration actions, or modify Carthage files. Confirmed Carthage presence prevents `AUTO` for the CocoaPods plan.
+
+The static Podfile parser recognizes the exact call markers `use_react_native!`, `flutter_install_all_ios_pods`, and `capacitor_pods`. These identify React Native, Flutter, and Capacitor integration respectively and prevent `AUTO`; quoted text, comments, and longer identifier suffixes are not treated as markers. PkgLift does not claim heuristic Kotlin Multiplatform detection. Local pods and dynamically generated declarations still fail closed under the normal source and Ruby rules.
+
 ## Project and workspace selection
 
 PkgLift discovers `.xcodeproj` and `.xcworkspace` directories recursively beneath
@@ -44,9 +59,9 @@ Unsupported workspace location schemes are refused instead of guessed.
 
 ## Preflight and mutation
 
-`pkglift migrate` is a dry run. `pkglift migrate --apply` validates the entire saved AUTO contract before the first write. It regenerates the current migration evidence in memory and refuses when the saved AUTO entry no longer exactly matches the current Podfile, lockfile, registry mapping, configuration, actions, or target attribution. It also refuses stale project paths, missing Podfile declarations, missing or conflicting versions, and missing or ambiguous targets. Every AUTO entry must carry non-empty literal declaration provenance and explicit exact target attribution that agree with the typed actions.
+`pkglift migrate` is a dry run. `pkglift migrate --apply` validates the entire saved AUTO contract before the first write. It regenerates the current migration evidence in memory and refuses when the saved AUTO entry no longer exactly matches the current Podfile, lockfile, registry mapping, configuration, actions, target attribution, target language profile, or supported mapping languages. It also refuses stale project paths, missing Podfile declarations, missing or conflicting versions, and missing or ambiguous targets. Every AUTO entry must carry non-empty literal declaration provenance, explicit exact target attribution, and complete consumer-language evidence that agree with the typed actions.
 
-Older schema-1 plans remain decodable, but legacy target arrays are treated only as partial context. An AUTO entry without current provenance is refused and must be regenerated before migration.
+Older schema-1 plans remain decodable, but legacy target arrays are treated only as partial context. An AUTO entry without current provenance or consumer-language evidence is refused and must be regenerated before migration.
 
 Podfile editing removes only exact, literal pod declarations. Target blocks, similarly named pods, remaining CocoaPods dependencies, comments, and unrelated Ruby are preserved. PkgLift does not run the Podfile as Ruby.
 

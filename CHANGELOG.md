@@ -7,15 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Deterministic target source profiles for Swift, Objective-C, Objective-C++, C, and C++ based only on PBX metadata.
+- Explicit registry consumer-language evidence, including direct Firebase Analytics, Crashlytics, and Messaging mappings verified from `11.12.0`.
+- Conservative Carthage, React Native, Flutter, and Capacitor integration detection with typed, privacy-minimized diagnostics summaries.
+- `--portable-json` for `analyze` and `plan`, with local-path and URL-secret redaction and a versioned portable-output marker.
+- A repository-owned mixed Swift/Objective-C SDWebImage fixture and four additional immutable read-only upstream pilot cases.
+- Compatibility, support, and private vulnerability-reporting guidance.
+
 ### Changed
 - Repeated declarations of the same exact pod name are represented by one deterministic dependency and plan entry while retaining every literal declaration origin.
 - Analysis and plan JSON include explicitly named source, dependency, candidate, and plan-entry counts; human analysis and diagnostics keep their direct-dependency totals scoped to unique identities.
 - Xcode target environments now honor project and target xcconfig precedence across every build configuration, while targets, SwiftPM packages, and linked products use deterministic ordering.
+- End-to-end apply validation now runs only against a repository-owned fixture; all pinned upstream projects are analysis, plan, and dry-run only.
+
+### Fixed
+- Static helper attribution handles bounded literal calls and nested-target inheritance without assigning helper declarations to the wrong target.
+- Conditional, configuration-limited, and otherwise unrepresentable pod declarations cannot become `AUTO`.
+- Valid CocoaPods lockfiles produced after the last pod is removed are accepted as an empty dependency set, while inconsistent lockfiles still fail closed.
 
 ### Security
 - `AUTO` now requires explicit exact target attribution and non-empty literal registry-declaration provenance during both classification and migration preflight; older schema-1 plans without that evidence must be regenerated.
 - Migration preflight refuses a saved `AUTO` entry when current Podfile, lockfile, registry, configuration, action, or target evidence has changed since planning.
 - Parent declarations include statically proven nested targets that use default or complete inheritance; the literal CocoaPods-only option `modular_headers: true` remains migratable, while uncertain helper dispatch, other declaration options, conditions, and inheritance fail closed to review.
+- `AUTO` and preflight require a complete, non-empty target profile whose every language is explicitly supported by the exact registry mapping; older or manipulated plans without this evidence are refused.
+- Confirmed Carthage, React Native, Flutter, and Capacitor integration prevents automatic migration without parsing or modifying those ecosystems.
 
 ## [0.2.0] - 2026-08-15
 
