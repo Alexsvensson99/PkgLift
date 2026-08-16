@@ -1,25 +1,11 @@
 name: Mixed-Language End-to-End Pilot
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
   pull_request:
-    paths:
-      - '.github/workflows/positive-e2e.yml'
-      - 'Scripts/run-positive-e2e-pilot.sh'
-      - 'Scripts/hash-pilot-tree.py'
-      - 'Scripts/run-with-timeout.py'
-      - 'Fixtures/MixedLanguageSDWebImage/**'
-      - 'Documentation/Pilots.md'
-      - 'Package.swift'
-      - 'Package.resolved'
-      - 'Registry/S/SDWebImage.yml'
-      - 'Sources/PkgLiftCLI/**'
-      - 'Sources/PkgLiftCore/**'
-      - 'Sources/PkgLiftCocoaPods/**'
-      - 'Sources/PkgLiftMigration/**'
-      - 'Sources/PkgLiftRegistry/**'
-      - 'Sources/PkgLiftVerification/**'
-      - 'Sources/PkgLiftXcode/**'
 
 permissions:
   contents: read
@@ -29,7 +15,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Mixed-Language Pilot Changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - name: Detect mixed-language-pilot changes
+        id: filter
+        env:
+          PKGLIFT_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          PKGLIFT_HEAD_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          relevant="$(python3 Scripts/ci-paths-relevant.py \
+            '.github/workflows/positive-e2e.yml' \
+            'Scripts/run-positive-e2e-pilot.sh' \
+            'Scripts/hash-pilot-tree.py' \
+            'Scripts/run-with-timeout.py' \
+            'Scripts/ci-paths-relevant.py' \
+            'Fixtures/MixedLanguageSDWebImage/**' \
+            'Documentation/Pilots.md' \
+            'Package.swift' \
+            'Package.resolved' \
+            'Registry/S/SDWebImage.yml' \
+            'Sources/PkgLiftCLI/**' \
+            'Sources/PkgLiftCore/**' \
+            'Sources/PkgLiftCocoaPods/**' \
+            'Sources/PkgLiftMigration/**' \
+            'Sources/PkgLiftRegistry/**' \
+            'Sources/PkgLiftVerification/**' \
+            'Sources/PkgLiftXcode/**')"
+          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
+
   migrate-and-build:
+    name: Mixed-Language Migration and Build
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
     runs-on: macos-15
     timeout-minutes: 60
     env:
@@ -71,3 +98,27 @@ jobs:
             ${{ runner.temp }}/pkglift-positive-e2e-report/migrated-pod-install.log
           if-no-files-found: warn
           retention-days: 14
+
+  gate:
+    name: Mixed-Language Pilot Gate
+    needs: [changes, migrate-and-build]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require applicable mixed-language pilot
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          RELEVANT: ${{ needs.changes.outputs.relevant }}
+          PILOT_RESULT: ${{ needs.migrate-and-build.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CHANGES_RESULT" == 'success' ]]
+          if [[ "$RELEVANT" == 'true' ]]; then
+            [[ "$PILOT_RESULT" == 'success' ]]
+            echo 'The mixed-language end-to-end pilot passed.'
+          else
+            [[ "$PILOT_RESULT" == 'skipped' ]]
+            echo 'No mixed-language-pilot changes; the heavy pilot was safely skipped.'
+          fi
