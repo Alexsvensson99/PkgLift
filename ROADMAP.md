@@ -69,56 +69,21 @@ Release evidence and the completed work breakdown are recorded in the [v0.2.0 tr
 - Explicit compatibility, support, and private vulnerability-reporting documentation.
 - Required CI summary gates, dependency updates, and Swift code scanning before release.
 
+## v0.3.0 — Broader Safe CocoaPods Coverage
+
+- Stable typed reason codes and remediation guidance while preserving schema-1 legacy reason strings.
+- Mutation-free `analyze --fail-on` policy for direct-dependency CI readiness.
+- Bounded literal parenthesized target and pod syntax without arbitrary Ruby execution.
+- Exact verified Lottie and Firebase Auth, Firestore, Remote Config, and Storage direct/subspec mappings without unsafe base-identity fallback.
+- Ten immutable read-only upstream pilots spanning successful classification and deliberate refusal.
+- Fail-closed handling for unsupported Ruby, custom CocoaPods source/workspace/project metadata, control characters, ambiguous scopes, and excessive nesting.
+- Preserved atomic migration, preflight, clean-worktree, privacy, and build-verification guarantees.
+
+Release evidence and the completed work breakdown are recorded in the [v0.3.0 tracker](https://github.com/Alexsvensson99/PkgLift/issues/48).
+
 ---
 
 # Next
-
-## v0.3.0 — Broader Safe CocoaPods Coverage
-
-**Goal:** increase the number of ordinary native CocoaPods projects that PkgLift can classify and migrate without weakening the existing safety model.
-
-The release should focus on migration reports and recurring real-world project shapes rather than speculative ecosystem coverage.
-
-Implementation is tracked only in [issue #48](https://github.com/Alexsvensson99/PkgLift/issues/48). The current unreleased implementation covers stable typed classification reasons, a direct-dependency `analyze --fail-on` policy, bounded parenthesized target and pod literals, exact Lottie and additional Firebase identities, and three additional pinned read-only pilots. Release versioning, milestone publication, and distribution remain separate checkpoints.
-
-### Planned scope
-
-- Expand exact registry coverage for commonly encountered pods with official SwiftPM support, beginning with Lottie and exact Firebase Auth, Firestore, Remote Config, and Storage identities.
-- Improve static Podfile parsing for deterministic parenthesized literal target and pod calls without evaluating arbitrary Ruby.
-- Keep direct and subspec identities independently modeled without inheriting assumptions from a base pod.
-- Report every `AUTO`, `REVIEW`, `BLOCKED`, or `UNKNOWN` reason with a stable code, legacy message, and optional action.
-- Maintain ten reproducible read-only real-project pilots spanning supported and intentionally refused project shapes.
-- Provide mutation-free, direct-dependency CI policy through `analyze --fail-on`.
-- Preserve all current atomic migration, clean-worktree, preflight, rollback, privacy, and build-verification guarantees.
-
-### Explicit non-goals for v0.3.0
-
-The following are **not** required for v0.3.0:
-
-- executing arbitrary Podfile Ruby;
-- automatic conversion of `post_install` or other hooks;
-- full `use_frameworks!` migration semantics;
-- automatic migration of React Native, Flutter, Capacitor, or Carthage integrations;
-- general Podspec-to-`Package.swift` generation;
-- automatic migration of every local, Git, private, binary, Objective-C, C, or C++ pod.
-
-### Exit criteria
-
-v0.3.0 is ready only when all of the following are true:
-
-- Every new `AUTO` path has positive, negative, and fail-closed fixture coverage.
-- Existing v0.2.x fixtures and real-project pilots remain green.
-- Every new registry mapping is backed by explicit upstream evidence and registry validation.
-- Dry-run remains mutation-free.
-- Applied migration remains atomic across the PkgLift mutation boundary.
-- Saved-plan preflight rejects stale or changed migration evidence before the first write.
-- Documentation describes every newly supported project shape and its safety boundary.
-- At least three additional real-world project cases exercise the newly added behavior or demonstrate a deliberate safe refusal.
-- No known high-severity migration-correctness defect remains open for the release scope.
-
----
-
-# Planned
 
 These releases describe the intended sequence after v0.3.0. Exact scope may move as real migration evidence reveals dependencies between features.
 

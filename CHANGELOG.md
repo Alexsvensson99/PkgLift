@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-18
+
 ### Added
 - Stable `MigrationReasonCode` and `MigrationReason` details on analysis candidates and migration-plan entries while preserving legacy schema-1 `reasons`.
 - Mutation-free `analyze --fail-on blocked|unresolved|non-auto` CI policy that prints complete human, JSON, or portable-JSON output before returning status `1` for matching direct dependencies.
