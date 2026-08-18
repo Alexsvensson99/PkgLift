@@ -18,4 +18,4 @@ Do not report vulnerabilities in a public issue. Follow [SECURITY.md](SECURITY.m
 
 ## Supported versions
 
-Security fixes target the current `0.2.x` minor line. Older minor lines may be asked to upgrade before a defect is investigated. Source builds from unreviewed branches and modified registry entries are supported only when the report includes enough reproducible evidence to distinguish local changes from a PkgLift defect.
+Security fixes target the current `0.3.x` minor line. Older minor lines may be asked to upgrade before a defect is investigated. Source builds from unreviewed branches and modified registry entries are supported only when the report includes enough reproducible evidence to distinguish local changes from a PkgLift defect.

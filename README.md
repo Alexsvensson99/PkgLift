@@ -74,27 +74,16 @@ After review, only the `AUTO` entry may be added as a Swift package. The unknown
 
 CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on December 2, 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). The plan explicitly keeps existing trunk and CDN builds available, and does not mean CocoaPods itself or private spec repositories stop working. PkgLift provides a reviewable path for native Xcode projects that want to move supported dependencies to SwiftPM without pretending every pod or project shape can be converted automatically.
 
-## What Is New in v0.2.1
+## What Is New in v0.3.0
 
-- Xcode targets are profiled deterministically from PBX metadata as Swift, Objective-C, Objective-C++, C, or C++ without reading source contents.
-- `AUTO` requires a complete target language profile and registry evidence for every consumer language; mixed Swift/Objective-C targets require both.
-- Carthage and typed React Native, Flutter, and Capacitor integration evidence prevent automatic migration instead of being inferred away.
-- `analyze --portable-json` and `plan --portable-json` redact local paths and URL credentials for reviewable, portable output.
-- Seven immutable upstream pilots remain read-only, while a repository-owned mixed-language fixture is the only end-to-end target that may be migrated.
+- Analysis candidates and plan entries retain legacy `reasons` while adding stable `reasonDetails` codes and optional remediation guidance.
+- `analyze --fail-on blocked|unresolved|non-auto` supports mutation-free CI policy after printing complete human, JSON, or portable-JSON output.
+- Literal `target('App') do` and `pod('Name')` declarations are parsed without executing Ruby, including the supported literal version and `modular_headers: true` forms.
+- Exact Lottie and additional Firebase direct/subspec identities are mapped only at verified upstream version boundaries; base identities and unknown subspecs do not inherit them.
+- Ten immutable upstream pilots cover successful classification and deliberate refusal, while apply remains restricted to the repository-owned mixed-language fixture.
+- Unsupported Ruby, custom CocoaPods source/workspace/project metadata, external options, control characters, ambiguous scopes, and excessive nesting remain non-automatic.
 
-See the [v0.2.1 release notes](Documentation/ReleaseNotes-0.2.1.md), [changelog](CHANGELOG.md), [migration-safety guide](Documentation/MigrationSafety.md), and [real-project pilot documentation](Documentation/Pilots.md) for the complete evidence.
-
-## In Development for v0.3.0
-
-The unreleased v0.3.0 work broadens only evidence-backed coverage:
-
-- analysis candidates and plan entries retain legacy `reasons` while adding stable `reasonDetails` codes and optional remediation guidance;
-- `analyze --fail-on blocked|unresolved|non-auto` supports mutation-free CI policy after printing the complete human, JSON, or portable-JSON result;
-- literal `target('App') do` and `pod('Name')` declarations are parsed without executing Ruby, including the already supported literal version and `modular_headers: true` forms;
-- exact Lottie and additional Firebase direct/subspec identities are mapped at verified upstream version boundaries; and
-- ten immutable upstream pilots cover successful classification and deliberate refusal, while apply remains restricted to the repository-owned fixture.
-
-Issue [#48](https://github.com/Alexsvensson99/PkgLift/issues/48) is the single implementation tracker. These capabilities are not part of a released version until the separate release checkpoint is completed.
+See the [v0.3.0 release notes](Documentation/ReleaseNotes-0.3.0.md), [changelog](CHANGELOG.md), [migration-safety guide](Documentation/MigrationSafety.md), and [real-project pilot documentation](Documentation/Pilots.md) for the complete evidence.
 
 ## Safety Philosophy
 
@@ -131,7 +120,7 @@ Host support remains macOS 14 or later on Apple Silicon (`arm64`). Distribution 
 
 ## Installation
 
-PkgLift v0.2.1 is distributed as a Developer ID-signed and Apple-notarized Apple Silicon binary for macOS 14 or later.
+PkgLift v0.3.0 is distributed as a Developer ID-signed and Apple-notarized Apple Silicon binary for macOS 14 or later.
 
 Install with Homebrew:
 
@@ -261,7 +250,7 @@ An invalid configuration is an error; PkgLift does not silently ignore it.
 
 ## Limitations
 
-The released v0.2.x line and the unreleased v0.3.0 work share these safety boundaries:
+PkgLift v0.3.0 retains these safety boundaries:
 
 - Only CocoaPods-to-SwiftPM migration is supported.
 - Migration is partial: non-automatic pods and their CocoaPods integration are preserved.
@@ -278,7 +267,7 @@ The released v0.2.x line and the unreleased v0.3.0 work share these safety bound
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md), the active [v0.3.0 tracker](https://github.com/Alexsvensson99/PkgLift/issues/48), and the [v0.2.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/26) for previous release evidence.
+See [ROADMAP.md](ROADMAP.md), the [v0.3.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/48), and the [v0.2.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/26) for release evidence.
 
 ## Contributing
 

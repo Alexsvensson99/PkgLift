@@ -6,8 +6,8 @@ Security is a core consideration for PkgLift, as we operate on source code and d
 
 | Version | Security support |
 |---|---|
-| Current `0.2.x` minor line | Supported |
-| `0.1.x` and older | Upgrade required |
+| Current `0.3.x` minor line | Supported |
+| `0.2.x` and older | Upgrade required |
 
 ## Threat Model and Mitigations
 
