@@ -79,14 +79,16 @@ Release evidence and the completed work breakdown are recorded in the [v0.2.0 tr
 
 The release should focus on migration reports and recurring real-world project shapes rather than speculative ecosystem coverage.
 
+Implementation is tracked only in [issue #48](https://github.com/Alexsvensson99/PkgLift/issues/48). The current unreleased implementation covers stable typed classification reasons, a direct-dependency `analyze --fail-on` policy, bounded parenthesized target and pod literals, exact Lottie and additional Firebase identities, and three additional pinned read-only pilots. Release versioning, milestone publication, and distribution remain separate checkpoints.
+
 ### Planned scope
 
-- Expand exact registry coverage for commonly encountered pods with official SwiftPM support.
-- Improve static Podfile parsing for additional deterministic declarations and target structures that can be proven without evaluating arbitrary Ruby.
-- Improve exact subspec handling so supported subspecs can be modeled independently without inheriting unsafe assumptions from their base pod.
-- Improve reporting for why a dependency is `AUTO`, `REVIEW`, `BLOCKED`, or `UNKNOWN`, including actionable evidence requirements where possible.
-- Add more reproducible real-project pilots that represent supported and intentionally refused project shapes.
-- Improve CI-friendly output for migration-readiness checks without introducing mutating CI behavior.
+- Expand exact registry coverage for commonly encountered pods with official SwiftPM support, beginning with Lottie and exact Firebase Auth, Firestore, Remote Config, and Storage identities.
+- Improve static Podfile parsing for deterministic parenthesized literal target and pod calls without evaluating arbitrary Ruby.
+- Keep direct and subspec identities independently modeled without inheriting assumptions from a base pod.
+- Report every `AUTO`, `REVIEW`, `BLOCKED`, or `UNKNOWN` reason with a stable code, legacy message, and optional action.
+- Maintain ten reproducible read-only real-project pilots spanning supported and intentionally refused project shapes.
+- Provide mutation-free, direct-dependency CI policy through `analyze --fail-on`.
 - Preserve all current atomic migration, clean-worktree, preflight, rollback, privacy, and build-verification guarantees.
 
 ### Explicit non-goals for v0.3.0

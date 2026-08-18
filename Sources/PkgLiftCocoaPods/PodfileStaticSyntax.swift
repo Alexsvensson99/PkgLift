@@ -5,12 +5,28 @@ import Foundation
 /// This parser deliberately recognizes only syntax whose value can be proven
 /// without evaluating Ruby. Unsupported or computed forms remain dynamic.
 enum PodfileStaticSyntax {
+    private static let rubyHorizontalWhitespace = CharacterSet(charactersIn: " \t")
+
+    static func containsUnsupportedLexicalCharacter(_ line: String) -> Bool {
+        line.contains { character in
+            if character == " " || character == "\t" {
+                return false
+            }
+            if character.isWhitespace {
+                return true
+            }
+            return character.unicodeScalars.contains { scalar in
+                scalar.value < 0x20 || scalar.value == 0x7F
+            }
+        }
+    }
+
     static func isDirectiveInvocation(_ directive: String, in line: String) -> Bool {
-        let source = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        let source = line.trimmingCharacters(in: rubyHorizontalWhitespace)
         guard source.hasPrefix(directive) else { return false }
         let boundary = source.index(source.startIndex, offsetBy: directive.count)
         guard boundary < source.endIndex else { return true }
-        return source[boundary].isWhitespace || source[boundary] == "("
+        return isRubyHorizontalWhitespace(source[boundary]) || source[boundary] == "("
     }
 
     static func isTargetDeclaration(_ line: String) -> Bool {
@@ -22,31 +38,36 @@ enum PodfileStaticSyntax {
     }
 
     static func targetName(from line: String) -> String? {
-        scopeName(from: line, keyword: "target")
+        scopeName(from: line, keyword: "target", allowsParentheses: true)
     }
 
     static func abstractTargetName(from line: String) -> String? {
-        scopeName(from: line, keyword: "abstract_target")
+        scopeName(from: line, keyword: "abstract_target", allowsParentheses: false)
     }
 
     static func representablePodName(from line: String) -> String? {
-        let source = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        let source = line.trimmingCharacters(in: rubyHorizontalWhitespace)
         var index = source.startIndex
-        guard consumeKeyword("pod", in: source, index: &index) else { return nil }
+        guard let parenthesized = consumeInvocationKeyword("pod", in: source, index: &index) else {
+            return nil
+        }
         guard index < source.endIndex, source[index] == "'" || source[index] == "\"" else { return nil }
         guard let name = parseQuotedLiteral(in: source, index: &index), !name.isEmpty else { return nil }
 
         skipWhitespace(in: source, index: &index)
-        if index == source.endIndex || source[index] == "#" {
+        if finishesInvocation(in: source, index: &index, parenthesized: parenthesized) {
             return name
         }
 
+        guard index < source.endIndex, source[index] != ")" else { return nil }
         guard source[index] == "," else { return nil }
         index = source.index(after: index)
         skipWhitespace(in: source, index: &index)
 
-        if isStaticModularHeadersOption(in: source, from: index) {
-            return name
+        if consumeStaticModularHeadersOption(in: source, index: &index) {
+            return finishesInvocation(in: source, index: &index, parenthesized: parenthesized)
+                ? name
+                : nil
         }
 
         guard index < source.endIndex,
@@ -56,23 +77,51 @@ enum PodfileStaticSyntax {
             return nil
         }
         skipWhitespace(in: source, index: &index)
-        if index == source.endIndex || source[index] == "#" {
+        if finishesInvocation(in: source, index: &index, parenthesized: parenthesized) {
             return name
         }
 
+        guard index < source.endIndex, source[index] != ")" else { return nil }
         guard source[index] == "," else { return nil }
         index = source.index(after: index)
         skipWhitespace(in: source, index: &index)
-        return isStaticModularHeadersOption(in: source, from: index) ? name : nil
+        guard consumeStaticModularHeadersOption(in: source, index: &index) else { return nil }
+        return finishesInvocation(in: source, index: &index, parenthesized: parenthesized)
+            ? name
+            : nil
     }
 
-    private static func scopeName(from line: String, keyword: String) -> String? {
-        let source = line.trimmingCharacters(in: .whitespacesAndNewlines)
+    private static func scopeName(
+        from line: String,
+        keyword: String,
+        allowsParentheses: Bool
+    ) -> String? {
+        let source = line.trimmingCharacters(in: rubyHorizontalWhitespace)
         var index = source.startIndex
-        guard consumeKeyword(keyword, in: source, index: &index) else { return nil }
-        guard let name = parseLiteralName(in: source, index: &index), !name.isEmpty else { return nil }
+        guard let parenthesized = consumeInvocationKeyword(keyword, in: source, index: &index),
+              allowsParentheses || !parenthesized else {
+            return nil
+        }
+        let name: String?
+        if parenthesized {
+            guard index < source.endIndex, source[index] == "'" || source[index] == "\"" else {
+                return nil
+            }
+            name = parseQuotedLiteral(in: source, index: &index)
+        } else {
+            name = parseLiteralName(in: source, index: &index)
+        }
+        guard let name, !name.isEmpty else { return nil }
 
         skipWhitespace(in: source, index: &index)
+        if parenthesized {
+            guard index < source.endIndex, source[index] == ")" else { return nil }
+            index = source.index(after: index)
+            guard index < source.endIndex, isRubyHorizontalWhitespace(source[index]) else {
+                return nil
+            }
+            skipWhitespace(in: source, index: &index)
+        }
         guard consumeWord("do", in: source, index: &index) else { return nil }
         skipWhitespace(in: source, index: &index)
 
@@ -81,16 +130,16 @@ enum PodfileStaticSyntax {
     }
 
     static func podName(from line: String) -> String? {
-        let source = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        let source = line.trimmingCharacters(in: rubyHorizontalWhitespace)
         var index = source.startIndex
-        guard consumeKeyword("pod", in: source, index: &index) else { return nil }
+        guard consumeInvocationKeyword("pod", in: source, index: &index) != nil else { return nil }
         guard index < source.endIndex, source[index] == "'" || source[index] == "\"" else { return nil }
         guard let name = parseQuotedLiteral(in: source, index: &index), !name.isEmpty else { return nil }
         return name
     }
 
     static func closesBlock(_ line: String) -> Bool {
-        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = line.trimmingCharacters(in: rubyHorizontalWhitespace)
         return trimmed.range(
             of: #"^end(?:\s*(?:#.*)?)$"#,
             options: .regularExpression
@@ -98,7 +147,7 @@ enum PodfileStaticSyntax {
     }
 
     static func opensNonTargetBlock(_ line: String) -> Bool {
-        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = line.trimmingCharacters(in: rubyHorizontalWhitespace)
         guard !trimmed.isEmpty, !trimmed.hasPrefix("#") else { return false }
         guard !isTargetDeclaration(trimmed) else { return false }
 
@@ -118,30 +167,67 @@ enum PodfileStaticSyntax {
     }
 
     private static func startsWithKeyword(_ keyword: String, line: String) -> Bool {
-        let source = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        let source = line.trimmingCharacters(in: rubyHorizontalWhitespace)
         guard source.hasPrefix(keyword) else { return false }
         let boundary = source.index(source.startIndex, offsetBy: keyword.count)
-        return boundary < source.endIndex && source[boundary].isWhitespace
+        return boundary < source.endIndex
+            && (isRubyHorizontalWhitespace(source[boundary]) || source[boundary] == "(")
     }
 
-    private static func isStaticModularHeadersOption(
+    private static func consumeStaticModularHeadersOption(
         in source: String,
-        from index: String.Index
+        index: inout String.Index
     ) -> Bool {
-        let remainder = String(source[index...])
-        return remainder.range(
-            of: #"^(?:modular_headers\s*:\s*true|:modular_headers\s*=>\s*true)\s*(?:#.*)?$"#,
+        let remainder = source[index...]
+        guard let match = remainder.range(
+            of: #"^(?:modular_headers\s*:\s*true|:modular_headers\s*=>\s*true)"#,
             options: .regularExpression
-        ) != nil
+        ) else {
+            return false
+        }
+        index = match.upperBound
+        return true
     }
 
-    private static func consumeKeyword(_ keyword: String, in source: String, index: inout String.Index) -> Bool {
-        guard source[index...].hasPrefix(keyword) else { return false }
+    /// Consumes a Ruby method name and returns whether its arguments start with
+    /// an immediate opening parenthesis. Whitespace followed by a parenthesis
+    /// is deliberately not accepted as a new syntax form.
+    private static func consumeInvocationKeyword(
+        _ keyword: String,
+        in source: String,
+        index: inout String.Index
+    ) -> Bool? {
+        guard source[index...].hasPrefix(keyword) else { return nil }
         let boundary = source.index(index, offsetBy: keyword.count)
-        guard boundary < source.endIndex, source[boundary].isWhitespace else { return false }
+        guard boundary < source.endIndex else { return nil }
+        if source[boundary] == "(" {
+            index = source.index(after: boundary)
+            return true
+        }
+        guard isRubyHorizontalWhitespace(source[boundary]) else { return nil }
         index = boundary
         skipWhitespace(in: source, index: &index)
-        return true
+        return false
+    }
+
+    private static func finishesInvocation(
+        in source: String,
+        index: inout String.Index,
+        parenthesized: Bool
+    ) -> Bool {
+        skipWhitespace(in: source, index: &index)
+        if parenthesized {
+            guard index < source.endIndex, source[index] == ")" else { return false }
+            let closingParenthesis = index
+            var trailingIndex = source.index(after: index)
+            skipWhitespace(in: source, index: &trailingIndex)
+            guard trailingIndex == source.endIndex || source[trailingIndex] == "#" else {
+                index = closingParenthesis
+                return false
+            }
+            index = trailingIndex
+        }
+        return index == source.endIndex || source[index] == "#"
     }
 
     private static func consumeWord(_ word: String, in source: String, index: inout String.Index) -> Bool {
@@ -149,7 +235,9 @@ enum PodfileStaticSyntax {
         let boundary = source.index(index, offsetBy: word.count)
         if boundary < source.endIndex {
             let character = source[boundary]
-            guard character.isWhitespace || character == "#" else { return false }
+            guard isRubyHorizontalWhitespace(character) || character == "#" else {
+                return false
+            }
         }
         index = boundary
         return true
@@ -213,6 +301,12 @@ enum PodfileStaticSyntax {
                 }
             }
 
+            if character.unicodeScalars.contains(where: { scalar in
+                scalar.value < 0x20 || scalar.value == 0x7F
+            }) {
+                return nil
+            }
+
             value.append(character)
             index = source.index(after: index)
         }
@@ -221,9 +315,13 @@ enum PodfileStaticSyntax {
     }
 
     private static func skipWhitespace(in source: String, index: inout String.Index) {
-        while index < source.endIndex, source[index].isWhitespace {
+        while index < source.endIndex, isRubyHorizontalWhitespace(source[index]) {
             index = source.index(after: index)
         }
+    }
+
+    private static func isRubyHorizontalWhitespace(_ character: Character) -> Bool {
+        character == " " || character == "\t"
     }
 
     private static func isIdentifierStart(_ character: Character) -> Bool {

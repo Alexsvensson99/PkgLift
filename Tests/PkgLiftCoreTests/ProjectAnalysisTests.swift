@@ -41,4 +41,64 @@ final class ProjectAnalysisTests: XCTestCase {
 
         XCTAssertEqual(currentFeatures.integrationMarkers, [.reactNative, .capacitor])
     }
+
+    func testSchemaOneCandidateDecodesWithoutReasonDetailsAndPreservesReasons() throws {
+        let legacyCandidate = MigrationCandidate(
+            pod: CocoaPodDependency(name: "LegacyPod", isDirect: true),
+            classification: .review,
+            reasons: ["Legacy free-form reason"]
+        )
+        let data = try JSONEncoder().encode(legacyCandidate)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        XCTAssertNil(object["reasonDetails"])
+
+        let decoded = try JSONDecoder().decode(MigrationCandidate.self, from: data)
+
+        XCTAssertEqual(decoded.reasons, ["Legacy free-form reason"])
+        XCTAssertNil(decoded.reasonDetails)
+    }
+
+    func testTypedReasonDetailsAreAdditiveAndKeepLegacyMessagesUnchanged() throws {
+        let detail = MigrationReason(
+            code: .registryMappingMissing,
+            message: "No registry mapping",
+            remediation: "Add an exact verified registry mapping."
+        )
+        let candidate = MigrationCandidate(
+            pod: CocoaPodDependency(name: "UnknownPod", isDirect: true),
+            classification: .unknown,
+            reasons: [detail.message],
+            reasonDetails: [detail]
+        )
+
+        let data = try JSONEncoder().encode(candidate)
+        let decoded = try JSONDecoder().decode(MigrationCandidate.self, from: data)
+
+        XCTAssertEqual(decoded.reasons, ["No registry mapping"])
+        XCTAssertEqual(decoded.reasonDetails, [detail])
+        XCTAssertEqual(MigrationPlan.schemaVersion, 1)
+        XCTAssertEqual(ProjectAnalysis.schemaVersion, 1)
+    }
+
+    func testSchemaOnePlanEntryDecodesWithoutReasonDetails() throws {
+        let entry = MigrationPlanEntry(
+            podName: "LegacyPod",
+            currentVersion: "1.2.3",
+            classification: .review,
+            actions: [.manual(description: "Review")],
+            reasons: ["Legacy plan reason"]
+        )
+        let data = try JSONEncoder().encode(entry)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        XCTAssertNil(object["reasonDetails"])
+
+        let decoded = try JSONDecoder().decode(MigrationPlanEntry.self, from: data)
+
+        XCTAssertEqual(decoded.reasons, ["Legacy plan reason"])
+        XCTAssertNil(decoded.reasonDetails)
+    }
 }

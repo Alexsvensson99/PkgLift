@@ -14,11 +14,13 @@ public struct MigrationClassification: Sendable, Equatable {
     public let category: MigrationCategory
     public let reason: String
     public let reasons: [String]
+    public let reasonDetails: [MigrationReason]
     
     public init(category: MigrationCategory, reason: String) {
         self.category = category
         self.reason = reason
         self.reasons = [reason]
+        self.reasonDetails = [MigrationReason(code: .unspecified, message: reason)]
     }
 
     public init(category: MigrationCategory, reasons: [String]) {
@@ -26,6 +28,17 @@ public struct MigrationClassification: Sendable, Equatable {
         self.category = category
         self.reason = stableReasons.first ?? "No classification reason available"
         self.reasons = stableReasons
+        self.reasonDetails = stableReasons.map {
+            MigrationReason(code: .unspecified, message: $0)
+        }
+    }
+
+    public init(category: MigrationCategory, reasonDetails: [MigrationReason]) {
+        let stableReasons = deduplicated(reasonDetails)
+        self.category = category
+        self.reasonDetails = stableReasons
+        self.reasons = stableReasons.map(\.message)
+        self.reason = self.reasons.first ?? "No classification reason available"
     }
 }
 
@@ -101,108 +114,216 @@ public struct MigrationClassifier: Sendable {
         targetSourceProfile: TargetSourceProfile? = nil,
         projectIntegrations: [ProjectIntegration] = []
     ) -> MigrationClassification {
-        var reasons: [String] = []
+        var reasons: [MigrationReason] = []
 
         if mapping == nil {
             if dependency.isExternalSource {
-                reasons.append("External source without mapping")
-                reasons.append("No registry mapping")
+                reasons.append(MigrationReason(
+                    code: .externalSourceWithoutMapping,
+                    message: "External source without mapping",
+                    remediation: "Keep the dependency on CocoaPods or add and verify an exact registry mapping."
+                ))
+                reasons.append(MigrationReason(
+                    code: .registryMappingMissing,
+                    message: "No registry mapping",
+                    remediation: "Add an exact verified registry mapping, or keep this dependency on CocoaPods."
+                ))
             } else {
-                reasons.append("No registry mapping")
+                reasons.append(MigrationReason(
+                    code: .registryMappingMissing,
+                    message: "No registry mapping",
+                    remediation: "Add an exact verified registry mapping, or keep this dependency on CocoaPods."
+                ))
             }
         } else if mapping?.identifier != dependency.identifier {
-            reasons.append("Registry mapping identifier does not exactly match dependency")
+            reasons.append(MigrationReason(
+                code: .registryIdentifierMismatch,
+                message: "Registry mapping identifier does not exactly match dependency",
+                remediation: "Use an exact registry identity for this CocoaPod declaration."
+            ))
         }
 
         if !dependency.isDirect {
-            reasons.append("Transitive dependency is not a removable Podfile declaration")
+            reasons.append(MigrationReason(
+                code: .transitiveDependency,
+                message: "Transitive dependency is not a removable Podfile declaration",
+                remediation: "Migrate only its owning direct CocoaPod declaration."
+            ))
         }
 
         if dependency.hasUnrepresentableDeclaration {
-            reasons.append("Podfile declaration source, options, or expressions cannot be represented safely")
+            reasons.append(MigrationReason(
+                code: .declarationUnrepresentable,
+                message: "Podfile declaration source, options, or expressions cannot be represented safely",
+                remediation: "Rewrite the declaration as a supported unconditional literal before regenerating the plan."
+            ))
         }
 
         if mapping != nil, dependency.isDirect, !dependency.hasLiteralDeclarationProvenance {
-            reasons.append("Literal Podfile declaration provenance is missing or inconsistent")
+            reasons.append(MigrationReason(
+                code: .declarationProvenanceMissing,
+                message: "Literal Podfile declaration provenance is missing or inconsistent",
+                remediation: "Regenerate analysis from an unchanged Podfile containing a supported literal declaration."
+            ))
         }
 
         if dependency.isExternalSource, mapping != nil {
-            reasons.append("External dependency source requires manual review")
+            reasons.append(MigrationReason(
+                code: .externalSourceRequiresReview,
+                message: "External dependency source requires manual review",
+                remediation: "Keep the dependency on CocoaPods or review an explicit external-source migration manually."
+            ))
         }
 
         if let mapping,
            mapping.repositoryURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || mapping.products.isEmpty
             || !mapping.products.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
-            reasons.append("Registry mapping lacks an executable package URL or product")
+            reasons.append(MigrationReason(
+                code: .registryMappingNotExecutable,
+                message: "Registry mapping lacks an executable package URL or product",
+                remediation: "Correct and revalidate the registry mapping before automatic migration."
+            ))
         }
 
         if dependency.hasPreInstallHooks || dependency.hasPostInstallHooks {
-            reasons.append("Podfile install hook detected")
+            reasons.append(MigrationReason(
+                code: .podfileInstallHook,
+                message: "Podfile install hook detected",
+                remediation: "Review this project-level CocoaPods behavior manually; PkgLift does not convert it automatically."
+            ))
         }
         if dependency.hasScriptPhase {
-            reasons.append("Podfile script_phase detected")
+            reasons.append(MigrationReason(
+                code: .podfileScriptPhase,
+                message: "Podfile script_phase detected",
+                remediation: "Review this project-level CocoaPods behavior manually; PkgLift does not convert it automatically."
+            ))
         }
         if dependency.hasDynamicLogic {
-            reasons.append("Dynamic Podfile logic detected")
+            reasons.append(MigrationReason(
+                code: .podfileDynamicRuby,
+                message: "Dynamic Podfile logic detected",
+                remediation: "Replace dynamic dependency logic with supported static literals before regenerating the plan."
+            ))
         }
         if dependency.useFrameworks {
-            reasons.append("use_frameworks! detected")
+            reasons.append(MigrationReason(
+                code: .podfileUseFrameworks,
+                message: "use_frameworks! detected",
+                remediation: "Review framework-linkage behavior manually before migration."
+            ))
         }
         if dependency.hasInheritSearchPaths {
-            reasons.append("inherit! :search_paths detected")
+            reasons.append(MigrationReason(
+                code: .podfileInheritSearchPaths,
+                message: "inherit! :search_paths detected",
+                remediation: "Review inherited target behavior manually before migration."
+            ))
         }
         if dependency.hasAbstractTargets {
-            reasons.append("abstract_target detected")
+            reasons.append(MigrationReason(
+                code: .podfileAbstractTarget,
+                message: "abstract_target detected",
+                remediation: "Review abstract-target inheritance manually before migration."
+            ))
         }
-        reasons.append(contentsOf: projectIntegrations.sorted().map(\.reviewReason))
+        reasons.append(contentsOf: projectIntegrations.sorted().map { integration in
+            MigrationReason(
+                code: integration.reasonCode,
+                message: integration.reviewReason,
+                remediation: "Keep this integration unchanged and review the dependency migration manually."
+            )
+        })
 
         if let mapping, mapping.confidence != .verified {
-            reasons.append("Registry mapping is not verified")
+            reasons.append(MigrationReason(
+                code: .registryMappingNotVerified,
+                message: "Registry mapping is not verified",
+                remediation: "Verify the registry mapping against upstream package metadata before automatic migration."
+            ))
         }
 
         if let mapping {
             let supportedLanguages = mapping.supportedConsumerLanguages
             if supportedLanguages?.isEmpty != false {
-                reasons.append("Registry mapping has no verified consumer-language support")
+                reasons.append(MigrationReason(
+                    code: .consumerLanguageEvidenceMissing,
+                    message: "Registry mapping has no verified consumer-language support",
+                    remediation: "Add verified consumer-language evidence or keep the dependency on CocoaPods."
+                ))
             } else if let supportedLanguages,
                       Set(supportedLanguages).count != supportedLanguages.count {
-                reasons.append("Registry mapping consumer-language evidence is invalid")
+                reasons.append(MigrationReason(
+                    code: .consumerLanguageEvidenceInvalid,
+                    message: "Registry mapping consumer-language evidence is invalid",
+                    remediation: "Remove duplicate or unknown language evidence and revalidate the mapping."
+                ))
             }
 
             if let targetSourceProfile {
                 if targetSourceProfile.completeness != .complete {
-                    reasons.append("Target source-language profile is incomplete")
+                    reasons.append(MigrationReason(
+                        code: .targetSourceProfileIncomplete,
+                        message: "Target source-language profile is incomplete",
+                        remediation: "Resolve unknown or missing compiled source metadata before regenerating the plan."
+                    ))
                 }
                 if targetSourceProfile.languages.isEmpty {
-                    reasons.append("Target source-language profile contains no compiled source languages")
+                    reasons.append(MigrationReason(
+                        code: .targetSourceProfileEmpty,
+                        message: "Target source-language profile contains no compiled source languages",
+                        remediation: "Confirm the target's compiled source membership before migration."
+                    ))
                 }
                 if let supportedLanguages {
                     let supported = Set(supportedLanguages)
                     let unsupported = targetSourceProfile.languages.filter { !supported.contains($0) }
                     if !unsupported.isEmpty {
-                        reasons.append(
-                            "Target source languages are not supported by the registry mapping: "
-                                + unsupported.map(\.rawValue).joined(separator: ", ")
-                        )
+                        reasons.append(MigrationReason(
+                            code: .targetLanguageUnsupported,
+                            message: "Target source languages are not supported by the registry mapping: "
+                                + unsupported.map(\.rawValue).joined(separator: ", "),
+                            remediation: "Use a mapping that explicitly supports every compiled target language."
+                        ))
                     }
                 }
             } else {
-                reasons.append("Target source-language profile is missing")
+                reasons.append(MigrationReason(
+                    code: .targetSourceProfileMissing,
+                    message: "Target source-language profile is missing",
+                    remediation: "Analyze an exact Xcode target with complete compiled source metadata."
+                ))
             }
         }
 
         switch dependency.targetAttributionStatus {
         case .exact:
             if !isTargetMappingKnown || dependency.targetCount != 1 {
-                reasons.append("Podfile target does not match exactly one existing Xcode target")
+                reasons.append(MigrationReason(
+                    code: .targetNotFound,
+                    message: "Podfile target does not match exactly one existing Xcode target",
+                    remediation: "Use a statically provable literal target that matches exactly one Xcode target."
+                ))
             }
         case .multiple:
-            reasons.append(dependency.targetAttributionReason ?? "Multiple Podfile targets are proven")
+            reasons.append(MigrationReason(
+                code: .targetAttributionMultiple,
+                message: dependency.targetAttributionReason ?? "Multiple Podfile targets are proven",
+                remediation: "Split or review the declaration because it applies to multiple targets."
+            ))
         case .partial:
-            reasons.append(dependency.targetAttributionReason ?? "Target attribution is partial")
+            reasons.append(MigrationReason(
+                code: .targetAttributionPartial,
+                message: dependency.targetAttributionReason ?? "Target attribution is partial",
+                remediation: "Make all target inheritance and helper calls statically provable before migration."
+            ))
         case .unresolved:
-            reasons.append(dependency.targetAttributionReason ?? "Target is unresolved from static Podfile structure")
+            reasons.append(MigrationReason(
+                code: .targetAttributionUnresolved,
+                message: dependency.targetAttributionReason ?? "Target is unresolved from static Podfile structure",
+                remediation: "Use a statically provable literal target before regenerating the plan."
+            ))
         }
 
         let resolvedVersion: SemanticVersion?
@@ -211,7 +332,11 @@ public struct MigrationClassifier: Sendable {
             resolvedVersion = parsed
         } else {
             resolvedVersion = nil
-            reasons.append("Resolved version is missing or is not stable major.minor.patch")
+            reasons.append(MigrationReason(
+                code: .resolvedVersionInvalid,
+                message: "Resolved version is missing or is not stable major.minor.patch",
+                remediation: "Provide a stable locked major.minor.patch version before migration."
+            ))
         }
 
         var minimumVersion: SemanticVersion?
@@ -221,18 +346,28 @@ public struct MigrationClassifier: Sendable {
                     minimumVersion = parsed
                 } else {
                     minimumVersion = nil
-                    reasons.append("Registry mapping minimum SwiftPM version is invalid")
+                    reasons.append(MigrationReason(
+                        code: .minimumVersionInvalid,
+                        message: "Registry mapping minimum SwiftPM version is invalid",
+                        remediation: "Correct and revalidate the mapping's minimum SwiftPM version."
+                    ))
                 }
             } else {
                 minimumVersion = nil
-                reasons.append("Registry mapping has no verified minimum SwiftPM version")
+                reasons.append(MigrationReason(
+                    code: .minimumVersionMissing,
+                    message: "Registry mapping has no verified minimum SwiftPM version",
+                    remediation: "Verify and record the first supported SwiftPM version in the registry."
+                ))
             }
         }
 
         if let resolvedVersion, let minimumVersion, resolvedVersion < minimumVersion {
-            reasons.append(
-                "Resolved version \(resolvedVersion) predates verified SwiftPM support at \(minimumVersion)"
-            )
+            reasons.append(MigrationReason(
+                code: .versionBelowMinimum,
+                message: "Resolved version \(resolvedVersion) predates verified SwiftPM support at \(minimumVersion)",
+                remediation: "Upgrade the CocoaPod to at least \(minimumVersion) or review the migration manually."
+            ))
         }
 
         if resolvedVersion != nil,
@@ -240,7 +375,11 @@ public struct MigrationClassifier: Sendable {
                 constraint: dependency.versionConstraint ?? "",
                 resolvedVersion: dependency.resolvedVersion
            ) == nil {
-            reasons.append("Version requirement cannot be represented safely")
+            reasons.append(MigrationReason(
+                code: .versionRequirementUnrepresentable,
+                message: "Version requirement cannot be represented safely",
+                remediation: "Use a supported literal CocoaPods version requirement and regenerate the plan."
+            ))
         }
 
         let stableReasons = deduplicated(reasons)
@@ -249,8 +388,11 @@ public struct MigrationClassifier: Sendable {
            let minimumVersion {
             return MigrationClassification(
                 category: .auto,
-                reasons: [
-                    "Verified exact registry mapping and target language support; resolved version \(resolvedVersion) meets minimum \(minimumVersion)",
+                reasonDetails: [
+                    MigrationReason(
+                        code: .verifiedAutomaticMigration,
+                        message: "Verified exact registry mapping and target language support; resolved version \(resolvedVersion) meets minimum \(minimumVersion)"
+                    ),
                 ]
             )
         }
@@ -261,13 +403,33 @@ public struct MigrationClassifier: Sendable {
         } else {
             category = .review
         }
-        return MigrationClassification(category: category, reasons: stableReasons)
+        return MigrationClassification(category: category, reasonDetails: stableReasons)
     }
 }
 
 private func deduplicated(_ values: [String]) -> [String] {
     var seen: Set<String> = []
     return values.filter { seen.insert($0).inserted }
+}
+
+private func deduplicated(_ values: [MigrationReason]) -> [MigrationReason] {
+    var seen: Set<String> = []
+    return values.filter { seen.insert($0.message).inserted }
+}
+
+private extension ProjectIntegration {
+    var reasonCode: MigrationReasonCode {
+        switch self {
+        case .carthage:
+            return .carthageIntegration
+        case .reactNative:
+            return .reactNativeIntegration
+        case .flutter:
+            return .flutterIntegration
+        case .capacitor:
+            return .capacitorIntegration
+        }
+    }
 }
 
 private struct RegistryMappingInfo: Sendable {

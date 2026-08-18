@@ -480,6 +480,123 @@ final class MigrationClassifierTests: XCTestCase {
         XCTAssertTrue(result.reasons.contains { $0.contains("cPlusPlus") })
     }
 
+    func testTypedReasonsPreserveLegacyMessagesAndStableOrder() {
+        var features = PodfileFeatures()
+        features.hasPostInstallHook = true
+        features.hasDynamicRuby = true
+        let result = MigrationClassifier().classify(
+            dependency: CocoaPodDependency(
+                name: "ExternalKit",
+                version: "1.2.3",
+                source: .git(url: "https://example.invalid/ExternalKit.git", ref: nil),
+                targets: []
+            ),
+            mapping: nil,
+            podfileFeatures: features
+        )
+
+        XCTAssertEqual(result.reasonDetails.map(\.message), result.reasons)
+        XCTAssertEqual(result.reasonDetails.map(\.code), [
+            .externalSourceWithoutMapping,
+            .registryMappingMissing,
+            .podfileInstallHook,
+            .podfileDynamicRuby,
+            .targetAttributionUnresolved,
+        ])
+        XCTAssertTrue(result.reasonDetails.dropLast().allSatisfy { $0.remediation != nil })
+    }
+
+    func testEveryNewRegistryIdentityIsAutoOnlyWithExactVerifiedEvidence() {
+        struct MappingCase {
+            let name: String
+            let product: String
+            let minimumVersion: String
+            let supportedLanguages: [SourceLanguage]
+            let targetProfile: TargetSourceProfile
+            let belowMinimum: String
+        }
+
+        let mixedProfile = TargetSourceProfile(
+            languages: [.swift, .objectiveC],
+            completeness: .complete
+        )
+        let firebaseNames = [
+            ("FirebaseAuth", "FirebaseAuth"),
+            ("Firebase/Auth", "FirebaseAuth"),
+            ("FirebaseFirestore", "FirebaseFirestore"),
+            ("Firebase/Firestore", "FirebaseFirestore"),
+            ("FirebaseRemoteConfig", "FirebaseRemoteConfig"),
+            ("Firebase/RemoteConfig", "FirebaseRemoteConfig"),
+            ("FirebaseStorage", "FirebaseStorage"),
+            ("Firebase/Storage", "FirebaseStorage"),
+        ]
+        let cases = [
+            MappingCase(
+                name: "lottie-ios",
+                product: "Lottie",
+                minimumVersion: "3.2.2",
+                supportedLanguages: [.swift],
+                targetProfile: swiftProfile,
+                belowMinimum: "3.2.1"
+            ),
+        ] + firebaseNames.map { name, product in
+            MappingCase(
+                name: name,
+                product: product,
+                minimumVersion: "11.12.0",
+                supportedLanguages: [.swift, .objectiveC],
+                targetProfile: mixedProfile,
+                belowMinimum: "11.11.0"
+            )
+        }
+
+        for testCase in cases {
+            let identity = testCase.name.split(separator: "/", maxSplits: 1).map(String.init)
+            let mapping = RegistryMapping(
+                pod: PodIdentifier(
+                    name: identity[0],
+                    subspec: identity.count == 2 ? identity[1] : nil
+                ),
+                swiftpm: SwiftPMPackageInfo(
+                    repository: testCase.name == "lottie-ios"
+                        ? "https://github.com/airbnb/lottie-ios"
+                        : "https://github.com/firebase/firebase-ios-sdk",
+                    products: [testCase.product],
+                    minimumVersion: testCase.minimumVersion,
+                    supportedConsumerLanguages: testCase.supportedLanguages
+                ),
+                migration: MigrationInfo(confidence: .verified)
+            )
+
+            let positive = MigrationClassifier().classify(
+                dependency: makeDependency(name: testCase.name, version: testCase.minimumVersion),
+                mapping: mapping,
+                targetSourceProfile: testCase.targetProfile
+            )
+            XCTAssertEqual(positive.category, .auto, testCase.name)
+            XCTAssertEqual(positive.reasonDetails.map(\.code), [.verifiedAutomaticMigration])
+
+            let negative = MigrationClassifier().classify(
+                dependency: makeDependency(name: testCase.name, version: testCase.belowMinimum),
+                mapping: mapping,
+                targetSourceProfile: testCase.targetProfile
+            )
+            XCTAssertEqual(negative.category, .review, testCase.name)
+            XCTAssertTrue(negative.reasonDetails.contains { $0.code == .versionBelowMinimum })
+
+            let failClosed = MigrationClassifier().classify(
+                dependency: makeDependency(name: testCase.name, version: testCase.minimumVersion),
+                mapping: mapping,
+                targetSourceProfile: TargetSourceProfile(
+                    languages: [.c],
+                    completeness: .complete
+                )
+            )
+            XCTAssertEqual(failClosed.category, .review, testCase.name)
+            XCTAssertTrue(failClosed.reasonDetails.contains { $0.code == .targetLanguageUnsupported })
+        }
+    }
+
     private func makeDependency(
         name: String = "SDWebImage",
         version: String

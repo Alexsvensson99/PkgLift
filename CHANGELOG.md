@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Stable `MigrationReasonCode` and `MigrationReason` details on analysis candidates and migration-plan entries while preserving legacy schema-1 `reasons`.
+- Mutation-free `analyze --fail-on blocked|unresolved|non-auto` CI policy that prints complete human, JSON, or portable-JSON output before returning status `1` for matching direct dependencies.
+- Static support for literal parenthesized `target('App') do` and `pod('Name')` calls, including supported literal version and `modular_headers: true` arguments.
+- An exact `lottie-ios` to `Lottie` mapping verified at `3.2.2`, plus exact direct and subspec mappings for Firebase Auth, Firestore, Remote Config, and Storage verified at `11.12.0`.
+- Three pinned read-only project cases for fastlane's CocoaPods example, FirebaseUI's Swift example, and Firebase's Legacy Auth Quickstart.
+
+### Changed
+- Human analysis prints every classification reason code, message, and available remediation; pinned pilot reports include deterministic reason-code counts.
+- The pinned pilot harness supports explicit project selection without a workspace and sparse partial checkouts for nested roots; canonical containment rejects symlink escapes, uploaded JSON uses the URL-secret-safe portable contract, and the complete read-only matrix now contains ten cases.
+
+### Security
+- New registry identities and parenthesized syntax remain `REVIEW` unless exact version, declaration, target, project-risk, and consumer-language evidence satisfies the unchanged `AUTO` and preflight gates.
+- `Firebase`, `Firebase/Core`, unknown Firebase subspecs, computed Ruby, raw control characters, non-ASCII whitespace, excessive scope nesting, multiline literals or continuations, unrecognized executable statements, CocoaPods DSL method shadowing, unsupported enclosing blocks, heredocs, extra options or expression tails, postfix conditions, semicolons, and unbalanced calls or scopes remain unmapped or non-automatic; only column-zero Ruby block comments and `__END__` data are ignored, so invalid indented markers cannot create automatic dependency evidence.
+
 ## [0.2.1] - 2026-08-16
 
 ### Added

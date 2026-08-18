@@ -146,6 +146,468 @@ struct PodfileParserTests {
         #expect(dependencies.map(\.name) == ["Team'sKit", "Quoted\"Kit"])
     }
 
+    @Test("Parse statically bounded parenthesized target and pod declarations")
+    func testParenthesizedLiteralDeclarations() throws {
+        let content = """
+        target('MyApp') do
+          pod('Alamofire')
+          pod("SnapKit", "~> 5.7")
+          pod('ModularPod', modular_headers: true)
+          pod('LegacyModularPod', '~> 1.0', :modular_headers => true)
+        end
+        """
+
+        let parsed = PodfileParser().parse(content: content)
+
+        #expect(parsed.features.hasDynamicRuby == false)
+        #expect(parsed.targets == ["MyApp"])
+        #expect(parsed.directDependencies.map(\.name) == [
+            "Alamofire",
+            "SnapKit",
+            "ModularPod",
+            "LegacyModularPod",
+        ])
+        for dependency in parsed.directDependencies {
+            #expect(dependency.source == .registry)
+            #expect(dependency.targets == ["MyApp"])
+            #expect(dependency.effectiveTargetAttribution.status == .exact)
+            #expect(dependency.hasLiteralMigrationProvenance)
+        }
+    }
+
+    @Test("Reject unsafe or unbalanced parenthesized declarations")
+    func testUnsafeParenthesizedDeclarationsFailClosed() throws {
+        let content = #"""
+        target('App') do
+          pod('ConditionalPod') if enabled
+          pod('VariablePod', version_name)
+          pod('ExternalOptionsPod', '~> 1.0', configurations: ['Debug'])
+          pod('ExtraArgumentPod', '~> 1.0', modular_headers: true, extra: true)
+          pod('ExternalPod', git: 'https://example.invalid/ExternalPod.git')
+          pod("Interpolated#{suffix}")
+          pod('SemicolonPod'); puts 'side effect'
+          pod('UnbalancedPod'
+        end
+        """#
+
+        let parsed = PodfileParser().parse(content: content)
+
+        #expect(parsed.features.hasDynamicRuby)
+        for name in [
+            "ConditionalPod",
+            "VariablePod",
+            "ExternalOptionsPod",
+            "ExtraArgumentPod",
+            "SemicolonPod",
+            "UnbalancedPod",
+        ] {
+            let dependency = try #require(parsed.directDependencies.first { $0.name == name })
+            #expect(dependency.source == .unknown)
+            #expect(dependency.hasLiteralMigrationProvenance == false)
+        }
+        #expect(parsed.directDependencies.contains { $0.name == "Interpolated#{suffix}" } == false)
+        let external = try #require(parsed.directDependencies.first { $0.name == "ExternalPod" })
+        #expect(external.source == .git(
+            url: "https://example.invalid/ExternalPod.git",
+            ref: nil
+        ))
+        #expect(external.hasLiteralMigrationProvenance == false)
+
+        let unbalancedTarget = PodfileParser().parse(content: """
+        target('Broken' do
+          pod('Alamofire')
+        end
+        """)
+        #expect(unbalancedTarget.features.hasDynamicRuby)
+        #expect(unbalancedTarget.directDependencies.first?.effectiveTargetAttribution.status == .unresolved)
+
+        let missingSeparator = PodfileParser().parse(content: """
+        target('Broken')do
+          pod('Alamofire')
+        end
+        """)
+        #expect(missingSeparator.features.hasDynamicRuby)
+        #expect(missingSeparator.directDependencies.first?.effectiveTargetAttribution.status == .unresolved)
+    }
+
+    @Test("Fail closed project-wide for external and extra pod options")
+    func testExternalAndExtraOptionsCreateProjectWideDynamicRisk() throws {
+        let parsed = PodfileParser().parse(content: """
+        target('App') do
+          pod('ConfiguredPod', configurations: ['Debug'])
+          pod('ExtraArgumentPod', '1.0.0', foo: true)
+          pod('ExternalPod', git: 'https://example.invalid/ExternalPod.git')
+          pod('SafePod', '1.0.0')
+        end
+        """)
+
+        #expect(parsed.features.hasDynamicRuby)
+        for name in ["ConfiguredPod", "ExtraArgumentPod"] {
+            let dependency = try #require(parsed.directDependencies.first { $0.name == name })
+            #expect(dependency.source == .unknown)
+            #expect(dependency.hasLiteralMigrationProvenance == false)
+        }
+        let external = try #require(parsed.directDependencies.first { $0.name == "ExternalPod" })
+        #expect(external.source == .git(url: "https://example.invalid/ExternalPod.git", ref: nil))
+        #expect(external.hasLiteralMigrationProvenance == false)
+        let safe = try #require(parsed.directDependencies.first { $0.name == "SafePod" })
+        #expect(safe.source == .registry)
+        #expect(safe.hasLiteralMigrationProvenance)
+    }
+
+    @Test("Fail closed for parenthesized declarations inside unsupported Ruby blocks")
+    func testParenthesizedDeclarationInsideUnknownBlockFailsClosed() throws {
+        let parsed = PodfileParser().parse(content: """
+        target('App') do
+          [].each do # zero iterations: Ruby never executes this body
+            pod('SDWebImage', '5.18.1', modular_headers: true)
+          end
+        end
+        """)
+
+        let dependency = try #require(
+            parsed.directDependencies.first { $0.name == "SDWebImage" }
+        )
+        #expect(parsed.features.hasDynamicRuby)
+        #expect(dependency.effectiveTargetAttribution.status == .partial)
+        #expect(dependency.hasLiteralMigrationProvenance == false)
+    }
+
+    @Test("Ignore non-executable Ruby comment and data regions")
+    func testNonExecutableRubyRegionsAreIgnored() {
+        let parsed = PodfileParser().parse(content: """
+        =begin documentation
+        target('Commented') do
+          pod('CommentedPod')
+        end
+        =end
+
+        target('App') do
+          pod('RealPod')
+        end
+
+        __END__
+        target('Data') do
+          pod('DataPod')
+        end
+        """)
+
+        #expect(parsed.features.hasDynamicRuby == false)
+        #expect(parsed.targets == ["App"])
+        #expect(parsed.directDependencies.map(\.name) == ["RealPod"])
+    }
+
+    @Test("Fail closed for quoted non-identifier heredocs and Ruby brace blocks")
+    func testAdditionalUnsupportedRubyFormsFailClosed() throws {
+        let heredoc = PodfileParser().parse(content: """
+        target('App') do
+          puts <<~'1'
+            pod('SDWebImage', '5.18.1', modular_headers: true)
+          1
+        end
+        """)
+        #expect(heredoc.features.hasDynamicRuby)
+
+        let braceBlock = PodfileParser().parse(content: """
+        target('App') do
+          [].each {
+            pod('SDWebImage', '5.18.1', modular_headers: true)
+          }
+        end
+        """)
+        let dependency = try #require(
+            braceBlock.directDependencies.first { $0.name == "SDWebImage" }
+        )
+        #expect(braceBlock.features.hasDynamicRuby)
+        #expect(dependency.hasLiteralMigrationProvenance)
+    }
+
+    @Test("Fail closed for multiline literals and continuation expressions")
+    func testCrossLineRubySyntaxFailsClosed() throws {
+        let podfiles = [
+            """
+            puts "
+            target('App') do
+              pod('SDWebImage', '5.18.1', modular_headers: true)
+            end
+            "
+            """,
+            """
+            target('App') do
+              false &&
+                pod('SDWebImage', '5.18.1', modular_headers: true)
+            end
+            """,
+            """
+            puts %q(
+            target('App') do
+              pod('SDWebImage', '5.18.1', modular_headers: true)
+            end
+            )
+            """,
+            """
+            defined?(
+              pod('SDWebImage', '5.18.1', modular_headers: true)
+            )
+            """,
+        ]
+
+        for podfile in podfiles {
+            let parsed = PodfileParser().parse(content: podfile)
+            #expect(parsed.features.hasDynamicRuby)
+            #expect(parsed.directDependencies.contains { $0.name == "SDWebImage" })
+        }
+    }
+
+    @Test("Fail closed for unmodeled executable statements")
+    func testUnmodeledExecutableStatementsFailClosed() {
+        let statements = [
+            "next",
+            "break",
+            "raise 'stop'",
+            "puts 'unmodeled call'",
+            "pod('GuardPod'); next",
+            "pod('GuardPod', false ? nil:abort)",
+            "pod('GuardPod'), :foo",
+            "pod('GuardPod', Kernel::abort)",
+            "pod('GuardPod', 08)",
+            "pod('GuardPod', foo: true)",
+            "source 'https://private.example.invalid/specs'",
+            "workspace 'OtherWorkspace'",
+            "project 'Other.xcodeproj'",
+        ]
+
+        for statement in statements {
+            let parsed = PodfileParser().parse(content: """
+            target('App') do
+              \(statement)
+              pod('SDWebImage', '5.18.1', modular_headers: true)
+            end
+            """)
+
+            #expect(parsed.features.hasDynamicRuby)
+            #expect(parsed.directDependencies.contains { $0.name == "SDWebImage" })
+        }
+    }
+
+    @Test("Fail closed without recursive parsing for deeply nested extra options")
+    func testDeeplyNestedExtraOptionsDoNotExhaustParserStack() {
+        let depth = 10_000
+        let nestedLiteral = String(repeating: "[", count: depth)
+            + "nil"
+            + String(repeating: "]", count: depth)
+        let parsed = PodfileParser().parse(content: """
+        target('App') do
+          pod('GuardPod', \(nestedLiteral))
+          pod('SDWebImage', '5.18.1', modular_headers: true)
+        end
+        """)
+
+        #expect(parsed.features.hasDynamicRuby)
+        #expect(parsed.directDependencies.contains { $0.name == "GuardPod" })
+        #expect(parsed.directDependencies.contains { $0.name == "SDWebImage" })
+    }
+
+    @Test("Reject raw control characters across active physical lines")
+    func testRawControlCharactersFailClosed() {
+        let podfiles = [
+            """
+            target('App') do
+              pod('Guard\u{0}Pod')
+              pod('SDWebImage', '5.18.1', modular_headers: true)
+            end
+            """,
+            """
+            source 'https://example.invalid/specs\u{0}'
+            target('App') do
+              pod('SDWebImage', '5.18.1', modular_headers: true)
+            end
+            """,
+            """
+            target('App') do # unsafe\u{0}comment
+              pod('SDWebImage', '5.18.1', modular_headers: true)
+            end
+            """,
+        ]
+
+        for podfile in podfiles {
+            let parsed = PodfileParser().parse(content: podfile)
+            #expect(parsed.features.hasDynamicRuby)
+            #expect(parsed.directDependencies.contains { $0.name == "SDWebImage" })
+            #expect(parsed.directDependencies.contains { $0.name == "Guard\u{0}Pod" } == false)
+        }
+    }
+
+    @Test("Reject non-ASCII whitespace at Ruby syntax boundaries")
+    func testUnicodeWhitespaceFailsClosed() throws {
+        let parsed = PodfileParser().parse(content: """
+        target('App')\u{00A0}do
+          pod('SDWebImage', '5.18.1', modular_headers: true)
+        end
+        """)
+        let dependency = try #require(
+            parsed.directDependencies.first { $0.name == "SDWebImage" }
+        )
+
+        #expect(parsed.features.hasDynamicRuby)
+        #expect(dependency.effectiveTargetAttribution.status == .unresolved)
+
+        let tabSeparated = PodfileParser().parse(content: """
+        target('App')\tdo
+          pod('SDWebImage', '5.18.1', modular_headers: true)
+        end
+        """)
+        #expect(tabSeparated.features.hasDynamicRuby == false)
+        #expect(tabSeparated.directDependencies.first?.effectiveTargetAttribution.status == .exact)
+    }
+
+    @Test("Do not split Ruby comments at Unicode line separators")
+    func testUnicodeLineSeparatorsCannotCreateSyntheticDeclarations() {
+        for separator in ["\u{0085}", "\u{2028}", "\u{2029}"] {
+            let parsed = PodfileParser().parse(content:
+                "# ignored\(separator)target('App') do\(separator)"
+                    + "pod('SDWebImage', '5.18.1', modular_headers: true)\(separator)end\n"
+            )
+
+            #expect(parsed.features.hasDynamicRuby)
+            #expect(parsed.targets.isEmpty)
+            #expect(parsed.directDependencies.isEmpty)
+        }
+    }
+
+    @Test("Keep non-ASCII embedded-document closers inside the Ruby comment")
+    func testUnicodeEmbeddedDocumentCloserCannotCreateSyntheticDeclarations() {
+        let parsed = PodfileParser().parse(content:
+            "=begin\n"
+                + "=end\u{00A0}\n"
+                + "target('App') do\n"
+                + "  pod('SDWebImage', '5.18.1', modular_headers: true)\n"
+                + "end\n"
+                + "=end\n"
+        )
+
+        #expect(parsed.features.hasDynamicRuby == false)
+        #expect(parsed.targets.isEmpty)
+        #expect(parsed.directDependencies.isEmpty)
+    }
+
+    @Test("Treat CRLF as Ruby physical line endings")
+    func testCRLFPhysicalLinesPreserveStaticEvidence() throws {
+        let parsed = PodfileParser().parse(content:
+            "target('App') do\r\n"
+                + "  pod('SDWebImage', '5.18.1', modular_headers: true)\r\n"
+                + "end\r\n"
+        )
+        let dependency = try #require(
+            parsed.directDependencies.first { $0.name == "SDWebImage" }
+        )
+
+        #expect(parsed.features.hasDynamicRuby == false)
+        #expect(parsed.targets == ["App"])
+        #expect(dependency.effectiveTargetAttribution.status == .exact)
+        #expect(dependency.effectiveTargetAttribution.targets == ["App"])
+    }
+
+    @Test("Fail closed without recursive resolution for excessive target nesting")
+    func testDeeplyNestedTargetsDoNotExhaustParserStack() throws {
+        let depth = 10_000
+        var lines: [String] = []
+        lines.reserveCapacity(depth * 4 + 1)
+        for index in 0..<depth {
+            lines.append("target('T\(index)') do")
+            lines.append("puts 'unmodeled'")
+            lines.append("pod('Guard\(index)')")
+        }
+        lines.append("pod('SDWebImage', '5.18.1', modular_headers: true)")
+        lines.append(contentsOf: repeatElement("end", count: depth))
+
+        let parsed = PodfileParser().parse(content: lines.joined(separator: "\n"))
+        let dependency = try #require(
+            parsed.directDependencies.first { $0.name == "SDWebImage" }
+        )
+
+        #expect(parsed.features.hasDynamicRuby)
+        #expect(parsed.targets.count == depth)
+        #expect(parsed.directDependencies.count == depth + 1)
+        #expect(dependency.effectiveTargetAttribution.status == .unresolved)
+    }
+
+    @Test("Reject unterminated block comments and unbalanced Ruby scopes")
+    func testUnbalancedRubyStructureFailsClosed() {
+        let missingEnd = PodfileParser().parse(content: """
+        target('App') do
+          pod('SDWebImage')
+        """)
+        #expect(missingEnd.features.hasDynamicRuby)
+
+        let extraEnd = PodfileParser().parse(content: """
+        target('App') do
+          pod('SDWebImage')
+        end
+        end
+        """)
+        #expect(extraEnd.features.hasDynamicRuby)
+
+        let unterminatedComment = PodfileParser().parse(content: """
+        =begin documentation
+        target('App') do
+          pod('SDWebImage')
+        end
+        """)
+        #expect(unterminatedComment.features.hasDynamicRuby)
+        #expect(unterminatedComment.directDependencies.isEmpty)
+
+        let indentedComment = PodfileParser().parse(content: """
+        target('App') do
+          =begin documentation
+          ignored
+          =end
+          pod('SDWebImage')
+        end
+        """)
+        #expect(indentedComment.features.hasDynamicRuby)
+        #expect(indentedComment.directDependencies.contains { $0.name == "SDWebImage" })
+
+        let indentedData = PodfileParser().parse(content: """
+        target('App') do
+          __END__
+          pod('SDWebImage')
+        end
+        """)
+        #expect(indentedData.features.hasDynamicRuby)
+        #expect(indentedData.directDependencies.contains { $0.name == "SDWebImage" })
+    }
+
+    @Test("Reject helpers that shadow modeled CocoaPods DSL methods")
+    func testModeledDSLHelperShadowingFailsClosed() {
+        for helperName in ["pod", "target", "abstract_target"] {
+            let parsed = PodfileParser().parse(content: """
+            def \(helperName)
+            end
+
+            target('App') do
+              pod('SDWebImage', '5.18.1', modular_headers: true)
+            end
+            """)
+
+            #expect(parsed.features.hasDynamicRuby)
+            #expect(parsed.directDependencies.contains { $0.name == "SDWebImage" })
+        }
+    }
+
+    @Test("Heredoc syntax prevents automatic static evidence")
+    func testHeredocFailsClosed() {
+        let parsed = PodfileParser().parse(content: """
+        target('App') do
+          puts <<~PODS
+            pod('SDWebImage')
+          PODS
+        end
+        """)
+
+        #expect(parsed.features.hasDynamicRuby)
+    }
+
     @Test("Preserve literal declaration targets and external source in a Ruby-helper Podfile")
     func testBarkLikeDeclarationAttribution() throws {
         let fixture = try #require(Bundle.module.url(
@@ -378,7 +840,7 @@ struct PodfileParserTests {
     }
 
     @Test("Reject unrepresentable pod syntax per dependency")
-    func testUnsafePodOptionsDoNotDegradeSafeDeclarations() throws {
+    func testUnsafePodOptionsRemainPerDependencyWhileReachabilityRisksAreGlobal() throws {
         let content = """
         target 'App' do
           pod 'SafePod'
@@ -397,7 +859,7 @@ struct PodfileParserTests {
         """
 
         let parsed = PodfileParser().parse(content: content)
-        #expect(parsed.features.hasDynamicRuby == false)
+        #expect(parsed.features.hasDynamicRuby)
 
         for name in ["SafePod", "VersionedPod", "ModularPod", "LegacyModularPod"] {
             let dependency = try #require(parsed.directDependencies.first { $0.name == name })
