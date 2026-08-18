@@ -12,6 +12,11 @@ public struct PodfileParser: Sendable {
 
     public init() {}
 
+    private static let modeledDSLHelperNames: Set<String> = [
+        "pod", "target", "abstract_target", "platform", "source", "workspace", "project",
+    ]
+    private static let maxStaticScopeNestingDepth = 256
+
     /// Parses a Podfile from file URL.
     public func parse(fileURL: URL) throws -> (features: PodfileFeatures, directDependencies: [CocoaPodDependency], targets: [String]) {
         let content: String
@@ -28,10 +33,21 @@ public struct PodfileParser: Sendable {
         var features = PodfileFeatures()
         var directDependencies: [CocoaPodDependency] = []
         var targets: [String] = []
+        var seenTargets: Set<String> = []
         var scopes: [StaticScope] = []
 
-        let lines = content.components(separatedBy: .newlines)
+        let lexicalAnalysis = sanitizedLinesForStaticAnalysis(
+            rubyPhysicalLines(in: content)
+        )
+        let lines = lexicalAnalysis.lines
+        if lexicalAnalysis.hasUnsupportedStructure {
+            features.hasDynamicRuby = true
+        }
         let targetAnalysis = analyzeTargetInheritance(lines: lines)
+        if targetAnalysis.hasUnsupportedNesting {
+            features.hasDynamicRuby = true
+        }
+        let usesConservativeFlatParsing = targetAnalysis.hasUnsupportedNesting
         let helperAnalysis = analyzeHelpers(lines: lines, targetAnalysis: targetAnalysis)
 
         for (offset, line) in lines.enumerated() {
@@ -77,12 +93,9 @@ public struct PodfileParser: Sendable {
                 "def ", "if ", "unless ", "case ", "for ", "while ", "until ",
                 "class ", "module ", "begin", "plugin ", "install!",
             ]
-            let hasUnknownBlock = trimmed.range(
-                of: #"\bdo(?:\s*\|.*\|)?\s*$"#,
-                options: .regularExpression
-            ) != nil
-                && !trimmed.hasPrefix("target ")
-                && !trimmed.hasPrefix("abstract_target ")
+            let hasUnknownBlock = opensGenericBlock(trimmed)
+                && PodfileStaticSyntax.targetName(from: trimmed) == nil
+                && PodfileStaticSyntax.abstractTargetName(from: trimmed) == nil
                 && !trimmed.hasPrefix("post_install ")
                 && !trimmed.hasPrefix("pre_install ")
             let hasVariableAssignment = trimmed.range(
@@ -94,9 +107,15 @@ public struct PodfileParser: Sendable {
                 return prefix != "def "
                     || !helperAnalysis.eligibleDefinitionLines.contains(offset)
             })
+            let hasUnmodeledStatement = !isStaticallyModeledStatement(
+                trimmed,
+                line: offset,
+                helperAnalysis: helperAnalysis
+            )
             if hasDynamicPrefix
                 || hasUnknownBlock
                 || hasVariableAssignment
+                || hasUnmodeledStatement
                 || helperAnalysis.dynamicLines.contains(offset)
                 || trimmed.contains("require ")
                 || trimmed.contains("#{")
@@ -104,6 +123,8 @@ public struct PodfileParser: Sendable {
                 || trimmed.contains("system(")
                 || trimmed.contains("exec(")
                 || trimmed.contains("%x{")
+                || containsHeredocOpener(trimmed)
+                || containsUnsupportedBraceSyntax(trimmed)
                 || trimmed.contains("`") {
                 features.hasDynamicRuby = true
             }
@@ -113,33 +134,43 @@ public struct PodfileParser: Sendable {
             }
 
             if isEnd(trimmed) {
-                if !scopes.isEmpty {
+                if usesConservativeFlatParsing {
+                    continue
+                } else if scopes.isEmpty {
+                    features.hasDynamicRuby = true
+                } else {
                     scopes.removeLast()
                 }
                 continue
             }
 
             if let targetName = targetName(from: trimmed, keyword: "target") {
-                scopes.append(.target(targetName, line: offset))
-                if !targets.contains(targetName) {
+                if !usesConservativeFlatParsing {
+                    scopes.append(.target(targetName, line: offset))
+                }
+                if seenTargets.insert(targetName).inserted {
                     targets.append(targetName)
                 }
                 continue
             }
 
             if let abstractTargetName = targetName(from: trimmed, keyword: "abstract_target") {
-                scopes.append(.abstractTarget(abstractTargetName))
+                if !usesConservativeFlatParsing {
+                    scopes.append(.abstractTarget(abstractTargetName))
+                }
                 continue
             }
 
             if trimmed.hasPrefix("def ") {
-                if let helperName = firstCapture(
-                    in: trimmed,
-                    pattern: #"^def\s+([A-Za-z_]\w*[!?=]?)"#
-                ) {
-                    scopes.append(.rubyHelper(helperName))
-                } else {
-                    scopes.append(.dynamic)
+                if !usesConservativeFlatParsing {
+                    if let helperName = firstCapture(
+                        in: trimmed,
+                        pattern: #"^def\s+([A-Za-z_]\w*[!?=]?)"#
+                    ) {
+                        scopes.append(.rubyHelper(helperName))
+                    } else {
+                        scopes.append(.dynamic)
+                    }
                 }
                 continue
             }
@@ -153,19 +184,24 @@ public struct PodfileParser: Sendable {
                 let source = isRepresentablePodDeclaration(trimmed) || parsedSource != .registry
                     ? parsedSource
                     : .unknown
-                let resolution = targetResolution(
-                    for: scopes,
-                    targetAnalysis: targetAnalysis
-                )
+                let resolution = usesConservativeFlatParsing
+                    ? StaticTargetResolution(targets: [], hasUnresolvedTargets: true)
+                    : targetResolution(for: scopes, targetAnalysis: targetAnalysis)
                 let exactTarget = !resolution.hasUnresolvedTargets && resolution.targets.count == 1
                     ? resolution.targets.first
                     : nil
-                let declaration = declarationEvidence(
-                    line: offset + 1,
-                    scopes: scopes,
-                    source: source,
-                    targetName: exactTarget
-                )
+                let declaration = usesConservativeFlatParsing
+                    ? PodfileDeclaration(
+                        line: offset + 1,
+                        scope: .dynamicScope,
+                        source: source
+                    )
+                    : declarationEvidence(
+                        line: offset + 1,
+                        scopes: scopes,
+                        source: source,
+                        targetName: exactTarget
+                    )
                 let targetNames = resolution.targets
                 let attribution = targetAttribution(
                     for: resolution,
@@ -182,9 +218,13 @@ public struct PodfileParser: Sendable {
                 ))
             }
 
-            if opensGenericBlock(trimmed) {
+            if !usesConservativeFlatParsing && opensGenericBlock(trimmed) {
                 scopes.append(.dynamic)
             }
+        }
+
+        if !scopes.isEmpty {
+            features.hasDynamicRuby = true
         }
 
         directDependencies = directDependencies.map { dependency in
@@ -225,54 +265,79 @@ public struct PodfileParser: Sendable {
     private func analyzeTargetInheritance(lines: [String]) -> TargetAnalysis {
         var nodes: [Int: TargetNode] = [:]
         var scopes: [TargetStructureScope] = []
+        var activeTargetLines: [Int] = []
+        var uncertainScopeDepth = 0
+        var scopeDepth = 0
+        var hasUnsupportedNesting = false
 
         for (offset, line) in lines.enumerated() {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty || trimmed.hasPrefix("#") { continue }
 
             if isEnd(trimmed) {
-                if !scopes.isEmpty { scopes.removeLast() }
+                if let removed = scopes.popLast() {
+                    scopeDepth -= 1
+                    switch removed {
+                    case .target(let line):
+                        if activeTargetLines.last == line {
+                            activeTargetLines.removeLast()
+                        }
+                    case .dynamic, .opaque:
+                        uncertainScopeDepth -= 1
+                    case .abstractTarget:
+                        break
+                    }
+                }
                 continue
             }
 
             if trimmed.hasPrefix("def ") {
+                let newDepth = scopeDepth + 1
+                if newDepth > Self.maxStaticScopeNestingDepth {
+                    hasUnsupportedNesting = true
+                }
                 scopes.append(.opaque)
+                scopeDepth = newDepth
+                uncertainScopeDepth += 1
                 continue
             }
 
             if let name = targetName(from: trimmed, keyword: "target") {
-                let parent = nearestTargetLine(in: scopes)
-                let isProven = !scopes.contains(where: { scope in
-                    switch scope {
-                    case .dynamic, .opaque:
-                        return true
-                    case .target, .abstractTarget:
-                        return false
-                    }
-                })
+                let parent = activeTargetLines.last
+                let newDepth = scopeDepth + 1
+                let isSupportedDepth = newDepth <= Self.maxStaticScopeNestingDepth
+                if !isSupportedDepth {
+                    hasUnsupportedNesting = true
+                }
                 nodes[offset] = TargetNode(
                     name: name,
                     parentLine: parent,
-                    isProven: isProven
+                    isProven: uncertainScopeDepth == 0 && isSupportedDepth,
+                    uncertainScopeDepthAtDeclaration: uncertainScopeDepth
                 )
                 scopes.append(.target(offset))
+                activeTargetLines.append(offset)
+                scopeDepth = newDepth
                 continue
             }
 
             if targetName(from: trimmed, keyword: "abstract_target") != nil {
+                let newDepth = scopeDepth + 1
+                if newDepth > Self.maxStaticScopeNestingDepth {
+                    hasUnsupportedNesting = true
+                }
                 scopes.append(.abstractTarget)
+                scopeDepth = newDepth
                 continue
             }
 
             if trimmed.hasPrefix("inherit!") {
-                guard let targetLine = nearestTargetLine(in: scopes),
+                guard let targetLine = activeTargetLines.last,
                       var node = nodes[targetLine] else {
                     continue
                 }
-                let hasUncertainScope = hasUncertainScope(
-                    afterTargetLine: targetLine,
-                    scopes: scopes
-                )
+                let hasUncertainScope = uncertainScopeDepth
+                    > node.uncertainScopeDepthAtDeclaration
                 let mode: TargetInheritance
                 if hasUncertainScope {
                     mode = .unknown
@@ -294,15 +359,22 @@ public struct PodfileParser: Sendable {
                 continue
             }
 
-            if trimmed.hasPrefix("target ") || trimmed.hasPrefix("abstract_target ") {
-                if let targetLine = nearestTargetLine(in: scopes), var node = nodes[targetLine] {
+            if PodfileStaticSyntax.isTargetDeclaration(trimmed)
+                || trimmed.hasPrefix("abstract_target ") {
+                if let targetLine = activeTargetLines.last, var node = nodes[targetLine] {
                     node.hasUnknownDescendants = true
                     nodes[targetLine] = node
                 }
             }
 
             if opensGenericBlock(trimmed) {
+                let newDepth = scopeDepth + 1
+                if newDepth > Self.maxStaticScopeNestingDepth {
+                    hasUnsupportedNesting = true
+                }
                 scopes.append(.dynamic)
+                scopeDepth = newDepth
+                uncertainScopeDepth += 1
             }
         }
 
@@ -316,13 +388,15 @@ public struct PodfileParser: Sendable {
             childrenByParent[parent] = childrenByParent[parent]?.sorted()
         }
 
-        var cache: [Int: StaticTargetResolution] = [:]
-        func resolve(_ line: Int) -> StaticTargetResolution {
-            if let cached = cache[line] { return cached }
+        var resolutions: [Int: StaticTargetResolution] = [:]
+        for line in nodes.keys.sorted(by: >) {
             guard let node = nodes[line], node.isProven else {
-                return StaticTargetResolution(targets: [], hasUnresolvedTargets: true)
+                resolutions[line] = StaticTargetResolution(
+                    targets: [],
+                    hasUnresolvedTargets: true
+                )
+                continue
             }
-
             var targets: Set<String> = [node.name]
             var hasUnresolvedTargets = node.hasUnknownDescendants
             for childLine in childrenByParent[line] ?? [] {
@@ -332,7 +406,10 @@ public struct PodfileParser: Sendable {
                 }
                 switch child.explicitInheritance ?? .inherits {
                 case .inherits:
-                    let childResolution = resolve(childLine)
+                    guard let childResolution = resolutions[childLine] else {
+                        hasUnresolvedTargets = true
+                        continue
+                    }
                     targets.formUnion(childResolution.targets)
                     hasUnresolvedTargets = hasUnresolvedTargets
                         || childResolution.hasUnresolvedTargets
@@ -343,42 +420,15 @@ public struct PodfileParser: Sendable {
                 }
             }
 
-            let resolution = StaticTargetResolution(
+            resolutions[line] = StaticTargetResolution(
                 targets: Array(targets).sorted(),
                 hasUnresolvedTargets: hasUnresolvedTargets
             )
-            cache[line] = resolution
-            return resolution
         }
-
-        for line in nodes.keys.sorted() {
-            _ = resolve(line)
-        }
-        return TargetAnalysis(resolutionsByLine: cache)
-    }
-
-    private func nearestTargetLine(in scopes: [TargetStructureScope]) -> Int? {
-        scopes.reversed().compactMap { scope -> Int? in
-            if case .target(let line) = scope { return line }
-            return nil
-        }.first
-    }
-
-    private func hasUncertainScope(
-        afterTargetLine targetLine: Int,
-        scopes: [TargetStructureScope]
-    ) -> Bool {
-        for scope in scopes.reversed() {
-            switch scope {
-            case .target(let line):
-                if line == targetLine { return false }
-            case .dynamic, .opaque:
-                return true
-            case .abstractTarget:
-                continue
-            }
-        }
-        return true
+        return TargetAnalysis(
+            resolutionsByLine: resolutions,
+            hasUnsupportedNesting: hasUnsupportedNesting
+        )
     }
 
     /// Performs a deliberately small static analysis of Ruby helpers. It does
@@ -387,35 +437,51 @@ public struct PodfileParser: Sendable {
         lines: [String],
         targetAnalysis: TargetAnalysis
     ) -> HelperAnalysis {
+        guard !targetAnalysis.hasUnsupportedNesting else {
+            return HelperAnalysis(
+                resolutions: [:],
+                eligibleDefinitionLines: [],
+                dynamicLines: []
+            )
+        }
+
         var definitions: [HelperDefinition] = []
         var executableLines: [HelperExecutableLine] = []
         var scopes: [HelperScope] = []
+        var activeHelperDefinitions: [Int] = []
 
         for (offset, line) in lines.enumerated() {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty || trimmed.hasPrefix("#") { continue }
 
             if isEnd(trimmed) {
-                if !scopes.isEmpty {
-                    scopes.removeLast()
+                if let removed = scopes.popLast(), case .helper(let index) = removed,
+                   activeHelperDefinitions.last == index {
+                    activeHelperDefinitions.removeLast()
                 }
                 continue
             }
 
             if let target = targetName(from: trimmed, keyword: "target") {
-                markContainingHelperUnsupported(scopes: scopes, definitions: &definitions)
+                if let index = activeHelperDefinitions.last {
+                    definitions[index].hasUnsupportedBody = true
+                }
                 scopes.append(.target(target, line: offset))
                 continue
             }
 
             if let abstractTarget = targetName(from: trimmed, keyword: "abstract_target") {
-                markContainingHelperUnsupported(scopes: scopes, definitions: &definitions)
+                if let index = activeHelperDefinitions.last {
+                    definitions[index].hasUnsupportedBody = true
+                }
                 scopes.append(.abstractTarget(abstractTarget))
                 continue
             }
 
             if trimmed.hasPrefix("def ") {
-                markContainingHelperUnsupported(scopes: scopes, definitions: &definitions)
+                if let index = activeHelperDefinitions.last {
+                    definitions[index].hasUnsupportedBody = true
+                }
                 let name = firstCapture(
                     in: trimmed,
                     pattern: #"^def\s+([A-Za-z_]\w*)"#
@@ -433,6 +499,7 @@ public struct PodfileParser: Sendable {
                     hasUnsupportedBody: false
                 ))
                 scopes.append(.helper(definitionIndex))
+                activeHelperDefinitions.append(definitionIndex)
                 continue
             }
 
@@ -444,7 +511,9 @@ public struct PodfileParser: Sendable {
                 continue
             }
 
-            markContainingHelperUnsupported(scopes: scopes, definitions: &definitions)
+            if let index = activeHelperDefinitions.last {
+                definitions[index].hasUnsupportedBody = true
+            }
             executableLines.append(HelperExecutableLine(
                 line: offset,
                 code: rubyCodeBeforeComment(trimmed),
@@ -511,6 +580,7 @@ public struct PodfileParser: Sendable {
             let matching = definitionsByName[helperName] ?? []
             let indices = matching.map { $0.1 }
             let eligible = indices.count == 1
+                && !Self.modeledDSLHelperNames.contains(helperName)
                 && indices.allSatisfy { index in
                     let definition = definitions[index]
                     return definition.isParameterless
@@ -577,19 +647,6 @@ public struct PodfileParser: Sendable {
         )
     }
 
-    private func markContainingHelperUnsupported(
-        scopes: [HelperScope],
-        definitions: inout [HelperDefinition]
-    ) {
-        guard let index = scopes.reversed().compactMap({ scope -> Int? in
-            if case .helper(let index) = scope { return index }
-            return nil
-        }).first else {
-            return
-        }
-        definitions[index].hasUnsupportedBody = true
-    }
-
     private func isStaticHelperDirective(_ line: String) -> Bool {
         let noArgumentPatterns = [
             #"^use_modular_headers!\s*(?:\(\s*\))?\s*(?:#.*)?$"#,
@@ -610,6 +667,63 @@ public struct PodfileParser: Sendable {
         return argumentPatterns.contains(where: { pattern in
             line.range(of: pattern, options: .regularExpression) != nil
         })
+    }
+
+    /// Returns true only for complete physical-line statements whose effect on
+    /// declaration reachability is explicitly modeled by this parser. Unknown
+    /// executable Ruby must fail closed: even a standalone `next`, `raise`, or
+    /// arbitrary method call can prevent a later literal `pod` from running.
+    private func isStaticallyModeledStatement(
+        _ line: String,
+        line offset: Int,
+        helperAnalysis: HelperAnalysis
+    ) -> Bool {
+        // A dependency can still be reported and target-attributed when its
+        // options are unsupported. It may prove later Ruby reachability only
+        // when the whole declaration is exactly representable; unknown or
+        // extra options can raise before subsequent pod calls execute.
+        let isReachabilitySafePodDeclaration = isLiteralPodDeclaration(line)
+            && isRepresentablePodDeclaration(line)
+        if PodfileStaticSyntax.closesBlock(line)
+            || PodfileStaticSyntax.targetName(from: line) != nil
+            || PodfileStaticSyntax.abstractTargetName(from: line) != nil
+            || isReachabilitySafePodDeclaration
+            || helperAnalysis.eligibleDefinitionLines.contains(offset)
+            || isStaticHelperDirective(line) {
+            return true
+        }
+
+        let integrationDirectives = [
+            "use_react_native!",
+            "flutter_install_all_ios_pods",
+            "capacitor_pods",
+        ]
+        if integrationDirectives.contains(where: {
+            PodfileStaticSyntax.isDirectiveInvocation($0, in: line)
+        }) {
+            return true
+        }
+
+        if line.hasPrefix("post_install ") || line.hasPrefix("pre_install ") {
+            return true
+        }
+
+        let staticMetadataPatterns = [
+            #"^platform\s+:[A-Za-z_]\w*(?:\s*,\s*['"][A-Za-z0-9._-]+['"])?\s*(?:#.*)?$"#,
+            #"^inherit!\s+:(?:search_paths|none|complete)\s*(?:#.*)?$"#,
+        ]
+        if staticMetadataPatterns.contains(where: {
+            line.range(of: $0, options: .regularExpression) != nil
+        }) {
+            return true
+        }
+
+        guard let helperName = simpleHelperInvocationName(
+            from: rubyCodeBeforeComment(line)
+        ) else {
+            return false
+        }
+        return helperAnalysis.resolutions[helperName] != nil
     }
 
     private func helperDispatchEvidence(in code: String) -> HelperDispatchEvidence {
@@ -712,24 +826,7 @@ public struct PodfileParser: Sendable {
             return false
         }
 
-        guard let expression = try? NSRegularExpression(pattern: #"[A-Za-z_]\w*"#) else {
-            return false
-        }
-        let range = NSRange(code.startIndex..<code.endIndex, in: code)
-        return expression.matches(in: code, range: range).allSatisfy { match in
-            guard let tokenRange = Range(match.range, in: code) else { return false }
-            let token = String(code[tokenRange])
-            if token == "pod" || token == "true" || token == "false" || token == "nil" {
-                return true
-            }
-            let preceding = tokenRange.lowerBound == code.startIndex
-                ? nil
-                : code[code.index(before: tokenRange.lowerBound)]
-            let following = tokenRange.upperBound == code.endIndex
-                ? nil
-                : code[tokenRange.upperBound]
-            return preceding == ":" || following == ":"
-        }
+        return true
     }
 
     private func isRepresentablePodDeclaration(_ line: String) -> Bool {
@@ -1057,7 +1154,8 @@ public struct PodfileParser: Sendable {
     }
 
     private func opensGenericBlock(_ line: String) -> Bool {
-        if line.range(
+        let code = rubyCodeBeforeComment(line)
+        if code.range(
             of: #"\bdo(?:\s*\|.*\|)?\s*$"#,
             options: .regularExpression
         ) != nil {
@@ -1067,8 +1165,171 @@ public struct PodfileParser: Sendable {
             "if ", "unless ", "case ", "for ", "while ", "until ",
             "class ", "module ", "begin",
         ]
-        return prefixes.contains(where: { line.hasPrefix($0) })
+        return prefixes.contains(where: { code.hasPrefix($0) })
     }
+
+    /// Ruby comments and physical statements end at ASCII LF, optionally
+    /// preceded by CR. Foundation's broad `.newlines` character set also
+    /// splits Unicode separators that Ruby keeps inside the current line;
+    /// doing so could turn commented text into synthetic executable lines.
+    private func rubyPhysicalLines(in content: String) -> [String] {
+        content.unicodeScalars.split(
+            separator: "\n",
+            omittingEmptySubsequences: false
+        ).map { scalars in
+            let line = String(scalars)
+            guard line.hasSuffix("\r") else { return line }
+            return String(line.dropLast())
+        }
+    }
+
+    private func containsHeredocOpener(_ line: String) -> Bool {
+        rubyCodeOutsideStrings(rubyCodeBeforeComment(line)).contains("<<")
+    }
+
+    private func containsUnsupportedBraceSyntax(_ line: String) -> Bool {
+        let code = rubyCodeOutsideStrings(rubyCodeBeforeComment(line))
+        return code.contains("{") || code.contains("}")
+    }
+
+    private func sanitizedLinesForStaticAnalysis(_ lines: [String]) -> LexicalAnalysis {
+        var sanitized: [String] = []
+        sanitized.reserveCapacity(lines.count)
+        var inBlockComment = false
+        var reachedDataSection = false
+        var hasUnsupportedStructure = false
+
+        for line in lines {
+            if reachedDataSection {
+                sanitized.append("")
+                continue
+            }
+            if inBlockComment {
+                if isEmbeddedDocumentDirective(line, keyword: "end") {
+                    inBlockComment = false
+                }
+                sanitized.append("")
+                continue
+            }
+            if PodfileStaticSyntax.containsUnsupportedLexicalCharacter(line) {
+                hasUnsupportedStructure = true
+            }
+            if isEmbeddedDocumentDirective(line, keyword: "begin") {
+                inBlockComment = true
+                sanitized.append("")
+                continue
+            }
+            if isEmbeddedDocumentDirective(line, keyword: "end") {
+                hasUnsupportedStructure = true
+                sanitized.append("")
+                continue
+            }
+            if line.range(
+                of: #"^__END__(?:\s*#.*)?$"#,
+                options: .regularExpression
+            ) != nil {
+                reachedDataSection = true
+                sanitized.append("")
+                continue
+            }
+            if hasUnsupportedCrossLineRubySyntax(line) {
+                hasUnsupportedStructure = true
+            }
+            sanitized.append(line)
+        }
+
+        return LexicalAnalysis(
+            lines: sanitized,
+            hasUnsupportedStructure: hasUnsupportedStructure || inBlockComment
+        )
+    }
+
+    /// PkgLift only proves declarations whose complete Ruby syntax is present
+    /// on one physical line. Ruby's multiline literals and continuation rules
+    /// can otherwise make a later `target` or `pod` line non-executable while
+    /// still looking like an independent declaration to the static parser.
+    private func hasUnsupportedCrossLineRubySyntax(_ line: String) -> Bool {
+        let code = rubyCodeBeforeComment(line)
+        guard !code.isEmpty else { return false }
+
+        if hasUnterminatedQuotedLiteral(code) {
+            return true
+        }
+
+        let codeOutsideStrings = rubyCodeOutsideStrings(code)
+        if codeOutsideStrings.contains(";")
+            || codeOutsideStrings.contains("%")
+            || codeOutsideStrings.contains("/") {
+            return true
+        }
+
+        var parenthesisDepth = 0
+        var bracketDepth = 0
+        for character in codeOutsideStrings {
+            switch character {
+            case "(":
+                parenthesisDepth += 1
+            case ")":
+                parenthesisDepth -= 1
+            case "[":
+                bracketDepth += 1
+            case "]":
+                bracketDepth -= 1
+            default:
+                break
+            }
+            if parenthesisDepth < 0 || bracketDepth < 0 {
+                return true
+            }
+        }
+        if parenthesisDepth != 0 || bracketDepth != 0 {
+            return true
+        }
+
+        return code.range(
+            of: #"(?:\\|&&|\|\||\band\b|\bor\b|[+\-*\/%=&|^<>?:,.])\s*$"#,
+            options: .regularExpression
+        ) != nil
+    }
+
+    private func hasUnterminatedQuotedLiteral(_ code: String) -> Bool {
+        var quote: Character?
+        var escaped = false
+
+        for character in code {
+            if escaped {
+                escaped = false
+                continue
+            }
+            if character == "\\", quote != nil {
+                escaped = true
+                continue
+            }
+            if let activeQuote = quote {
+                if character == activeQuote { quote = nil }
+                continue
+            }
+            if character == "'" || character == "\"" {
+                quote = character
+            } else if character == "#" {
+                break
+            }
+        }
+        return quote != nil
+    }
+
+    private func isEmbeddedDocumentDirective(_ line: String, keyword: String) -> Bool {
+        let directive = "=\(keyword)"
+        guard line.hasPrefix(directive) else { return false }
+        let suffix = line.dropFirst(directive.count)
+        guard let first = suffix.first else { return true }
+        return first == " " || first == "\t"
+    }
+}
+
+private struct LexicalAnalysis {
+    let lines: [String]
+    let hasUnsupportedStructure: Bool
 }
 
 private enum StaticScope {
@@ -1122,6 +1383,7 @@ private enum HelperScope {
 
 private struct TargetAnalysis {
     let resolutionsByLine: [Int: StaticTargetResolution]
+    let hasUnsupportedNesting: Bool
 }
 
 private struct StaticTargetResolution {
@@ -1133,6 +1395,7 @@ private struct TargetNode {
     let name: String
     let parentLine: Int?
     let isProven: Bool
+    let uncertainScopeDepthAtDeclaration: Int
     var explicitInheritance: TargetInheritance? = nil
     var hasUnknownDescendants = false
 }

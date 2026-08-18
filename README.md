@@ -84,6 +84,18 @@ CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on Dece
 
 See the [v0.2.1 release notes](Documentation/ReleaseNotes-0.2.1.md), [changelog](CHANGELOG.md), [migration-safety guide](Documentation/MigrationSafety.md), and [real-project pilot documentation](Documentation/Pilots.md) for the complete evidence.
 
+## In Development for v0.3.0
+
+The unreleased v0.3.0 work broadens only evidence-backed coverage:
+
+- analysis candidates and plan entries retain legacy `reasons` while adding stable `reasonDetails` codes and optional remediation guidance;
+- `analyze --fail-on blocked|unresolved|non-auto` supports mutation-free CI policy after printing the complete human, JSON, or portable-JSON result;
+- literal `target('App') do` and `pod('Name')` declarations are parsed without executing Ruby, including the already supported literal version and `modular_headers: true` forms;
+- exact Lottie and additional Firebase direct/subspec identities are mapped at verified upstream version boundaries; and
+- ten immutable upstream pilots cover successful classification and deliberate refusal, while apply remains restricted to the repository-owned fixture.
+
+Issue [#48](https://github.com/Alexsvensson99/PkgLift/issues/48) is the single implementation tracker. These capabilities are not part of a released version until the separate release checkpoint is completed.
+
 ## Safety Philosophy
 
 PkgLift operates on a strict safety model. Every dependency is classified before migration:
@@ -200,6 +212,14 @@ pkglift verify \
 
 `analyze` and `plan` accept `--portable-json` as an alternative to `--json`. Portable output removes local paths and URL credentials and adds `portableOutput.version = 1`, but still contains dependency and target names. `plan --portable-json` prints the redacted representation while keeping the full executable plan in `.pkglift/plan.json`.
 
+`analyze` also accepts a CI policy without changing its normal behavior:
+
+```bash
+pkglift analyze --json --fail-on unresolved > pkglift-analysis.json
+```
+
+PkgLift writes the complete result before exiting with status `1`. Only direct dependencies affect the policy: `blocked` matches `BLOCKED`; `unresolved` matches `BLOCKED` or `UNKNOWN`; and `non-auto` matches every direct dependency that is not `AUTO`. Analysis never creates or changes a migration plan.
+
 ## Share a Real-World Result
 
 Testing on varied public and private project layouts helps PkgLift improve without weakening its safety model.
@@ -241,7 +261,7 @@ An invalid configuration is an error; PkgLift does not silently ignore it.
 
 ## Limitations
 
-For the current v0.2.x line:
+The released v0.2.x line and the unreleased v0.3.0 work share these safety boundaries:
 
 - Only CocoaPods-to-SwiftPM migration is supported.
 - Migration is partial: non-automatic pods and their CocoaPods integration are preserved.
@@ -250,6 +270,7 @@ For the current v0.2.x line:
 - Confirmed Carthage integration and React Native, Flutter, or Capacitor Podfile markers prevent `AUTO`; PkgLift does not migrate or remove those integrations.
 - KMP is not detected through speculative file or name heuristics.
 - Base pod mappings never apply automatically to undeclared subspecs.
+- Parenthesized target and pod calls are accepted only for bounded literal forms in balanced static Ruby scopes. Interpolation, variables, raw control characters, non-ASCII whitespace, excessive scope nesting, multiline literals or continuations, unrecognized executable statements, CocoaPods DSL method shadowing, unsupported enclosing blocks or heredocs, external or extra options and expression tails, postfix conditions, semicolons, and unbalanced syntax remain non-automatic. Ruby block comments and `__END__` data are ignored only at valid column-zero markers and cannot create dependencies.
 - Project and workspace selection never follows a reference outside `--path`; widen `--path` explicitly if a legitimate workspace spans a broader repository root.
 - PkgLift removes only exact migrated pod declarations. It deliberately preserves target blocks, unrelated Ruby, and CocoaPods integration for pods that remain.
 - PkgLift does not run `pod install` automatically.
@@ -257,7 +278,7 @@ For the current v0.2.x line:
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for future work and the [v0.2.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/26) for the previous release evidence.
+See [ROADMAP.md](ROADMAP.md), the active [v0.3.0 tracker](https://github.com/Alexsvensson99/PkgLift/issues/48), and the [v0.2.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/26) for previous release evidence.
 
 ## Contributing
 

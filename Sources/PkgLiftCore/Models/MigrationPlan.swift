@@ -19,6 +19,13 @@ public struct MigrationCandidate: Sendable, Codable {
     /// Reasons for the classification.
     public let reasons: [String]
 
+    /// Stable machine-readable classification reasons with optional guidance.
+    ///
+    /// Optional so schema-1 artifacts produced before this additive field
+    /// remain decodable. This field is reporting metadata, not executable
+    /// migration evidence.
+    public let reasonDetails: [MigrationReason]?
+
     /// Issues specific to this candidate.
     public let issues: [MigrationIssue]
 
@@ -27,12 +34,14 @@ public struct MigrationCandidate: Sendable, Codable {
         classification: MigrationClassification,
         packageCandidate: PackageCandidate? = nil,
         reasons: [String] = [],
+        reasonDetails: [MigrationReason]? = nil,
         issues: [MigrationIssue] = []
     ) {
         self.pod = pod
         self.classification = classification
         self.packageCandidate = packageCandidate
         self.reasons = reasons
+        self.reasonDetails = reasonDetails
         self.issues = issues
     }
 }
@@ -166,6 +175,11 @@ public struct MigrationPlanEntry: Sendable, Codable {
     /// Reasons for the classification.
     public let reasons: [String]
 
+    /// Stable machine-readable classification reasons with optional guidance.
+    /// Optional for backward decoding and deliberately excluded from the
+    /// executable preflight contract.
+    public let reasonDetails: [MigrationReason]?
+
     /// The target Xcode target for the new dependency.
     public let targetName: String?
 
@@ -187,6 +201,7 @@ public struct MigrationPlanEntry: Sendable, Codable {
         classification: MigrationClassification,
         actions: [MigrationAction] = [],
         reasons: [String] = [],
+        reasonDetails: [MigrationReason]? = nil,
         targetName: String? = nil,
         packageCandidate: PackageCandidate? = nil,
         declarations: [PodfileDeclaration]? = nil,
@@ -198,6 +213,7 @@ public struct MigrationPlanEntry: Sendable, Codable {
         self.classification = classification
         self.actions = actions
         self.reasons = reasons
+        self.reasonDetails = reasonDetails
         self.targetName = targetName
         self.packageCandidate = packageCandidate
         self.declarations = declarations

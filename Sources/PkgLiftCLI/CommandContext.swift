@@ -122,23 +122,28 @@ struct CommandContext: Sendable {
             )
 
             var coreClassification = result.category
-            var reasons = result.reasons
+            var reasonDetails = result.reasonDetails
 
             let denied = configuration.migration?.deny ?? []
             let allowed = configuration.migration?.allow
             if denied.contains(dependency.name) || denied.contains(dependency.baseName) {
                 coreClassification = .blocked
-                reasons.insert("Dependency is denied by .pkglift.yml", at: 0)
+                reasonDetails.insert(MigrationReason(
+                    code: .configurationDenied,
+                    message: "Dependency is denied by .pkglift.yml",
+                    remediation: "Remove the dependency from the deny list only after an explicit migration review."
+                ), at: 0)
             } else if let allowed,
                       !allowed.contains(dependency.name),
                       !allowed.contains(dependency.baseName) {
                 if coreClassification != .blocked {
                     coreClassification = .review
                 }
-                reasons.insert(
-                    "Dependency is not in the .pkglift.yml migration allow list",
-                    at: 0
-                )
+                reasonDetails.insert(MigrationReason(
+                    code: .configurationNotAllowed,
+                    message: "Dependency is not in the .pkglift.yml migration allow list",
+                    remediation: "Add the exact dependency identity to the allow list after review."
+                ), at: 0)
             }
 
             let mappedPackage: PkgLiftCore.PackageCandidate?
@@ -176,7 +181,11 @@ struct CommandContext: Sendable {
                     supportedLanguages: mappedPackage?.supportedConsumerLanguages
                 )) {
                 coreClassification = .review
-                reasons.append("Automatic migration data is incomplete or ambiguous")
+                reasonDetails.append(MigrationReason(
+                    code: .automaticEvidenceIncomplete,
+                    message: "Automatic migration data is incomplete or ambiguous",
+                    remediation: "Regenerate analysis after all automatic-migration evidence is complete and exact."
+                ))
             }
 
             if let mappedPackage,
@@ -188,14 +197,18 @@ struct CommandContext: Sendable {
                 if coreClassification == .auto {
                     coreClassification = .review
                 }
-                reasons.append("Existing SwiftPM package uses a different or unknown version requirement")
+                reasonDetails.append(MigrationReason(
+                    code: .existingPackageRequirementConflict,
+                    message: "Existing SwiftPM package uses a different or unknown version requirement",
+                    remediation: "Reconcile the existing package requirement manually before migration."
+                ))
             }
 
             if result.category == .auto, coreClassification != .auto {
-                let successfulAutoEvidence = Set(result.reasons)
-                reasons.removeAll { successfulAutoEvidence.contains($0) }
+                reasonDetails.removeAll { $0.code == .verifiedAutomaticMigration }
             }
-            reasons = stableDeduplicated(reasons)
+            reasonDetails = stableDeduplicated(reasonDetails)
+            let reasons = reasonDetails.map(\.message)
             let issues: [MigrationIssue]
             if coreClassification == .auto {
                 issues = []
@@ -219,6 +232,7 @@ struct CommandContext: Sendable {
                 classification: coreClassification,
                 packageCandidate: mappedPackage,
                 reasons: reasons,
+                reasonDetails: reasonDetails,
                 issues: issues
             )
         }
@@ -294,6 +308,7 @@ struct CommandContext: Sendable {
                 classification: candidate.classification,
                 actions: actions,
                 reasons: candidate.reasons,
+                reasonDetails: candidate.reasonDetails,
                 targetName: targetName,
                 packageCandidate: candidate.packageCandidate,
                 declarations: candidate.pod.declarations,
@@ -643,7 +658,7 @@ private func resolvePath(_ path: String, base: String) -> String {
     return URL(fileURLWithPath: base).appendingPathComponent(path).path
 }
 
-private func stableDeduplicated(_ values: [String]) -> [String] {
+private func stableDeduplicated(_ values: [MigrationReason]) -> [MigrationReason] {
     var seen: Set<String> = []
-    return values.filter { seen.insert($0).inserted }
+    return values.filter { seen.insert($0.message).inserted }
 }

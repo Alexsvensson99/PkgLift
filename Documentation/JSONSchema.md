@@ -18,11 +18,45 @@ Target platform and deployment values apply project xcconfig, project settings, 
 
 Each `TargetInfo` may include a `sourceProfile` with sorted `languages` values and `completeness`. The values are derived only from PBX compiled-source metadata. A candidate's `packageCandidate.supportedConsumerLanguages` records the mapping evidence. `detectedIntegrations` contains only typed enum values such as `carthage`, `reactNative`, `flutter`, and `capacitor`; it never carries integration filenames or source contents.
 
+Each candidate continues to contain its source-ordered `reasons` string array. New output also contains optional `reasonDetails`, in the same order:
+
+```json
+{
+  "code": "registry_mapping_missing",
+  "message": "No registry mapping",
+  "remediation": "Add an exact verified registry mapping, or keep this dependency on CocoaPods."
+}
+```
+
+`code` is the stable machine-readable value, `message` is the legacy human-readable reason, and `remediation` is optional guidance. For output produced by the current classifier, `reasonDetails[*].message` exactly equals `reasons[*]`. Older schema-1 documents without `reasonDetails` remain decodable. The details are reporting metadata and are never sufficient executable migration evidence.
+
+Current reason codes are grouped below. New codes may be added compatibly, so consumers must not treat an unknown code as permission to migrate.
+
+| Evidence group | Stable codes |
+|---|---|
+| Source and mapping | `external_source_without_mapping`, `registry_mapping_missing`, `registry_identifier_mismatch`, `external_source_requires_review`, `registry_mapping_not_executable`, `registry_mapping_not_verified` |
+| Dependency and declaration | `transitive_dependency`, `declaration_unrepresentable`, `declaration_provenance_missing` |
+| Podfile and integration | `podfile_install_hook`, `podfile_script_phase`, `podfile_dynamic_ruby`, `podfile_use_frameworks`, `podfile_inherit_search_paths`, `podfile_abstract_target`, `carthage_integration`, `react_native_integration`, `flutter_integration`, `capacitor_integration` |
+| Language and target | `consumer_language_evidence_missing`, `consumer_language_evidence_invalid`, `target_source_profile_incomplete`, `target_source_profile_empty`, `target_language_unsupported`, `target_source_profile_missing`, `target_not_found`, `target_attribution_multiple`, `target_attribution_partial`, `target_attribution_unresolved` |
+| Version | `resolved_version_invalid`, `minimum_version_invalid`, `minimum_version_missing`, `version_below_minimum`, `version_requirement_unrepresentable` |
+| Configuration and current project state | `configuration_denied`, `configuration_not_allowed`, `automatic_evidence_incomplete`, `existing_package_requirement_conflict` |
+| Successful evidence | `verified_automatic_migration` |
+
+The public compatibility initializer can represent an older free-form reason as `unspecified`; normal current analysis does not emit that code.
+
+### CI failure policy
+
+`pkglift analyze --fail-on blocked|unresolved|non-auto` evaluates only direct dependencies after the complete output has been written. `blocked` matches `BLOCKED`; `unresolved` matches `BLOCKED` and `UNKNOWN`; `non-auto` matches `REVIEW`, `BLOCKED`, and `UNKNOWN`. A match returns process status `1`. Without the flag, exit behavior is unchanged.
+
+The policy composes with human output, `--json`, or `--portable-json`. Both JSON modes remain complete, valid documents even when the policy returns status `1`. Analysis does not create `.pkglift/plan.json` or mutate project files.
+
 ## Plan
 
 `pkglift plan --json` writes the same `MigrationPlan` object to stdout and `.pkglift/plan.json`. Important top-level fields are `projectPath`, `entries`, `issues`, `readinessScore`, and optional `counts`.
 
 Repeated literal declarations of the same exact pod name are represented by one deterministic entry whose `declarations` array retains every origin. An executable AUTO entry must also contain explicit `targetAttribution` with status `exact`, one target, and no unresolved declarations. Every declaration must identify that target and use the registry source. It must also contain a complete, non-empty `targetSourceProfile`; every listed language must appear in `packageCandidate.supportedConsumerLanguages`.
+
+Plan entries use the same additive `reasonDetails` representation and preserve the same legacy `reasons` array. Preflight intentionally does not use reason text or reason details as authorization; it recomputes and compares the typed executable evidence described below.
 
 An executable AUTO entry contains typed actions like:
 

@@ -30,8 +30,12 @@ final class RegistryLoaderTests: XCTestCase {
 
         let directFirebaseMappings = [
             ("FirebaseAnalytics", "FirebaseAnalytics"),
+            ("FirebaseAuth", "FirebaseAuth"),
             ("FirebaseCrashlytics", "FirebaseCrashlytics"),
+            ("FirebaseFirestore", "FirebaseFirestore"),
             ("FirebaseMessaging", "FirebaseMessaging"),
+            ("FirebaseRemoteConfig", "FirebaseRemoteConfig"),
+            ("FirebaseStorage", "FirebaseStorage"),
         ]
         for (podName, productName) in directFirebaseMappings {
             let mapping = await loader.lookup(name: podName)
@@ -42,6 +46,39 @@ final class RegistryLoaderTests: XCTestCase {
                 [.swift, .objectiveC]
             )
         }
+
+        let newFirebaseSubspecMappings = [
+            ("Auth", "FirebaseAuth"),
+            ("Firestore", "FirebaseFirestore"),
+            ("RemoteConfig", "FirebaseRemoteConfig"),
+            ("Storage", "FirebaseStorage"),
+        ]
+        for (subspec, productName) in newFirebaseSubspecMappings {
+            let mapping = await loader.lookup(name: "Firebase", subspec: subspec)
+            XCTAssertEqual(mapping?.pod.fullName, "Firebase/\(subspec)")
+            XCTAssertEqual(mapping?.swiftpm.products, [productName])
+            XCTAssertEqual(mapping?.swiftpm.minimumVersion, "11.12.0")
+            XCTAssertEqual(
+                mapping?.swiftpm.supportedConsumerLanguages,
+                [.swift, .objectiveC]
+            )
+        }
+
+        let lottie = await loader.lookup(name: "lottie-ios")
+        XCTAssertEqual(lottie?.swiftpm.repository, "https://github.com/airbnb/lottie-ios")
+        XCTAssertEqual(lottie?.swiftpm.products, ["Lottie"])
+        XCTAssertEqual(lottie?.swiftpm.minimumVersion, "3.2.2")
+        XCTAssertEqual(lottie?.swiftpm.supportedConsumerLanguages, [.swift])
+        XCTAssertEqual(lottie?.migration.confidence, .verified)
+
+        let firebaseBase = await loader.lookup(name: "Firebase")
+        let firebaseCore = await loader.lookup(name: "Firebase", subspec: "Core")
+        let firebaseUnknown = await loader.lookup(name: "Firebase", subspec: "Unknown")
+        let firebaseNested = await loader.lookup(name: "Firebase", subspec: "Auth/Extra")
+        XCTAssertNil(firebaseBase)
+        XCTAssertNil(firebaseCore)
+        XCTAssertNil(firebaseUnknown)
+        XCTAssertNil(firebaseNested)
 
         let undeclaredSubspec = await loader.lookup(name: "SDWebImage", subspec: "Core")
         XCTAssertNil(undeclaredSubspec)

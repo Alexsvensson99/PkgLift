@@ -7,25 +7,31 @@ PkgLift uses a small set of public Xcode projects to complement synthetic fixtur
 The `Pinned Pilots` workflow performs these phases:
 
 1. builds the current PkgLift source in release mode;
-2. creates an isolated, detached checkout of the exact upstream commit;
+2. creates an isolated, detached partial checkout of the exact upstream commit, uses cone-mode sparse checkout for a nested pilot root, and rejects any canonical root that resolves outside that checkout;
 3. runs `analyze` and records JSON output;
 4. generates and validates a migration plan;
 5. runs the migration dry run;
 6. proves that tracked files, the index, and visible untracked files remain unchanged;
 7. checks project-specific expected classifications;
-8. uploads only redacted analysis, plan, dry-run, environment, source, and summary files.
+8. summarizes stable classification reason-code counts; and
+9. uploads only portable-JSON analysis and plan output plus path-redacted dry-run, environment, source, and summary files; full executable JSON remains outside the uploaded artifact.
 
 The read-only matrix does **not** run `pod install`, execute upstream scripts, apply a migration, push to the upstream repository, or receive repository secrets.
 
 | Case | Repository and pinned commit | Verified outcome | Tracking |
 |---|---|---|---|
 | Positive | `aws-samples/amazon-ivs-grid-feed-for-ios-demo` at `5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d` | `SDWebImage` is `AUTO`; `AmazonIVSPlayer` remains non-automatic | #23 |
-| Mixed | `ayseyurek/LoodosCase` at `407b65db02469467b3317ca8dee0d8676c7e673e` | Alamofire and Kingfisher are `AUTO`; older or unmapped Firebase and Lottie identifiers remain non-automatic | #24 |
+| Mixed | `ayseyurek/LoodosCase` at `407b65db02469467b3317ca8dee0d8676c7e673e` | Alamofire, Kingfisher, and the newly mapped `lottie-ios 3.2.2` are `AUTO`; the older `Firebase/RemoteConfig` is `REVIEW`, while other unsupported identities remain non-automatic | #24 |
 | Conservative | `Finb/V2ex-Swift` at `28ef39d2e5fc11d28bc79743ba2bc5f5594ba170` | dynamic Ruby and `post_install` force a mutation-free refusal; no direct entry becomes `AUTO` | #25 |
 | Tinode compatibility | `tinode/ios` at `a4db1251549c40b7aa4f269cd79234eb4c07baff` | 11 direct identities; dynamic Ruby and `post_install` keep every entry non-automatic | local batch `20260815` |
-| Broad mixed catalog | `devMEremenko/XcodeBenchmark` at `60d82d23e34fd63c4cae5d26d10cbdd88f0b0ee2` | 42 direct identities; hooks and dynamic Ruby keep every entry non-automatic | local batch `20260815` |
+| Broad mixed catalog | `devMEremenko/XcodeBenchmark` at `60d82d23e34fd63c4cae5d26d10cbdd88f0b0ee2` | 42 direct identities; the new Lottie and Firebase mappings remain `REVIEW`, never `AUTO`, because hooks and dynamic Ruby are present | local batch `20260815` |
 | Objective-C/macOS shape | `Hammerspoon/hammerspoon` at `23e387e2805a9890066366e0ac96c71b27f0cfd5` | 10 direct identities; no entry becomes `AUTO` | local batch `20260815` |
 | Nested example root | `vtourraine/AcknowList` at `0288baabb859af22b9e152555fa56b56094de789` under `Examples/AcknowExampleCocoaPods` | the local `AcknowList` pod remains `BLOCKED` | local batch `20260815` |
+| Parenthesized CocoaPods example | `fastlane/fastlane` at `a9a72554e1f4d6658842d4f3a7b0ca236b5c1589` under `gym/examples/cocoapods` | literal `target('Example')` and `pod("HexColors")` are attributed exactly; the unmapped dependency remains `UNKNOWN` | #48 |
+| Project-only FirebaseUI example | `firebase/FirebaseUI-iOS` at `c30af73fee50724dcd9a3acf70548d3e58c86dc7` under `samples/swift` | explicit project selection works without a workspace; local pods remain blocked and `Firebase/Auth` remains `REVIEW` without complete version/project evidence | #48 |
+| Legacy Firebase Auth Quickstart | `firebase/snippets-ios` at `affc6b838d3dc3382ca741983dad489631d52b43` under `qs-snippets/LegacyAuthQuickstart` | direct Firebase mappings are found but remain `REVIEW` because top-level attribution and `use_frameworks!` prevent `AUTO` | #48 |
+
+The fastlane case directly exercises the new parenthesized literal syntax. FirebaseUI and the Legacy Auth Quickstart exercise explicit project-without-workspace selection and conservative refusal. No pilot expectation treats a new registry mapping alone as sufficient for `AUTO`.
 
 ## Repository-owned mixed-language end-to-end pilot
 
@@ -57,8 +63,8 @@ The pilots are external projects. Their upstream repositories, histories, and li
 
 - The Amazon IVS sample reports an MIT No Attribution (`MIT-0`) license.
 - V2ex-Swift reports an MIT license.
-- Tinode reports an Apache-2.0 license.
-- XcodeBenchmark, Hammerspoon, and AcknowList report MIT licenses.
+- Tinode, FirebaseUI, and Firebase snippets report Apache-2.0 licenses.
+- XcodeBenchmark, Hammerspoon, AcknowList, and fastlane report MIT licenses.
 - No license file was detected for LoodosCase at the pinned commit. Its checkout is therefore used only transiently for analysis, no source is copied into PkgLift, and no upstream source is uploaded as an artifact. Replace this pilot if its use ever requires redistribution or a broader right than transient validation.
 
 A pilot update must change the recorded commit explicitly, explain why the old commit is no longer sufficient, and review the new Podfile, lockfile, project shape, license, and expected result.
@@ -67,7 +73,7 @@ A pilot update must change the recorded commit explicitly, explain why the old c
 
 The pilot gates and their underlying validation run on every pull request and main-branch push. This intentionally spends more runner time so a pull request cannot modify a path filter and receive a green gate for skipped work. The complete read-only matrix also runs weekly to detect pinned-upstream or Xcode-runner drift. Maintainers can start either workflow manually from GitHub Actions.
 
-Each job writes a Markdown summary and keeps its selected validation artifact for 14 days. A failed job should be triaged into one of these outcomes:
+Each job writes a Markdown summary with deterministic direct-dependency classifications and reason-code occurrence counts, then keeps its selected validation artifact for 14 days. A failed job should be triaged into one of these outcomes:
 
 - an actual PkgLift regression;
 - a changed or incorrect expectation in the harness;

@@ -88,6 +88,33 @@ jobs:
             workspace: AcknowExampleCocoaPods.xcworkspace
             project: AcknowExampleCocoaPods.xcodeproj
             license: MIT
+          - name: fastlane CocoaPods example
+            case: fastlane
+            issue: '48'
+            repository: fastlane/fastlane
+            commit: a9a72554e1f4d6658842d4f3a7b0ca236b5c1589
+            root: gym/examples/cocoapods
+            workspace: Example.xcworkspace
+            project: Example.xcodeproj
+            license: MIT
+          - name: FirebaseUI Swift example
+            case: firebaseui
+            issue: '48'
+            repository: firebase/FirebaseUI-iOS
+            commit: c30af73fee50724dcd9a3acf70548d3e58c86dc7
+            root: samples/swift
+            workspace: '-'
+            project: FirebaseUI-demo-swift.xcodeproj
+            license: Apache-2.0
+          - name: Firebase Legacy Auth Quickstart
+            case: firebaseauth
+            issue: '48'
+            repository: firebase/snippets-ios
+            commit: affc6b838d3dc3382ca741983dad489631d52b43
+            root: qs-snippets/LegacyAuthQuickstart
+            workspace: '-'
+            project: AuthenticationExample.xcodeproj
+            license: Apache-2.0
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
       PILOT_CASE: ${{ matrix.case }}

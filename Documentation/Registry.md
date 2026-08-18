@@ -26,7 +26,13 @@ Subspec mappings add `pod.subspec`. Identifiers are exact: a base pod mapping ne
 
 `swiftpm.supportedConsumerLanguages` records the Xcode target languages for which the exact package and product mapping has concrete consumer evidence. Allowed values are `swift`, `objectiveC`, `objectiveCPlusPlus`, `c`, and `cPlusPlus`. A mixed target requires every detected language. New executable mappings must use a non-empty, duplicate-free list; empty, duplicate, or unknown values fail validation. Older external schema-1 mappings without this field remain readable but are `REVIEW`-only.
 
-The bundled registry currently records Swift support for Alamofire, Kingfisher, Moya, SnapKit, and SwiftyJSON, and Swift plus Objective-C support for the mapped Firebase identities, SDWebImage, and Sentry. Direct `FirebaseAnalytics`, `FirebaseCrashlytics`, and `FirebaseMessaging` mappings are verified from version `11.12.0`; subspec and direct identities remain separate exact mappings.
+The bundled registry currently records Swift support for Alamofire, Kingfisher, Lottie, Moya, SnapKit, and SwiftyJSON, and Swift plus Objective-C support for the mapped Firebase identities, SDWebImage, and Sentry.
+
+`lottie-ios` maps exactly to the `Lottie` product from `https://github.com/airbnb/lottie-ios`, verified from `3.2.2` against the [upstream manifest](https://github.com/airbnb/lottie-ios/blob/3.2.2/Package.swift).
+
+The following direct Firebase identities are independently mapped at `11.12.0`: `FirebaseAnalytics`, `FirebaseAuth`, `FirebaseCrashlytics`, `FirebaseFirestore`, `FirebaseMessaging`, `FirebaseRemoteConfig`, and `FirebaseStorage`. The exact `Firebase/Analytics`, `Firebase/Auth`, `Firebase/Firestore`, `Firebase/RemoteConfig`, and `Firebase/Storage` subspec mappings remain separate identities, with the four newly added subspecs verified at `11.12.0`. Evidence comes from the exact-tag [Package.swift](https://github.com/firebase/firebase-ios-sdk/blob/11.12.0/Package.swift) and [Firebase.podspec](https://github.com/firebase/firebase-ios-sdk/blob/11.12.0/Firebase.podspec).
+
+There is no base-to-subspec fallback. `Firebase`, `Firebase/Core`, unknown subspecs, and nested identities such as `Firebase/Auth/Extra` remain unmapped unless a separate exact registry entry is reviewed and added.
 
 ## Validation
 

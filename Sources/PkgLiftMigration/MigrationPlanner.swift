@@ -122,6 +122,7 @@ public struct MigrationPlanner: Sendable {
                 classification: classification.category,
                 actions: actions,
                 reasons: classification.reasons,
+                reasonDetails: classification.reasonDetails,
                 targetName: targetName,
                 packageCandidate: packageCandidate,
                 declarations: dep.declarations,
