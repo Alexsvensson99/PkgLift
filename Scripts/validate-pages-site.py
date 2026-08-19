@@ -10,6 +10,7 @@ from urllib.parse import unquote, urlparse
 import struct
 import sys
 import xml.etree.ElementTree as ET
+import zlib
 
 BASE_PATH = "/PkgLift/"
 BASE_URL = "https://www.svensson.design/PkgLift/"
@@ -104,12 +105,95 @@ def one(values: dict[str, list[str]], key: str, expected: str | None = None) -> 
     )
 
 
-def png_dimensions(path: Path) -> tuple[int, int]:
-    with path.open("rb") as handle:
-        signature = handle.read(24)
-    if len(signature) < 24 or signature[:8] != b"\x89PNG\r\n\x1a\n":
+def validated_png_dimensions(path: Path) -> tuple[int, int]:
+    """Validate the complete non-interlaced PNG stream, not only its header."""
+    data = path.read_bytes()
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
         raise ValueError("not a PNG")
-    return struct.unpack(">II", signature[16:24])
+
+    offset = 8
+    chunk_index = 0
+    header: tuple[int, int, int, int, int, int, int] | None = None
+    palette_entries: int | None = None
+    compressed = bytearray()
+    saw_end = False
+
+    while offset < len(data):
+        if offset + 12 > len(data):
+            raise ValueError("truncated chunk header")
+        length = struct.unpack(">I", data[offset:offset + 4])[0]
+        chunk_type = data[offset + 4:offset + 8]
+        payload_start = offset + 8
+        payload_end = payload_start + length
+        crc_end = payload_end + 4
+        if crc_end > len(data):
+            raise ValueError(f"truncated {chunk_type.decode('ascii', errors='replace')} chunk")
+        payload = data[payload_start:payload_end]
+        expected_crc = struct.unpack(">I", data[payload_end:crc_end])[0]
+        actual_crc = zlib.crc32(chunk_type + payload) & 0xFFFFFFFF
+        if actual_crc != expected_crc:
+            raise ValueError(f"CRC mismatch in {chunk_type.decode('ascii', errors='replace')} chunk")
+
+        if chunk_type == b"IHDR":
+            if chunk_index != 0 or header is not None or length != 13:
+                raise ValueError("invalid IHDR chunk")
+            header = struct.unpack(">IIBBBBB", payload)
+        elif chunk_type == b"PLTE":
+            if not payload or len(payload) % 3 != 0:
+                raise ValueError("invalid PLTE chunk")
+            palette_entries = len(payload) // 3
+        elif chunk_type == b"IDAT":
+            compressed.extend(payload)
+        elif chunk_type == b"IEND":
+            if length != 0:
+                raise ValueError("invalid IEND chunk")
+            saw_end = True
+            offset = crc_end
+            if offset != len(data):
+                raise ValueError("data found after IEND")
+            break
+
+        offset = crc_end
+        chunk_index += 1
+
+    if header is None or not saw_end or not compressed:
+        raise ValueError("missing IHDR, IDAT, or IEND chunk")
+
+    width, height, bit_depth, color_type, compression, filtering, interlace = header
+    if width <= 0 or height <= 0:
+        raise ValueError("invalid dimensions")
+    if compression != 0 or filtering != 0 or interlace != 0:
+        raise ValueError("unsupported compression, filter, or interlace method")
+
+    allowed_depths = {
+        0: {1, 2, 4, 8, 16},
+        2: {8, 16},
+        3: {1, 2, 4, 8},
+        4: {8, 16},
+        6: {8, 16},
+    }
+    channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
+    if color_type not in allowed_depths or bit_depth not in allowed_depths[color_type]:
+        raise ValueError("invalid color type or bit depth")
+    if color_type == 3 and (
+        palette_entries is None or palette_entries > 2 ** bit_depth
+    ):
+        raise ValueError("indexed PNG has an invalid palette")
+
+    row_bytes = (width * channels[color_type] * bit_depth + 7) // 8
+    expected_size = height * (row_bytes + 1)
+    try:
+        decompressor = zlib.decompressobj()
+        decoded = decompressor.decompress(bytes(compressed), expected_size + 1)
+    except zlib.error as error:
+        raise ValueError(f"invalid IDAT stream: {error}") from error
+    if len(decoded) != expected_size or not decompressor.eof or decompressor.unused_data:
+        raise ValueError("IDAT stream has an invalid decoded length or trailer")
+    for row in range(height):
+        if decoded[row * (row_bytes + 1)] > 4:
+            raise ValueError("invalid scanline filter")
+
+    return width, height
 
 
 def validate(site: Path) -> list[str]:
@@ -118,9 +202,10 @@ def validate(site: Path) -> list[str]:
         "index.html", "404.html", ".nojekyll", "robots.txt", "sitemap.xml",
         "site.webmanifest", "assets/styles.css", "assets/site.js", "assets/logo.svg",
         "assets/favicon.svg", "assets/social-card.png",
+        "assets/github-social-preview.png",
         "cocoapods-to-swiftpm/index.html", "safe-migration/index.html",
         "compatibility/index.html", "case-study/index.html",
-        "troubleshooting/index.html", "registry/index.html",
+        "pilots/index.html", "troubleshooting/index.html", "registry/index.html",
     ]
     for relative in required:
         if not (site / relative).exists():
@@ -129,10 +214,18 @@ def validate(site: Path) -> list[str]:
     social_path = site / "assets/social-card.png"
     if social_path.exists():
         try:
-            if png_dimensions(social_path) != (1200, 630):
+            if validated_png_dimensions(social_path) != (1200, 630):
                 errors.append("social-card.png must be exactly 1200x630")
         except ValueError as error:
             errors.append(f"invalid social-card.png: {error}")
+
+    github_social_path = site / "assets/github-social-preview.png"
+    if github_social_path.exists():
+        try:
+            if validated_png_dimensions(github_social_path) != (1280, 640):
+                errors.append("github-social-preview.png must be exactly 1280x640")
+        except ValueError as error:
+            errors.append(f"invalid github-social-preview.png: {error}")
 
     html_files = sorted(site.rglob("*.html"))
     canonical_seen: set[str] = set()
@@ -201,6 +294,7 @@ def validate(site: Path) -> list[str]:
             BASE_URL + "safe-migration/",
             BASE_URL + "compatibility/",
             BASE_URL + "case-study/",
+            BASE_URL + "pilots/",
             BASE_URL + "troubleshooting/",
             BASE_URL + "registry/",
         }

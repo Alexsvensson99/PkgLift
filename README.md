@@ -2,13 +2,8 @@
 
 [![Build](https://github.com/Alexsvensson99/PkgLift/actions/workflows/build.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/build.yml)
 [![Test](https://github.com/Alexsvensson99/PkgLift/actions/workflows/test.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/test.yml)
-[![Quality](https://github.com/Alexsvensson99/PkgLift/actions/workflows/quality.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/quality.yml)
 [![CodeQL](https://github.com/Alexsvensson99/PkgLift/actions/workflows/codeql.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/codeql.yml)
-[![Registry Validation](https://github.com/Alexsvensson99/PkgLift/actions/workflows/registry.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/registry.yml)
-[![Mixed-Language End-to-End Pilot](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Alexsvensson99/PkgLift)](https://github.com/Alexsvensson99/PkgLift/releases/latest)
-[![License: MIT](https://img.shields.io/github/license/Alexsvensson99/PkgLift)](LICENSE)
-[![Website](https://img.shields.io/badge/website-live-0a7b83)](https://www.svensson.design/PkgLift/)
 
 **Modernize Apple dependencies safely.**
 
@@ -18,36 +13,24 @@ No blind conversions. No guesswork.
 
 **Analyze → Plan → Migrate → Verify**
 
-[Project website](https://www.svensson.design/PkgLift/) · [Installation](#installation) · [Quick Start](#quick-start) · [Compatibility](#compatibility) · [Safety Philosophy](#safety-philosophy) · [Diagnostics](Documentation/Diagnostics.md) · [Real-Project Pilots](Documentation/Pilots.md) · [Support](SUPPORT.md) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
+[Project website](https://www.svensson.design/PkgLift/) · [Installation](#installation) · [Quick Start](#quick-start) · [Compatibility](#compatibility) · [Safety Philosophy](#safety-philosophy) · [Pilot Evidence](https://www.svensson.design/PkgLift/pilots/) · [Diagnostics](Documentation/Diagnostics.md) · [Support](SUPPORT.md) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
+
+![PkgLift v0.3.0 analyzing, planning, and dry-running the repo-owned mixed-language fixture](Documentation/Assets/pkglift-terminal-demo.gif)
+
+_Condensed from PkgLift v0.3.0 output against the repository-owned mixed-language fixture. This demo stops at dry run; the separate end-to-end workflow is the apply-and-build proof. See the [full pilot boundary](Documentation/Pilots.md)._
+
+If PkgLift helps with a migration, [star the repository](https://github.com/Alexsvensson99/PkgLift) or share a redacted [migration report](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml). Both make the next unsupported project shape easier to prioritize.
 
 ## What PkgLift Does
 
 PkgLift automates the evidence-backed parts of moving a native iOS or macOS Xcode project from CocoaPods to Swift Package Manager (SwiftPM), while preserving uncertain dependencies under CocoaPods for human review.
 
 ```bash
-$ pkglift analyze
-Analyzing project MyProject.xcodeproj...
-Found 12 dependencies in Podfile.
-Registry matches: 10/12
-Classification complete. Run `pkglift plan` to review.
-
-$ pkglift plan
-Generating migration plan...
-- Alamofire: AUTO (Supported via SwiftPM)
-- SnapKit: AUTO (Supported via SwiftPM)
-- ObscureLibrary: UNKNOWN (Not found in registry)
-Plan saved to .pkglift/plan.json. Please review.
-
-$ pkglift migrate
-Dry run mode. Add --apply to execute the migration plan.
-
-$ pkglift migrate --apply
-Applied 2 validated AUTO migrations.
-Run `pod install`, then run `pkglift verify`.
-
-$ pkglift verify
-Verifying build...
-Build succeeded!
+pkglift analyze
+pkglift plan
+pkglift migrate                         # dry run; no project mutation
+pkglift migrate --apply                 # reviewed AUTO entries only
+pkglift verify --build --scheme MyApp
 ```
 
 ## A Reviewed Migration, Not a Conversion Guess

@@ -120,6 +120,7 @@ jobs:
             'safe-migration/'
             'compatibility/'
             'case-study/'
+            'pilots/'
             'troubleshooting/'
             'registry/'
             'robots.txt'
@@ -127,6 +128,7 @@ jobs:
             'assets/styles.css'
             'assets/site.js'
             'assets/social-card.png'
+            'assets/github-social-preview.png'
           )
 
           for route in "${routes[@]}"; do

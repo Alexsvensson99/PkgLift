@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Real-project pilot evidence — PkgLift</title>
+  <meta name="description" content="Review PkgLift's pinned, read-only results across ten public CocoaPods projects and the separate repo-owned mixed-language end-to-end fixture.">
+  <meta name="theme-color" content="#0a0f15">
+  <meta name="color-scheme" content="dark light">
+  <link rel="canonical" href="https://www.svensson.design/PkgLift/pilots/">
+  <link rel="icon" href="/PkgLift/assets/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/PkgLift/site.webmanifest">
+  <link rel="stylesheet" href="/PkgLift/assets/styles.css">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="PkgLift">
+  <meta property="og:title" content="Real-project pilot evidence — PkgLift">
+  <meta property="og:description" content="Ten pinned upstream projects are analyzed without mutation; one separate repo-owned fixture proves controlled apply and build verification.">
+  <meta property="og:url" content="https://www.svensson.design/PkgLift/pilots/">
+  <meta property="og:image" content="https://www.svensson.design/PkgLift/assets/social-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PkgLift — safe CocoaPods to Swift Package Manager migration">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Real-project pilot evidence — PkgLift">
+  <meta name="twitter:description" content="Ten pinned upstream projects are analyzed without mutation; one separate repo-owned fixture proves controlled apply and build verification.">
+  <meta name="twitter:image" content="https://www.svensson.design/PkgLift/assets/social-card.png">
+  <meta name="twitter:image:alt" content="PkgLift — safe CocoaPods to Swift Package Manager migration">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Real-project pilot evidence — PkgLift","description":"Review PkgLift's pinned, read-only results across ten public CocoaPods projects and the separate repo-owned mixed-language end-to-end fixture.","url":"https://www.svensson.design/PkgLift/pilots/","author":{"@type":"Person","name":"Alexander Svensson"},"publisher":{"@type":"Organization","name":"PkgLift"}}</script>
+  <script src="/PkgLift/assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><div class="header-inner"><a class="brand" href="/PkgLift/" aria-label="PkgLift home"><img src="/PkgLift/assets/logo.svg" alt="" width="36" height="36"><span>PkgLift</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-navigation">Menu</button><nav class="site-nav" id="site-navigation" data-nav aria-label="Primary navigation"><a href="/PkgLift/">Home</a><a href="/PkgLift/cocoapods-to-swiftpm/">Migration guide</a><a href="/PkgLift/safe-migration/">Safety</a><a href="/PkgLift/compatibility/">Compatibility</a><a href="/PkgLift/case-study/">Case study</a><a href="/PkgLift/pilots/" aria-current="page">Pilots</a><a href="/PkgLift/troubleshooting/">Troubleshooting</a><a href="/PkgLift/registry/">Registry</a><a class="github-link" href="https://github.com/Alexsvensson99/PkgLift">GitHub ↗</a></nav></div></header>
+<main id="main">
+  <section class="page-hero"><div class="reading"><div class="breadcrumb"><a href="/PkgLift/">Home</a><span>/</span><span>Pilot evidence</span></div><div class="eyebrow">Published evidence</div><h1>Ten real repositories. Zero upstream mutations.</h1><p class="lead">PkgLift tests real project shapes at exact commits, records the classification result, and treats a conservative refusal as useful evidence—not a reason to weaken a safety gate.</p></div></section>
+  <article class="article"><div class="reading">
+    <div class="callout callout-warning"><strong>Evidence boundary:</strong> the ten public repositories below receive analysis, plan generation, and a migration dry run only. They are not passed to <code>migrate --apply</code>, their scripts are not executed, and their source is not published as a PkgLift artifact.</div>
+
+    <div class="grid-3" style="margin-top:2rem">
+      <div class="card"><div class="eyebrow">Upstream pilots</div><h2 style="margin:.5rem 0 0">10</h2><p class="subtle">Pinned, read-only project shapes.</p></div>
+      <div class="card"><div class="eyebrow">External applies</div><h2 style="margin:.5rem 0 0">0</h2><p class="subtle">No public pilot is mutated.</p></div>
+      <div class="card"><div class="eyebrow">Controlled fixture</div><h2 style="margin:.5rem 0 0">1</h2><p class="subtle">Repo-owned apply, resolve, and build proof.</p></div>
+    </div>
+
+    <h2 id="matrix" class="anchor-heading">Read-only pilot matrix</h2>
+    <p>Each checkout is isolated and pinned to the commit shown. The observed result is an expectation enforced by the pilot harness, not a claim that the whole upstream project can be migrated automatically.</p>
+    <table>
+      <thead><tr><th>Project shape</th><th>Pinned source</th><th>Observed result</th></tr></thead>
+      <tbody>
+        <tr><td>Positive sample</td><td><a href="https://github.com/aws-samples/amazon-ivs-grid-feed-for-ios-demo/tree/5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d">Amazon IVS grid feed</a></td><td><code>SDWebImage</code> is <span class="tag tag-auto">AUTO</span>; <code>AmazonIVSPlayer</code> remains non-automatic.</td></tr>
+        <tr><td>Mixed catalog</td><td><a href="https://github.com/ayseyurek/LoodosCase/tree/407b65db02469467b3317ca8dee0d8676c7e673e">LoodosCase</a></td><td>Alamofire, Kingfisher, and <code>lottie-ios 3.2.2</code> are <span class="tag tag-auto">AUTO</span>; older Firebase and unsupported identities stay non-automatic.</td></tr>
+        <tr><td>Dynamic Ruby</td><td><a href="https://github.com/Finb/V2ex-Swift/tree/28ef39d2e5fc11d28bc79743ba2bc5f5594ba170">V2ex-Swift</a></td><td><code>post_install</code> and dynamic Ruby force a mutation-free refusal; no direct entry becomes <span class="tag tag-auto">AUTO</span>.</td></tr>
+        <tr><td>Broad compatibility</td><td><a href="https://github.com/tinode/ios/tree/a4db1251549c40b7aa4f269cd79234eb4c07baff">Tinode iOS</a></td><td>Eleven direct identities remain non-automatic because of dynamic Ruby and <code>post_install</code>.</td></tr>
+        <tr><td>Large dependency set</td><td><a href="https://github.com/devMEremenko/XcodeBenchmark/tree/60d82d23e34fd63c4cae5d26d10cbdd88f0b0ee2">XcodeBenchmark</a></td><td>Forty-two identities are classified; hooks and dynamic Ruby keep otherwise known mappings at <span class="tag tag-review">REVIEW</span>.</td></tr>
+        <tr><td>Objective-C/macOS</td><td><a href="https://github.com/Hammerspoon/hammerspoon/tree/23e387e2805a9890066366e0ac96c71b27f0cfd5">Hammerspoon</a></td><td>Ten direct identities are found; none becomes <span class="tag tag-auto">AUTO</span>.</td></tr>
+        <tr><td>Nested example</td><td><a href="https://github.com/vtourraine/AcknowList/tree/0288baabb859af22b9e152555fa56b56094de789/Examples/AcknowExampleCocoaPods">AcknowList example</a></td><td>The local <code>AcknowList</code> pod remains <span class="tag tag-blocked">BLOCKED</span>.</td></tr>
+        <tr><td>Parenthesized syntax</td><td><a href="https://github.com/fastlane/fastlane/tree/a9a72554e1f4d6658842d4f3a7b0ca236b5c1589/gym/examples/cocoapods">fastlane example</a></td><td>Literal target and pod calls are attributed exactly; unmapped <code>HexColors</code> remains <span class="tag tag-unknown">UNKNOWN</span>.</td></tr>
+        <tr><td>Project without workspace</td><td><a href="https://github.com/firebase/FirebaseUI-iOS/tree/c30af73fee50724dcd9a3acf70548d3e58c86dc7/samples/swift">FirebaseUI sample</a></td><td>Explicit project selection works; local pods are blocked and <code>Firebase/Auth</code> remains <span class="tag tag-review">REVIEW</span>.</td></tr>
+        <tr><td>Legacy Firebase</td><td><a href="https://github.com/firebase/snippets-ios/tree/affc6b838d3dc3382ca741983dad489631d52b43/qs-snippets/LegacyAuthQuickstart">Legacy Auth Quickstart</a></td><td>Mappings are found, but attribution and <code>use_frameworks!</code> prevent <span class="tag tag-auto">AUTO</span>.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="end-to-end" class="anchor-heading">The separate end-to-end boundary</h2>
+    <p>Apply is proven only in <a href="https://github.com/Alexsvensson99/PkgLift/tree/main/Fixtures/MixedLanguageSDWebImage"><code>Fixtures/MixedLanguageSDWebImage</code></a>, a fixture owned by this repository. It contains one target with both Swift and Objective-C consumers of SDWebImage.</p>
+    <ol>
+      <li>A disposable baseline copy builds with CocoaPods.</li>
+      <li>A second disposable copy records protected source and resource hashes.</li>
+      <li>The complete reviewed <code>AUTO</code> set must equal exactly <code>SDWebImage</code>.</li>
+      <li>The dry run must leave the whole tree unchanged.</li>
+      <li>Only the repo-owned copy reaches apply, SwiftPM resolution, and simulator build verification.</li>
+      <li>The protected hashes must still match afterward.</li>
+    </ol>
+
+    <h2 id="audit" class="anchor-heading">Audit the evidence</h2>
+    <p>The detailed methodology, licensing notes, pins, and expected outcomes live in <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/Pilots.md">Documentation/Pilots.md</a>. The executable definitions are the <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/.github/workflows/pilots.yml">read-only pilot workflow</a> and the separate <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/.github/workflows/positive-e2e.yml">repo-owned end-to-end workflow</a>.</p>
+    <div class="cta" style="margin-top:3rem"><div class="eyebrow">Have a different project shape?</div><h2>Turn the unknown into reproducible evidence.</h2><p class="lead">Run analysis on a recoverable copy, remove private identifiers, and share the classification or failure without applying changes.</p><div class="hero-actions"><a class="button button-primary" href="https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml">Report a migration</a><a class="button" href="https://github.com/Alexsvensson99/PkgLift">Star or inspect the source</a></div></div>
+  </div></article>
+</main>
+<footer class="site-footer"><div class="container footer-inner"><div>PkgLift is open source under the MIT License.</div><div class="footer-links"><a href="https://github.com/Alexsvensson99/PkgLift">GitHub</a><a href="https://github.com/Alexsvensson99/PkgLift/releases/latest">Releases</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/SUPPORT.md">Support</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/SECURITY.md">Security</a><a href="https://github.com/Alexsvensson99/PkgLift/blob/main/CONTRIBUTING.md">Contributing</a></div></div></footer>
+</body>
+</html>
