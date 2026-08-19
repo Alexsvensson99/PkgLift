@@ -46,7 +46,7 @@
   <div class="header-inner">
     <a class="brand" href="/PkgLift/" aria-label="PkgLift home"><img src="/PkgLift/assets/logo.svg" alt="" width="36" height="36"><span>PkgLift</span></a>
     <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-navigation">Menu</button>
-    <nav class="site-nav" id="site-navigation" data-nav aria-label="Primary navigation"><a href="/PkgLift/" aria-current="page">Home</a><a href="/PkgLift/cocoapods-to-swiftpm/">Migration guide</a><a href="/PkgLift/safe-migration/">Safety</a><a href="/PkgLift/compatibility/">Compatibility</a><a href="/PkgLift/case-study/">Case study</a><a href="/PkgLift/troubleshooting/">Troubleshooting</a><a href="/PkgLift/registry/">Registry</a><a class="github-link" href="https://github.com/Alexsvensson99/PkgLift">GitHub ↗</a></nav>
+    <nav class="site-nav" id="site-navigation" data-nav aria-label="Primary navigation"><a href="/PkgLift/" aria-current="page">Home</a><a href="/PkgLift/cocoapods-to-swiftpm/">Migration guide</a><a href="/PkgLift/safe-migration/">Safety</a><a href="/PkgLift/compatibility/">Compatibility</a><a href="/PkgLift/case-study/">Case study</a><a href="/PkgLift/pilots/">Pilots</a><a href="/PkgLift/troubleshooting/">Troubleshooting</a><a href="/PkgLift/registry/">Registry</a><a class="github-link" href="https://github.com/Alexsvensson99/PkgLift">GitHub ↗</a></nav>
   </div>
 </header>
 <main id="main">
@@ -58,7 +58,7 @@
       <p class="lead">PkgLift analyzes native Xcode projects, creates a reviewable migration plan, and applies only dependency changes backed by exact evidence.</p>
       <div class="hero-actions">
         <a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/">Start the migration guide</a>
-        <a class="button" href="https://github.com/Alexsvensson99/PkgLift">View on GitHub</a>
+        <a class="button" href="https://github.com/Alexsvensson99/PkgLift">View &amp; star on GitHub</a>
       </div>
       <div class="command-card"><code>brew install Alexsvensson99/tap/pkglift</code><button class="copy-button" type="button" data-copy="brew install Alexsvensson99/tap/pkglift">Copy</button></div>
       <p class="fine-print" style="margin-top:.8rem">Apple Silicon · macOS 14 or later · MIT licensed</p>
@@ -115,6 +115,22 @@ Preserved 2 CocoaPods dependencies.
   </div>
 </section>
 <section class="section section-border">
+  <div class="container grid-2" style="align-items:center">
+    <div>
+      <div class="eyebrow">Real-project evidence</div>
+      <h2>The refusals are part of the proof.</h2>
+      <p class="lead">Ten public projects are pinned and exercised through analysis, planning, and dry run without upstream mutation. Only a separate repo-owned fixture is allowed to reach apply and build verification.</p>
+      <a class="button" href="/PkgLift/pilots/">Explore all pilot outcomes</a>
+    </div>
+    <div class="grid-2">
+      <div class="card"><span class="tag tag-auto">3 AUTO</span><h3 style="margin-top:1rem">Positive mixed case</h3><p class="subtle">Known dependencies move only when project context preserves the full evidence chain.</p></div>
+      <div class="card"><span class="tag tag-review">REVIEW</span><h3 style="margin-top:1rem">Hooks stay visible</h3><p class="subtle">Dynamic Ruby and install hooks stop otherwise plausible mappings.</p></div>
+      <div class="card"><span class="tag tag-blocked">BLOCKED</span><h3 style="margin-top:1rem">Local pod</h3><p class="subtle">A nested local dependency is detected and deliberately preserved.</p></div>
+      <div class="card"><span class="tag tag-unknown">UNKNOWN</span><h3 style="margin-top:1rem">No invented mapping</h3><p class="subtle">An exact literal declaration still stays put when registry evidence is absent.</p></div>
+    </div>
+  </div>
+</section>
+<section class="section section-border">
   <div class="container">
     <div class="eyebrow">Safety model</div>
     <h2>Not every dependency should move automatically</h2>
@@ -161,7 +177,7 @@ Preserved 2 CocoaPods dependencies.
     <div class="eyebrow">Ready to inspect your project?</div>
     <h2>Start with analysis. Change nothing yet.</h2>
     <p class="lead">Install PkgLift, run <code>analyze</code>, and review what can move safely before generating a plan.</p>
-    <div class="hero-actions"><a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/">Open the guide</a><a class="button" href="https://github.com/Alexsvensson99/PkgLift/releases/latest">Download latest release</a></div>
+    <div class="hero-actions"><a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/">Open the guide</a><a class="button" href="https://github.com/Alexsvensson99/PkgLift">Star PkgLift on GitHub</a><a class="button" href="https://github.com/Alexsvensson99/PkgLift/releases/latest">Download latest release</a></div>
   </div>
 </section>
 </main>

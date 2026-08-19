@@ -86,6 +86,7 @@ p { margin: 0 0 1.15rem; }
 
 .hero { padding: clamp(5rem, 10vw, 8.8rem) 0 5rem; overflow: hidden; }
 .hero-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: clamp(2rem, 6vw, 5rem); align-items: center; }
+.hero-grid > *, .grid-2 > *, .grid-3 > *, .grid-4 > * { min-width: 0; }
 .hero h1 span { color: var(--accent); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 2rem 0 1.4rem; }
 .button {
