@@ -37,6 +37,12 @@ def classification(record)
   record && record["classification"]
 end
 
+def source_provenance(record)
+  return nil if record.nil?
+
+  record.key?("pod") ? record.dig("pod", "sourceProvenance") : record["sourceProvenance"]
+end
+
 def require_classification(errors, records, name, expected)
   actual = classification(records[name])
   errors << "#{name}: expected #{expected}, got #{actual.inspect}" unless actual == expected
@@ -49,6 +55,28 @@ def require_not_auto(errors, records, name)
   elsif actual == "AUTO"
     errors << "#{name}: unexpectedly classified AUTO"
   end
+end
+
+def require_reason_code(errors, records, name, expected)
+  record = records[name]
+  if record.nil?
+    errors << "#{name}: dependency was not present"
+    return
+  end
+
+  codes = Array(record["reasonDetails"]).map { |detail| detail["code"] }
+  errors << "#{name}: missing reason code #{expected}" unless codes.include?(expected)
+end
+
+def require_git_provenance_status(errors, records, name, expected)
+  record = records[name]
+  provenance = if record&.key?("pod")
+                 record.dig("pod", "sourceProvenance")
+               else
+                 record&.dig("sourceProvenance")
+               end
+  actual = provenance&.dig("git", "status")
+  errors << "#{name}: expected Git provenance #{expected}, got #{actual.inspect}" unless actual == expected
 end
 
 def require_no_auto(errors, records, label)
@@ -81,6 +109,7 @@ def require_reporting_parity(errors, raw_records, portable_records, label)
     errors << "#{label} #{name}: portable classification changed" unless classification(raw) == classification(portable)
     errors << "#{label} #{name}: portable legacy reasons changed" unless Array(raw["reasons"]) == Array(portable["reasons"])
     errors << "#{label} #{name}: portable reasonDetails changed" unless Array(raw["reasonDetails"]) == Array(portable["reasonDetails"])
+    errors << "#{label} #{name}: portable source provenance changed" unless source_provenance(raw) == source_provenance(portable)
   end
 end
 
@@ -213,6 +242,14 @@ when "xcodebenchmark"
     require_classification(errors, candidates, name, "REVIEW")
     require_classification(errors, entries, name, "REVIEW")
   end
+  [candidates, entries].each do |records|
+    require_not_auto(errors, records, "MagicalRecord")
+    require_reason_code(errors, records, "MagicalRecord", "external_git_unpinned")
+    require_git_provenance_status(errors, records, "MagicalRecord", "unpinned")
+    require_not_auto(errors, records, "RxBluetoothKit")
+    require_reason_code(errors, records, "RxBluetoothKit", "external_git_evidence_incomplete")
+    require_git_provenance_status(errors, records, "RxBluetoothKit", "incomplete")
+  end
 when "hammerspoon"
   require_entry_count(errors, candidates, 10)
   require_entry_count(errors, entries, 10)
@@ -220,6 +257,14 @@ when "hammerspoon"
   require_no_auto(errors, entries, "Hammerspoon plan")
   errors << "expected dynamic Ruby detection" unless features["hasDynamicRuby"] == true
   errors << "expected post_install detection" unless features["hasPostInstallHook"] == true
+  [candidates, entries].each do |records|
+    require_not_auto(errors, records, "CocoaHTTPServer")
+    require_reason_code(errors, records, "CocoaHTTPServer", "external_git_unpinned")
+    require_git_provenance_status(errors, records, "CocoaHTTPServer", "unpinned")
+    require_not_auto(errors, records, "Sentry")
+    require_reason_code(errors, records, "Sentry", "external_git_evidence_incomplete")
+    require_git_provenance_status(errors, records, "Sentry", "incomplete")
+  end
 when "acknowlist"
   require_entry_count(errors, candidates, 1)
   require_entry_count(errors, entries, 1)
@@ -260,6 +305,9 @@ candidates.each do |name, candidate|
   end
   if Array(candidate["reasonDetails"]) != Array(entry["reasonDetails"])
     errors << "#{name}: analysis reasonDetails do not match plan reasonDetails"
+  end
+  if source_provenance(candidate) != source_provenance(entry)
+    errors << "#{name}: analysis source provenance does not match plan source provenance"
   end
 end
 

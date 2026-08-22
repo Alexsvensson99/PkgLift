@@ -1,4 +1,5 @@
 import Foundation
+import PkgLiftCore
 
 /// Small, conservative helpers for recognizing literal Podfile declarations.
 ///
@@ -6,6 +7,21 @@ import Foundation
 /// without evaluating Ruby. Unsupported or computed forms remain dynamic.
 enum PodfileStaticSyntax {
     private static let rubyHorizontalWhitespace = CharacterSet(charactersIn: " \t")
+
+    /// Statically recognized external Git source syntax on a single `pod`
+    /// declaration. This is deliberately syntax evidence only: callers must
+    /// not infer repository identity, resolve refs, or perform network I/O.
+    enum ExternalGitSource: Sendable, Equatable {
+        /// The declaration does not contain a literal Git source option.
+        case none
+
+        /// A complete, bounded literal Git source declaration.
+        case supported(url: String, ref: GitRef?)
+
+        /// A Git-looking declaration exists but cannot be represented without
+        /// evaluating Ruby or accepting an unsupported option combination.
+        case unsupported
+    }
 
     static func containsUnsupportedLexicalCharacter(_ line: String) -> Bool {
         line.contains { character in
@@ -91,6 +107,114 @@ enum PodfileStaticSyntax {
             : nil
     }
 
+    /// Recognizes one deliberately narrow, physical-line subset of CocoaPods'
+    /// external Git syntax. Both hash-rocket and keyword options are accepted,
+    /// but every option value must be a quoted Ruby literal. The grammar permits
+    /// exactly one `git` option and at most one of `branch`, `tag`, or `commit`;
+    /// all other options, expression tails, and malformed forms are rejected.
+    static func externalGitSource(from line: String) -> ExternalGitSource {
+        let source = line.trimmingCharacters(in: rubyHorizontalWhitespace)
+        let hasGitMarker = containsGitOptionMarker(in: source)
+
+        guard !containsUnsupportedLexicalCharacter(source) else {
+            return hasGitMarker ? .unsupported : .none
+        }
+
+        var index = source.startIndex
+        guard let parenthesized = consumeInvocationKeyword("pod", in: source, index: &index) else {
+            return .none
+        }
+        guard index < source.endIndex, source[index] == "'" || source[index] == "\"",
+              parseQuotedLiteral(in: source, index: &index) != nil else {
+            return hasGitMarker ? .unsupported : .none
+        }
+
+        skipWhitespace(in: source, index: &index)
+        if parenthesized, index < source.endIndex, source[index] == ")" {
+            index = source.index(after: index)
+            return finishesExternalGitInvocation(in: source, index: index)
+                ? .none
+                : (hasGitMarker ? .unsupported : .none)
+        }
+        guard index < source.endIndex, source[index] == "," else {
+            return hasGitMarker ? .unsupported : .none
+        }
+
+        var gitURL: String?
+        var ref: GitRef?
+        var sawUnsupportedOption = false
+        var sawPath = false
+        var isFinished = false
+
+        while !isFinished {
+            guard index < source.endIndex, source[index] == "," else {
+                return hasGitMarker ? .unsupported : .none
+            }
+            index = source.index(after: index)
+            skipWhitespace(in: source, index: &index)
+
+            guard let key = parseExternalGitOptionKey(in: source, index: &index) else {
+                return hasGitMarker ? .unsupported : .none
+            }
+            skipWhitespace(in: source, index: &index)
+            guard index < source.endIndex, source[index] == "'" || source[index] == "\"",
+                  let value = parseQuotedLiteral(in: source, index: &index),
+                  !value.isEmpty else {
+                return hasGitMarker || key == "git" ? .unsupported : .none
+            }
+
+            switch key {
+            case "git":
+                if gitURL == nil {
+                    gitURL = value
+                } else {
+                    sawUnsupportedOption = true
+                }
+            case "branch", "tag", "commit":
+                if ref != nil {
+                    sawUnsupportedOption = true
+                } else {
+                    ref = switch key {
+                    case "branch": .branch(value)
+                    case "tag": .tag(value)
+                    case "commit": .commit(value)
+                    default: nil
+                    }
+                }
+            case "path":
+                sawPath = true
+            default:
+                sawUnsupportedOption = true
+            }
+
+            skipWhitespace(in: source, index: &index)
+            if parenthesized {
+                if index < source.endIndex, source[index] == ")" {
+                    index = source.index(after: index)
+                    isFinished = true
+                } else if index < source.endIndex, source[index] == "," {
+                    continue
+                } else {
+                    return hasGitMarker || gitURL != nil ? .unsupported : .none
+                }
+            } else if index == source.endIndex || source[index] == "#" {
+                isFinished = true
+            } else if source[index] == "," {
+                continue
+            } else {
+                return hasGitMarker || gitURL != nil ? .unsupported : .none
+            }
+        }
+
+        guard finishesExternalGitInvocation(in: source, index: index) else {
+            return hasGitMarker || gitURL != nil ? .unsupported : .none
+        }
+        guard let gitURL, !sawUnsupportedOption, !sawPath else {
+            return hasGitMarker ? .unsupported : .none
+        }
+        return .supported(url: gitURL, ref: ref)
+    }
+
     private static func scopeName(
         from line: String,
         keyword: String,
@@ -172,6 +296,87 @@ enum PodfileStaticSyntax {
         let boundary = source.index(source.startIndex, offsetBy: keyword.count)
         return boundary < source.endIndex
             && (isRubyHorizontalWhitespace(source[boundary]) || source[boundary] == "(")
+    }
+
+    private static func containsGitOptionMarker(in source: String) -> Bool {
+        var executable = ""
+        var index = source.startIndex
+
+        while index < source.endIndex {
+            let character = source[index]
+            if character == "#" {
+                break
+            }
+            if character == "'" || character == "\"" {
+                let quote = character
+                executable.append(" ")
+                index = source.index(after: index)
+                while index < source.endIndex {
+                    let quotedCharacter = source[index]
+                    if quotedCharacter == "\\" {
+                        executable.append(" ")
+                        index = source.index(after: index)
+                        if index < source.endIndex {
+                            executable.append(" ")
+                            index = source.index(after: index)
+                        }
+                        continue
+                    }
+                    executable.append(" ")
+                    index = source.index(after: index)
+                    if quotedCharacter == quote {
+                        break
+                    }
+                }
+                continue
+            }
+            executable.append(character)
+            index = source.index(after: index)
+        }
+
+        return executable.range(
+            of: #"(?:^|[,\s])(?::git\b|git\s*:)"#,
+            options: .regularExpression
+        ) != nil
+    }
+
+    private static func parseExternalGitOptionKey(
+        in source: String,
+        index: inout String.Index
+    ) -> String? {
+        guard index < source.endIndex else { return nil }
+
+        if source[index] == ":" {
+            index = source.index(after: index)
+            guard let key = consumeIdentifier(in: source, index: &index) else { return nil }
+            skipWhitespace(in: source, index: &index)
+            guard index < source.endIndex, source[index] == "=" else { return nil }
+            index = source.index(after: index)
+            guard index < source.endIndex, source[index] == ">" else { return nil }
+            index = source.index(after: index)
+            return key
+        }
+
+        guard let key = consumeIdentifier(in: source, index: &index) else { return nil }
+        guard index < source.endIndex, source[index] == ":" else { return nil }
+        index = source.index(after: index)
+        return key
+    }
+
+    private static func consumeIdentifier(in source: String, index: inout String.Index) -> String? {
+        guard index < source.endIndex, isIdentifierStart(source[index]) else { return nil }
+        let start = index
+        index = source.index(after: index)
+        while index < source.endIndex, isIdentifierContinuation(source[index]) {
+            index = source.index(after: index)
+        }
+        return String(source[start..<index])
+    }
+
+    private static func finishesExternalGitInvocation(in source: String, index: String.Index) -> Bool {
+        var trailing = index
+        skipWhitespace(in: source, index: &trailing)
+        return trailing == source.endIndex || source[trailing] == "#"
     }
 
     private static func consumeStaticModularHeadersOption(

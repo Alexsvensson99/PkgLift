@@ -58,6 +58,7 @@ final class ProjectAnalysisTests: XCTestCase {
 
         XCTAssertEqual(decoded.reasons, ["Legacy free-form reason"])
         XCTAssertNil(decoded.reasonDetails)
+        XCTAssertNil(decoded.pod.sourceProvenance)
     }
 
     func testTypedReasonDetailsAreAdditiveAndKeepLegacyMessagesUnchanged() throws {
@@ -100,5 +101,6 @@ final class ProjectAnalysisTests: XCTestCase {
 
         XCTAssertEqual(decoded.reasons, ["Legacy plan reason"])
         XCTAssertNil(decoded.reasonDetails)
+        XCTAssertNil(decoded.sourceProvenance)
     }
 }

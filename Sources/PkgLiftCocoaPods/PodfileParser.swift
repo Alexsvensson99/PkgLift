@@ -180,9 +180,11 @@ public struct PodfileParser: Sendable {
                 features.hasDynamicRuby = true
             }
             if let name = parsedPodName {
-                let parsedSource = podSource(from: trimmed)
-                let source = isRepresentablePodDeclaration(trimmed) || parsedSource != .registry
-                    ? parsedSource
+                let parsedSource = parsedPodSource(from: trimmed)
+                let source = isRepresentablePodDeclaration(trimmed)
+                    || parsedSource.source != .registry
+                    || parsedSource.sourceProvenance != nil
+                    ? parsedSource.source
                     : .unknown
                 let resolution = usesConservativeFlatParsing
                     ? StaticTargetResolution(targets: [], hasUnresolvedTargets: true)
@@ -211,6 +213,7 @@ public struct PodfileParser: Sendable {
                     name: name,
                     version: nil,
                     source: source,
+                    sourceProvenance: parsedSource.sourceProvenance,
                     isDirect: true,
                     targets: targetNames,
                     declarations: [declaration],
@@ -252,6 +255,7 @@ public struct PodfileParser: Sendable {
                 name: dependency.name,
                 version: dependency.version,
                 source: dependency.source,
+                sourceProvenance: dependency.sourceProvenance,
                 isDirect: dependency.isDirect,
                 targets: resolution.targets,
                 declarations: declarations,
@@ -830,7 +834,13 @@ public struct PodfileParser: Sendable {
     }
 
     private func isRepresentablePodDeclaration(_ line: String) -> Bool {
-        PodfileStaticSyntax.representablePodName(from: line) != nil
+        if PodfileStaticSyntax.representablePodName(from: line) != nil {
+            return true
+        }
+        if case .supported = PodfileStaticSyntax.externalGitSource(from: line) {
+            return true
+        }
+        return false
     }
 
     private func simpleHelperInvocationName(from code: String) -> String? {
@@ -1099,31 +1109,63 @@ public struct PodfileParser: Sendable {
         }
     }
 
-    private func podSource(from line: String) -> PodSource {
-        if let gitURL = firstCapture(
-            in: line,
-            pattern: #":git\s*=>\s*['\"]([^'\"]+)['\"]"#
-        ) ?? firstCapture(
-            in: line,
-            pattern: #"\bgit:\s*['\"]([^'\"]+)['\"]"#
-        ) {
-            let ref: GitRef?
-            if let branch = optionValue(named: "branch", in: line) {
-                ref = .branch(branch)
-            } else if let tag = optionValue(named: "tag", in: line) {
-                ref = .tag(tag)
-            } else if let commit = optionValue(named: "commit", in: line) {
-                ref = .commit(commit)
-            } else {
-                ref = nil
+    private func parsedPodSource(from line: String) -> ParsedPodSource {
+        switch PodfileStaticSyntax.externalGitSource(from: line) {
+        case .supported(let rawURL, let rawRef):
+            let repository = GitRepositoryCanonicalizer.evidence(for: rawURL)
+            let reference = gitReferenceEvidence(from: rawRef)
+            let safeReference = reference ?? .unpinned
+            let provenance = GitSourceProvenance(declarations: [
+                GitDeclarationEvidence(
+                    repository: repository,
+                    reference: safeReference,
+                    syntaxIsSupported: reference != nil
+                ),
+            ])
+            return ParsedPodSource(
+                source: .git(
+                    url: repository.displayURL,
+                    ref: legacyGitRef(from: safeReference)
+                ),
+                sourceProvenance: .git(provenance)
+            )
+        case .unsupported:
+            return ParsedPodSource(
+                source: .unknown,
+                sourceProvenance: .git(.unsupportedSyntax)
+            )
+        case .none:
+            if let path = optionValue(named: "path", in: line) {
+                return ParsedPodSource(source: .path(path))
             }
-            return .git(url: gitURL, ref: ref)
+            return ParsedPodSource(source: .registry)
         }
+    }
 
-        if let path = optionValue(named: "path", in: line) {
-            return .path(path)
+    private func gitReferenceEvidence(from ref: GitRef?) -> GitReferenceEvidence? {
+        guard let ref else { return .unpinned }
+        switch ref {
+        case .branch(let value):
+            return .make(kind: .branch, value: value)
+        case .tag(let value):
+            return .make(kind: .tag, value: value)
+        case .commit(let value):
+            return .make(kind: .commit, value: value)
         }
-        return .registry
+    }
+
+    private func legacyGitRef(from evidence: GitReferenceEvidence) -> GitRef? {
+        guard let value = evidence.value else { return nil }
+        switch evidence.kind {
+        case .branch:
+            return .branch(value)
+        case .tag:
+            return .tag(value)
+        case .commit:
+            return .commit(value)
+        case .unpinned:
+            return nil
+        }
     }
 
     private func optionValue(named name: String, in line: String) -> String? {
@@ -1330,6 +1372,19 @@ public struct PodfileParser: Sendable {
 private struct LexicalAnalysis {
     let lines: [String]
     let hasUnsupportedStructure: Bool
+}
+
+private struct ParsedPodSource {
+    let source: PodSource
+    let sourceProvenance: DependencySourceProvenance?
+
+    init(
+        source: PodSource,
+        sourceProvenance: DependencySourceProvenance? = nil
+    ) {
+        self.source = source
+        self.sourceProvenance = sourceProvenance
+    }
 }
 
 private enum StaticScope {

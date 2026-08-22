@@ -63,7 +63,7 @@ jobs:
             license: Apache-2.0
           - name: XcodeBenchmark read-only compatibility
             case: xcodebenchmark
-            issue: local-batch-20260815
+            issue: '53'
             repository: devMEremenko/XcodeBenchmark
             commit: 60d82d23e34fd63c4cae5d26d10cbdd88f0b0ee2
             root: .
@@ -72,7 +72,7 @@ jobs:
             license: MIT
           - name: Hammerspoon read-only compatibility
             case: hammerspoon
-            issue: local-batch-20260815
+            issue: '53'
             repository: Hammerspoon/hammerspoon
             commit: 23e387e2805a9890066366e0ac96c71b27f0cfd5
             root: .

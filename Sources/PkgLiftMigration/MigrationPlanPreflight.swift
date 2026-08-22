@@ -51,6 +51,7 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
     case ambiguousTarget(dependency: String, product: String, expectedTarget: String, matchCount: Int)
     case conflictingRequirements(repositoryURL: String)
     case staleAutoEntry(dependency: String)
+    case staleSourceProvenance(dependency: String)
 
     public var errorDescription: String? {
         switch self {
@@ -70,6 +71,8 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
             return "Automatic migration refused: package '\(repositoryURL)' has conflicting version requirements in the plan."
         case .staleAutoEntry(let dependency):
             return "Automatic migration refused for '\(dependency)': the saved plan no longer matches the current Podfile, lockfile, registry mapping, configuration, or target evidence. Regenerate the plan."
+        case .staleSourceProvenance(let dependency):
+            return "Automatic migration refused for '\(dependency)': external Git source provenance changed, is missing, or cannot be compared safely. Regenerate the plan before any mutation."
         }
     }
 }
@@ -85,7 +88,11 @@ public struct MigrationPlanPreflight: Sendable {
         currentPlan: MigrationPlan,
         availableTargetInfos: [TargetInfo]
     ) throws -> PreparedMigration {
-        let prepared = try prepare(
+        try validateSavedSourceProvenanceEntries(
+            plan.entries,
+            against: currentPlan.entries
+        )
+        let prepared = try prepareValidatedPlan(
             plan: plan,
             availableTargetInfos: availableTargetInfos
         )
@@ -112,7 +119,24 @@ public struct MigrationPlanPreflight: Sendable {
         )
     }
 
+    /// A caller without a regenerated current plan cannot safely compare
+    /// external source evidence, so this overload refuses any such snapshot.
     public func prepare(
+        plan: MigrationPlan,
+        availableTargetInfos: [TargetInfo]
+    ) throws -> PreparedMigration {
+        if let external = plan.entries.first(where: { $0.sourceProvenance != nil }) {
+            throw MigrationPlanPreflightError.staleSourceProvenance(
+                dependency: external.podName
+            )
+        }
+        return try prepareValidatedPlan(
+            plan: plan,
+            availableTargetInfos: availableTargetInfos
+        )
+    }
+
+    private func prepareValidatedPlan(
         plan: MigrationPlan,
         availableTargetInfos: [TargetInfo]
     ) throws -> PreparedMigration {
@@ -133,6 +157,12 @@ public struct MigrationPlanPreflight: Sendable {
                 throw MigrationPlanPreflightError.incompleteAutoEntry(
                     dependency: entry.podName,
                     detail: "the dependency name is empty."
+                )
+            }
+            guard entry.sourceProvenance == nil else {
+                throw MigrationPlanPreflightError.incompleteAutoEntry(
+                    dependency: dependency,
+                    detail: "external Git source provenance is analysis-only and cannot authorize AUTO migration."
                 )
             }
             guard let package = entry.packageCandidate else {
@@ -320,6 +350,7 @@ public struct MigrationPlanPreflight: Sendable {
                   current.actions == saved.actions,
                   current.targetName == saved.targetName,
                   current.packageCandidate == saved.packageCandidate,
+                  current.sourceProvenance == saved.sourceProvenance,
                   current.declarations == saved.declarations,
                   current.targetAttribution == saved.targetAttribution,
                   current.targetSourceProfile == saved.targetSourceProfile else {
@@ -327,6 +358,55 @@ public struct MigrationPlanPreflight: Sendable {
                     dependency: saved.podName
                 )
             }
+        }
+    }
+
+    /// External Git evidence is part of the plan snapshot even though v0.4
+    /// never executes it. A changed external source can alter the remaining
+    /// CocoaPods graph, so applying an otherwise unrelated AUTO entry must stop
+    /// until the complete plan has been regenerated.
+    private func validateSavedSourceProvenanceEntries(
+        _ savedEntries: [MigrationPlanEntry],
+        against currentEntries: [MigrationPlanEntry]
+    ) throws {
+        let savedExternal = Dictionary(grouping: savedEntries.filter {
+            $0.sourceProvenance != nil
+        }, by: \.podName)
+        let currentExternal = Dictionary(grouping: currentEntries.filter {
+            $0.sourceProvenance != nil
+        }, by: \.podName)
+        let names = Set(savedExternal.keys).union(currentExternal.keys).sorted()
+
+        for name in names {
+            guard let saved = savedExternal[name], saved.count == 1,
+                  let current = currentExternal[name], current.count == 1,
+                  isSafelyComparable(saved[0].sourceProvenance),
+                  isSafelyComparable(current[0].sourceProvenance),
+                  saved[0].sourceProvenance == current[0].sourceProvenance,
+                  saved[0].currentVersion == current[0].currentVersion,
+                  saved[0].targetName == current[0].targetName,
+                  saved[0].declarations == current[0].declarations,
+                  saved[0].targetAttribution == current[0].targetAttribution else {
+                throw MigrationPlanPreflightError.staleSourceProvenance(
+                    dependency: name
+                )
+            }
+        }
+    }
+
+    /// Redacted or malformed evidence is deliberately lossy. Equality between
+    /// two redaction markers cannot prove the underlying external source stayed
+    /// unchanged, so applying unrelated AUTO entries must stop as well.
+    private func isSafelyComparable(
+        _ provenance: DependencySourceProvenance?
+    ) -> Bool {
+        guard case .git(let git)? = provenance else { return false }
+        switch git.status {
+        case .supportedImmutable, .mutable, .unpinned, .ambiguousRepository:
+            return true
+        case .credentialBearing, .incomplete, .conflicting, .unsupportedURL,
+             .unsupportedSyntax:
+            return false
         }
     }
 

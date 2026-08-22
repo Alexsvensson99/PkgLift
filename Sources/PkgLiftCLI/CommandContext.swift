@@ -275,6 +275,8 @@ struct CommandContext: Sendable {
             if let packageCandidate = candidate.packageCandidate,
                let requirement = packageCandidate.versionRequirement,
                let targetName,
+               candidate.pod.source == .registry,
+               candidate.pod.sourceProvenance == nil,
                candidate.classification == .auto {
                 actions.append(.removePod(name: candidate.pod.name))
                 actions.append(.addSwiftPackage(
@@ -305,6 +307,7 @@ struct CommandContext: Sendable {
             return PkgLiftCore.MigrationPlanEntry(
                 podName: candidate.pod.name,
                 currentVersion: candidate.pod.version,
+                sourceProvenance: candidate.pod.sourceProvenance,
                 classification: candidate.classification,
                 actions: actions,
                 reasons: candidate.reasons,
