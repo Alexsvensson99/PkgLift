@@ -116,6 +116,9 @@ Candidate work:
 
 This milestone is an architectural prerequisite for safe generated Swift packages.
 
+The concrete analysis-only release scope is tracked in the
+[v0.5.0 Podspec Semantic Model tracker](https://github.com/Alexsvensson99/PkgLift/issues/63).
+
 ## v0.6.x — Generated Swift Package Prototype
 
 **Goal:** prove that selected pods without native SwiftPM support can be represented safely as generated local Swift packages.

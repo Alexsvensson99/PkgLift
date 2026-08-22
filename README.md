@@ -254,7 +254,7 @@ PkgLift v0.4.0 retains these safety boundaries:
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md), the [v0.4.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/53), and the [v0.3.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/48) for release evidence.
+See [ROADMAP.md](ROADMAP.md), the analysis-only [Podspec semantic model](Documentation/PodspecSemanticModel.md), the [v0.5.0 tracker](https://github.com/Alexsvensson99/PkgLift/issues/63), the [v0.4.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/53), and the [v0.3.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/48) for planned scope and release evidence.
 
 ## Contributing
 
