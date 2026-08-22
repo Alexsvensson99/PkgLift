@@ -291,7 +291,8 @@ public enum GitRepositoryCanonicalizer: Sendable {
         guard user == "git",
               !rawPath.hasPrefix("/"),
               isSafeHost(host),
-              let path = canonicalRepositoryPath(rawPath) else {
+              let literalPath = canonicalRepositoryPath(rawPath),
+              let path = canonicalURLPath(fromSCPPath: literalPath) else {
             return unsupportedEvidence(credentialBearing: credentialBearing)
         }
 
@@ -312,6 +313,20 @@ public enum GitRepositoryCanonicalizer: Sendable {
             containedCredentialMaterial: credentialBearing,
             status: status
         )
+    }
+
+    /// SCP syntax carries a raw filesystem-style path rather than a URL path.
+    /// Encode that path before placing it in the canonical `ssh://` identity so
+    /// the identity is stable under URLComponents validation and Codable round
+    /// trips. This also keeps raw SCP paths equivalent to the same raw SSH URL.
+    private static func canonicalURLPath(fromSCPPath path: String) -> String? {
+        var components = URLComponents()
+        components.path = "/\(path)"
+        let percentEncodedPath = components.percentEncodedPath
+        guard percentEncodedPath.hasPrefix("/") else { return nil }
+        let encodedPath = String(percentEncodedPath.dropFirst())
+        guard canonicalRepositoryPath(encodedPath) == encodedPath else { return nil }
+        return encodedPath
     }
 
     private static func canonicalRepositoryPath(_ rawPath: String) -> String? {

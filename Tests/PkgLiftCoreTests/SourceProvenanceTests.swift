@@ -32,6 +32,43 @@ final class SourceProvenanceTests: XCTestCase {
         )
     }
 
+    func testSCPCanonicalizationProducesCodableCanonicalURLPaths() throws {
+        let cases = [
+            (
+                "git@example.com:Owner/Répo.git",
+                "ssh://git@example.com/Owner/Répo.git",
+                "ssh://example.com/Owner/R%C3%A9po"
+            ),
+            (
+                "git@example.com:Owner/Repo[1].git",
+                "ssh://git@example.com/Owner/Repo[1].git",
+                "ssh://example.com/Owner/Repo%5B1%5D"
+            ),
+            (
+                "git@example.com:Owner/Repo%zz.git",
+                "ssh://git@example.com/Owner/Repo%zz.git",
+                "ssh://example.com/Owner/Repo%25zz"
+            ),
+        ]
+
+        for (scpLiteral, sshLiteral, expectedIdentity) in cases {
+            let scp = GitRepositoryCanonicalizer.evidence(for: scpLiteral)
+            let ssh = GitRepositoryCanonicalizer.evidence(for: sshLiteral)
+
+            XCTAssertEqual(scp.status, .supported, scpLiteral)
+            XCTAssertEqual(scp.identity?.value, expectedIdentity, scpLiteral)
+            XCTAssertEqual(scp.identity, ssh.identity, scpLiteral)
+            XCTAssertEqual(
+                try JSONDecoder().decode(
+                    GitRepositoryEvidence.self,
+                    from: JSONEncoder().encode(scp)
+                ),
+                scp,
+                scpLiteral
+            )
+        }
+    }
+
     func testCanonicalizationRedactsCredentialQueryAndFragmentWithoutRetainingRawValues() throws {
         let secretURL = "https://alice:password@example.com/Owner/Repo.git?token=secret#private"
         let evidence = GitRepositoryCanonicalizer.evidence(for: secretURL)
