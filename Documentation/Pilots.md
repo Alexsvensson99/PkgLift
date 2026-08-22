@@ -6,7 +6,7 @@ PkgLift uses a small set of public Xcode projects to complement synthetic fixtur
 
 The `Pinned Pilots` workflow performs these phases:
 
-1. builds the current PkgLift source in release mode;
+1. builds the current PkgLift source once in release mode, binds the executable and registry bundle to the exact repository SHA and workflow run, and verifies their checksums before every matrix job;
 2. creates an isolated, detached partial checkout of the exact upstream commit, uses cone-mode sparse checkout for a nested pilot root, and rejects any canonical root that resolves outside that checkout;
 3. runs `analyze` and records JSON output;
 4. generates and validates a migration plan;
@@ -71,7 +71,7 @@ A pilot update must change the recorded commit explicitly, explain why the old c
 
 ## Running the workflows
 
-The pilot gates and their underlying validation run on every pull request and main-branch push. This intentionally spends more runner time so a pull request cannot modify a path filter and receive a green gate for skipped work. The complete read-only matrix also runs weekly to detect pinned-upstream or Xcode-runner drift. Maintainers can start either workflow manually from GitHub Actions.
+The pilot gates and their underlying validation run on every pull request and main-branch push. This intentionally spends more runner time so a pull request cannot modify a path filter and receive a green gate for skipped work. The ten matrix jobs retain separate clean runners, but consume one immutable, same-run PkgLift artifact instead of rebuilding identical bytes ten times. The artifact name and manifest bind its repository, source SHA, run ID, and producer attempt; each consumer rechecks the archive, executable, registry bundle, architecture, and provenance before running a pilot. A selective retry reuses the producer output when GitHub exposes it; if that output or its one-day artifact has expired, rerun all jobs. The complete read-only matrix also runs weekly to detect pinned-upstream or Xcode-runner drift. Maintainers can start either workflow manually from GitHub Actions.
 
 Each job writes a Markdown summary with deterministic direct-dependency classifications and reason-code occurrence counts, then keeps its selected validation artifact for 14 days. A failed job should be triaged into one of these outcomes:
 

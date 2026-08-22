@@ -49,6 +49,12 @@ else
   workspace_report="$PILOT_WORKSPACE"
 fi
 
+pkglift_binary_sha256="$(/usr/bin/shasum -a 256 "$PKGLIFT_BIN" | awk '{print $1}')"
+if [[ -n "${PKGLIFT_BINARY_SHA256:-}" && "$pkglift_binary_sha256" != "$PKGLIFT_BINARY_SHA256" ]]; then
+  echo "PkgLift binary changed after artifact verification." >&2
+  exit 1
+fi
+
 rm -rf "$source_root" "$raw_root" "$report_root"
 mkdir -p "$source_root" "$raw_root" "$report_root"
 
@@ -67,6 +73,10 @@ EOF
 
 {
   echo "pkglift=$($PKGLIFT_BIN version)"
+  echo "pkglift_sha256=$pkglift_binary_sha256"
+  echo "pkglift_source_sha=${PKGLIFT_ARTIFACT_SOURCE_SHA:-local-build}"
+  echo "pkglift_artifact_run_id=${PKGLIFT_ARTIFACT_RUN_ID:-local-build}"
+  echo "pkglift_artifact_run_attempt=${PKGLIFT_ARTIFACT_RUN_ATTEMPT:-local-build}"
   echo "git=$(git --version)"
   swift --version | sed 's/^/swift=/'
   xcodebuild -version | sed 's/^/xcode=/'
