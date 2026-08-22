@@ -22,7 +22,7 @@ A clear and concise description of what you expected to happen.
 **Environment (please complete the following information):**
  - macOS Version: [e.g. 14.5]
  - Swift Version: [e.g. 5.10, 6.0]
- - PkgLift Version: [e.g. 0.1.0]
+ - PkgLift Version: [e.g. 0.4.0]
 
 **Additional context**
 Add any other context about the problem here (e.g. snippet of your Podfile).
