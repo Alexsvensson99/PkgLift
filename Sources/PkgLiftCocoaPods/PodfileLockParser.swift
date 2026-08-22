@@ -279,12 +279,7 @@ public struct PodfileLockParser: Sendable {
     ) -> ParsedRepository {
         guard let rawValue = options?[key] else { return ParsedRepository() }
         guard let value = rawValue as? String else {
-            return ParsedRepository(
-                evidence: GitRepositoryCanonicalizer.evidence(
-                    for: GitRepositoryEvidence.redactedDisplayURL
-                ),
-                isMalformed: true
-            )
+            return ParsedRepository(isMalformed: true)
         }
         return ParsedRepository(evidence: GitRepositoryCanonicalizer.evidence(for: value))
     }

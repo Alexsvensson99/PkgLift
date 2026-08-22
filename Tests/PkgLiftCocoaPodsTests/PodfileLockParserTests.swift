@@ -216,6 +216,82 @@ struct PodfileLockParserTests {
         #expect(provenance.lockfile?.hasMalformedEvidence == true)
     }
 
+    @Test("Non-string Git repositories remain malformed without invented URL evidence")
+    func testNonStringGitRepositoriesRemainMalformed() throws {
+        let externalYAML = """
+        PODS:
+          - ExternalKit (1.0.0)
+        EXTERNAL SOURCES:
+          ExternalKit:
+            :git: 42
+        """
+
+        let externalDependency = try #require(
+            PodfileLockParser().parse(content: externalYAML).first
+        )
+        #expect(externalDependency.source == .unknown)
+        guard case .git(let externalProvenance)? = externalDependency.sourceProvenance else {
+            Issue.record("Expected malformed external Git lockfile provenance")
+            return
+        }
+        #expect(externalProvenance.status == .incomplete)
+        #expect(externalProvenance.lockfile?.externalSourceRepository == nil)
+        #expect(externalProvenance.lockfile?.hasMalformedEvidence == true)
+        let externalJSON = try #require(String(
+            data: JSONEncoder().encode(externalDependency),
+            encoding: .utf8
+        ))
+        #expect(externalJSON.contains("42") == false)
+        #expect(externalJSON.contains(GitRepositoryEvidence.redactedDisplayURL) == false)
+
+        let checkoutYAML = """
+        PODS:
+          - ExternalKit (1.0.0)
+        EXTERNAL SOURCES:
+          ExternalKit:
+            :git: https://example.invalid/Owner/ExternalKit.git
+        CHECKOUT OPTIONS:
+          ExternalKit:
+            :git: 42
+        """
+
+        let checkoutDependency = try #require(
+            PodfileLockParser().parse(content: checkoutYAML).first
+        )
+        #expect(checkoutDependency.source == .git(
+            url: "https://example.invalid/Owner/ExternalKit",
+            ref: nil
+        ))
+        guard case .git(let checkoutProvenance)? = checkoutDependency.sourceProvenance else {
+            Issue.record("Expected malformed checkout Git lockfile provenance")
+            return
+        }
+        #expect(checkoutProvenance.status == .incomplete)
+        #expect(checkoutProvenance.lockfile?.externalSourceRepository != nil)
+        #expect(checkoutProvenance.lockfile?.checkoutRepository == nil)
+        #expect(checkoutProvenance.lockfile?.hasMalformedEvidence == true)
+    }
+
+    @Test("Unsupported string Git repositories remain unsupported URLs")
+    func testUnsupportedStringGitRepositoryRemainsUnsupported() throws {
+        let yaml = """
+        PODS:
+          - ExternalKit (1.0.0)
+        EXTERNAL SOURCES:
+          ExternalKit:
+            :git: http://example.invalid/Owner/ExternalKit.git
+        """
+
+        let dependency = try #require(PodfileLockParser().parse(content: yaml).first)
+        guard case .git(let provenance)? = dependency.sourceProvenance else {
+            Issue.record("Expected unsupported Git lockfile provenance")
+            return
+        }
+        #expect(provenance.status == .unsupportedURL)
+        #expect(provenance.lockfile?.hasMalformedEvidence == false)
+        #expect(provenance.lockfile?.externalSourceRepository?.status == .unsupportedURL)
+    }
+
     @Test("Short checkout commits remain incomplete evidence")
     func testShortCheckoutCommitRemainsIncomplete() throws {
         let yaml = """
