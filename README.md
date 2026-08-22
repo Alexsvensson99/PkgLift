@@ -68,6 +68,19 @@ CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on Dece
 
 See the [v0.3.0 release notes](Documentation/ReleaseNotes-0.3.0.md), [changelog](CHANGELOG.md), [migration-safety guide](Documentation/MigrationSafety.md), and [real-project pilot documentation](Documentation/Pilots.md) for the complete evidence.
 
+## In Development for v0.4.x
+
+The current source tree contains an unreleased first tranche of external-source provenance. It statically recognizes a bounded literal `:git` declaration with at most one literal `:branch`, `:tag`, or `:commit` reference, then reconciles that declaration with CocoaPods `EXTERNAL SOURCES` and `CHECKOUT OPTIONS` evidence without executing Ruby or contacting the repository.
+
+- Repository identities are canonicalized deterministically: HTTPS remains distinct from SSH, while explicit `ssh://git@host/owner/repo` and relative SCP-style `git@host:owner/repo.git` syntax share the same SSH identity. Missing or different SSH users and absolute SCP paths are rejected rather than assumed equivalent.
+- Git reference literals are retained only when they contain bounded printable ASCII, so equality remains byte-exact and deterministic across JSON round trips.
+- Credentials, URL user information, queries, and fragments are removed at the parser trust boundary. The raw source URL is not retained in either standard or portable JSON.
+- Provenance distinguishes supported immutable evidence, mutable branches, unpinned declarations, credential-bearing input, incomplete or conflicting evidence, ambiguous repositories, unsupported URLs, and unsupported declaration syntax.
+- A tag is considered supported immutable provenance only when the Podfile and lockfile repository/reference evidence agrees and the checkout contains a full commit identifier. A direct commit must additionally equal that full checkout commit.
+- External sources remain analysis-only: they are always `REVIEW`, `BLOCKED`, or `UNKNOWN`, never `AUTO`. Local `:path` provenance, network resolution, Podspec generation, and automatic external-source migration remain outside this tranche.
+
+This development work is not a v0.4.x release or release-readiness claim. See the [roadmap](ROADMAP.md), [JSON contract](Documentation/JSONSchema.md), and [migration-safety guide](Documentation/MigrationSafety.md) for the exact boundary.
+
 ## Safety Philosophy
 
 PkgLift operates on a strict safety model. Every dependency is classified before migration:
@@ -98,6 +111,8 @@ PkgLift targets partial CocoaPods-to-SwiftPM migration in native Xcode projects.
 | Flutter | `flutter_install_all_ios_pods` is detected as an unsupported project integration and prevents `AUTO` |
 | Capacitor | `capacitor_pods` is detected as an unsupported project integration and prevents `AUTO` |
 | Kotlin Multiplatform (KMP) | No heuristic detection is claimed; local pods and dynamic generation remain non-automatic under existing safety rules |
+| External Git pod | The unreleased source tree can analyze bounded literal repository/ref provenance, but the dependency remains `REVIEW`, `BLOCKED`, or `UNKNOWN` and is never migrated automatically |
+| Local `:path` pod | Detected as an external source; typed local provenance and automatic migration are not implemented |
 
 Host support remains macOS 14 or later on Apple Silicon (`arm64`). Distribution is through a Developer ID-signed and Apple-notarized binary, Homebrew, or a source build. See [Limitations](#limitations) for the intentionally conservative boundaries.
 
@@ -182,7 +197,7 @@ pkglift verify \
 - `registry validate`: Validates local and bundled registry mappings.
 - `version`: Prints the current version.
 
-`analyze` and `plan` accept `--portable-json` as an alternative to `--json`. Portable output removes local paths and URL credentials and adds `portableOutput.version = 1`, but still contains dependency and target names. `plan --portable-json` prints the redacted representation while keeping the full executable plan in `.pkglift/plan.json`.
+`analyze` and `plan` accept `--portable-json` as an alternative to `--json`. Portable output removes local paths and URL credentials and adds `portableOutput.version = 1`, but still contains dependency and target names. External Git literals are already canonicalized and stripped of credentials, queries, and fragments before either standard or portable JSON is constructed. `plan --portable-json` prints the portable representation while keeping the standard executable plan in `.pkglift/plan.json`.
 
 `analyze` also accepts a CI policy without changing its normal behavior:
 
@@ -238,7 +253,8 @@ PkgLift v0.3.0 retains these safety boundaries:
 - Only CocoaPods-to-SwiftPM migration is supported.
 - Migration is partial: non-automatic pods and their CocoaPods integration are preserved.
 - A stable `major.minor.patch` lockfile version at or above the exact mapping's verified SwiftPM minimum, exactly one matching Xcode target, a complete non-empty target language profile, and mapping support for every detected language are required for `AUTO`.
-- Dynamic Ruby, install hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, external pod sources, and ambiguous target mappings are `REVIEW` or `BLOCKED`.
+- Dynamic Ruby, install hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, external pod sources, and ambiguous target mappings are non-automatic. The unreleased source tree analyzes only bounded literal `:git` provenance; every external dependency still resolves to `REVIEW`, `BLOCKED`, or `UNKNOWN`, never `AUTO`.
+- Local `:path` provenance, repository network resolution, Podspec generation, and automatic external-source migration are not implemented.
 - Confirmed Carthage integration and React Native, Flutter, or Capacitor Podfile markers prevent `AUTO`; PkgLift does not migrate or remove those integrations.
 - KMP is not detected through speculative file or name heuristics.
 - Base pod mappings never apply automatically to undeclared subspecs.

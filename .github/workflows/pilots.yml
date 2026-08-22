@@ -17,8 +17,58 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build_pilot_toolchain:
+    name: Build Shared Pilot Toolchain
+    runs-on: macos-15
+    timeout-minutes: 15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    outputs:
+      archive_sha256: ${{ steps.package.outputs.archive_sha256 }}
+      artifact_name: ${{ steps.package.outputs.artifact_name }}
+      artifact_run_attempt: ${{ steps.package.outputs.artifact_run_attempt }}
+      binary_sha256: ${{ steps.package.outputs.binary_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate Source Checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+          [[ -z "$(git status --porcelain --untracked-files=all)" ]]
+
+      - name: Build PkgLift Once
+        shell: bash
+        run: swift build -c release -j 2 --arch arm64
+
+      - name: Package and Smoke-Test Shared PkgLift
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+          [[ -z "$(git status --porcelain --untracked-files=all)" ]]
+          bin_directory="$(swift build -c release --arch arm64 --show-bin-path)"
+          bash Scripts/package-pilot-artifact.sh \
+            "$bin_directory" \
+            "$RUNNER_TEMP/pkglift-pilot-artifact"
+
+      - name: Upload Shared PkgLift
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.package.outputs.artifact_name }}
+          path: |
+            ${{ runner.temp }}/pkglift-pilot-artifact/pkglift-pilot-binary.tar.gz
+            ${{ runner.temp }}/pkglift-pilot-artifact/pkglift-pilot-binary.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 1
+
   analyze:
     name: ${{ matrix.name }}
+    needs: build_pilot_toolchain
     runs-on: macos-15
     timeout-minutes: 30
     strategy:
@@ -63,7 +113,7 @@ jobs:
             license: Apache-2.0
           - name: XcodeBenchmark read-only compatibility
             case: xcodebenchmark
-            issue: local-batch-20260815
+            issue: '53'
             repository: devMEremenko/XcodeBenchmark
             commit: 60d82d23e34fd63c4cae5d26d10cbdd88f0b0ee2
             root: .
@@ -72,7 +122,7 @@ jobs:
             license: MIT
           - name: Hammerspoon read-only compatibility
             case: hammerspoon
-            issue: local-batch-20260815
+            issue: '53'
             repository: Hammerspoon/hammerspoon
             commit: 23e387e2805a9890066366e0ac96c71b27f0cfd5
             root: .
@@ -130,13 +180,26 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Build PkgLift
+      - name: Download Shared PkgLift
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build_pilot_toolchain.outputs.artifact_name }}
+          path: ${{ runner.temp }}/pkglift-pilot-artifact
+
+      - name: Verify Shared PkgLift
         shell: bash
+        env:
+          PKGLIFT_EXPECTED_ARCHIVE_SHA256: ${{ needs.build_pilot_toolchain.outputs.archive_sha256 }}
+          PKGLIFT_EXPECTED_BINARY_SHA256: ${{ needs.build_pilot_toolchain.outputs.binary_sha256 }}
+          PKGLIFT_EXPECTED_PRODUCER_ATTEMPT: ${{ needs.build_pilot_toolchain.outputs.artifact_run_attempt }}
+          PKGLIFT_EXPECTED_REPOSITORY: ${{ github.repository }}
+          PKGLIFT_EXPECTED_RUN_ID: ${{ github.run_id }}
+          PKGLIFT_EXPECTED_SOURCE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          swift build -c release -j 2
-          bin_directory="$(swift build -c release --show-bin-path)"
-          echo "PKGLIFT_BIN=$bin_directory/pkglift" >> "$GITHUB_ENV"
+          /usr/bin/python3 Scripts/verify-pilot-artifact.py \
+            "$RUNNER_TEMP/pkglift-pilot-artifact/pkglift-pilot-binary.tar.gz" \
+            "$RUNNER_TEMP/pkglift-pilot-runtime"
 
       - name: Run Pinned Pilot
         run: bash Scripts/run-pinned-pilot.sh
@@ -152,16 +215,20 @@ jobs:
 
   gate:
     name: Pinned Pilot Gate
-    needs: analyze
+    needs:
+      - build_pilot_toolchain
+      - analyze
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require applicable pinned pilots
         env:
+          BUILD_RESULT: ${{ needs.build_pilot_toolchain.result }}
           ANALYZE_RESULT: ${{ needs.analyze.result }}
         shell: bash
         run: |
           set -euo pipefail
+          [[ "$BUILD_RESULT" == 'success' ]]
           [[ "$ANALYZE_RESULT" == 'success' ]]
           echo 'All pinned read-only pilots passed.'

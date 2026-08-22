@@ -56,10 +56,24 @@ public struct MigrationClassifier: Sendable {
         projectIntegrations: [ProjectIntegration] = [],
         podfileFeatures: PodfileFeatures = PodfileFeatures()
     ) -> MigrationClassification {
+        let externalGitEvidenceStatus: GitSourceEvidenceStatus? = {
+            if case let .git(provenance)? = dependency.sourceProvenance {
+                return provenance.status
+            }
+            if case .git = dependency.source {
+                // Compatibility artifacts can carry a legacy Git source but no
+                // typed provenance. Missing evidence must remain fail-closed.
+                return .incomplete
+            }
+            return nil
+        }()
         let dependencyInfo = DependencyInfo(
             identifier: dependency.name,
             isDirect: dependency.isDirect,
             isExternalSource: {
+                if externalGitEvidenceStatus != nil {
+                    return true
+                }
                 switch dependency.source {
                 case .git, .path:
                     return true
@@ -69,6 +83,7 @@ public struct MigrationClassifier: Sendable {
             }(),
             hasUnrepresentableDeclaration: dependency.source == .unknown,
             hasLiteralDeclarationProvenance: dependency.hasLiteralMigrationProvenance,
+            externalGitEvidenceStatus: externalGitEvidenceStatus,
             hasPreInstallHooks: podfileFeatures.hasPreInstallHook,
             hasPostInstallHooks: podfileFeatures.hasPostInstallHook,
             hasScriptPhase: podfileFeatures.hasScriptPhase,
@@ -157,6 +172,10 @@ public struct MigrationClassifier: Sendable {
                 message: "Podfile declaration source, options, or expressions cannot be represented safely",
                 remediation: "Rewrite the declaration as a supported unconditional literal before regenerating the plan."
             ))
+        }
+
+        if let externalGitEvidenceStatus = dependency.externalGitEvidenceStatus {
+            reasons.append(externalGitEvidenceStatus.migrationReason)
         }
 
         if mapping != nil, dependency.isDirect, !dependency.hasLiteralDeclarationProvenance {
@@ -432,6 +451,67 @@ private extension ProjectIntegration {
     }
 }
 
+private extension GitSourceEvidenceStatus {
+    var migrationReason: MigrationReason {
+        switch self {
+        case .supportedImmutable:
+            return MigrationReason(
+                code: .externalGitSourceAnalyzed,
+                message: "External Git source has supported immutable provenance",
+                remediation: "Review the external source manually; analyzed provenance does not authorize automatic migration."
+            )
+        case .mutable:
+            return MigrationReason(
+                code: .externalGitMutableReference,
+                message: "External Git source uses a mutable branch reference",
+                remediation: "Keep the dependency on CocoaPods or replace the branch with reviewed immutable evidence."
+            )
+        case .unpinned:
+            return MigrationReason(
+                code: .externalGitUnpinned,
+                message: "External Git source is not pinned to a reference",
+                remediation: "Pin and review the external source before considering a manual migration."
+            )
+        case .credentialBearing:
+            return MigrationReason(
+                code: .externalGitCredentialsRedacted,
+                message: "External Git credentials were detected and redacted",
+                remediation: "Remove credentials from source declarations and use an approved credential mechanism."
+            )
+        case .incomplete:
+            return MigrationReason(
+                code: .externalGitEvidenceIncomplete,
+                message: "External Git source evidence is incomplete",
+                remediation: "Regenerate analysis with matching static Podfile and lockfile evidence."
+            )
+        case .conflicting:
+            return MigrationReason(
+                code: .externalGitEvidenceConflict,
+                message: "External Git source evidence conflicts",
+                remediation: "Resolve declaration and lockfile source differences before reviewing migration."
+            )
+        case .ambiguousRepository:
+            return MigrationReason(
+                code: .externalGitRepositoryAmbiguous,
+                message: "External Git repository identity is ambiguous",
+                remediation: "Use a complete, statically recognizable repository identity."
+            )
+        case .unsupportedURL:
+            return MigrationReason(
+                code: .externalGitURLUnsupported,
+                message: "External Git repository URL is unsupported",
+                remediation: "Use a supported HTTPS, SSH, or SCP-style repository URL."
+            )
+        case .unsupportedSyntax:
+            return MigrationReason(
+                code: .externalGitSyntaxUnsupported,
+                message: "External Git declaration syntax is unsupported",
+                remediation: "Rewrite the declaration using one literal Git URL and at most one supported reference."
+            )
+        }
+    }
+}
+
 private struct RegistryMappingInfo: Sendable {
     let identifier: String
     let confidence: PkgLiftCore.MigrationConfidence
@@ -447,6 +527,7 @@ private struct DependencyInfo: Sendable {
     let isExternalSource: Bool
     let hasUnrepresentableDeclaration: Bool
     let hasLiteralDeclarationProvenance: Bool
+    let externalGitEvidenceStatus: GitSourceEvidenceStatus?
     let hasPreInstallHooks: Bool
     let hasPostInstallHooks: Bool
     let hasScriptPhase: Bool
@@ -466,6 +547,7 @@ private struct DependencyInfo: Sendable {
         isExternalSource: Bool = false,
         hasUnrepresentableDeclaration: Bool = false,
         hasLiteralDeclarationProvenance: Bool = false,
+        externalGitEvidenceStatus: GitSourceEvidenceStatus? = nil,
         hasPreInstallHooks: Bool = false,
         hasPostInstallHooks: Bool = false,
         hasScriptPhase: Bool = false,
@@ -484,6 +566,7 @@ private struct DependencyInfo: Sendable {
         self.isExternalSource = isExternalSource
         self.hasUnrepresentableDeclaration = hasUnrepresentableDeclaration
         self.hasLiteralDeclarationProvenance = hasLiteralDeclarationProvenance
+        self.externalGitEvidenceStatus = externalGitEvidenceStatus
         self.hasPreInstallHooks = hasPreInstallHooks
         self.hasPostInstallHooks = hasPostInstallHooks
         self.hasScriptPhase = hasScriptPhase

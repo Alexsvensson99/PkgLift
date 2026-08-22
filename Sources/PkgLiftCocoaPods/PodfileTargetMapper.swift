@@ -35,16 +35,21 @@ public struct PodfileTargetMapper: Sendable {
     ) -> [CocoaPodDependency] {
         declarations.map { declaration in
             let resolved = lockfileDependencies.first { $0.name == declaration.name }
-            let source = declaration.source == .registry
-                ? resolved?.source ?? .registry
-                : declaration.source
+            let source = mergedSource(declaration.source, resolved?.source)
+            let sourceProvenance = mergedSourceProvenance([
+                declaration.sourceProvenance,
+                resolved?.sourceProvenance,
+            ], hasSourceConflict: sourcesConflict(
+                declaration.source,
+                resolved?.source
+            ))
             let origins = declaration.declarations?.map { origin in
                 PodfileDeclaration(
                     line: origin.line,
                     scope: origin.scope,
                     scopeName: origin.scopeName,
                     targetName: origin.targetName,
-                    source: source
+                    source: origin.source
                 )
             }
 
@@ -52,6 +57,7 @@ public struct PodfileTargetMapper: Sendable {
                 name: declaration.name,
                 version: resolved?.version,
                 source: source,
+                sourceProvenance: sourceProvenance,
                 isDirect: true,
                 targets: declaration.targets,
                 declarations: origins,
@@ -78,6 +84,7 @@ public struct PodfileTargetMapper: Sendable {
                     name: dependency.name,
                     version: dependency.version,
                     source: dependency.source,
+                    sourceProvenance: dependency.sourceProvenance,
                     isDirect: dependency.isDirect,
                     targets: [],
                     declarations: nil,
@@ -93,6 +100,7 @@ public struct PodfileTargetMapper: Sendable {
                     name: dependency.name,
                     version: dependency.version,
                     source: dependency.source,
+                    sourceProvenance: dependency.sourceProvenance,
                     isDirect: dependency.isDirect,
                     targets: [],
                     declarations: nil,
@@ -102,13 +110,19 @@ public struct PodfileTargetMapper: Sendable {
                     )
                 )
             }
-            let source = dependency.source == .registry
-                ? aggregate.source
-                : dependency.source
+            let source = mergedSource(aggregate.source, dependency.source)
+            let sourceProvenance = mergedSourceProvenance([
+                aggregate.sourceProvenance,
+                dependency.sourceProvenance,
+            ], hasSourceConflict: sourcesConflict(
+                aggregate.source,
+                dependency.source
+            ))
             return CocoaPodDependency(
                 name: dependency.name,
                 version: dependency.version,
                 source: source,
+                sourceProvenance: sourceProvenance,
                 isDirect: dependency.isDirect,
                 targets: aggregate.targets,
                 declarations: aggregate.declarations,
@@ -168,14 +182,20 @@ public struct PodfileTargetMapper: Sendable {
 
             let versions = Array(Set(matching.compactMap(\.version))).sorted()
             let version = versions.count == 1 ? versions[0] : nil
-            let source = matching.dropFirst().allSatisfy { $0.source == first.source }
-                ? first.source
-                : .unknown
+            let hasSourceConflict = matching.dropFirst().contains {
+                $0.source != first.source
+            }
+            let source = hasSourceConflict ? .unknown : first.source
+            let sourceProvenance = mergedSourceProvenance(
+                matching.map(\.sourceProvenance),
+                hasSourceConflict: hasSourceConflict
+            )
 
             return CocoaPodDependency(
                 name: name,
                 version: version,
                 source: source,
+                sourceProvenance: sourceProvenance,
                 isDirect: true,
                 targets: targets,
                 declarations: origins.isEmpty ? nil : origins,
@@ -226,5 +246,60 @@ public struct PodfileTargetMapper: Sendable {
             unresolvedDeclarationCount: unresolvedCount,
             reason: reason
         )
+    }
+
+    private func mergedSource(_ first: PodSource, _ second: PodSource?) -> PodSource {
+        guard let second else { return first }
+        return first == second ? first : .unknown
+    }
+
+    private func sourcesConflict(_ first: PodSource, _ second: PodSource?) -> Bool {
+        guard let second else { return false }
+        return first != second
+    }
+
+    private func mergedSourceProvenance(
+        _ values: [DependencySourceProvenance?],
+        hasSourceConflict: Bool = false
+    ) -> DependencySourceProvenance? {
+        let gitValues = values.compactMap { value -> GitSourceProvenance? in
+            guard case .git(let provenance)? = value else { return nil }
+            return provenance
+        }
+        guard !gitValues.isEmpty else { return nil }
+
+        var seenDeclarations: Set<GitDeclarationEvidence> = []
+        let declarations = gitValues.flatMap(\.declarations).filter { declaration in
+            seenDeclarations.insert(declaration).inserted
+        }
+
+        var seenLockfiles: Set<GitLockfileEvidence> = []
+        let lockfiles = gitValues.compactMap(\.lockfile).filter { lockfile in
+            seenLockfiles.insert(lockfile).inserted
+        }
+
+        let mergedLockfile: GitLockfileEvidence?
+        if let first = lockfiles.first {
+            mergedLockfile = GitLockfileEvidence(
+                externalSourceRepository: first.externalSourceRepository,
+                externalSourceReference: first.externalSourceReference,
+                checkoutRepository: first.checkoutRepository,
+                checkoutDeclaredReference: first.checkoutDeclaredReference,
+                checkoutReference: first.checkoutReference,
+                hasConflictingEvidence: first.hasConflictingEvidence
+                    || lockfiles.count > 1
+                    || hasSourceConflict,
+                hasMalformedEvidence: first.hasMalformedEvidence
+                    || lockfiles.dropFirst().contains(where: { $0.hasMalformedEvidence })
+            )
+        } else if hasSourceConflict {
+            mergedLockfile = GitLockfileEvidence(hasConflictingEvidence: true)
+        } else {
+            mergedLockfile = nil
+        }
+        return .git(GitSourceProvenance(
+            declarations: declarations,
+            lockfile: mergedLockfile
+        ))
     }
 }

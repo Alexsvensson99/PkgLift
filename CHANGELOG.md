@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Additive typed external Git `sourceProvenance` on analysis dependencies and migration-plan entries, assembled from bounded literal Podfile declarations and CocoaPods lockfile `EXTERNAL SOURCES` and `CHECKOUT OPTIONS` evidence.
+- Deterministic Git evidence statuses for supported immutable, mutable, unpinned, credential-bearing, incomplete, conflicting, ambiguous-repository, unsupported-URL, and unsupported-syntax cases, with stable migration reason codes.
+
+### Changed
+- The static Podfile parser recognizes one literal `:git` URL with at most one literal `:branch`, `:tag`, or `:commit` in supported parenthesized or whitespace forms without executing Ruby.
+- Git repository comparison keeps HTTPS identities distinct from SSH while normalizing SSH URLs and SCP-style syntax to the same SSH identity. Immutable tag evidence requires matching Podfile and lockfile repository/reference evidence plus a full checkout commit; a direct commit must also equal the checkout commit.
+- Migration preflight compares safely comparable external provenance plus version, declaration origins, and target attribution against current analysis, including added, removed, or changed evidence. Lossy/redacted evidence refuses apply rather than relying on equal redaction markers. External-source provenance never authorizes an `AUTO` action.
+
+### Security
+- Git credentials, URL user information, queries, and fragments are removed at the parser trust boundary and are not retained in standard or portable JSON. Unsupported values fail closed to redacted evidence.
+- All external sources remain `REVIEW`, `BLOCKED`, or `UNKNOWN`, never `AUTO`. Local `:path` provenance, network repository resolution, Podspec generation, and automatic external-source migration remain outside this unreleased tranche.
+
 ## [0.3.0] - 2026-08-18
 
 ### Added

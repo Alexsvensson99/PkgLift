@@ -35,6 +35,13 @@ public struct CocoaPodDependency: Sendable, Codable, Equatable {
     /// How this dependency was declared.
     public let source: PodSource
 
+    /// Typed, credential-free evidence for an external Git source.
+    ///
+    /// This additive field is absent for registry/path dependencies and when
+    /// decoding schema-1 artifacts produced before external provenance was
+    /// modeled. Missing provenance can never make an external source automatic.
+    public let sourceProvenance: DependencySourceProvenance?
+
     /// Whether this is a direct dependency (declared in Podfile)
     /// or a transitive dependency.
     public let isDirect: Bool
@@ -57,6 +64,7 @@ public struct CocoaPodDependency: Sendable, Codable, Equatable {
         name: String,
         version: String? = nil,
         source: PodSource = .registry,
+        sourceProvenance: DependencySourceProvenance? = nil,
         isDirect: Bool = true,
         targets: [String] = [],
         declarations: [PodfileDeclaration]? = nil,
@@ -65,6 +73,7 @@ public struct CocoaPodDependency: Sendable, Codable, Equatable {
         self.name = name
         self.version = version
         self.source = source
+        self.sourceProvenance = sourceProvenance
         self.isDirect = isDirect
         self.targets = targets
         self.declarations = declarations

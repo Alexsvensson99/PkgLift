@@ -365,6 +365,161 @@ final class MigrationPlanPreflightTests: XCTestCase {
         }
     }
 
+    func testAutoEntryWithExternalSourceProvenanceIsRefused() {
+        let entry = makeEntry(sourceProvenance: makeGitProvenance(branch: "main"))
+        let plan = makePlan(entries: [entry])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: plan,
+            currentPlan: plan,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            guard case .incompleteAutoEntry(_, let detail) = error as? MigrationPlanPreflightError else {
+                return XCTFail("Expected incompleteAutoEntry, got \(error)")
+            }
+            XCTAssertTrue(detail.contains("analysis-only"))
+            XCTAssertTrue(detail.contains("AUTO"))
+        }
+    }
+
+    func testIdenticalExternalProvenanceAllowsUnrelatedAutoPreflight() throws {
+        let external = makeExternalEntry(branch: "main")
+        let plan = makePlan(entries: [makeEntry(), external])
+
+        let prepared = try MigrationPlanPreflight().prepare(
+            plan: plan,
+            currentPlan: plan,
+            availableTargetInfos: [targetInfo("App")]
+        )
+
+        XCTAssertEqual(prepared.podsToRemove, ["Alamofire"])
+    }
+
+    func testExternalProvenanceRequiresCurrentSnapshotThroughPublicAPI() {
+        let plan = makePlan(entries: [
+            makeEntry(),
+            makeExternalEntry(branch: "main"),
+        ])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: plan,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleSourceProvenance(dependency: "ExternalKit")
+            )
+        }
+    }
+
+    func testChangedExternalProvenanceInvalidatesWholeSavedSnapshot() {
+        let saved = makePlan(entries: [makeEntry(), makeExternalEntry(branch: "main")])
+        let current = makePlan(entries: [makeEntry(), makeExternalEntry(branch: "develop")])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: saved,
+            currentPlan: current,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleSourceProvenance(dependency: "ExternalKit")
+            )
+            let description = error.localizedDescription
+            XCTAssertFalse(description.contains("example.invalid"))
+            XCTAssertFalse(description.contains("main"))
+            XCTAssertFalse(description.contains("develop"))
+        }
+    }
+
+    func testCaseDistinctExternalRepositoryPathInvalidatesWholeSavedSnapshot() {
+        let saved = makePlan(entries: [
+            makeEntry(),
+            makeExternalEntry(
+                branch: "main",
+                repositoryURL: "https://example.invalid/Owner/ExternalKit.GIT"
+            ),
+        ])
+        let current = makePlan(entries: [
+            makeEntry(),
+            makeExternalEntry(
+                branch: "main",
+                repositoryURL: "https://example.invalid/Owner/ExternalKit.git"
+            ),
+        ])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: saved,
+            currentPlan: current,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleSourceProvenance(dependency: "ExternalKit")
+            )
+        }
+    }
+
+    func testMissingExternalProvenanceEntryInvalidatesWholeSavedSnapshot() {
+        let saved = makePlan(entries: [makeEntry(), makeExternalEntry(branch: "main")])
+        let current = makePlan(entries: [makeEntry()])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: saved,
+            currentPlan: current,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleSourceProvenance(dependency: "ExternalKit")
+            )
+        }
+    }
+
+    func testChangedExternalDeclarationTargetInvalidatesWholeSavedSnapshot() {
+        let saved = makePlan(entries: [
+            makeEntry(),
+            makeExternalEntry(branch: "main", targetName: "App"),
+        ])
+        let current = makePlan(entries: [
+            makeEntry(),
+            makeExternalEntry(branch: "main", targetName: "Widget"),
+        ])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: saved,
+            currentPlan: current,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleSourceProvenance(dependency: "ExternalKit")
+            )
+        }
+    }
+
+    func testLossyExternalEvidenceRefusesUnrelatedAutoPreflight() {
+        let external = MigrationPlanEntry(
+            podName: "ExternalKit",
+            sourceProvenance: .git(.unsupportedSyntax),
+            classification: .review,
+            actions: [.manual(description: "Review external source")]
+        )
+        let plan = makePlan(entries: [makeEntry(), external])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: plan,
+            currentPlan: plan,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleSourceProvenance(dependency: "ExternalKit")
+            )
+            XCTAssertTrue(error.localizedDescription.contains("cannot be compared safely"))
+        }
+    }
+
     func testTargetNamesAloneCannotSatisfyLanguagePreflight() {
         XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
             plan: makePlan(entries: [makeEntry()]),
@@ -426,11 +581,15 @@ final class MigrationPlanPreflightTests: XCTestCase {
         )
     }
 
-    private func makeEntry(targetName: String = "App") -> MigrationPlanEntry {
+    private func makeEntry(
+        targetName: String = "App",
+        sourceProvenance: DependencySourceProvenance? = nil
+    ) -> MigrationPlanEntry {
         let package = makePackage()
         return MigrationPlanEntry(
             podName: "Alamofire",
             currentVersion: "5.0.0",
+            sourceProvenance: sourceProvenance,
             classification: .auto,
             actions: [
                 .removePod(name: "Alamofire"),
@@ -461,5 +620,53 @@ final class MigrationPlanPreflightTests: XCTestCase {
             ),
             targetSourceProfile: targetInfo(targetName).sourceProfile
         )
+    }
+
+    private func makeExternalEntry(
+        branch: String,
+        targetName: String? = nil,
+        repositoryURL: String = "https://example.invalid/Owner/ExternalKit.git"
+    ) -> MigrationPlanEntry {
+        let declarations = targetName.map { target in
+            [PodfileDeclaration(
+                line: 3,
+                scope: .target,
+                scopeName: target,
+                targetName: target,
+                source: .git(
+                    url: "https://example.invalid/Owner/ExternalKit",
+                    ref: .branch(branch)
+                )
+            )]
+        }
+        let attribution = targetName.map { target in
+            TargetAttribution(status: .exact, targets: [target])
+        }
+        return MigrationPlanEntry(
+            podName: "ExternalKit",
+            currentVersion: "1.0.0",
+            sourceProvenance: makeGitProvenance(
+                branch: branch,
+                repositoryURL: repositoryURL
+            ),
+            classification: .review,
+            actions: [.manual(description: "Review external source")],
+            targetName: targetName,
+            declarations: declarations,
+            targetAttribution: attribution
+        )
+    }
+
+    private func makeGitProvenance(
+        branch: String,
+        repositoryURL: String = "https://example.invalid/Owner/ExternalKit.git"
+    ) -> DependencySourceProvenance {
+        let repository = GitRepositoryCanonicalizer.evidence(
+            for: repositoryURL
+        )
+        let reference = GitReferenceEvidence.make(kind: .branch, value: branch) ?? .unpinned
+        return .git(GitSourceProvenance(declarations: [
+            GitDeclarationEvidence(repository: repository, reference: reference),
+        ]))
     }
 }

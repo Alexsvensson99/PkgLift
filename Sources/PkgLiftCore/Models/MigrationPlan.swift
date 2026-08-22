@@ -166,6 +166,12 @@ public struct MigrationPlanEntry: Sendable, Codable {
     /// The resolved version from Podfile.lock.
     public let currentVersion: String?
 
+    /// Credential-free external-source evidence captured when planning.
+    ///
+    /// Optional for backward decoding. External provenance is reporting and
+    /// preflight evidence only; it never enables automatic migration in v0.4.
+    public let sourceProvenance: DependencySourceProvenance?
+
     /// The migration classification.
     public let classification: MigrationClassification
 
@@ -198,6 +204,7 @@ public struct MigrationPlanEntry: Sendable, Codable {
     public init(
         podName: String,
         currentVersion: String? = nil,
+        sourceProvenance: DependencySourceProvenance? = nil,
         classification: MigrationClassification,
         actions: [MigrationAction] = [],
         reasons: [String] = [],
@@ -210,6 +217,7 @@ public struct MigrationPlanEntry: Sendable, Codable {
     ) {
         self.podName = podName
         self.currentVersion = currentVersion
+        self.sourceProvenance = sourceProvenance
         self.classification = classification
         self.actions = actions
         self.reasons = reasons

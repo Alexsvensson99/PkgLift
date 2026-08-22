@@ -208,10 +208,20 @@ struct PodfileParserTests {
         #expect(parsed.directDependencies.contains { $0.name == "Interpolated#{suffix}" } == false)
         let external = try #require(parsed.directDependencies.first { $0.name == "ExternalPod" })
         #expect(external.source == .git(
-            url: "https://example.invalid/ExternalPod.git",
+            url: "https://example.invalid/ExternalPod",
             ref: nil
         ))
         #expect(external.hasLiteralMigrationProvenance == false)
+        guard case .git(let provenance)? = external.sourceProvenance else {
+            Issue.record("Expected typed Git provenance")
+            return
+        }
+        #expect(provenance.status == .ambiguousRepository)
+        #expect(provenance.declarations.count == 1)
+        #expect(
+            provenance.declarations.first?.repository.identity?.value
+                == "https://example.invalid/ExternalPod"
+        )
 
         let unbalancedTarget = PodfileParser().parse(content: """
         target('Broken' do
@@ -248,11 +258,94 @@ struct PodfileParserTests {
             #expect(dependency.hasLiteralMigrationProvenance == false)
         }
         let external = try #require(parsed.directDependencies.first { $0.name == "ExternalPod" })
-        #expect(external.source == .git(url: "https://example.invalid/ExternalPod.git", ref: nil))
+        #expect(external.source == .git(url: "https://example.invalid/ExternalPod", ref: nil))
         #expect(external.hasLiteralMigrationProvenance == false)
+        guard case .git(let provenance)? = external.sourceProvenance else {
+            Issue.record("Expected typed Git provenance")
+            return
+        }
+        #expect(provenance.status == .ambiguousRepository)
         let safe = try #require(parsed.directDependencies.first { $0.name == "SafePod" })
         #expect(safe.source == .registry)
         #expect(safe.hasLiteralMigrationProvenance)
+    }
+
+    @Test("Model bounded external Git declarations without Ruby execution")
+    func testBoundedExternalGitDeclarationCreatesTypedProvenance() throws {
+        let parsed = PodfileParser().parse(content: """
+        target 'App' do
+          pod 'BranchPod', :git => 'https://EXAMPLE.invalid/Owner/BranchPod.git', :branch => 'main'
+          pod 'TagPod', git: 'git@example.invalid:Owner/TagPod.git', tag: '1.2.3'
+          pod 'UnpinnedPod', git: 'ssh://git@example.invalid/Owner/UnpinnedPod.git'
+        end
+        """)
+
+        #expect(parsed.features.hasDynamicRuby == false)
+        let expectedStatuses: [String: GitSourceEvidenceStatus] = [
+            "BranchPod": .mutable,
+            "TagPod": .incomplete,
+            "UnpinnedPod": .unpinned,
+        ]
+        for (name, expectedStatus) in expectedStatuses {
+            let dependency = try #require(parsed.directDependencies.first { $0.name == name })
+            #expect(dependency.targets == ["App"])
+            #expect(dependency.effectiveTargetAttribution.status == .exact)
+            #expect(dependency.hasLiteralMigrationProvenance == false)
+            guard case .git(let provenance)? = dependency.sourceProvenance else {
+                Issue.record("Expected typed Git provenance for \(name)")
+                continue
+            }
+            #expect(provenance.status == expectedStatus)
+        }
+    }
+
+    @Test("Unsupported external Git option combinations fail closed")
+    func testUnsupportedExternalGitSyntaxFailsClosed() throws {
+        let parsed = PodfileParser().parse(content: """
+        target 'App' do
+          pod 'ConflictingPod', git: 'https://example.invalid/Owner/Repo.git', branch: 'main', tag: '1.0.0'
+          pod 'MixedSourcePod', git: 'https://example.invalid/Owner/Repo.git', path: '../Repo'
+        end
+        """)
+
+        #expect(parsed.features.hasDynamicRuby)
+        for dependency in parsed.directDependencies {
+            #expect(dependency.source == .unknown)
+            #expect(dependency.hasLiteralMigrationProvenance == false)
+            guard case .git(let provenance)? = dependency.sourceProvenance else {
+                Issue.record("Expected unsupported Git provenance")
+                continue
+            }
+            #expect(provenance.status == .unsupportedSyntax)
+        }
+    }
+
+    @Test("Credential-bearing Git declarations are sanitized before standard JSON")
+    func testCredentialBearingGitDeclarationNeverLeaksThroughStandardJSON() throws {
+        let parsed = PodfileParser().parse(content: """
+        target 'App' do
+          pod 'PrivatePod', git: 'https://alice:password@example.invalid/Owner/Repo.git?token=supersecret#private', tag: '1.0.0'
+        end
+        """)
+        let dependency = try #require(parsed.directDependencies.first)
+
+        #expect(dependency.source == .git(
+            url: "https://example.invalid/Owner/Repo",
+            ref: .tag("1.0.0")
+        ))
+        guard case .git(let provenance)? = dependency.sourceProvenance else {
+            Issue.record("Expected credential-bearing Git provenance")
+            return
+        }
+        #expect(provenance.status == .credentialBearing)
+
+        let json = try #require(String(
+            data: JSONEncoder().encode(dependency),
+            encoding: .utf8
+        ))
+        for secret in ["alice", "password", "token", "supersecret", "private"] {
+            #expect(json.contains(secret) == false)
+        }
     }
 
     @Test("Fail closed for parenthesized declarations inside unsupported Ruby blocks")
@@ -641,9 +734,14 @@ struct PodfileParserTests {
         #expect(external.targets == ["App", "WidgetExtension"])
         #expect(external.effectiveTargetAttribution.status == .multiple)
         #expect(external.source == .git(
-            url: "https://example.invalid/ExternalKit.git",
+            url: "https://example.invalid/ExternalKit",
             ref: .branch("main")
         ))
+        guard case .git(let provenance)? = external.sourceProvenance else {
+            Issue.record("Expected typed Git provenance")
+            return
+        }
+        #expect(provenance.status == .ambiguousRepository)
     }
 
     @Test("Attribute a static parameterless helper to one literal target")
@@ -886,10 +984,15 @@ struct PodfileParserTests {
             parsed.directDependencies.first { $0.name == "ExternalPod" }
         )
         #expect(external.source == .git(
-            url: "https://example.invalid/ExternalPod.git",
+            url: "https://example.invalid/ExternalPod",
             ref: nil
         ))
         #expect(external.targets == ["App"])
+        guard case .git(let provenance)? = external.sourceProvenance else {
+            Issue.record("Expected typed Git provenance")
+            return
+        }
+        #expect(provenance.status == .ambiguousRepository)
     }
 
     @Test("Parent declarations include default and complete nested targets")

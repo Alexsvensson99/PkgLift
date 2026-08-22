@@ -151,6 +151,13 @@ struct PodfileTargetMapperTests {
         #expect(external.effectiveTargetAttribution.status == .multiple)
         #expect(external.declarations?.count == 1)
         #expect(external.declarations?.first?.targetName == nil)
+        guard case .git(let provenance)? = external.sourceProvenance else {
+            Issue.record("Expected reconciled Git provenance")
+            return
+        }
+        #expect(provenance.status == .ambiguousRepository)
+        #expect(provenance.declarations.count == 1)
+        #expect(provenance.lockfile != nil)
     }
 
     @Test("Aggregate one helper origin without cloning it per target call site")
@@ -226,5 +233,214 @@ struct PodfileTargetMapperTests {
         #expect(dependency.effectiveTargetAttribution.status == .partial)
         #expect(dependency.effectiveTargetAttribution.unresolvedDeclarationCount == 1)
         #expect(dependency.declarations?.count == 1)
+    }
+
+    @Test("Reconcile a tag declaration and full checkout as immutable evidence")
+    func testMapperReconcilesTagAndCheckoutAsSupportedImmutable() throws {
+        let commit = String(repeating: "a", count: 40)
+        let podfile = """
+        target 'App' do
+          pod 'ExternalKit', git: 'https://example.invalid/Owner/ExternalKit.git', tag: '1.0.0'
+        end
+        """
+        let lockfile = """
+        PODS:
+          - ExternalKit (1.0.0)
+        DEPENDENCIES:
+          - ExternalKit
+        EXTERNAL SOURCES:
+          ExternalKit:
+            :tag: 1.0.0
+            :git: https://example.invalid/Owner/ExternalKit.git
+        CHECKOUT OPTIONS:
+          ExternalKit:
+            :commit: \(commit)
+            :git: https://example.invalid/Owner/ExternalKit.git
+        """
+
+        let dependency = try #require(PodfileTargetMapper().map(
+            podfileContent: podfile,
+            lockfileDependencies: PodfileLockParser().parse(content: lockfile)
+        ).first)
+        guard case .git(let provenance)? = dependency.sourceProvenance else {
+            Issue.record("Expected reconciled Git provenance")
+            return
+        }
+        #expect(provenance.status == .supportedImmutable)
+        #expect(dependency.source == .git(
+            url: "https://example.invalid/Owner/ExternalKit",
+            ref: .tag("1.0.0")
+        ))
+        #expect(dependency.hasLiteralMigrationProvenance == false)
+    }
+
+    @Test("Keep a branch mutable when lockfile also records a checkout commit")
+    func testMapperKeepsBranchMutable() throws {
+        let commit = String(repeating: "b", count: 40)
+        let podfile = """
+        target 'App' do
+          pod 'ExternalKit', git: 'https://example.invalid/Owner/ExternalKit.git', branch: 'main'
+        end
+        """
+        let lockfile = """
+        PODS:
+          - ExternalKit (1.0.0)
+        DEPENDENCIES:
+          - ExternalKit
+        EXTERNAL SOURCES:
+          ExternalKit:
+            :branch: main
+            :git: https://example.invalid/Owner/ExternalKit.git
+        CHECKOUT OPTIONS:
+          ExternalKit:
+            :commit: \(commit)
+            :git: https://example.invalid/Owner/ExternalKit.git
+        """
+
+        let dependency = try #require(PodfileTargetMapper().map(
+            podfileContent: podfile,
+            lockfileDependencies: PodfileLockParser().parse(content: lockfile)
+        ).first)
+        guard case .git(let provenance)? = dependency.sourceProvenance else {
+            Issue.record("Expected reconciled Git provenance")
+            return
+        }
+        #expect(provenance.status == .mutable)
+    }
+
+    @Test("Do not choose between conflicting declaration and lock repositories")
+    func testMapperMarksRepositoryMismatchConflicting() throws {
+        let commit = String(repeating: "c", count: 40)
+        let podfile = """
+        target 'App' do
+          pod 'ExternalKit', git: 'https://example.invalid/Owner/Declared.git', tag: '1.0.0'
+        end
+        """
+        let lockfile = """
+        PODS:
+          - ExternalKit (1.0.0)
+        DEPENDENCIES:
+          - ExternalKit
+        EXTERNAL SOURCES:
+          ExternalKit:
+            :tag: 1.0.0
+            :git: https://example.invalid/Owner/Locked.git
+        CHECKOUT OPTIONS:
+          ExternalKit:
+            :commit: \(commit)
+            :git: https://example.invalid/Owner/Locked.git
+        """
+
+        let dependency = try #require(PodfileTargetMapper().map(
+            podfileContent: podfile,
+            lockfileDependencies: PodfileLockParser().parse(content: lockfile)
+        ).first)
+        #expect(dependency.source == .unknown)
+        guard case .git(let provenance)? = dependency.sourceProvenance else {
+            Issue.record("Expected conflicting Git provenance")
+            return
+        }
+        #expect(provenance.status == .conflicting)
+    }
+
+    @Test("Mixed registry and Git declarations remain conflicting")
+    func testMixedRegistryAndGitDeclarationsRemainConflicting() throws {
+        let commit = String(repeating: "d", count: 40)
+        let repositoryURL = "https://example.invalid/Owner/ExternalKit"
+        let podfile = """
+        target 'App' do
+          pod 'ExternalKit'
+          pod 'ExternalKit', git: '\(repositoryURL).git', tag: '1.0.0'
+        end
+        """
+        let lockfile = """
+        PODS:
+          - ExternalKit (1.0.0)
+        DEPENDENCIES:
+          - ExternalKit
+        EXTERNAL SOURCES:
+          ExternalKit:
+            :tag: 1.0.0
+            :git: \(repositoryURL).git
+        CHECKOUT OPTIONS:
+          ExternalKit:
+            :commit: \(commit)
+            :git: \(repositoryURL).git
+        """
+
+        let dependency = try #require(PodfileTargetMapper().map(
+            podfileContent: podfile,
+            lockfileDependencies: PodfileLockParser().parse(content: lockfile)
+        ).first)
+
+        #expect(dependency.source == .unknown)
+        guard case .git(let provenance)? = dependency.sourceProvenance else {
+            Issue.record("Expected conflicting Git provenance")
+            return
+        }
+        #expect(provenance.status == .conflicting)
+        let origins = try #require(dependency.declarations)
+        #expect(origins.count == 2)
+        #expect(origins.contains { $0.source == .registry })
+        #expect(origins.contains {
+            $0.source == .git(url: repositoryURL, ref: .tag("1.0.0"))
+        })
+    }
+
+    @Test("Registry declaration conflicts with an external Git lockfile")
+    func testRegistryDeclarationConflictsWithExternalGitLockfile() throws {
+        let commit = String(repeating: "e", count: 40)
+        let podfile = """
+        target 'App' do
+          pod 'ExternalKit'
+        end
+        """
+        let lockfile = """
+        PODS:
+          - ExternalKit (1.0.0)
+        DEPENDENCIES:
+          - ExternalKit
+        EXTERNAL SOURCES:
+          ExternalKit:
+            :tag: 1.0.0
+            :git: https://example.invalid/Owner/ExternalKit.git
+        CHECKOUT OPTIONS:
+          ExternalKit:
+            :commit: \(commit)
+            :git: https://example.invalid/Owner/ExternalKit.git
+        """
+
+        let dependency = try #require(PodfileTargetMapper().map(
+            podfileContent: podfile,
+            lockfileDependencies: PodfileLockParser().parse(content: lockfile)
+        ).first)
+
+        #expect(dependency.source == .unknown)
+        guard case .git(let provenance)? = dependency.sourceProvenance else {
+            Issue.record("Expected conflicting Git provenance")
+            return
+        }
+        #expect(provenance.status == .conflicting)
+        #expect(provenance.lockfile?.hasConflictingEvidence == true)
+        #expect(dependency.declarations?.first?.source == .registry)
+    }
+
+    @Test("Preserve unmatched lockfile provenance")
+    func testUnmatchedLockDependencyPreservesProvenance() throws {
+        let lockfile = """
+        PODS:
+          - ExternalKit (1.0.0)
+        EXTERNAL SOURCES:
+          ExternalKit:
+            :branch: main
+            :git: https://example.invalid/Owner/ExternalKit.git
+        """
+        let lockDependencies = try PodfileLockParser().parse(content: lockfile)
+
+        let dependency = try #require(PodfileTargetMapper().mapLockfileDependencies(
+            lockDependencies,
+            declarations: []
+        ).first)
+        #expect(dependency.sourceProvenance == lockDependencies.first?.sourceProvenance)
     }
 }

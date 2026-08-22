@@ -201,6 +201,138 @@ final class MigrationClassifierTests: XCTestCase {
 
         let result = MigrationClassifier().classify(dependency: dependency, mapping: mapping)
         XCTAssertEqual(result.category, .review)
+        XCTAssertTrue(result.reasonDetails.contains {
+            $0.code == .externalGitEvidenceIncomplete
+        })
+    }
+
+    func testEveryExternalGitEvidenceStatusIsStableAndNeverAutomatic() throws {
+        let repository = GitRepositoryCanonicalizer.evidence(
+            for: "https://example.com/Owner/Repo.git"
+        )
+        let otherRepository = GitRepositoryCanonicalizer.evidence(
+            for: "https://example.com/Other/Repo.git"
+        )
+        let ambiguousRepository = GitRepositoryCanonicalizer.evidence(
+            for: "https://example.com/Repo.git"
+        )
+        let unsupportedRepository = GitRepositoryCanonicalizer.evidence(
+            for: "git://example.com/Owner/Repo.git"
+        )
+        let credentialBearingRepository = GitRepositoryCanonicalizer.evidence(
+            for: "https://alice:secret@example.com/Owner/Repo.git?token=secret"
+        )
+        let tag = try XCTUnwrap(GitReferenceEvidence.make(kind: .tag, value: "1.2.3"))
+        let branch = try XCTUnwrap(
+            GitReferenceEvidence.make(kind: .branch, value: "feature/v04-private")
+        )
+        let checkout = try XCTUnwrap(
+            GitReferenceEvidence.make(kind: .commit, value: String(repeating: "a", count: 40))
+        )
+
+        let supportedImmutable = GitSourceProvenance(
+            declarations: [GitDeclarationEvidence(repository: repository, reference: tag)],
+            lockfile: GitLockfileEvidence(
+                externalSourceRepository: repository,
+                externalSourceReference: tag,
+                checkoutRepository: repository,
+                checkoutReference: checkout
+            )
+        )
+        let fixtures: [(GitSourceEvidenceStatus, MigrationReasonCode, GitSourceProvenance)] = [
+            (.supportedImmutable, .externalGitSourceAnalyzed, supportedImmutable),
+            (
+                .mutable,
+                .externalGitMutableReference,
+                GitSourceProvenance(declarations: [
+                    GitDeclarationEvidence(repository: repository, reference: branch),
+                ])
+            ),
+            (
+                .unpinned,
+                .externalGitUnpinned,
+                GitSourceProvenance(declarations: [
+                    GitDeclarationEvidence(repository: repository, reference: .unpinned),
+                ])
+            ),
+            (
+                .incomplete,
+                .externalGitEvidenceIncomplete,
+                GitSourceProvenance(declarations: [
+                    GitDeclarationEvidence(repository: repository, reference: tag),
+                ])
+            ),
+            (
+                .conflicting,
+                .externalGitEvidenceConflict,
+                GitSourceProvenance(declarations: [
+                    GitDeclarationEvidence(repository: repository, reference: tag),
+                    GitDeclarationEvidence(repository: otherRepository, reference: tag),
+                ])
+            ),
+            (
+                .ambiguousRepository,
+                .externalGitRepositoryAmbiguous,
+                GitSourceProvenance(declarations: [
+                    GitDeclarationEvidence(repository: ambiguousRepository, reference: tag),
+                ])
+            ),
+            (
+                .unsupportedURL,
+                .externalGitURLUnsupported,
+                GitSourceProvenance(declarations: [
+                    GitDeclarationEvidence(repository: unsupportedRepository, reference: tag),
+                ])
+            ),
+            (
+                .unsupportedSyntax,
+                .externalGitSyntaxUnsupported,
+                .unsupportedSyntax
+            ),
+            (
+                .credentialBearing,
+                .externalGitCredentialsRedacted,
+                GitSourceProvenance(declarations: [
+                    GitDeclarationEvidence(
+                        repository: credentialBearingRepository,
+                        reference: tag
+                    ),
+                ])
+            ),
+        ]
+
+        for (status, reasonCode, provenance) in fixtures {
+            XCTAssertEqual(provenance.status, status)
+            // A registry-looking compatibility field cannot override typed
+            // external provenance and accidentally make the result AUTO.
+            let result = MigrationClassifier().classify(
+                dependency: makeDependency(
+                    version: "5.18.1",
+                    sourceProvenance: .git(provenance)
+                ),
+                mapping: makeMapping(minimumVersion: "5.1.0"),
+                targetSourceProfile: swiftProfile
+            )
+
+            XCTAssertEqual(result.category, .review, status.rawValue)
+            XCTAssertTrue(
+                result.reasonDetails.contains { $0.code == reasonCode },
+                status.rawValue
+            )
+            XCTAssertTrue(
+                result.reasonDetails.contains { $0.code == .externalSourceRequiresReview },
+                status.rawValue
+            )
+
+            let diagnostics = result.reasonDetails
+                .flatMap { [$0.message, $0.remediation ?? ""] }
+                .joined(separator: " ")
+            for sensitiveValue in [
+                "alice", "secret", "feature/v04-private", "example.com", "1.2.3",
+            ] {
+                XCTAssertFalse(diagnostics.contains(sensitiveValue), status.rawValue)
+            }
+        }
     }
 
     func testUnrepresentablePodfileDeclarationIsReviewWithExplicitReason() {
@@ -403,6 +535,7 @@ final class MigrationClassifierTests: XCTestCase {
         XCTAssertEqual(result.reasons, [
             "External source without mapping",
             "No registry mapping",
+            "External Git source evidence is incomplete",
             "Podfile install hook detected",
             "Dynamic Podfile logic detected",
             "inherit! :search_paths detected",
@@ -499,6 +632,7 @@ final class MigrationClassifierTests: XCTestCase {
         XCTAssertEqual(result.reasonDetails.map(\.code), [
             .externalSourceWithoutMapping,
             .registryMappingMissing,
+            .externalGitEvidenceIncomplete,
             .podfileInstallHook,
             .podfileDynamicRuby,
             .targetAttributionUnresolved,
@@ -599,12 +733,14 @@ final class MigrationClassifierTests: XCTestCase {
 
     private func makeDependency(
         name: String = "SDWebImage",
-        version: String
+        version: String,
+        sourceProvenance: DependencySourceProvenance? = nil
     ) -> CocoaPodDependency {
         CocoaPodDependency(
             name: name,
             version: version,
             source: .registry,
+            sourceProvenance: sourceProvenance,
             isDirect: true,
             targets: ["App"],
             declarations: [

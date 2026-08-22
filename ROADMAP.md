@@ -91,15 +91,23 @@ These releases describe the intended sequence after v0.3.0. Exact scope may move
 
 **Goal:** model more dependency origins without guessing package identity.
 
-Candidate work:
+Implemented in the current unreleased source tree as the first tranche:
 
-- Deterministic support for selected `:git` dependency declarations where repository identity and version/ref semantics can be mapped safely to SwiftPM.
+- Bounded static parsing for one literal `:git` URL and at most one literal `:branch`, `:tag`, or `:commit`, without Ruby execution or network access.
+- Credential-free source provenance assembled from Podfile declarations plus CocoaPods `EXTERNAL SOURCES` and `CHECKOUT OPTIONS` evidence.
+- Deterministic repository comparison that keeps HTTPS separate from SSH and treats SCP-style Git syntax as SSH.
+- Fail-closed provenance statuses for supported immutable, mutable, unpinned, credential-bearing, incomplete, conflicting, ambiguous, unsupported-URL, and unsupported-syntax evidence.
+- Exact external-provenance snapshot comparison during migration preflight, while every external dependency remains non-automatic.
+
+Remaining candidate work:
+
 - Deterministic support for selected local `:path` pods when the local specification and project layout are fully inspectable.
-- Stronger source provenance in analysis and migration plans.
-- Better handling of private repository URLs without leaking credentials in diagnostics or portable output.
+- Network-backed repository resolution under an explicit trust and credential model.
+- Podspec-aware package generation after the semantic-model prerequisites are complete.
+- An evidence standard for any future opt-in or automatic external-source migration.
 - Expanded exact subspec and transitive-dependency modeling.
 
-**Release boundary:** unsupported external-source behavior must remain `REVIEW`, `BLOCKED`, or `UNKNOWN`; no arbitrary source resolution is allowed.
+**Release boundary:** this tranche is not a v0.4.x release or release-readiness claim. Every external source remains `REVIEW`, `BLOCKED`, or `UNKNOWN`, never `AUTO`; local `:path` provenance, network resolution, Podspec generation, and automatic external-source migration remain outside the implemented scope.
 
 ## v0.5.x — Podspec Semantic Model
 

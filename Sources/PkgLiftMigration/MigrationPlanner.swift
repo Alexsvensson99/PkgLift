@@ -84,6 +84,8 @@ public struct MigrationPlanner: Sendable {
             
             var actions: [MigrationAction] = []
             if classification.category == .auto,
+               dep.source == .registry,
+               dep.sourceProvenance == nil,
                let packageCandidate,
                let requirement = packageCandidate.versionRequirement,
                let targetName {
@@ -119,6 +121,7 @@ public struct MigrationPlanner: Sendable {
             entries.append(MigrationPlanEntry(
                 podName: podName,
                 currentVersion: dep.version,
+                sourceProvenance: dep.sourceProvenance,
                 classification: classification.category,
                 actions: actions,
                 reasons: classification.reasons,

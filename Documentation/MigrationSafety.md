@@ -31,6 +31,25 @@ PkgLift records every literal Podfile declaration that contributes to an exact p
 
 Only bounded static Ruby helpers are analyzed: calls and supported directives must be literal, and dynamic dispatch marks the affected helper evidence unresolved. PkgLift still never executes the Podfile as Ruby.
 
+## External Git source provenance
+
+The unreleased first v0.4.x tranche recognizes one literal `:git` URL with at most one literal `:branch`, `:tag`, or `:commit` in bounded parenthesized or whitespace Podfile forms. Hash-rocket and keyword option syntax are accepted. Variables, interpolation, duplicate Git keys, multiple references, `:git` combined with a version or `:path`, extra options, multiline declarations, semicolons, expression tails, and malformed calls are unsupported. PkgLift does not execute Ruby or contact the repository to fill gaps.
+
+Repository evidence is canonicalized at the parser trust boundary. HTTPS identities remain distinct from SSH identities. Supported SSH URLs must explicitly use the structural `git` user, and SCP-style input must use relative `git@host:owner/repo.git` syntax; those forms share an SSH identity. Missing or different SSH users and absolute SCP paths are not assumed equivalent. Host case, one exact lowercase `.git` transport suffix, and trailing slashes are normalized while repository path case remains significant. Repeated or slash-separated lowercase `.git` suffixes are rejected, and uppercase or mixed-case suffixes remain part of that case-sensitive path. Unsupported schemes, unusual ports, ambiguous paths, traversal-like paths, and unsafe encoded delimiters fail closed.
+
+Branch, tag, and commit literals are accepted only as at most 255 UTF-8 bytes of printable ASCII without whitespace. Commit identifiers must additionally be 7 to 64 ASCII hexadecimal bytes; immutable checkout evidence requires the complete 40- or 64-byte form. This bounded subset makes provenance comparisons byte-exact and deterministic.
+
+Credentials, URL user information, passwords, queries, and fragments are detected and removed before dependency or provenance values are constructed. The original literal is not retained. This guarantee applies to standard analysis and plan JSON as well as portable JSON; an unsafe URL without a defensible canonical identity becomes `<redacted-url>`.
+
+PkgLift combines Podfile declarations with CocoaPods lockfile `EXTERNAL SOURCES` and `CHECKOUT OPTIONS` evidence and derives one of these statuses:
+
+- `supportedImmutable`: repository and reference evidence agrees; a tag has a full checkout commit, or a full declared commit exactly equals the full checkout commit;
+- `mutable`: the declaration uses a branch;
+- `unpinned`: the declaration has no reference;
+- `credentialBearing`, `incomplete`, `conflicting`, `ambiguousRepository`, `unsupportedURL`, or `unsupportedSyntax`: the corresponding trust, completeness, agreement, identity, URL, or grammar requirement failed.
+
+No status authorizes migration. Every external source remains `REVIEW`, `BLOCKED`, or `UNKNOWN`, never `AUTO`, even when immutable provenance is complete and a registry mapping exists. Local `:path` provenance, repository network resolution, Podspec generation, and automatic external-source migration are outside this tranche.
+
 ## Consumer-language evidence
 
 PkgLift profiles compiled source types from the Xcode project graph without opening source files. Supported profile values are `swift`, `objectiveC`, `objectiveCPlusPlus`, `c`, and `cPlusPlus`. Missing file references, unknown compiled file types, and file-system-synchronized root groups make the profile incomplete.
@@ -59,13 +78,13 @@ Unsupported workspace location schemes are refused instead of guessed.
 
 ## Preflight and mutation
 
-`pkglift migrate` is a dry run. `pkglift migrate --apply` validates the entire saved AUTO contract before the first write. It regenerates the current migration evidence in memory and refuses when the saved AUTO entry no longer exactly matches the current Podfile, lockfile, registry mapping, configuration, actions, target attribution, target language profile, or supported mapping languages. It also refuses stale project paths, missing Podfile declarations, missing or conflicting versions, and missing or ambiguous targets. Every AUTO entry must carry non-empty literal declaration provenance, explicit exact target attribution, and complete consumer-language evidence that agree with the typed actions.
+`pkglift migrate` is a dry run. `pkglift migrate --apply` validates the entire saved AUTO contract before the first write. It regenerates the current migration evidence in memory and refuses when the saved AUTO entry no longer exactly matches the current Podfile, lockfile, registry mapping, configuration, actions, target attribution, target language profile, or supported mapping languages. It separately compares every safely comparable external `sourceProvenance` snapshot plus its version, declaration origins, and target attribution with current analysis. Added, removed, or changed evidence refuses mutation. Redacted, malformed, incomplete, conflicting, credential-bearing, or otherwise lossy provenance cannot prove equality and also refuses an unrelated `AUTO` apply. It also refuses stale project paths, missing Podfile declarations, missing or conflicting versions, and missing or ambiguous targets. Every AUTO entry must carry non-empty literal declaration provenance, explicit exact target attribution, and complete consumer-language evidence that agree with the typed actions; it must not contain external source provenance.
 
 Older schema-1 plans remain decodable, but legacy target arrays are treated only as partial context. An AUTO entry without current provenance or consumer-language evidence is refused and must be regenerated before migration.
 
 Podfile editing removes only exact, literal pod declarations. Target blocks, similarly named pods, remaining CocoaPods dependencies, comments, and unrelated Ruby are preserved. PkgLift does not run the Podfile as Ruby.
 
-Package references and product links are de-duplicated. Equivalent repository URLs with an optional `.git` suffix or trailing slash resolve to the same identity. Existing requirements are preserved; a conflict stops migration.
+Registry-backed SwiftPM package references and product links are de-duplicated. Equivalent registry repository URLs with an optional `.git` suffix or trailing slash resolve to the same identity. External Git provenance uses its stricter transport boundary described above: HTTPS is not assumed equivalent to SSH. Existing requirements are preserved; a conflict stops migration.
 
 ## Git behavior
 
