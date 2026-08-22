@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the README terminal demo from the recorded v0.3.0 fixture output."""
+"""Render the README terminal demo from the recorded v0.4.0 fixture output."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def render_frame(visible_count: int) -> Image.Image:
     draw.rectangle((0, 0, WIDTH, 46), fill=CHROME)
     for x, color in [(22, "#ff6b6b"), (44, "#ffd166"), (66, ACCENT)]:
         draw.ellipse((x - 6, 17, x + 6, 29), fill=color)
-    draw.text((92, 15), "PkgLift v0.3.0 · repo-owned fixture · dry run", font=title_font, fill=MUTED)
+    draw.text((92, 15), "PkgLift v0.4.0 · repo-owned fixture · dry run", font=title_font, fill=MUTED)
 
     palette = {
         "command": TEXT,
@@ -78,7 +78,7 @@ def render_frame(visible_count: int) -> Image.Image:
         y += 29
 
     draw.rounded_rectangle((30, 493, 930, 521), radius=8, fill="#101720", outline="#263341")
-    draw.text((44, 498), "Condensed from v0.3.0 analysis, plan, and dry-run output — no apply performed", font=title_font, fill=BLUE)
+    draw.text((44, 498), "Condensed from v0.4.0 analysis, plan, and dry-run output — no apply performed", font=title_font, fill=BLUE)
     return image
 
 
