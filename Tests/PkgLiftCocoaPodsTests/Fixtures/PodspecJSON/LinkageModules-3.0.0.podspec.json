@@ -1,0 +1,67 @@
+{
+  "name": "BinaryKit",
+  "version": "3.0.0",
+  "frameworks": [
+    "Foundation",
+    "CoreGraphics"
+  ],
+  "weak_frameworks": "Metal",
+  "libraries": [
+    "z",
+    "sqlite3"
+  ],
+  "vendored_frameworks": [
+    "Artifacts/Foo.framework",
+    "Artifacts/Foo.xcframework"
+  ],
+  "vendored_libraries": [
+    "Artifacts/libFoo.a",
+    "Artifacts/libBar.dylib"
+  ],
+  "module_name": "BinaryKitCore",
+  "module_map": "Modules/module.modulemap",
+  "header_dir": "BinaryKit",
+  "header_mappings_dir": "Sources/include",
+  "project_header_files": [
+    "Sources/Project/*.h",
+    "Sources/Project/Generated.h"
+  ],
+  "static_framework": false,
+  "static_library": true,
+  "ios": {
+    "frameworks": "UIKit",
+    "weak_frameworks": [
+      "LinkPresentation"
+    ],
+    "libraries": "compression",
+    "vendored_frameworks": "Artifacts/iOS/Feature.xcframework",
+    "vendored_libraries": "Artifacts/iOS/libFeature.a",
+    "module_map": false,
+    "header_dir": "BinaryKit/iOS",
+    "header_mappings_dir": "Sources/iOS/include",
+    "project_header_files": "Sources/iOS/Project/*.h"
+  },
+  "subspecs": [
+    {
+      "name": "Extras",
+      "frameworks": "AVFoundation",
+      "weak_frameworks": "CoreHaptics",
+      "libraries": "xml2",
+      "vendored_frameworks": "Artifacts/Extras/Extras.framework",
+      "vendored_libraries": "Artifacts/Extras/libExtras.a",
+      "header_dir": "BinaryKitExtras",
+      "header_mappings_dir": "Sources/Extras/include",
+      "project_header_files": "Sources/Extras/Project/*.h",
+      "ios": {
+        "frameworks": "Photos",
+        "weak_frameworks": "PhotosUI",
+        "libraries": "c++",
+        "vendored_frameworks": "Artifacts/Extras/iOS/Extras.xcframework",
+        "vendored_libraries": "Artifacts/Extras/iOS/libExtras.a",
+        "header_dir": "BinaryKitExtras/iOS",
+        "header_mappings_dir": "Sources/Extras/iOS/include",
+        "project_header_files": "Sources/Extras/iOS/Project/*.h"
+      }
+    }
+  ]
+}

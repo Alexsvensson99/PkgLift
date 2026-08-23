@@ -1,8 +1,9 @@
 # Podspec JSON fixture provenance
 
-These fixtures are exact, immutable copies of the CocoaPods Specs repository
-documents returned by the Trunk API on 2026-08-22. Tests read only the bundled
-copies and never contact CocoaPods or an upstream repository.
+The pinned upstream fixtures in the table are exact, immutable copies of
+CocoaPods Specs repository documents returned by the Trunk API on 2026-08-22.
+Tests read only bundled files and never contact CocoaPods or an upstream
+repository.
 
 | Fixture | Immutable source | SHA-256 |
 | --- | --- | --- |
@@ -15,6 +16,14 @@ fixture for the pinned CocoaPods Core 1.17.0 profile. It combines root,
 subspec, nested-subspec, and platform declarations without implying that an
 upstream pod or SwiftPM package exists. Its SHA-256 is
 `76074af53185960a37304152c61c365f99460ce6545bc27920d25f851aa024d2`.
+
+`LinkageModules-3.0.0.podspec.json` is a repository-authored adversarial
+fixture for the same pinned profile. It combines raw root, root-platform,
+subspec, and subspec-platform linkage, module, header-layout, and vendored
+input declarations. It deliberately includes `static_library`, which is not a
+Podspec attribute in CocoaPods Core 1.17.0 and must remain explicit unknown
+evidence. Its SHA-256 is
+`70de6cdf72b353dd88cfc7a8913fd55830fb22686285b110b67c2843c75a41b5`.
 
 The fixtures exercise declared syntax only. Their presence does not verify a
 CocoaPods-to-SwiftPM registry mapping or build equivalence.
