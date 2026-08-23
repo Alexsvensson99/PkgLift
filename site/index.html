@@ -101,6 +101,26 @@ Preserved 2 CocoaPods dependencies.
     <div class="proof-item"><strong>Signed & notarized</strong><span>Developer ID distribution for macOS.</span></div>
   </div>
 </section>
+<section class="section section-border" aria-labelledby="new-in-v040">
+  <div class="container grid-2 v040-grid" style="align-items:center">
+    <div>
+      <div class="eyebrow">New in v0.4.0</div>
+      <h2 id="new-in-v040">External Git sources are now explainable—without becoming automatic.</h2>
+      <p class="lead">PkgLift now records bounded, credential-redacted provenance for supported literal <code>:git</code> declarations and checks it against CocoaPods lockfile evidence.</p>
+      <div class="callout callout-warning" style="margin-top:1.5rem"><strong>Safety boundary:</strong> external Git sources remain <code>REVIEW</code>, <code>BLOCKED</code>, or <code>UNKNOWN</code>. They never authorize <code>AUTO</code> migration.</div>
+      <div class="hero-actions">
+        <a class="button button-primary" href="https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.4.0">Read the v0.4.0 release</a>
+        <a class="button" href="/PkgLift/pilots/">Inspect the pilot evidence</a>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><h3>Typed provenance</h3><p class="subtle">Literal Git declarations are reconciled with lockfile source and checkout evidence.</p></div>
+      <div class="card"><h3>Deterministic reasons</h3><p class="subtle">Mutable, unpinned, incomplete, conflicting, and unsupported evidence stays visible.</p></div>
+      <div class="card"><h3>Sensitive URL data removed</h3><p class="subtle">User information, credentials, queries, and fragments are stripped before JSON is created.</p></div>
+      <div class="card"><h3>Fail-closed preflight</h3><p class="subtle">Changed or lossy external evidence stops mutation before project files are written.</p></div>
+    </div>
+  </div>
+</section>
 <section class="section">
   <div class="container">
     <div class="eyebrow">Workflow</div>

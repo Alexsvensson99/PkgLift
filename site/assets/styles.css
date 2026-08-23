@@ -175,6 +175,7 @@ p { margin: 0 0 1.15rem; }
 
 @media (max-width: 900px) {
   .hero-grid { grid-template-columns: 1fr; }
+  .v040-grid { grid-template-columns: 1fr; }
   .proof-grid { grid-template-columns: repeat(2, 1fr); }
   .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); }
   .terminal pre { min-height: auto; }
