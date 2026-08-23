@@ -80,7 +80,7 @@ struct PodspecJSONBoundaryScanner {
                 throw PodspecInspectionError.malformedJSON
             }
             let key = try parseStringToken()
-            let childPath = Self.appending(key, to: path)
+            let childPath = PodspecJSONPointer.appending(key, to: path)
             try validateStringSize(key, path: childPath)
             guard keys.insert(key).inserted else {
                 throw PodspecInspectionError.duplicateObjectKey(path: childPath)
@@ -110,7 +110,7 @@ struct PodspecJSONBoundaryScanner {
             elementCount += 1
             try validateContainerCount(elementCount, path: path)
             try parseValue(
-                path: Self.appending(String(elementCount - 1), to: path),
+                path: PodspecJSONPointer.appending(String(elementCount - 1), to: path),
                 depth: depth + 1
             )
             skipWhitespace()
@@ -273,13 +273,6 @@ struct PodspecJSONBoundaryScanner {
 
     private var currentByte: UInt8? {
         index < bytes.count ? bytes[index] : nil
-    }
-
-    private static func appending(_ component: String, to path: String) -> String {
-        let escaped = component
-            .replacingOccurrences(of: "~", with: "~0")
-            .replacingOccurrences(of: "/", with: "~1")
-        return "\(path)/\(escaped)"
     }
 
     private static func isHexDigit(_ byte: UInt8) -> Bool {

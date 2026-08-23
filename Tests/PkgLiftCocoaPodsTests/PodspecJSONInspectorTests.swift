@@ -194,12 +194,20 @@ struct PodspecJSONInspectorTests {
                 kind: .unknownField
             ),
             PodspecUnsupportedField(
-                path: "/dependencies",
-                kind: .deferredCocoaPodsSemantic
-            ),
-            PodspecUnsupportedField(
                 path: "/platforms/win~1dows~0",
                 kind: .unknownField
+            ),
+        ])
+        #expect(inspection.podspec.root.declarations.dependencies == [
+            PodspecDependencyDeclaration(
+                name: "OtherKit",
+                path: "/dependencies/OtherKit",
+                requirements: [
+                    PodspecDependencyRequirement(
+                        literal: ">= 1.0",
+                        path: "/dependencies/OtherKit/0"
+                    ),
+                ]
             ),
         ])
         #expect(inspection.podspec.platforms == [
@@ -235,6 +243,7 @@ struct PodspecJSONInspectorTests {
         let encoded = try JSONEncoder().encode(inspection)
         let decoded = try JSONDecoder().decode(PodspecInspection.self, from: encoded)
         #expect(decoded == inspection)
+        #expect(decoded.podspec.semanticProfile == .cocoaPodsCore1_17_0)
     }
 
     @Test("Inspect exact pinned CocoaPods Specs fixtures without network access")
