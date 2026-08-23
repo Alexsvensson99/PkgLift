@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add a recursive, analysis-only Podspec model for root, library-subspec, and raw platform scopes, pinned to CocoaPods Core 1.17.0 semantics.
+- Record literal root, subspec, and platform dependency requirements plus validated singular, plural, implicit-all, and `none` default-subspec declarations with exact RFC 6901 evidence paths.
+
+### Security
+- Unknown semantic profiles, malformed requirement forms, duplicate sibling subspecs, ambiguous defaults, and unsupported inheritance or platform merge behavior fail closed without changing registry, classifier, planner, preflight, migration, or `AUTO` behavior.
+
 ## [0.4.0] - 2026-08-22
 
 ### Added

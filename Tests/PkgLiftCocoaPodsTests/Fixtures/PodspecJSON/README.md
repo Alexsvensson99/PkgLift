@@ -10,5 +10,11 @@ copies and never contact CocoaPods or an upstream repository.
 | `DeviceKit-5.8.0.podspec.json` | [`CocoaPods/Specs@d9713ef`](https://raw.githubusercontent.com/CocoaPods/Specs/d9713efb46e5742f0817e67905d465f429c579c2/Specs/d/e/6/DeviceKit/5.8.0/DeviceKit.podspec.json) | `8297066280041cd75175167c32d79ee772a4b95a29c85ffc99cd468a6f3f15a5` |
 | `CryptoSwift-1.10.0.podspec.json` | [`CocoaPods/Specs@2aec7cb`](https://raw.githubusercontent.com/CocoaPods/Specs/2aec7cbaad29fecb20f77859b261ef5af3de17af/Specs/3/e/b/CryptoSwift/1.10.0/CryptoSwift.podspec.json) | `e1da64dfdf81fa8aef911b44cb6ae36f05f2cf18dc36c3176070ff1d0eb73257` |
 
+`RecursiveScopes-2.0.0.podspec.json` is a repository-authored adversarial
+fixture for the pinned CocoaPods Core 1.17.0 profile. It combines root,
+subspec, nested-subspec, and platform declarations without implying that an
+upstream pod or SwiftPM package exists. Its SHA-256 is
+`76074af53185960a37304152c61c365f99460ce6545bc27920d25f851aa024d2`.
+
 The fixtures exercise declared syntax only. Their presence does not verify a
 CocoaPods-to-SwiftPM registry mapping or build equivalence.
