@@ -80,13 +80,31 @@ public struct PodfileLockParser: Sendable {
         
         for podEntry in pods {
             if let stringEntry = podEntry as? String {
-                if let parsed = parsePodEntry(stringEntry, directDependencies: directDependencies, externalSources: externalSources, checkoutOptions: checkoutOptions) {
-                    results.append(parsed)
+                guard let parsed = parsePodEntry(
+                    stringEntry,
+                    directDependencies: directDependencies,
+                    externalSources: externalSources,
+                    checkoutOptions: checkoutOptions
+                ) else {
+                    throw Error.malformedStructure
                 }
-            } else if let dictEntry = podEntry as? [String: Any], let key = dictEntry.keys.first {
-                if let parsed = parsePodEntry(key, directDependencies: directDependencies, externalSources: externalSources, checkoutOptions: checkoutOptions) {
-                    results.append(parsed)
+                results.append(parsed)
+            } else if let dictEntry = podEntry as? [String: Any] {
+                guard dictEntry.count == 1,
+                      let key = dictEntry.keys.first,
+                      let dependencyList = dictEntry[key] as? [Any],
+                      dependencyList.allSatisfy({ $0 is String }),
+                      let parsed = parsePodEntry(
+                          key,
+                          directDependencies: directDependencies,
+                          externalSources: externalSources,
+                          checkoutOptions: checkoutOptions
+                      ) else {
+                    throw Error.malformedStructure
                 }
+                results.append(parsed)
+            } else {
+                throw Error.malformedStructure
             }
         }
         

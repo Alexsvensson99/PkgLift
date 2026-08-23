@@ -184,7 +184,7 @@ struct VerifyCommand: AsyncParsableCommand {
         try finish(checks: checks, issues: issues)
     }
 
-    static func resolveDerivedDataPath(_ value: String?, rootPath: String) -> String? {
+    static func resolveDerivedDataPath(_ value: String?, rootPath: String) throws -> String? {
         guard let value else { return nil }
 
         if (value as NSString).isAbsolutePath {
@@ -193,11 +193,46 @@ struct VerifyCommand: AsyncParsableCommand {
                 .path
         }
 
-        return URL(fileURLWithPath: rootPath, isDirectory: true)
+        let rootURL = URL(fileURLWithPath: rootPath, isDirectory: true)
             .standardizedFileURL
+        let resolvedRootURL = try resolveExistingSymlinks(in: rootURL)
+        let resolvedURL = try resolveExistingSymlinks(in: resolvedRootURL
             .appendingPathComponent(value, isDirectory: true)
-            .standardizedFileURL
-            .path
+            .standardizedFileURL)
+
+        guard resolvedURL.pathComponents.starts(with: resolvedRootURL.pathComponents) else {
+            throw VerifyError.derivedDataPathOutsideRoot(
+                path: resolvedURL.path,
+                rootPath: resolvedRootURL.path
+            )
+        }
+
+        return resolvedURL.path
+    }
+
+    private static func resolveExistingSymlinks(in url: URL) throws -> URL {
+        var existingAncestor = url
+        var missingComponents: [String] = []
+        let fileManager = FileManager.default
+
+        while existingAncestor.path != "/",
+              !fileManager.fileExists(atPath: existingAncestor.path) {
+            if (try? fileManager.destinationOfSymbolicLink(
+                atPath: existingAncestor.path
+            )) != nil {
+                throw VerifyError.derivedDataPathContainsDanglingSymlink(
+                    path: existingAncestor.path
+                )
+            }
+            missingComponents.append(existingAncestor.lastPathComponent)
+            existingAncestor.deleteLastPathComponent()
+        }
+
+        var resolved = existingAncestor.resolvingSymlinksInPath()
+        for component in missingComponents.reversed() {
+            resolved.appendPathComponent(component)
+        }
+        return resolved.standardizedFileURL
     }
 
     private func normalizedBuildOptions() throws -> BuildVerificationOptions {
@@ -212,7 +247,7 @@ struct VerifyCommand: AsyncParsableCommand {
             configuration: rawOptions.configuration,
             destination: rawOptions.destination,
             sdk: rawOptions.sdk,
-            derivedDataPath: Self.resolveDerivedDataPath(
+            derivedDataPath: try Self.resolveDerivedDataPath(
                 rawOptions.derivedDataPath,
                 rootPath: common.path
             )
@@ -276,6 +311,8 @@ struct VerifyCommand: AsyncParsableCommand {
 private enum VerifyError: LocalizedError {
     case noProject
     case buildOptionsRequireBuild
+    case derivedDataPathOutsideRoot(path: String, rootPath: String)
+    case derivedDataPathContainsDanglingSymlink(path: String)
     case encodingFailed
     case verificationFailed
 
@@ -285,6 +322,10 @@ private enum VerifyError: LocalizedError {
             return "No analyzable Xcode project found."
         case .buildOptionsRequireBuild:
             return "--scheme, --configuration, --destination, --sdk, and --derived-data-path require --build."
+        case .derivedDataPathOutsideRoot(let path, let rootPath):
+            return "Relative derived-data path '\(path)' escapes project root '\(rootPath)'."
+        case .derivedDataPathContainsDanglingSymlink(let path):
+            return "Relative derived-data path contains a dangling symbolic link: \(path)"
         case .encodingFailed:
             return "Unable to encode verify output as JSON."
         case .verificationFailed:

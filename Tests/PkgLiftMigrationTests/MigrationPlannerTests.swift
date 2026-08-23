@@ -148,6 +148,92 @@ final class MigrationPlannerTests: XCTestCase {
         XCTAssertNil(entry.packageCandidate?.versionRequirement)
     }
 
+    func testComplexConstraintCannotReachAutoClassification() {
+        let dependency = CocoaPodDependency(
+            name: "Alamofire",
+            version: ">= 5.0.0, < 6.0.0",
+            source: .registry,
+            isDirect: true,
+            targets: ["App"],
+            declarations: [
+                PodfileDeclaration(
+                    line: 1,
+                    scope: .target,
+                    scopeName: "App",
+                    targetName: "App",
+                    source: .registry
+                ),
+            ],
+            targetAttribution: TargetAttribution(status: .exact, targets: ["App"])
+        )
+        let mapping = RegistryMapping(
+            pod: PodIdentifier(name: "Alamofire"),
+            swiftpm: SwiftPMPackageInfo(
+                repository: "https://github.com/Alamofire/Alamofire",
+                products: ["Alamofire"],
+                minimumVersion: "5.0.0",
+                supportedConsumerLanguages: [.swift]
+            ),
+            migration: MigrationInfo(confidence: .verified)
+        )
+
+        let entry = MigrationPlanner().generatePlan(
+            dependencies: ["Alamofire": dependency],
+            mappings: ["Alamofire": mapping],
+            availableTargets: ["App"],
+            availableTargetInfos: [swiftTarget("App")]
+        ).entries[0]
+
+        XCTAssertEqual(entry.classification, .review)
+        XCTAssertTrue(
+            entry.reasons.contains("Version requirement cannot be represented safely") ||
+            entry.reasons.contains("Resolved version is missing or is not stable major.minor.patch")
+        )
+        XCTAssertTrue(entry.actions.isEmpty)
+        XCTAssertNil(entry.packageCandidate?.versionRequirement)
+    }
+
+    func testPathBasedDependencyCannotBeAutoMigratedWithMapping() {
+        let dependency = CocoaPodDependency(
+            name: "Alamofire",
+            version: "5.0.0",
+            source: .path("../LocalPods/Alamofire"),
+            isDirect: true,
+            targets: ["App"],
+            declarations: [
+                PodfileDeclaration(
+                    line: 1,
+                    scope: .target,
+                    scopeName: "App",
+                    targetName: "App",
+                    source: .registry
+                ),
+            ],
+            targetAttribution: TargetAttribution(status: .exact, targets: ["App"])
+        )
+        let mapping = RegistryMapping(
+            pod: PodIdentifier(name: "Alamofire"),
+            swiftpm: SwiftPMPackageInfo(
+                repository: "https://github.com/Alamofire/Alamofire",
+                products: ["Alamofire"],
+                minimumVersion: "5.0.0",
+                supportedConsumerLanguages: [.swift]
+            ),
+            migration: MigrationInfo(confidence: .verified)
+        )
+
+        let entry = MigrationPlanner().generatePlan(
+            dependencies: ["Alamofire": dependency],
+            mappings: ["Alamofire": mapping],
+            availableTargets: ["App"],
+            availableTargetInfos: [swiftTarget("App")]
+        ).entries[0]
+
+        XCTAssertEqual(entry.classification, .review)
+        XCTAssertTrue(entry.reasons.contains("External dependency source requires manual review"))
+        XCTAssertTrue(entry.actions.isEmpty)
+    }
+
     func testMultiplePodfileTargetsCannotProduceAutoActions() {
         let dependency = CocoaPodDependency(
             name: "Alamofire",

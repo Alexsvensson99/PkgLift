@@ -38,4 +38,43 @@ final class VersionMapperTests: XCTestCase {
     func testNonSemanticFourComponentVersionIsRefused() {
         XCTAssertNil(VersionMapper().map(constraint: "1.2.3.4"))
     }
+
+    func testMalformedExactVersionFormatsAreRefused() {
+        let mapper = VersionMapper()
+
+        XCTAssertNil(mapper.map(constraint: "v1.2.3"))
+        XCTAssertNil(mapper.map(constraint: "5.0.0-beta"))
+        XCTAssertNil(mapper.map(constraint: "5."))
+        XCTAssertNil(mapper.map(constraint: ".1.2"))
+    }
+
+    func testUnsupportedConstraintOperatorsAreRefused() {
+        let mapper = VersionMapper()
+
+        XCTAssertNil(mapper.map(constraint: "> 1.2.3"))
+        XCTAssertNil(mapper.map(constraint: "< 1.2.3"))
+        XCTAssertNil(mapper.map(constraint: "!= 1.2.3"))
+    }
+
+    func testPessimisticOperatorRejectsMalformedComponents() {
+        let mapper = VersionMapper()
+
+        XCTAssertNil(mapper.map(constraint: "~> 1.2.3-beta"))
+        XCTAssertNil(mapper.map(constraint: "~> +1.2"))
+        XCTAssertNil(mapper.map(constraint: "~> -1.2"))
+        XCTAssertNil(mapper.map(constraint: "~> 01.2"))
+        XCTAssertNil(mapper.map(constraint: "~> 1..2"))
+        XCTAssertNil(mapper.map(constraint: "~> .1.2"))
+        XCTAssertNil(mapper.map(constraint: "~> 1.2."))
+    }
+
+    func testExactAndResolvedVersionsRejectNonCanonicalComponents() {
+        let mapper = VersionMapper()
+
+        XCTAssertNil(mapper.map(constraint: "01.2.3"))
+        XCTAssertNil(mapper.map(constraint: "1.02.3"))
+        XCTAssertNil(mapper.map(constraint: "", resolvedVersion: "+1.2.3"))
+        XCTAssertNil(mapper.map(constraint: "", resolvedVersion: "1.2.03"))
+        XCTAssertNil(mapper.map(constraint: "", resolvedVersion: "١.2.3"))
+    }
 }

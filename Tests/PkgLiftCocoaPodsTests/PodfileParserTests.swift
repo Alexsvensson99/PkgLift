@@ -1071,3 +1071,49 @@ struct PodfileParserTests {
         #expect(dependency.declarations?.first?.targetName == nil)
     }
 }
+
+extension PodfileParserTests {
+    @Test("Report a typed error for a missing Podfile")
+    func testMissingPodfileThrowsFileReadFailed() {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+
+        do {
+            _ = try PodfileParser().parse(fileURL: fileURL)
+            Issue.record("Expected fileReadFailed")
+        } catch let error as PodfileParser.Error {
+            guard case let .fileReadFailed(actualURL) = error else {
+                Issue.record("Unexpected parser error: \(error)")
+                return
+            }
+            #expect(actualURL == fileURL)
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test("Report a typed error for a non-UTF-8 Podfile")
+    func testNonUTF8PodfileThrowsFileReadFailed() throws {
+        let fileManager = FileManager.default
+        let directory = fileManager.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: directory) }
+
+        let fileURL = directory.appendingPathComponent("Podfile")
+        try Data([0xFF, 0xFE, 0x00]).write(to: fileURL)
+
+        do {
+            _ = try PodfileParser().parse(fileURL: fileURL)
+            Issue.record("Expected fileReadFailed")
+        } catch let error as PodfileParser.Error {
+            guard case let .fileReadFailed(actualURL) = error else {
+                Issue.record("Unexpected parser error: \(error)")
+                return
+            }
+            #expect(actualURL == fileURL)
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+}
