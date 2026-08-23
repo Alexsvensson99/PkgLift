@@ -507,6 +507,39 @@ final class CommandContextMigrationTests: XCTestCase {
         }
     }
 
+    func testMissingConfiguredRegistryPathIsNotSilentlyIgnored() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        try """
+        schemaVersion: 1
+        registry:
+          additionalPaths: [MissingRegistry]
+        """.write(
+            to: fixture.root.appendingPathComponent(".pkglift.yml"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let options = try CommonOptions.parse([
+            "--path", fixture.root.path,
+            "--project", fixture.project.path,
+        ])
+
+        do {
+            _ = try await CommandContext.load(from: options)
+            XCTFail("Expected the missing configured registry path to fail before bundled fallback")
+        } catch {
+            XCTAssertEqual(
+                error.localizedDescription,
+                "Invalid registry path: "
+                    + fixture.root.appendingPathComponent("MissingRegistry").path
+            )
+        }
+    }
+
     func testBarkLikeCountsOriginsTargetsAndReasonsAreConsistent() async throws {
         let fixture = try makeFixture(
             podfile: Self.barkLikePodfile,

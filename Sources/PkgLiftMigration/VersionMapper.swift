@@ -51,7 +51,10 @@ public struct VersionMapper: Sendable {
         // component except the patch component. Preserve that upper bound.
         if trimmed.hasPrefix("~>") {
             let versionStr = String(trimmed.dropFirst(2)).trimmingCharacters(in: .whitespaces)
-            let componentCount = versionStr.split(separator: ".").count
+            let componentCount = versionStr.split(
+                separator: ".",
+                omittingEmptySubsequences: false
+            ).count
             if let normalized = normalize(versionStr) {
                 return componentCount >= 3 ? .upToNextMinor(normalized) : .from(normalized)
             }
@@ -71,12 +74,23 @@ public struct VersionMapper: Sendable {
 
     private func normalize(_ version: String) -> String? {
         let clean = version.trimmingCharacters(in: .whitespacesAndNewlines)
-        let components = clean.split(separator: ".").map(String.init)
+        let components = clean.split(
+            separator: ".",
+            omittingEmptySubsequences: false
+        ).map(String.init)
         guard !components.isEmpty, components.count <= 3 else { return nil }
         
-        // Ensure all components are numeric
+        // SwiftPM version components must be canonical ASCII integers. Using
+        // Int alone would also accept signs, while preserving leading zeroes
+        // would pass a non-canonical semantic version downstream.
         for comp in components {
-            guard Int(comp) != nil else { return nil }
+            let isASCIIDigits = !comp.isEmpty && comp.utf8.allSatisfy { byte in
+                byte >= 48 && byte <= 57
+            }
+            let hasCanonicalLeadingZeroes = comp == "0" || !comp.hasPrefix("0")
+            guard isASCIIDigits, hasCanonicalLeadingZeroes, Int(comp) != nil else {
+                return nil
+            }
         }
         
         if components.count == 1 {

@@ -203,3 +203,54 @@ final class WorkspaceAnalyzerTests: XCTestCase {
         """
     }
 }
+
+extension WorkspaceAnalyzerTests {
+    func testMissingWorkspaceThrowsWorkspaceNotFound() {
+        let workspace = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Missing-\(UUID().uuidString).xcworkspace")
+
+        XCTAssertThrowsError(try WorkspaceAnalyzer().analyzeWorkspace(at: workspace.path)) { error in
+            guard case WorkspaceAnalyzerError.workspaceNotFound(let path) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(path, workspace.path)
+        }
+    }
+
+    func testMalformedWorkspaceThrowsInvalidWorkspace() throws {
+        let root = try makeDirectory(prefix: "PkgLiftInvalidWorkspace")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let workspace = try makeWorkspace(
+            at: root.appendingPathComponent("Broken.xcworkspace"),
+            contents: "<Workspace><FileRef"
+        )
+
+        XCTAssertThrowsError(try WorkspaceAnalyzer().analyzeWorkspace(at: workspace.path)) { error in
+            guard case WorkspaceAnalyzerError.invalidWorkspace(let path) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(path, workspace.path)
+        }
+    }
+
+    func testWorkspaceOutsideContainmentRootIsRejected() throws {
+        let root = try makeDirectory(prefix: "PkgLiftWorkspaceRoot")
+        let outside = try makeDirectory(prefix: "PkgLiftWorkspaceOutside")
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: outside)
+        }
+        let workspace = try makeWorkspace(
+            at: outside.appendingPathComponent("Outside.xcworkspace"),
+            contents: workspaceXML(reference: "group:Missing.xcodeproj")
+        )
+
+        XCTAssertThrowsError(
+            try WorkspaceAnalyzer().analyzeWorkspace(at: workspace.path, containedIn: root.path)
+        ) { error in
+            guard case WorkspaceAnalyzerError.workspaceOutsideRoot = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+    }
+}

@@ -36,7 +36,7 @@ There is no base-to-subspec fallback. `Firebase`, `Firebase/Core`, unknown subsp
 
 ## Validation
 
-Normal analysis validates every loaded entry, including local overrides, before classification. Invalid URLs, empty products, malformed minimum versions, invalid consumer-language lists, unsupported schema versions, or malformed YAML stop loading.
+Normal analysis validates every loaded entry, including local overrides, before classification. Invalid URLs, empty products, malformed minimum versions, invalid consumer-language lists, unsupported schema versions, malformed YAML, or a configured registry path that is missing or not a directory stop loading before bundled mappings can be used.
 
 Run the full registry validation explicitly with:
 

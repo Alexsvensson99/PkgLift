@@ -318,3 +318,172 @@ struct PodfileLockParserTests {
         #expect(provenance.lockfile?.checkoutReference?.isFullCheckoutCommit == false)
     }
 }
+
+extension PodfileLockParserTests {
+    @Test
+    func missingFileThrowsFileReadFailed() {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+
+        do {
+            _ = try PodfileLockParser().parse(fileURL: fileURL)
+            Issue.record("Expected fileReadFailed")
+        } catch let error as PodfileLockParser.Error {
+            guard case let .fileReadFailed(actualURL) = error else {
+                Issue.record("Unexpected parser error: \(error)")
+                return
+            }
+            #expect(actualURL == fileURL)
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
+    func sequenceRootThrowsMalformedStructure() {
+        do {
+            _ = try PodfileLockParser().parse(content: "- Alamofire\n- Quick\n")
+            Issue.record("Expected malformedStructure")
+        } catch let error as PodfileLockParser.Error {
+            guard case .malformedStructure = error else {
+                Issue.record("Unexpected parser error: \(error)")
+                return
+            }
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
+    func malformedYAMLThrowsYamlParsingFailed() {
+        do {
+            _ = try PodfileLockParser().parse(content: "PODS: [unterminated\n")
+            Issue.record("Expected yamlParsingFailed")
+        } catch let error as PodfileLockParser.Error {
+            guard case .yamlParsingFailed = error else {
+                Issue.record("Unexpected parser error: \(error)")
+                return
+            }
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
+    func nonArrayPodsSectionThrowsMalformedStructure() {
+        let content = """
+        PODS:
+          Alamofire: 5.9.1
+        DEPENDENCIES:
+          - Alamofire
+        COCOAPODS: 1.16.2
+        """
+
+        do {
+            _ = try PodfileLockParser().parse(content: content)
+            Issue.record("Expected malformedStructure")
+        } catch let error as PodfileLockParser.Error {
+            guard case .malformedStructure = error else {
+                Issue.record("Unexpected parser error: \(error)")
+                return
+            }
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
+    func unsupportedPodsEntryThrowsMalformedStructure() {
+        let content = """
+        PODS:
+          - 42
+          - Alamofire (5.9.1)
+        DEPENDENCIES:
+          - Alamofire
+        COCOAPODS: 1.16.2
+        """
+
+        do {
+            _ = try PodfileLockParser().parse(content: content)
+            Issue.record("Expected malformedStructure")
+        } catch let error as PodfileLockParser.Error {
+            guard case .malformedStructure = error else {
+                Issue.record("Unexpected parser error: \(error)")
+                return
+            }
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
+    func multiEntryPodsMappingThrowsMalformedStructure() {
+        let content = """
+        PODS:
+          - Alamofire (5.9.1): []
+            Quick (7.0.0): []
+        DEPENDENCIES:
+          - Alamofire
+        COCOAPODS: 1.16.2
+        """
+
+        do {
+            _ = try PodfileLockParser().parse(content: content)
+            Issue.record("Expected malformedStructure")
+        } catch let error as PodfileLockParser.Error {
+            guard case .malformedStructure = error else {
+                Issue.record("Unexpected parser error: \(error)")
+                return
+            }
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
+    func scalarPodsMappingValueThrowsMalformedStructure() {
+        let content = """
+        PODS:
+          - Alamofire (5.9.1): 42
+        DEPENDENCIES:
+          - Alamofire
+        COCOAPODS: 1.16.2
+        """
+
+        do {
+            _ = try PodfileLockParser().parse(content: content)
+            Issue.record("Expected malformedStructure")
+        } catch let error as PodfileLockParser.Error {
+            guard case .malformedStructure = error else {
+                Issue.record("Unexpected parser error: \(error)")
+                return
+            }
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
+    func nonStringPodsDependencyEntryThrowsMalformedStructure() {
+        let content = """
+        PODS:
+          - Alamofire (5.9.1):
+            - 42
+        DEPENDENCIES:
+          - Alamofire
+        COCOAPODS: 1.16.2
+        """
+
+        do {
+            _ = try PodfileLockParser().parse(content: content)
+            Issue.record("Expected malformedStructure")
+        } catch let error as PodfileLockParser.Error {
+            guard case .malformedStructure = error else {
+                Issue.record("Unexpected parser error: \(error)")
+                return
+            }
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+}

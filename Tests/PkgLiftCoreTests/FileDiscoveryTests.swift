@@ -148,3 +148,63 @@ final class FileDiscoveryTests: XCTestCase {
         return url
     }
 }
+
+extension FileDiscoveryTests {
+    func testMissingRootThrowsNotADirectory() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+
+        XCTAssertThrowsError(try FileDiscovery().discover(in: root.path)) { error in
+            guard case let FileDiscoveryError.notADirectory(path) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(path, root.path)
+        }
+    }
+
+    func testRegularFileRootThrowsNotADirectory() throws {
+        let fileManager = FileManager.default
+        let directory = fileManager.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: directory) }
+
+        let file = directory.appendingPathComponent("not-a-directory")
+        try Data().write(to: file)
+
+        XCTAssertThrowsError(try FileDiscovery().discover(in: file.path)) { error in
+            guard case let FileDiscoveryError.notADirectory(path) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(path, file.path)
+        }
+    }
+
+    func testManifestLockSymlinkOutsidePodsIsNotDiscovered() throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let outside = fileManager.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fileManager.createDirectory(
+            at: root.appendingPathComponent("Pods", isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        try fileManager.createDirectory(at: outside, withIntermediateDirectories: true)
+        defer {
+            try? fileManager.removeItem(at: root)
+            try? fileManager.removeItem(at: outside)
+        }
+
+        let outsideManifest = outside.appendingPathComponent("Manifest.lock")
+        try "COCOAPODS: 1.16.2".write(to: outsideManifest, atomically: true, encoding: .utf8)
+        try fileManager.createSymbolicLink(
+            at: root.appendingPathComponent("Pods/Manifest.lock"),
+            withDestinationURL: outsideManifest
+        )
+
+        let result = try FileDiscovery().discover(in: root.path)
+
+        XCTAssertNil(result.manifestLockPath)
+    }
+}

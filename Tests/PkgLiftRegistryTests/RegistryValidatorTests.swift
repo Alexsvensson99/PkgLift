@@ -47,7 +47,19 @@ final class RegistryValidatorTests: XCTestCase {
     }
 
     func testMalformedMinimumVersionIsInvalidWhenPresent() {
-        for value in ["5.1", "5.1.0-beta.1", " 5.1.0", "05.1.0"] {
+        for value in [
+            "5.1",
+            "5.1.0-beta.1",
+            "5.1.0+build.42",
+            "v5.1.0",
+            "5.1.0.1",
+            "5..1",
+            " 5.1.0",
+            "5.1.0 ",
+            "05.1.0",
+            "5.01.0",
+            "5.1.00",
+        ] {
             let mapping = RegistryMapping(
                 pod: PodIdentifier(name: "UnsafePod"),
                 swiftpm: SwiftPMPackageInfo(
@@ -62,6 +74,26 @@ final class RegistryValidatorTests: XCTestCase {
             XCTAssertTrue(
                 errors.contains { $0.fieldPath == "swiftpm.minimumVersion" },
                 "Expected \(value) to be rejected"
+            )
+        }
+    }
+
+    func testStrictStableMinimumVersionFormatsAreAccepted() {
+        for value in ["0.0.0", "1.2.3", "2147483647.0.999"] {
+            let mapping = RegistryMapping(
+                pod: PodIdentifier(name: "StableVersionPod"),
+                swiftpm: SwiftPMPackageInfo(
+                    repository: "https://github.com/org/repo",
+                    products: ["StableVersionPod"],
+                    minimumVersion: value
+                ),
+                migration: MigrationInfo(confidence: .verified)
+            )
+
+            let errors = RegistryValidator().validate(mapping, filePath: "StableVersionPod.yml")
+            XCTAssertFalse(
+                errors.contains { $0.fieldPath == "swiftpm.minimumVersion" },
+                "Expected \(value) to be accepted"
             )
         }
     }

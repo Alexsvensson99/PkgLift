@@ -234,3 +234,53 @@ final class CommandContextWorkspaceSelectionTests: XCTestCase {
             .write(path: Path(projectURL.path))
     }
 }
+
+extension CommandContextWorkspaceSelectionTests {
+    func testExplicitProjectRejectsInvalidExtension() async throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: root) }
+
+        let options = try CommonOptions.parse([
+            "--path", root.path,
+            "--project", "App.txt",
+        ])
+
+        do {
+            _ = try await CommandContext.load(from: options)
+            XCTFail("Expected an invalid project extension error")
+        } catch let error as CommandContextError {
+            guard case let .invalidSelectionExtension(path, expectedExtension) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(path, root.appendingPathComponent("App.txt").path)
+            XCTAssertEqual(expectedExtension, "xcodeproj")
+        }
+    }
+
+    func testExplicitWorkspaceRejectsInvalidExtension() async throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: root) }
+
+        let options = try CommonOptions.parse([
+            "--path", root.path,
+            "--workspace", "Products.xcodeproj",
+        ])
+
+        do {
+            _ = try await CommandContext.load(from: options)
+            XCTFail("Expected an invalid workspace extension error")
+        } catch let error as CommandContextError {
+            guard case let .invalidSelectionExtension(path, expectedExtension) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(path, root.appendingPathComponent("Products.xcodeproj").path)
+            XCTAssertEqual(expectedExtension, "xcworkspace")
+        }
+    }
+}
