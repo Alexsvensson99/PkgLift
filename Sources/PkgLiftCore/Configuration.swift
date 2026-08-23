@@ -85,13 +85,23 @@ public struct ConfigurationLoader: Sendable {
     /// - Returns: Parsed configuration.
     /// - Throws: If the file cannot be read or parsed.
     public func load(from path: String) throws -> PkgLiftConfiguration {
-        let data = try Data(contentsOf: URL(fileURLWithPath: path))
+        let data: Data
+        do {
+            data = try Data(contentsOf: URL(fileURLWithPath: path))
+        } catch {
+            throw ConfigurationError.fileReadFailed(path)
+        }
         guard let yamlString = String(data: data, encoding: .utf8) else {
             throw ConfigurationError.invalidEncoding(path)
         }
 
         let decoder = YAMLDecoder()
-        let config = try decoder.decode(PkgLiftConfiguration.self, from: yamlString)
+        let config: PkgLiftConfiguration
+        do {
+            config = try decoder.decode(PkgLiftConfiguration.self, from: yamlString)
+        } catch {
+            throw ConfigurationError.parsingFailed(path)
+        }
 
         guard config.schemaVersion == 1 else {
             throw ConfigurationError.unsupportedSchemaVersion(config.schemaVersion)
@@ -104,13 +114,19 @@ public struct ConfigurationLoader: Sendable {
 
 /// Configuration loading errors.
 public enum ConfigurationError: Error, LocalizedError, Sendable {
+    case fileReadFailed(String)
     case invalidEncoding(String)
+    case parsingFailed(String)
     case unsupportedSchemaVersion(Int)
 
     public var errorDescription: String? {
         switch self {
+        case .fileReadFailed(let path):
+            return "Unable to read configuration file: \(path)"
         case .invalidEncoding(let path):
             return "Configuration file is not valid UTF-8: \(path)"
+        case .parsingFailed(let path):
+            return "Unable to parse configuration file: \(path)"
         case .unsupportedSchemaVersion(let version):
             return
                 "Unsupported configuration schema version: \(version). This version of PkgLift supports schema version 1."

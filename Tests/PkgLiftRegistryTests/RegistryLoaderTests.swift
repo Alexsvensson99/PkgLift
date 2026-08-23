@@ -146,6 +146,140 @@ final class RegistryLoaderTests: XCTestCase {
         }
     }
 
+    func testMissingConfiguredRegistryDirectoryThrowsInvalidPathBeforeBundledFallback() async throws {
+        let missingDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftMissingRegistry-\(UUID().uuidString)")
+        let loader = RegistryLoader(configPaths: [missingDirectory], useBundledRegistry: true)
+
+        do {
+            try await loader.load()
+            XCTFail("Expected the missing configured registry path to be rejected")
+        } catch let error as RegistryError {
+            guard case .invalidPath(let path) = error else {
+                return XCTFail("Expected invalidPath, got \(error)")
+            }
+            XCTAssertEqual(path, missingDirectory.path)
+        }
+    }
+
+    func testMalformedYAMLManifestIsRejectedDuringLoad() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftMalformedYAML-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try "schemaVersion: [1".write(
+            to: directory.appendingPathComponent("Malformed.yml"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let loader = RegistryLoader(configPaths: [directory], useBundledRegistry: false)
+
+        do {
+            try await loader.load()
+            XCTFail("Expected malformed YAML manifest to be rejected")
+        } catch let error as RegistryError {
+            guard case .parsingError(let path, _) = error else {
+                return XCTFail("Expected parsingError, got \(error)")
+            }
+            XCTAssertEqual(URL(fileURLWithPath: path).lastPathComponent, "Malformed.yml")
+        }
+    }
+
+    func testManifestMissingRequiredFieldIsRejectedDuringLoad() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftIncompleteManifest-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let mapping = """
+        schemaVersion: 1
+        pod:
+          name: IncompletePod
+        swiftpm:
+          repository: https://example.com/owner/repository
+          products: [IncompletePod]
+        """
+        try mapping.write(
+            to: directory.appendingPathComponent("IncompletePod.yml"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let loader = RegistryLoader(configPaths: [directory], useBundledRegistry: false)
+
+        do {
+            try await loader.load()
+            XCTFail("Expected manifest with missing migration field to be rejected")
+        } catch let error as RegistryError {
+            guard case .parsingError = error else {
+                return XCTFail("Expected parsingError, got \(error)")
+            }
+        }
+    }
+
+    func testWrongFieldTypeIsRejectedDuringLoad() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftWrongFieldType-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let mapping = """
+        schemaVersion: 1
+        pod:
+          name: WrongTypePod
+        swiftpm:
+          repository: https://example.com/owner/repository
+          products: WrongTypePod
+        migration:
+          confidence: verified
+        """
+        try mapping.write(
+            to: directory.appendingPathComponent("WrongTypePod.yml"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let loader = RegistryLoader(configPaths: [directory], useBundledRegistry: false)
+
+        do {
+            try await loader.load()
+            XCTFail("Expected wrong field type to be rejected")
+        } catch let error as RegistryError {
+            guard case .parsingError = error else {
+                return XCTFail("Expected parsingError, got \(error)")
+            }
+        }
+    }
+
+    func testUnsupportedSchemaVersionIsRejectedDuringLoad() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftUnsupportedSchema-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let mapping = """
+        schemaVersion: 99
+        pod:
+          name: FuturePod
+        swiftpm:
+          repository: https://example.com/owner/repository
+          products: [FuturePod]
+        migration:
+          confidence: verified
+        """
+        try mapping.write(
+            to: directory.appendingPathComponent("FuturePod.yml"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let loader = RegistryLoader(configPaths: [directory], useBundledRegistry: false)
+
+        do {
+            try await loader.load()
+            XCTFail("Expected unsupported schema to be rejected")
+        } catch let error as RegistryError {
+            guard case .validationFailed(let errors) = error else {
+                return XCTFail("Expected validationFailed, got \(error)")
+            }
+            XCTAssertEqual(errors.map(\.fieldPath), ["schemaVersion"])
+        }
+    }
+
     func testSourceRegistryMatchesBundledRegistry() async throws {
         let testFile = URL(fileURLWithPath: #filePath)
         let repositoryRoot = testFile

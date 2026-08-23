@@ -30,7 +30,7 @@ Available options:
 | `--configuration` | Selects an Xcode build configuration such as `Debug` or `Release`. |
 | `--destination` | Passes an explicit destination string to `xcodebuild`. |
 | `--sdk` | Selects an SDK such as `iphonesimulator`. |
-| `--derived-data-path` | Selects a derived-data directory. Relative paths are resolved beneath `--path`. |
+| `--derived-data-path` | Selects a derived-data directory. Relative paths are resolved beneath `--path` and must remain inside it after symlink resolution. Explicit absolute paths remain supported. |
 
 The project or workspace can still be selected explicitly:
 
@@ -82,6 +82,7 @@ Review the complete JSON before publishing it. Build errors can still contain ou
 - Empty values and control characters are rejected before `xcodebuild` starts.
 - Build options do not edit project build settings.
 - A relative derived-data path is resolved from the explicit `--path`, not from an inferred project location.
+- Relative derived-data paths that escape `--path` through `..` or a symlink, or that contain a dangling symlink, are rejected before `xcodebuild` starts.
 - PkgLift continues to require an explicit project or workspace selection when discovery is ambiguous.
 - The same validated scheme is used for workspace package resolution and the final build.
 

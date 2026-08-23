@@ -71,7 +71,7 @@ public actor RegistryLoader {
         var isDirectory: ObjCBool = false
         
         guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
-            return
+            throw RegistryError.invalidPath(url.path)
         }
         
         guard let enumerator = fileManager.enumerator(at: url, includingPropertiesForKeys: nil) else {

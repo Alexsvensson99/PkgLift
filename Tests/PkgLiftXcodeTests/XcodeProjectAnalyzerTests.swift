@@ -1381,3 +1381,56 @@ final class XcodeProjectAnalyzerTests: XCTestCase {
         case missingTarget
     }
 }
+
+extension XcodeProjectAnalyzerTests {
+    func testMissingProjectThrowsProjectNotFound() {
+        let project = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Missing-\(UUID().uuidString).xcodeproj")
+
+        XCTAssertThrowsError(try XcodeProjectAnalyzer().analyzeProject(at: project.path)) { error in
+            guard case XcodeProjectAnalyzerError.projectNotFound(let path) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(path, project.path)
+        }
+    }
+
+    func testMalformedProjectThrowsInvalidProject() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let project = root.appendingPathComponent("Broken.xcodeproj")
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        try "not a project".write(
+            to: project.appendingPathComponent("project.pbxproj"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        XCTAssertThrowsError(try XcodeProjectAnalyzer().analyzeProject(at: project.path)) { error in
+            guard case XcodeProjectAnalyzerError.invalidProject(let path) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(path, project.path)
+        }
+    }
+
+    func testProjectOutsideContainmentRootIsRejected() throws {
+        let root = try makeDirectory()
+        let outside = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftOutsideProject-\(UUID().uuidString)")
+        let project = outside.appendingPathComponent("Outside.xcodeproj")
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: outside)
+        }
+
+        XCTAssertThrowsError(
+            try XcodeProjectAnalyzer().analyzeProject(at: project.path, containedIn: root.path)
+        ) { error in
+            guard case XcodeProjectAnalyzerError.projectOutsideRoot = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+    }
+}

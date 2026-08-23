@@ -335,6 +335,49 @@ final class MigrationClassifierTests: XCTestCase {
         }
     }
 
+    func testLocalPathSourceWithoutMappingIsBlocked() {
+        let dependency = CocoaPodDependency(
+            name: "Alamofire",
+            version: "1.2.3",
+            source: .path("../Pods/Alamofire"),
+            targets: ["App"]
+        )
+
+        let result = MigrationClassifier().classify(dependency: dependency, mapping: nil)
+
+        XCTAssertEqual(result.category, .blocked)
+        XCTAssertTrue(result.reasons.contains("External source without mapping"))
+    }
+
+    func testLocalPathSourceWithMappingRequiresManualReview() {
+        let dependency = CocoaPodDependency(
+            name: "Alamofire",
+            version: "1.2.3",
+            source: .path("../Pods/Alamofire"),
+            isDirect: true,
+            targets: ["App"],
+            declarations: [
+                PodfileDeclaration(
+                    line: 1,
+                    scope: .target,
+                    scopeName: "App",
+                    targetName: "App",
+                    source: .registry
+                ),
+            ],
+            targetAttribution: TargetAttribution(status: .exact, targets: ["App"])
+        )
+
+        let result = MigrationClassifier().classify(
+            dependency: dependency,
+            mapping: makeMapping(minimumVersion: "1.0.0", supportedLanguages: [.swift]),
+            targetSourceProfile: swiftProfile
+        )
+
+        XCTAssertEqual(result.category, .review)
+        XCTAssertTrue(result.reasons.contains("External dependency source requires manual review"))
+    }
+
     func testUnrepresentablePodfileDeclarationIsReviewWithExplicitReason() {
         let dependency = CocoaPodDependency(
             name: "SDWebImage",
