@@ -1,6 +1,7 @@
 // PkgLiftCocoaPods/PodspecSemanticDecoder.swift
 // Version-bound decoding of recursive CocoaPods Core Podspec declarations.
 
+import CoreFoundation
 import Foundation
 
 struct DecodedPodspecSemantics {
@@ -11,6 +12,19 @@ struct DecodedPodspecSemantics {
 
 struct PodspecSemanticDecoder {
     private var unsupportedFields: [PodspecUnsupportedField] = []
+
+    private struct DeclarationContext {
+        let ownerIsRoot: Bool
+        let isPlatformScope: Bool
+
+        var allowsRootGlobalDeclarations: Bool {
+            ownerIsRoot && !isPlatformScope
+        }
+
+        var allowsModuleMap: Bool {
+            ownerIsRoot
+        }
+    }
 
     mutating func decode(_ root: [String: Any]) throws -> DecodedPodspecSemantics {
         let version = try requiredString(named: "version", in: root, at: "")
@@ -48,9 +62,17 @@ struct PodspecSemanticDecoder {
             )
         }
 
-        let declarations = try parseDeclarations(in: object, at: path)
+        let declarations = try parseDeclarations(
+            in: object,
+            at: path,
+            context: DeclarationContext(ownerIsRoot: isRoot, isPlatformScope: false)
+        )
         let platforms = try parsePlatforms(in: object, at: path)
-        let platformScopes = try parsePlatformScopes(in: object, at: path)
+        let platformScopes = try parsePlatformScopes(
+            in: object,
+            at: path,
+            ownerIsRoot: isRoot
+        )
         let subspecs = try parseSubspecs(
             in: object,
             at: path,
@@ -111,7 +133,8 @@ struct PodspecSemanticDecoder {
 
     private mutating func parseDeclarations(
         in object: [String: Any],
-        at path: String
+        at path: String,
+        context: DeclarationContext
     ) throws -> PodspecScopedDeclarations {
         PodspecScopedDeclarations(
             sourceFiles: try parseStringList(
@@ -131,8 +154,188 @@ struct PodspecSemanticDecoder {
                 path: Self.path("resources", beneath: path)
             ),
             resourceBundles: try parseResourceBundles(in: object, at: path),
-            dependencies: try parseDependencies(in: object, at: path)
+            dependencies: try parseDependencies(in: object, at: path),
+            linkage: try parseLinkageDeclarations(
+                in: object,
+                at: path,
+                context: context
+            )
         )
+    }
+
+    private func parseLinkageDeclarations(
+        in object: [String: Any],
+        at path: String,
+        context: DeclarationContext
+    ) throws -> PodspecLinkageDeclarations {
+        try validateLinkageDeclarationScopes(in: object, at: path, context: context)
+
+        return PodspecLinkageDeclarations(
+            frameworks: try parseLiteralList(
+                object["frameworks"],
+                path: Self.path("frameworks", beneath: path)
+            ),
+            weakFrameworks: try parseLiteralList(
+                object["weak_frameworks"],
+                path: Self.path("weak_frameworks", beneath: path)
+            ),
+            libraries: try parseLiteralList(
+                object["libraries"],
+                path: Self.path("libraries", beneath: path)
+            ),
+            vendoredFrameworks: try parseLiteralList(
+                object["vendored_frameworks"],
+                path: Self.path("vendored_frameworks", beneath: path)
+            ),
+            vendoredLibraries: try parseLiteralList(
+                object["vendored_libraries"],
+                path: Self.path("vendored_libraries", beneath: path)
+            ),
+            moduleName: try parseOptionalLiteral(
+                object["module_name"],
+                path: Self.path("module_name", beneath: path)
+            ),
+            moduleMap: try parseModuleMap(
+                object["module_map"],
+                path: Self.path("module_map", beneath: path)
+            ),
+            headerDirectory: try parseOptionalLiteral(
+                object["header_dir"],
+                path: Self.path("header_dir", beneath: path)
+            ),
+            headerMappingsDirectory: try parseOptionalLiteral(
+                object["header_mappings_dir"],
+                path: Self.path("header_mappings_dir", beneath: path)
+            ),
+            projectHeaders: try parseLiteralList(
+                object["project_header_files"],
+                path: Self.path("project_header_files", beneath: path)
+            ),
+            staticFramework: try parseOptionalBoolean(
+                object["static_framework"],
+                path: Self.path("static_framework", beneath: path)
+            )
+        )
+    }
+
+    private func validateLinkageDeclarationScopes(
+        in object: [String: Any],
+        at path: String,
+        context: DeclarationContext
+    ) throws {
+        if object["module_name"] != nil, !context.allowsRootGlobalDeclarations {
+            throw PodspecInspectionError.invalidValue(
+                path: Self.path("module_name", beneath: path),
+                expected: "absent because module_name is a root-only, non-platform declaration"
+            )
+        }
+        if object["static_framework"] != nil, !context.allowsRootGlobalDeclarations {
+            throw PodspecInspectionError.invalidValue(
+                path: Self.path("static_framework", beneath: path),
+                expected: "absent because static_framework is a root-only, non-platform declaration"
+            )
+        }
+        if object["module_map"] != nil, !context.allowsModuleMap {
+            throw PodspecInspectionError.invalidValue(
+                path: Self.path("module_map", beneath: path),
+                expected: "absent because module_map is a root-only declaration"
+            )
+        }
+    }
+
+    private func parseLiteralList(
+        _ value: Any?,
+        path: String
+    ) throws -> [PodspecLiteralDeclaration] {
+        guard let value else { return [] }
+        if let string = value as? String {
+            return [PodspecLiteralDeclaration(
+                literal: try nonEmptyLiteral(string, path: path),
+                path: path
+            )]
+        }
+        guard let array = value as? [Any] else {
+            throw PodspecInspectionError.invalidValue(
+                path: path,
+                expected: "a non-empty string or an array of non-empty strings"
+            )
+        }
+
+        return try array.enumerated().map { index, element in
+            let elementPath = Self.path(String(index), beneath: path)
+            guard let string = element as? String else {
+                throw PodspecInspectionError.invalidValue(
+                    path: elementPath,
+                    expected: "a non-empty string"
+                )
+            }
+            return PodspecLiteralDeclaration(
+                literal: try nonEmptyLiteral(string, path: elementPath),
+                path: elementPath
+            )
+        }
+    }
+
+    private func parseOptionalLiteral(
+        _ value: Any?,
+        path: String
+    ) throws -> PodspecLiteralDeclaration? {
+        guard let value else { return nil }
+        guard let string = value as? String else {
+            throw PodspecInspectionError.invalidValue(
+                path: path,
+                expected: "a non-empty string"
+            )
+        }
+        return PodspecLiteralDeclaration(
+            literal: try nonEmptyLiteral(string, path: path),
+            path: path
+        )
+    }
+
+    private func parseModuleMap(
+        _ value: Any?,
+        path: String
+    ) throws -> PodspecModuleMapDeclaration? {
+        guard let value else { return nil }
+        if let string = value as? String {
+            return PodspecModuleMapDeclaration(
+                value: .customPath(try nonEmptyLiteral(string, path: path)),
+                path: path
+            )
+        }
+        guard let boolean = strictBoolean(value) else {
+            throw PodspecInspectionError.invalidValue(
+                path: path,
+                expected: "a non-empty path string or a boolean"
+            )
+        }
+        return PodspecModuleMapDeclaration(
+            value: boolean ? .generated : .disabled,
+            path: path
+        )
+    }
+
+    private func parseOptionalBoolean(
+        _ value: Any?,
+        path: String
+    ) throws -> PodspecBooleanDeclaration? {
+        guard let value else { return nil }
+        guard let boolean = strictBoolean(value) else {
+            throw PodspecInspectionError.invalidValue(
+                path: path,
+                expected: "a boolean"
+            )
+        }
+        return PodspecBooleanDeclaration(value: boolean, path: path)
+    }
+
+    private func strictBoolean(_ value: Any) -> Bool? {
+        guard let number = value as? NSNumber,
+              CFGetTypeID(number) == CFBooleanGetTypeID() else {
+            return nil
+        }
+        return number.boolValue
     }
 
     private func parseStringList(_ value: Any?, path: String) throws -> [String] {
@@ -298,7 +501,8 @@ struct PodspecSemanticDecoder {
 
     private mutating func parsePlatformScopes(
         in object: [String: Any],
-        at path: String
+        at path: String,
+        ownerIsRoot: Bool
     ) throws -> [PodspecPlatformScope] {
         var scopes: [PodspecPlatformScope] = []
         for key in Self.platformJSONKeys {
@@ -326,7 +530,14 @@ struct PodspecSemanticDecoder {
             scopes.append(PodspecPlatformScope(
                 platform: platform,
                 path: scopePath,
-                declarations: try parseDeclarations(in: scope, at: scopePath)
+                declarations: try parseDeclarations(
+                    in: scope,
+                    at: scopePath,
+                    context: DeclarationContext(
+                        ownerIsRoot: ownerIsRoot,
+                        isPlatformScope: true
+                    )
+                )
             ))
             unsupportedFields.append(PodspecUnsupportedField(
                 path: scopePath,
@@ -615,6 +826,15 @@ struct PodspecSemanticDecoder {
         "resources",
         "resource_bundles",
         "dependencies",
+        "frameworks",
+        "weak_frameworks",
+        "libraries",
+        "vendored_frameworks",
+        "vendored_libraries",
+        "module_map",
+        "header_dir",
+        "header_mappings_dir",
+        "project_header_files",
     ]
 
     private static let modeledNodeFields: Set<String> = modeledDeclarationFields.union([
@@ -632,6 +852,8 @@ struct PodspecSemanticDecoder {
         "version",
         "default_subspec",
         "default_subspecs",
+        "module_name",
+        "static_framework",
     ]
 
     private static let descriptiveMetadataFields: Set<String> = [
@@ -656,36 +878,24 @@ struct PodspecSemanticDecoder {
         "cocoapods_version",
         "configuration_pod_whitelist",
         "exclude_files",
-        "frameworks",
-        "header_dir",
-        "header_mappings_dir",
         "info_plist",
-        "libraries",
-        "module_map",
-        "module_name",
         "on_demand_resources",
         "pod_target_xcconfig",
         "prefix_header_contents",
         "prefix_header_file",
         "prepare_command",
         "preserve_paths",
-        "project_header_files",
         "requires_app_host",
         "requires_arc",
         "scheme",
         "script_phase",
         "script_phases",
         "source",
-        "static_framework",
-        "static_library",
         "swift_version",
         "swift_versions",
         "test_type",
         "testspecs",
         "user_target_xcconfig",
-        "vendored_frameworks",
-        "vendored_libraries",
-        "weak_frameworks",
         "xcconfig",
     ]
 }

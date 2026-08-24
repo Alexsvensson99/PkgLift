@@ -345,6 +345,21 @@ struct PodspecRecursiveSemanticTests {
         }
         """#)
 
+        let core = try #require(inspection.podspec.root.subspecs.first)
+        #expect(core.declarations.linkage.frameworks == [
+            PodspecLiteralDeclaration(
+                literal: "Foundation",
+                path: "/subspecs/0/frameworks"
+            ),
+        ])
+        let coreIOS = try #require(core.platformScopes.first { $0.platform == .iOS })
+        #expect(coreIOS.declarations.linkage.projectHeaders == [
+            PodspecLiteralDeclaration(
+                literal: "Headers/Project/*.h",
+                path: "/subspecs/0/ios/project_header_files"
+            ),
+        ])
+
         #expect(inspection.unsupportedFields == [
             PodspecUnsupportedField(
                 path: "/subspecs/0",
@@ -353,10 +368,6 @@ struct PodspecRecursiveSemanticTests {
             PodspecUnsupportedField(
                 path: "/subspecs/0/custom~1field~0",
                 kind: .unknownField
-            ),
-            PodspecUnsupportedField(
-                path: "/subspecs/0/frameworks",
-                kind: .deferredCocoaPodsSemantic
             ),
             PodspecUnsupportedField(
                 path: "/subspecs/0/ios",
@@ -368,10 +379,6 @@ struct PodspecRecursiveSemanticTests {
             ),
             PodspecUnsupportedField(
                 path: "/subspecs/0/ios/homepage",
-                kind: .deferredCocoaPodsSemantic
-            ),
-            PodspecUnsupportedField(
-                path: "/subspecs/0/ios/project_header_files",
                 kind: .deferredCocoaPodsSemantic
             ),
             PodspecUnsupportedField(

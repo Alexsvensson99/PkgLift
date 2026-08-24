@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add a recursive, analysis-only Podspec model for root, library-subspec, and raw platform scopes, pinned to CocoaPods Core 1.17.0 semantics.
 - Record literal root, subspec, and platform dependency requirements plus validated singular, plural, implicit-all, and `none` default-subspec declarations with exact RFC 6901 evidence paths.
+- Record raw framework, weak-framework, system-library, vendored-input, module, header-layout, project-header, and static-framework declarations with exact paths and deterministic typed values.
 
 ### Security
 - Unknown semantic profiles, malformed requirement forms, duplicate sibling subspecs, ambiguous defaults, and unsupported inheritance or platform merge behavior fail closed without changing registry, classifier, planner, preflight, migration, or `AUTO` behavior.
+- Linkage and vendored paths remain opaque: PkgLift does not expand globs, traverse paths, follow symlinks, inspect binaries, infer SwiftPM binary targets, or assign semantics to the unsupported `static_library` key.
 
 ## [0.4.0] - 2026-08-22
 

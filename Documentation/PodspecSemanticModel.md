@@ -41,8 +41,8 @@ records:
 
 - its complete CocoaPods identity, local base name, and RFC 6901 object path;
 - its own `platforms` deployment declarations;
-- its own unexpanded file, header, resource, resource-bundle, and dependency
-  declarations;
+- its own unexpanded file, header, resource, resource-bundle, dependency,
+  linkage, module, header-layout, and vendored-input declarations;
 - separate raw `ios`, `osx`, `tvos`, `watchos`, and `visionos` declaration
   scopes;
 - its child library subspecs in source-array order; and
@@ -82,6 +82,53 @@ empty-string requirement forms fail with a typed path-specific error.
 Dependencies can be declared globally on any node and inside any supported
 platform scope. Those declarations remain separate. The profile does not
 materialize CocoaPods' parent inheritance or global-plus-platform hash merge.
+
+### Linkage, modules, headers, and vendored inputs
+
+The pinned profile models these raw forms:
+
+| Declaration | Accepted JSON | Accepted raw scopes |
+| --- | --- | --- |
+| `frameworks`, `weak_frameworks`, `libraries` | non-empty string or array of non-empty strings | root, subspec, and their platform blocks |
+| `vendored_frameworks`, `vendored_libraries` | non-empty opaque path string or array of them | root, subspec, and their platform blocks |
+| `header_dir`, `header_mappings_dir` | one non-empty opaque string | root, subspec, and their platform blocks |
+| `project_header_files` | non-empty opaque path string or array of them | root, subspec, and their platform blocks |
+| `module_name` | one non-empty string | root global scope only |
+| `module_map` | `true`, `false`, or one non-empty opaque path string | root global scope and root platform blocks |
+| `static_framework` | a literal JSON boolean | root global scope only |
+
+Each scalar or array element is retained with its exact escaped RFC 6901 path.
+Arrays preserve order and duplicates. An absent list and an explicit empty
+array both produce no literal elements; neither is interpreted as effective
+behavior. Empty or whitespace-only strings fail at the field or element path.
+`module_map: true` and `module_map: false` have distinct typed states for
+default generation and disabling, while a string remains an opaque custom
+path. A numeric `0` or `1` is not accepted as a JSON boolean.
+
+CocoaPods Core 1.17.0 declares `module_map` as root-only but still
+multi-platform, so `/ios/module_map` and the other root platform forms are
+modeled separately from `/module_map`. This behavior follows the pinned Core
+[`DSL`](https://github.com/CocoaPods/Core/blob/1.17.0/lib/cocoapods-core/specification/dsl.rb#L1534-L1564)
+and
+[`PlatformProxy`](https://github.com/CocoaPods/Core/blob/1.17.0/lib/cocoapods-core/specification/dsl/platform_proxy.rb#L31-L41);
+PkgLift does not compute which value a CocoaPods consumer would inherit. A
+`module_map` under any subspec, including a subspec platform block, is rejected
+as outside the root-only contract. `module_name` and `static_framework` are
+non-platform root attributes and are rejected in every child or platform
+scope.
+
+There is no Podspec `static_library` attribute in CocoaPods Core 1.17.0. A JSON
+key with that name is therefore retained as `unknownField` evidence instead of
+being given invented semantics or combined with `static_framework`. Duplicate
+JSON keys, including duplicate modeled declarations, remain typed conflicts at
+the bounded JSON grammar boundary. Simultaneous global and platform values are
+separate raw declarations, not a conflict, and no additional conflict rule is
+invented for declarations that CocoaPods Core permits.
+
+All strings in this group are data, not filesystem capabilities. PkgLift does
+not traverse `..`, follow a symlink, expand a glob, open an archive, inspect a
+binary, infer a file kind from `.framework`, `.xcframework`, `.a`, or `.dylib`,
+or claim that any declaration is a SwiftPM binary target.
 
 ### Subspecs and defaults
 
@@ -126,14 +173,13 @@ Every direct key at root, subspec, and supported platform depth is handled as
 one of four categories:
 
 - **modeled**: identity, recursive subspecs, defaults, platforms, dependencies,
-  file/header/resource declarations, resource bundles, and supported platform
-  blocks;
+  file/header/resource declarations, resource bundles, linkage/module/header
+  metadata, vendored inputs, `static_framework`, and supported platform blocks;
 - **descriptive**: metadata such as `summary`, `description`, `homepage`,
   `license`, and `authors` at their valid root scope, which is deliberately
   excluded from this semantic model;
-- **deferred**: recognized CocoaPods behavior such as frameworks, libraries,
-  vendored artifacts, build settings, module/header settings, scripts, source
-  provenance, test specs, and app specs; or
+- **deferred**: recognized CocoaPods behavior such as build settings, compiler
+  flags, scripts, source provenance, test specs, and app specs; or
 - **unknown**: keys outside the recognized contract for that scope.
 
 Deferred and unknown evidence is retained in `unsupportedFields` with exact,
@@ -171,8 +217,8 @@ the declaration forms it was asked to inspect. It does **not** prove that:
 
 - CocoaPods parent inheritance or platform merging has been evaluated;
 - CocoaPods and SwiftPM select the same files, resources, or dependencies;
-- headers, modules, linkage, compiler settings, or transitive dependencies are
-  equivalent;
+- raw headers, modules, linkage, vendored inputs, compiler settings, or
+  transitive dependencies are effective or equivalent;
 - a native or generated Swift package can build the pod;
 - a registry mapping is correct; or
 - a dependency is eligible for `AUTO`.

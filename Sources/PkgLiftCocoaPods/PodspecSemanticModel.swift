@@ -146,6 +146,7 @@ public struct PodspecScopedDeclarations: Sendable, Equatable, Codable {
     public let resources: [String]
     public let resourceBundles: [PodspecResourceBundle]
     public let dependencies: [PodspecDependencyDeclaration]
+    public let linkage: PodspecLinkageDeclarations
 
     public init(
         sourceFiles: [String] = [],
@@ -153,7 +154,8 @@ public struct PodspecScopedDeclarations: Sendable, Equatable, Codable {
         privateHeaders: [String] = [],
         resources: [String] = [],
         resourceBundles: [PodspecResourceBundle] = [],
-        dependencies: [PodspecDependencyDeclaration] = []
+        dependencies: [PodspecDependencyDeclaration] = [],
+        linkage: PodspecLinkageDeclarations = .empty
     ) {
         self.sourceFiles = sourceFiles
         self.publicHeaders = publicHeaders
@@ -161,6 +163,43 @@ public struct PodspecScopedDeclarations: Sendable, Equatable, Codable {
         self.resources = resources
         self.resourceBundles = resourceBundles
         self.dependencies = dependencies
+        self.linkage = linkage
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case sourceFiles
+        case publicHeaders
+        case privateHeaders
+        case resources
+        case resourceBundles
+        case dependencies
+        case linkage
+    }
+
+    /// Decodes the original v0.5 development shape by treating an absent linkage group as
+    /// empty. Encoding always emits the explicit current shape.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sourceFiles = try container.decode([String].self, forKey: .sourceFiles)
+        publicHeaders = try container.decode([String].self, forKey: .publicHeaders)
+        privateHeaders = try container.decode([String].self, forKey: .privateHeaders)
+        resources = try container.decode([String].self, forKey: .resources)
+        resourceBundles = try container.decode(
+            [PodspecResourceBundle].self,
+            forKey: .resourceBundles
+        )
+        dependencies = try container.decode(
+            [PodspecDependencyDeclaration].self,
+            forKey: .dependencies
+        )
+        if container.contains(.linkage) {
+            linkage = try container.decode(
+                PodspecLinkageDeclarations.self,
+                forKey: .linkage
+            )
+        } else {
+            linkage = .empty
+        }
     }
 }
 
