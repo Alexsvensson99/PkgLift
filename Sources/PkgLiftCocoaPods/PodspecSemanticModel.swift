@@ -147,6 +147,7 @@ public struct PodspecScopedDeclarations: Sendable, Equatable, Codable {
     public let resourceBundles: [PodspecResourceBundle]
     public let dependencies: [PodspecDependencyDeclaration]
     public let linkage: PodspecLinkageDeclarations
+    public let compilation: PodspecCompilationDeclarations
 
     public init(
         sourceFiles: [String] = [],
@@ -155,7 +156,8 @@ public struct PodspecScopedDeclarations: Sendable, Equatable, Codable {
         resources: [String] = [],
         resourceBundles: [PodspecResourceBundle] = [],
         dependencies: [PodspecDependencyDeclaration] = [],
-        linkage: PodspecLinkageDeclarations = .empty
+        linkage: PodspecLinkageDeclarations = .empty,
+        compilation: PodspecCompilationDeclarations = .empty
     ) {
         self.sourceFiles = sourceFiles
         self.publicHeaders = publicHeaders
@@ -164,6 +166,7 @@ public struct PodspecScopedDeclarations: Sendable, Equatable, Codable {
         self.resourceBundles = resourceBundles
         self.dependencies = dependencies
         self.linkage = linkage
+        self.compilation = compilation
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -174,9 +177,10 @@ public struct PodspecScopedDeclarations: Sendable, Equatable, Codable {
         case resourceBundles
         case dependencies
         case linkage
+        case compilation
     }
 
-    /// Decodes the original v0.5 development shape by treating an absent linkage group as
+    /// Decodes earlier v0.5 development shapes by treating absent declaration groups as
     /// empty. Encoding always emits the explicit current shape.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -199,6 +203,14 @@ public struct PodspecScopedDeclarations: Sendable, Equatable, Codable {
             )
         } else {
             linkage = .empty
+        }
+        if container.contains(.compilation) {
+            compilation = try container.decode(
+                PodspecCompilationDeclarations.self,
+                forKey: .compilation
+            )
+        } else {
+            compilation = .empty
         }
     }
 }

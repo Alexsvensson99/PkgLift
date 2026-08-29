@@ -415,6 +415,7 @@ struct PodspecLinkageSemanticTests {
         """#.utf8)
         let decoded = try JSONDecoder().decode(PodspecScopedDeclarations.self, from: earlierShape)
         #expect(decoded.linkage == .empty)
+        #expect(decoded.compilation == .empty)
 
         let nullLinkage = Data(#"""
         {

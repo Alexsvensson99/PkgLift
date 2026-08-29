@@ -1,0 +1,110 @@
+{
+  "name": "CompilationKit",
+  "version": "4.0.0",
+  "dependencies": {
+    "Logging": [],
+    "Network/Core": [
+      "~> 1.0"
+    ]
+  },
+  "compiler_flags": [
+    "-DROOT",
+    "-Wno-format"
+  ],
+  "xcconfig": {
+    "A/B~C": "$(inherited) -DLEGACY",
+    "EMPTY_VALUE": ""
+  },
+  "pod_target_xcconfig": {
+    "OTHER_SWIFT_FLAGS": "$(inherited) -DPOD"
+  },
+  "user_target_xcconfig": {
+    "GCC_PREPROCESSOR_DEFINITIONS": "$(inherited) CONSUMER=1"
+  },
+  "configuration_pod_whitelist": {
+    "Logging": [],
+    "Network/Core": [
+      "debug",
+      "release"
+    ]
+  },
+  "swift_versions": [
+    "5.9",
+    "6.0"
+  ],
+  "swift_version": "6.0",
+  "requires_arc": [
+    "Sources/**/*ARC.m",
+    "Sources/ARC.mm"
+  ],
+  "exclude_files": [
+    "Sources/Excluded/**",
+    "../Outside.m"
+  ],
+  "preserve_paths": "Generated/**/*.h",
+  "prepare_command": "printf 'must not run'",
+  "ios": {
+    "compiler_flags": "-DIOS",
+    "xcconfig": {
+      "SDKROOT": "iphoneos"
+    },
+    "pod_target_xcconfig": {
+      "OTHER_CFLAGS": "$(inherited) -DIOS_POD"
+    },
+    "user_target_xcconfig": {
+      "OTHER_LDFLAGS": "$(inherited) -ObjC"
+    },
+    "requires_arc": false,
+    "exclude_files": "Sources/macOS/**",
+    "preserve_paths": [
+      "Artifacts/iOS/*",
+      "Scripts/generate.sh"
+    ],
+    "script_phase": {
+      "name": "Must stay deferred",
+      "script": "printf 'must not run'"
+    }
+  },
+  "subspecs": [
+    {
+      "name": "Core",
+      "dependencies": {
+        "Child/Thing": []
+      },
+      "compiler_flags": "-DCORE",
+      "xcconfig": {
+        "CORE_LEGACY": "$(inherited)"
+      },
+      "pod_target_xcconfig": {
+        "CORE_POD": "YES"
+      },
+      "user_target_xcconfig": {
+        "CORE_USER": "YES"
+      },
+      "configuration_pod_whitelist": {
+        "Child/Thing": [
+          "debug"
+        ]
+      },
+      "requires_arc": true,
+      "exclude_files": [],
+      "preserve_paths": [
+        "Sources/Core/Generated/**"
+      ],
+      "ios": {
+        "compiler_flags": [
+          "-DCORE_IOS"
+        ],
+        "pod_target_xcconfig": {
+          "CORE_IOS": "$(SRCROOT)/literal-only"
+        },
+        "requires_arc": "Sources/Core/iOS/*ARC.m",
+        "exclude_files": [
+          "Sources/Core/Other/**"
+        ],
+        "preserve_paths": "Sources/Core/iOS/Generated.h",
+        "computed/override~": true
+      }
+    }
+  ]
+}

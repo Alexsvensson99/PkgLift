@@ -359,6 +359,12 @@ struct PodspecRecursiveSemanticTests {
                 path: "/subspecs/0/ios/project_header_files"
             ),
         ])
+        #expect(coreIOS.declarations.compilation.compilerFlags == [
+            PodspecLiteralDeclaration(
+                literal: "-DVALUE",
+                path: "/subspecs/0/ios/compiler_flags"
+            ),
+        ])
 
         #expect(inspection.unsupportedFields == [
             PodspecUnsupportedField(
@@ -371,10 +377,6 @@ struct PodspecRecursiveSemanticTests {
             ),
             PodspecUnsupportedField(
                 path: "/subspecs/0/ios",
-                kind: .deferredCocoaPodsSemantic
-            ),
-            PodspecUnsupportedField(
-                path: "/subspecs/0/ios/compiler_flags",
                 kind: .deferredCocoaPodsSemantic
             ),
             PodspecUnsupportedField(

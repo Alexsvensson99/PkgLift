@@ -25,5 +25,14 @@ Podspec attribute in CocoaPods Core 1.17.0 and must remain explicit unknown
 evidence. Its SHA-256 is
 `70de6cdf72b353dd88cfc7a8913fd55830fb22686285b110b67c2843c75a41b5`.
 
+`CompilationControls-4.0.0.podspec.json` is a repository-authored adversarial
+fixture for the same pinned profile. It combines raw root, root-platform,
+subspec, and subspec-platform compiler flags, build-setting maps, configuration
+whitelists, Swift-version forms, ARC controls, and file-selection declarations.
+Macro-, shell-, glob-, and traversal-looking strings are inert evidence. The
+fixture also retains a deferred command, a deferred script phase, and an
+unknown escaped key to prove that none is evaluated. Its SHA-256 is
+`222d9ac7c6f92937481d16da7cd6f346a6956c6e73f8307f63837bc4c6686e01`.
+
 The fixtures exercise declared syntax only. Their presence does not verify a
 CocoaPods-to-SwiftPM registry mapping or build equivalence.

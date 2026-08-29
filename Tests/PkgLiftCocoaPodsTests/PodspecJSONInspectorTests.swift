@@ -261,11 +261,25 @@ struct PodspecJSONInspectorTests {
         #expect(keychain.podspec.version == "4.2.2")
         #expect(keychain.podspec.sourceFiles == ["Lib/KeychainAccess/*.swift"])
         #expect(keychain.unsupportedFields.map(\.path) == [
-            "/requires_arc",
             "/source",
-            "/swift_version",
-            "/swift_versions",
         ])
+        #expect(keychain.podspec.root.declarations.compilation.requiresARC ==
+            PodspecARCDeclaration(value: .boolean(true), path: "/requires_arc"))
+        #expect(keychain.podspec.root.declarations.compilation.swiftVersions ==
+            PodspecSwiftVersionDeclarations(
+                versions: [
+                    PodspecLiteralDeclaration(
+                        literal: "5.1",
+                        path: "/swift_versions"
+                    ),
+                ],
+                pluralDeclarationPath: "/swift_versions",
+                legacySingular: PodspecLiteralDeclaration(
+                    literal: "5.1",
+                    path: "/swift_version"
+                ),
+                relationship: .exactMatch
+            ))
 
         let deviceKit = try PodspecJSONInspector().inspect(json: deviceKitData)
         #expect(deviceKit.podspec.resourceBundles == [
