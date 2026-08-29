@@ -24,6 +24,10 @@ struct PodspecSemanticDecoder {
         var allowsModuleMap: Bool {
             ownerIsRoot
         }
+
+        var allowsConfigurationPodWhitelist: Bool {
+            !isPlatformScope
+        }
     }
 
     mutating func decode(_ root: [String: Any]) throws -> DecodedPodspecSemantics {
@@ -136,7 +140,8 @@ struct PodspecSemanticDecoder {
         at path: String,
         context: DeclarationContext
     ) throws -> PodspecScopedDeclarations {
-        PodspecScopedDeclarations(
+        let dependencies = try parseDependencies(in: object, at: path)
+        return PodspecScopedDeclarations(
             sourceFiles: try parseStringList(
                 object["source_files"],
                 path: Self.path("source_files", beneath: path)
@@ -154,11 +159,17 @@ struct PodspecSemanticDecoder {
                 path: Self.path("resources", beneath: path)
             ),
             resourceBundles: try parseResourceBundles(in: object, at: path),
-            dependencies: try parseDependencies(in: object, at: path),
+            dependencies: dependencies,
             linkage: try parseLinkageDeclarations(
                 in: object,
                 at: path,
                 context: context
+            ),
+            compilation: try parseCompilationDeclarations(
+                in: object,
+                at: path,
+                context: context,
+                dependencies: dependencies
             )
         )
     }
@@ -215,6 +226,224 @@ struct PodspecSemanticDecoder {
                 object["static_framework"],
                 path: Self.path("static_framework", beneath: path)
             )
+        )
+    }
+
+    private mutating func parseCompilationDeclarations(
+        in object: [String: Any],
+        at path: String,
+        context: DeclarationContext,
+        dependencies: [PodspecDependencyDeclaration]
+    ) throws -> PodspecCompilationDeclarations {
+        try validateCompilationDeclarationScopes(in: object, at: path, context: context)
+
+        return PodspecCompilationDeclarations(
+            compilerFlags: try parseLiteralList(
+                object["compiler_flags"],
+                path: Self.path("compiler_flags", beneath: path)
+            ),
+            legacyXCConfig: try parseBuildSettings(
+                object["xcconfig"],
+                path: Self.path("xcconfig", beneath: path)
+            ),
+            podTargetXCConfig: try parseBuildSettings(
+                object["pod_target_xcconfig"],
+                path: Self.path("pod_target_xcconfig", beneath: path)
+            ),
+            userTargetXCConfig: try parseBuildSettings(
+                object["user_target_xcconfig"],
+                path: Self.path("user_target_xcconfig", beneath: path)
+            ),
+            configurationPodWhitelist: try parseConfigurationPodWhitelist(
+                object["configuration_pod_whitelist"],
+                path: Self.path("configuration_pod_whitelist", beneath: path),
+                dependencies: dependencies
+            ),
+            swiftVersions: try parseSwiftVersionDeclarations(in: object, at: path),
+            requiresARC: try parseARCDeclaration(
+                object["requires_arc"],
+                path: Self.path("requires_arc", beneath: path)
+            ),
+            excludeFiles: try parseLiteralList(
+                object["exclude_files"],
+                path: Self.path("exclude_files", beneath: path)
+            ),
+            preservePaths: try parseLiteralList(
+                object["preserve_paths"],
+                path: Self.path("preserve_paths", beneath: path)
+            )
+        )
+    }
+
+    private func validateCompilationDeclarationScopes(
+        in object: [String: Any],
+        at path: String,
+        context: DeclarationContext
+    ) throws {
+        if object["configuration_pod_whitelist"] != nil,
+           !context.allowsConfigurationPodWhitelist {
+            throw PodspecInspectionError.invalidValue(
+                path: Self.path("configuration_pod_whitelist", beneath: path),
+                expected: "absent because configuration_pod_whitelist is not a platform declaration"
+            )
+        }
+        for key in ["swift_version", "swift_versions"]
+        where object[key] != nil && !context.allowsRootGlobalDeclarations {
+            throw PodspecInspectionError.invalidValue(
+                path: Self.path(key, beneath: path),
+                expected: "absent because \(key) is a root-only, non-platform declaration"
+            )
+        }
+    }
+
+    private func parseBuildSettings(
+        _ value: Any?,
+        path: String
+    ) throws -> [PodspecBuildSettingDeclaration] {
+        guard let value else { return [] }
+        guard let settings = value as? [String: Any] else {
+            throw PodspecInspectionError.invalidValue(
+                path: path,
+                expected: "an object of string build-setting values"
+            )
+        }
+
+        return try settings.keys.sorted().map { key in
+            let valuePath = Self.path(key, beneath: path)
+            guard !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw PodspecInspectionError.invalidValue(
+                    path: valuePath,
+                    expected: "a non-empty build-setting key"
+                )
+            }
+            guard let rawValue = settings[key], let string = rawValue as? String else {
+                throw PodspecInspectionError.invalidValue(
+                    path: valuePath,
+                    expected: "a string build-setting value"
+                )
+            }
+            return PodspecBuildSettingDeclaration(
+                key: key,
+                value: string,
+                path: valuePath
+            )
+        }
+    }
+
+    private func parseConfigurationPodWhitelist(
+        _ value: Any?,
+        path: String,
+        dependencies: [PodspecDependencyDeclaration]
+    ) throws -> [PodspecConfigurationPodWhitelistDeclaration] {
+        guard let value else { return [] }
+        guard let whitelist = value as? [String: Any] else {
+            throw PodspecInspectionError.invalidValue(
+                path: path,
+                expected: "an object mapping dependency names to configuration arrays"
+            )
+        }
+
+        let dependencyNames = Set(dependencies.map(\.name))
+        return try whitelist.keys.sorted().map { podName in
+            let podPath = Self.path(podName, beneath: path)
+            guard !podName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw PodspecInspectionError.invalidValue(
+                    path: podPath,
+                    expected: "a non-empty dependency name"
+                )
+            }
+            guard dependencyNames.contains(podName) else {
+                throw PodspecInspectionError.invalidValue(
+                    path: podPath,
+                    expected: "a key matching a dependency declared in the same scope"
+                )
+            }
+            guard let rawConfigurations = whitelist[podName] as? [Any] else {
+                throw PodspecInspectionError.invalidValue(
+                    path: podPath,
+                    expected: "an array containing only debug and release strings"
+                )
+            }
+            let configurations = try rawConfigurations.enumerated().map { index, rawValue in
+                let valuePath = Self.path(String(index), beneath: podPath)
+                guard let literal = rawValue as? String,
+                      literal == "debug" || literal == "release" else {
+                    throw PodspecInspectionError.invalidValue(
+                        path: valuePath,
+                        expected: "the literal string debug or release"
+                    )
+                }
+                return PodspecLiteralDeclaration(literal: literal, path: valuePath)
+            }
+            return PodspecConfigurationPodWhitelistDeclaration(
+                podName: podName,
+                path: podPath,
+                configurations: configurations
+            )
+        }
+    }
+
+    private mutating func parseSwiftVersionDeclarations(
+        in object: [String: Any],
+        at path: String
+    ) throws -> PodspecSwiftVersionDeclarations {
+        let pluralPath = Self.path("swift_versions", beneath: path)
+        let pluralWasDeclared = object["swift_versions"] != nil
+        let versions = try parseLiteralList(
+            object["swift_versions"],
+            path: pluralPath
+        )
+        let singular = try parseOptionalLiteral(
+            object["swift_version"],
+            path: Self.path("swift_version", beneath: path)
+        )
+
+        let relationship: PodspecSwiftVersionDeclarations.Relationship
+        if let singular, pluralWasDeclared {
+            let canProveExactWithoutNormalization = !versions.isEmpty
+                && versions.allSatisfy { $0.literal == singular.literal }
+            if canProveExactWithoutNormalization {
+                relationship = .exactMatch
+            } else {
+                relationship = .requiresCocoaPodsNormalization
+                unsupportedFields.append(PodspecUnsupportedField(
+                    path: singular.path,
+                    kind: .deferredCocoaPodsSemantic
+                ))
+                unsupportedFields.append(PodspecUnsupportedField(
+                    path: pluralPath,
+                    kind: .deferredCocoaPodsSemantic
+                ))
+            }
+        } else {
+            relationship = .notApplicable
+        }
+
+        return PodspecSwiftVersionDeclarations(
+            versions: versions,
+            pluralDeclarationPath: pluralWasDeclared ? pluralPath : nil,
+            legacySingular: singular,
+            relationship: relationship
+        )
+    }
+
+    private func parseARCDeclaration(
+        _ value: Any?,
+        path: String
+    ) throws -> PodspecARCDeclaration? {
+        guard let value else { return nil }
+        if let boolean = strictBoolean(value) {
+            return PodspecARCDeclaration(value: .boolean(boolean), path: path)
+        }
+        if value is String || value is [Any] {
+            return PodspecARCDeclaration(
+                value: .filePatterns(try parseLiteralList(value, path: path)),
+                path: path
+            )
+        }
+        throw PodspecInspectionError.invalidValue(
+            path: path,
+            expected: "a boolean, a non-empty string, or an array of non-empty strings"
         )
     }
 
@@ -835,6 +1064,16 @@ struct PodspecSemanticDecoder {
         "header_dir",
         "header_mappings_dir",
         "project_header_files",
+        "compiler_flags",
+        "xcconfig",
+        "pod_target_xcconfig",
+        "user_target_xcconfig",
+        "configuration_pod_whitelist",
+        "swift_version",
+        "swift_versions",
+        "requires_arc",
+        "exclude_files",
+        "preserve_paths",
     ]
 
     private static let modeledNodeFields: Set<String> = modeledDeclarationFields.union([
@@ -874,28 +1113,18 @@ struct PodspecSemanticDecoder {
     private static let deferredSemanticFields: Set<String> = [
         "app_host_name",
         "appspecs",
-        "compiler_flags",
         "cocoapods_version",
-        "configuration_pod_whitelist",
-        "exclude_files",
         "info_plist",
         "on_demand_resources",
-        "pod_target_xcconfig",
         "prefix_header_contents",
         "prefix_header_file",
         "prepare_command",
-        "preserve_paths",
         "requires_app_host",
-        "requires_arc",
         "scheme",
         "script_phase",
         "script_phases",
         "source",
-        "swift_version",
-        "swift_versions",
         "test_type",
         "testspecs",
-        "user_target_xcconfig",
-        "xcconfig",
     ]
 }

@@ -42,7 +42,8 @@ records:
 - its complete CocoaPods identity, local base name, and RFC 6901 object path;
 - its own `platforms` deployment declarations;
 - its own unexpanded file, header, resource, resource-bundle, dependency,
-  linkage, module, header-layout, and vendored-input declarations;
+  linkage, module, header-layout, vendored-input, compilation, build-setting,
+  ARC, and file-selection declarations;
 - separate raw `ios`, `osx`, `tvos`, `watchos`, and `visionos` declaration
   scopes;
 - its child library subspecs in source-array order; and
@@ -130,6 +131,66 @@ not traverse `..`, follow a symlink, expand a glob, open an archive, inspect a
 binary, infer a file kind from `.framework`, `.xcframework`, `.a`, or `.dylib`,
 or claim that any declaration is a SwiftPM binary target.
 
+### Compilation and file selection
+
+The pinned profile also models these raw declaration forms:
+
+| Declaration | Accepted JSON | Accepted raw scopes |
+| --- | --- | --- |
+| `compiler_flags` | non-empty string or array of non-empty strings | root, subspec, and their platform blocks |
+| legacy `xcconfig`, `pod_target_xcconfig`, `user_target_xcconfig` | object whose keys are non-empty strings and whose values are strings | root, subspec, and their platform blocks |
+| `configuration_pod_whitelist` | object mapping same-scope dependency names to arrays containing only `debug` and `release` | root and subspec global scopes, never platform blocks |
+| `swift_versions` | non-empty string or array of non-empty strings; the array may be explicitly empty | root global scope only |
+| legacy `swift_version` | one non-empty string | root global scope only |
+| `requires_arc` | JSON boolean, non-empty pattern string, or array of non-empty pattern strings | root, subspec, and their platform blocks |
+| `exclude_files`, `preserve_paths` | non-empty string or array of non-empty strings | root, subspec, and their platform blocks |
+
+List entries and build-setting values retain exact escaped RFC 6901 paths.
+Object entries are sorted by key for deterministic output; declared arrays
+retain order, duplicates, and explicit emptiness. Build-setting values may be
+empty because emptiness is itself literal data. Keys and values such as
+`$(inherited)`, `$(SRCROOT)`, shell-looking text, path traversal, and glob
+characters are preserved byte-for-byte as strings. They are never expanded,
+interpolated, evaluated, written to an xcconfig, or passed to a process.
+
+The legacy `xcconfig` object remains separate from both target-specific
+objects. Although the Ruby DSL setter copies that value into
+`pod_target_xcconfig` and `user_target_xcconfig`, loading Podspec JSON stores
+the raw hash directly. PkgLift therefore does not reproduce the setter,
+merge maps, or invent precedence.
+
+`configuration_pod_whitelist` is CocoaPods Core's serialized representation
+of dependency `:configurations`. Every map key must name a dependency declared
+in the same node scope and every value must be an array of the lowercase
+literal strings `debug` and `release`; the empty array remains explicit. Core's
+platform dependency proxy does not create this map, so a whitelist inside a
+platform block is rejected rather than assigned speculative semantics.
+
+CocoaPods JSON commonly contains both `swift_versions` and its generated
+backwards-compatibility `swift_version`. PkgLift preserves the plural values,
+plural declaration path, and legacy singular separately. Their typed
+relationship is `exactMatch` only when the plural declaration is non-empty and
+every plural literal equals the singular byte-for-byte. Otherwise it is
+`requiresCocoaPodsNormalization`, and both declaration paths are retained as
+`deferredCocoaPodsSemantic` evidence. CocoaPods converts the combined values to
+versions, deduplicates and sorts them, then serializes the last version as the
+legacy singular. PkgLift deliberately defers every pair with more than one
+distinct literal, even when the singular occurs in the plural list, because it
+cannot prove the generated counterpart without reproducing that normalization
+and selection. Deferred cases also include spelling variants such as `5` and
+`5.0`, a separately supplied legacy value, or a singular value paired with an
+explicitly empty plural array. The document remains inspectable, but the
+unresolved pair cannot be treated as positive capability evidence. PkgLift does
+not parse, normalize, sort, deduplicate, or compare version numbers. Both keys
+are root-only and non-platform under the pinned DSL.
+
+An ARC boolean is retained as a boolean; ARC file patterns are retained as
+opaque literals. PkgLift does not apply CocoaPods' default, determine which
+source files require ARC, add compiler flags, expand `exclude_files`, protect
+`preserve_paths`, or inspect any path. Global, child, and platform values stay
+in their original `PodspecScopedDeclarations` and are never inherited or
+merged.
+
 ### Subspecs and defaults
 
 `subspecs` must be a recursive array of objects with non-empty local names.
@@ -174,12 +235,14 @@ one of four categories:
 
 - **modeled**: identity, recursive subspecs, defaults, platforms, dependencies,
   file/header/resource declarations, resource bundles, linkage/module/header
-  metadata, vendored inputs, `static_framework`, and supported platform blocks;
+  metadata, vendored inputs, compilation flags, xcconfig maps, configuration
+  whitelists, Swift-version declarations, ARC controls, file selection,
+  `static_framework`, and supported platform blocks;
 - **descriptive**: metadata such as `summary`, `description`, `homepage`,
   `license`, and `authors` at their valid root scope, which is deliberately
   excluded from this semantic model;
-- **deferred**: recognized CocoaPods behavior such as build settings, compiler
-  flags, scripts, source provenance, test specs, and app specs; or
+- **deferred**: recognized CocoaPods behavior such as scripts, hooks, computed
+  commands, source provenance, test specs, and app specs; or
 - **unknown**: keys outside the recognized contract for that scope.
 
 Deferred and unknown evidence is retained in `unsupportedFields` with exact,
