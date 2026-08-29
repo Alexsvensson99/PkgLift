@@ -1,0 +1,35 @@
+{
+  "name": "AssessmentUnsupported",
+  "version": "5.0.0",
+  "xcconfig": {
+    "PRIVATE_BUILD_KEY_71": "secret-value-71"
+  },
+  "requires_arc": false,
+  "preserve_paths": [
+    "/Users/private-71/Generated/Secret.h"
+  ],
+  "ios": {
+    "module_map": false
+  },
+  "subspecs": [
+    {
+      "name": "PrivateCore71",
+      "dependencies": {
+        "PrivateDependency71": []
+      },
+      "compiler_flags": [
+        "-DPRIVATE_TOKEN_71=secret-value-71"
+      ],
+      "configuration_pod_whitelist": {
+        "PrivateDependency71": [
+          "debug"
+        ]
+      },
+      "ios": {
+        "weak_frameworks": [
+          "PrivateWeakKit71"
+        ]
+      }
+    }
+  ]
+}

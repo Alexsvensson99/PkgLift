@@ -100,24 +100,23 @@ Release evidence and the completed work breakdown are recorded in the [v0.4.0 tr
 
 # Next
 
-These releases describe the intended sequence after v0.4.0. Exact scope may move as real migration evidence reveals dependencies between features.
+These releases describe the active source candidate and the intended sequence after it. Exact future scope may move as real migration evidence reveals dependencies between features.
 
-## v0.5.x — Podspec Semantic Model
+## v0.5.0 — Podspec Semantic Analysis
 
 **Goal:** understand what a pod contains, not only what it is called.
 
-Candidate work:
+Release-candidate scope:
 
-- Parse supported Podspec metadata into a typed semantic model.
-- Model source files, public/private headers, resources, resource bundles, platform requirements, frameworks, libraries, dependencies, vendored artifacts, module maps, compiler settings, and subspec structure.
-- Compare Podspec capabilities against SwiftPM capabilities.
-- Report whether a pod appears natively representable, representable with generated metadata, or not safely representable.
-- Keep unsupported or dynamically computed Podspec behavior fail-closed.
+- Inspect caller-supplied Podspec JSON in memory under a pinned CocoaPods Core 1.17.0 semantic profile.
+- Preserve supported source, header, resource, dependency, platform, linkage, vendored, module, compilation, file-selection, and recursive subspec declarations as deterministic typed evidence.
+- Compare the bounded declarations against a pinned Swift tools 6.0 capability profile with versioned, privacy-bounded reasons.
+- Distinguish declarations that need generated metadata from indeterminate or explicitly unsupported semantics while keeping every downgrade monotonic and fail-closed.
+- Prove the contract with immutable checksum-documented fixtures, exact root/subspec/platform paths, deterministic Codable snapshots, and regression isolation from every migration surface.
 
-This milestone is an architectural prerequisite for safe generated Swift packages.
+This milestone is an analysis-only architectural prerequisite for safe generated Swift packages. It does not add CLI Podspec loading, package generation, project mutation, build equivalence, or any new route to `AUTO`.
 
-The concrete analysis-only release scope is tracked in the
-[v0.5.0 Podspec Semantic Model tracker](https://github.com/Alexsvensson99/PkgLift/issues/63).
+The concrete scope and work breakdown are tracked in the [v0.5.0 Podspec Semantic Model tracker](https://github.com/Alexsvensson99/PkgLift/issues/63). The [release-evidence matrix](Documentation/PodspecV05ReleaseEvidence.md) records the source candidate; required GitHub checks, signed distribution, the public tag and release, and Homebrew publication remain separate gates.
 
 ## v0.6.x — Generated Swift Package Prototype
 

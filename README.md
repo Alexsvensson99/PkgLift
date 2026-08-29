@@ -57,17 +57,15 @@ After review, only the `AUTO` entry may be added as a Swift package. The unknown
 
 CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on December 2, 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). The plan explicitly keeps existing trunk and CDN builds available, and does not mean CocoaPods itself or private spec repositories stop working. PkgLift provides a reviewable path for native Xcode projects that want to move supported dependencies to SwiftPM without pretending every pod or project shape can be converted automatically.
 
-## What Is New in v0.4.0
+## What Is New in v0.5.0
 
-- Analysis dependencies and migration-plan entries can carry additive typed `sourceProvenance` evidence for a bounded literal external Git declaration.
-- Supported HTTPS, SSH, and SCP-style repository identities are canonicalized deterministically without guessing transport equivalence.
-- Podfile declarations are reconciled with CocoaPods `EXTERNAL SOURCES` and `CHECKOUT OPTIONS` evidence without executing Ruby or contacting the repository.
-- Credentials, URL user information, queries, and fragments are removed at the parser trust boundary and raw source URLs are not retained in standard or portable JSON.
-- Saved and current external provenance is compared during migration preflight; missing, changed, conflicting, credential-bearing, or lossy evidence refuses mutation.
-- XcodeBenchmark and Hammerspoon provide independent pinned, read-only real-project evidence for deliberate external Git refusal paths.
-- External sources remain analysis-only: every result is `REVIEW`, `BLOCKED`, or `UNKNOWN`, never `AUTO`.
+- `PkgLiftCocoaPods` can inspect an already available Podspec JSON document through an offline, in-memory API pinned to CocoaPods Core 1.17.0 semantics.
+- The recursive model preserves supported root, library-subspec, and raw Apple-platform declarations with exact RFC 6901 evidence paths; it never guesses CocoaPods inheritance or merge behavior.
+- A versioned SwiftPM declaration assessment pinned to Swift tools 6.0 produces deterministic `declarationCompatible`, `requiresGeneratedMetadata`, `indeterminate`, or `unsupported` outcomes with privacy-bounded reason codes.
+- Immutable, checksum-documented fixtures plus an explicit malformed public-model regression exercise supported declaration categories, all assessment reasons, root/subspec/platform scopes, deterministic Codable output, and fail-closed downgrade ordering without runtime network access.
+- The new APIs are analysis-only. They are not used by the CLI, registry, classifier, planner, preflight, migration engine, Xcode mutation, or `AUTO` eligibility, and they do not generate `Package.swift`.
 
-See the [v0.4.0 release notes](Documentation/ReleaseNotes-0.4.0.md), [changelog](CHANGELOG.md), [JSON contract](Documentation/JSONSchema.md), [migration-safety guide](Documentation/MigrationSafety.md), and [real-project pilot documentation](Documentation/Pilots.md) for the complete evidence and refusal boundaries.
+See the [v0.5.0 release notes](Documentation/ReleaseNotes-0.5.0.md), [complete release-evidence matrix](Documentation/PodspecV05ReleaseEvidence.md), [Podspec semantic-model contract](Documentation/PodspecSemanticModel.md), [changelog](CHANGELOG.md), and [migration-safety guide](Documentation/MigrationSafety.md) for the exact capability and refusal boundaries.
 
 ## Safety Philosophy
 
@@ -99,14 +97,15 @@ PkgLift targets partial CocoaPods-to-SwiftPM migration in native Xcode projects.
 | Flutter | `flutter_install_all_ios_pods` is detected as an unsupported project integration and prevents `AUTO` |
 | Capacitor | `capacitor_pods` is detected as an unsupported project integration and prevents `AUTO` |
 | Kotlin Multiplatform (KMP) | No heuristic detection is claimed; local pods and dynamic generation remain non-automatic under existing safety rules |
-| External Git pod | PkgLift v0.4.0 can analyze bounded literal repository/ref provenance, but the dependency remains `REVIEW`, `BLOCKED`, or `UNKNOWN` and is never migrated automatically |
+| External Git pod | Since v0.4.0, PkgLift can analyze bounded literal repository/ref provenance, but the dependency remains `REVIEW`, `BLOCKED`, or `UNKNOWN` and is never migrated automatically |
 | Local `:path` pod | Detected as an external source; typed local provenance and automatic migration are not implemented |
+| Podspec JSON declarations | The v0.5.0 library API can inspect and assess a bounded, caller-supplied document; the CLI does not load Podspecs and no assessment can authorize migration |
 
 Host support remains macOS 14 or later on Apple Silicon (`arm64`). Distribution is through a Developer ID-signed and Apple-notarized binary, Homebrew, or a source build. See [Limitations](#limitations) for the intentionally conservative boundaries.
 
 ## Installation
 
-PkgLift v0.4.0 is distributed as a Developer ID-signed and Apple-notarized Apple Silicon binary for macOS 14 or later.
+PkgLift stable releases are distributed as Developer ID-signed and Apple-notarized Apple Silicon binaries for macOS 14 or later.
 
 Install with Homebrew:
 
@@ -236,13 +235,14 @@ An invalid configuration is an error; PkgLift does not silently ignore it.
 
 ## Limitations
 
-PkgLift v0.4.0 retains these safety boundaries:
+PkgLift v0.5.0 retains these safety boundaries:
 
 - Only CocoaPods-to-SwiftPM migration is supported.
 - Migration is partial: non-automatic pods and their CocoaPods integration are preserved.
 - A stable `major.minor.patch` lockfile version at or above the exact mapping's verified SwiftPM minimum, exactly one matching Xcode target, a complete non-empty target language profile, and mapping support for every detected language are required for `AUTO`.
 - Dynamic Ruby, install hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, external pod sources, and ambiguous target mappings are non-automatic. PkgLift analyzes only bounded literal `:git` provenance; every external dependency still resolves to `REVIEW`, `BLOCKED`, or `UNKNOWN`, never `AUTO`.
 - Local `:path` provenance, repository network resolution, Podspec generation, and automatic external-source migration are not implemented.
+- Podspec inspection accepts only caller-supplied in-memory JSON through the library API. It does not read Podspec files, execute Ruby or CocoaPods, resolve effective inheritance, inspect declared paths or artifacts, generate package metadata, or change migration classification.
 - Confirmed Carthage integration and React Native, Flutter, or Capacitor Podfile markers prevent `AUTO`; PkgLift does not migrate or remove those integrations.
 - KMP is not detected through speculative file or name heuristics.
 - Base pod mappings never apply automatically to undeclared subspecs.
@@ -254,7 +254,7 @@ PkgLift v0.4.0 retains these safety boundaries:
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md), the analysis-only [Podspec semantic model](Documentation/PodspecSemanticModel.md), the [v0.5.0 tracker](https://github.com/Alexsvensson99/PkgLift/issues/63), the [v0.4.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/53), and the [v0.3.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/48) for planned scope and release evidence.
+See [ROADMAP.md](ROADMAP.md), the analysis-only [Podspec semantic model](Documentation/PodspecSemanticModel.md), the [v0.5.0 release evidence](Documentation/PodspecV05ReleaseEvidence.md), the [v0.5.0 tracker](https://github.com/Alexsvensson99/PkgLift/issues/63), and the [v0.4.0 release tracker](https://github.com/Alexsvensson99/PkgLift/issues/53) for planned scope and release evidence.
 
 ## Contributing
 

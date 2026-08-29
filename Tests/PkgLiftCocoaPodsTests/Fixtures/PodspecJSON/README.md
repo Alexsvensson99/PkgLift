@@ -34,5 +34,24 @@ fixture also retains a deferred command, a deferred script phase, and an
 unknown escaped key to prove that none is evaluated. Its SHA-256 is
 `222d9ac7c6f92937481d16da7cd6f346a6956c6e73f8307f63837bc4c6686e01`.
 
+The three `Assessment*-5.0.0.podspec.json` files are repository-authored,
+immutable v0.5 release-gate fixtures for the same CocoaPods profile and the
+`swift-tools-version/6.0` capability profile. Together with the release gate's
+deliberately malformed public-model case, they cover every public assessment
+reason, all four outcomes, every supported root platform block, a subspec
+platform block, deterministic Codable output, and privacy-bounded dynamic
+evidence paths. Secret-looking values are inert test data and must not appear
+in an encoded assessment.
+
+| Fixture | Intended strongest outcome | Fixture SHA-256 | Sorted assessment JSON SHA-256 |
+| --- | --- | --- | --- |
+| `AssessmentGenerated-5.0.0.podspec.json` | `requiresGeneratedMetadata` with every metadata-required reason at root scope | `dce61554ee3c126aa8ead34370772e0c38ad902f950fe4253e8411838f3b9dc3` | `c422c60d7b5883230b81252a5854ba910c74f247f317523860a8555e2b27ea24` |
+| `AssessmentIndeterminate-5.0.0.podspec.json` | `indeterminate` with unknown, deferred, opaque, all-platform, and subspec evidence | `010645068c5789f41ad7d687345bc18b49e469a8297ff31cae44b30896e40e5f` | `adfa74dc73470899120051dbf61b6417c384b4c29a8c0ddfddd39293657356f5` |
+| `AssessmentUnsupported-5.0.0.podspec.json` | `unsupported` with root, subspec, and platform refusal evidence | `e5caf6679f41a470d5d52223c69154fc6e758bc07a1ed8ad6fcae01656f88ede` | `c970a56bff12c4d9b17fdc9b57d565cc27395dd20b84223eee196ff5ca54db0f` |
+
+Assessment hashes use `JSONEncoder` with `.sortedKeys` and
+`.withoutEscapingSlashes`; they lock the schema, pinned profiles, outcome, and
+canonical ordered-reason array rather than only repeatability within one run.
+
 The fixtures exercise declared syntax only. Their presence does not verify a
 CocoaPods-to-SwiftPM registry mapping or build equivalence.

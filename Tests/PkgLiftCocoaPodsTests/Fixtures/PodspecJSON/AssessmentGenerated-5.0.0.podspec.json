@@ -1,0 +1,35 @@
+{
+  "name": "AssessmentGenerated",
+  "version": "5.0.0",
+  "platforms": {
+    "ios": "15.0"
+  },
+  "default_subspecs": [],
+  "source_files": [
+    "Sources/**/*.swift"
+  ],
+  "public_header_files": [
+    "PrivateHeaders/*.h"
+  ],
+  "resources": [
+    "Resources/private-token-71.png"
+  ],
+  "resource_bundles": {
+    "PrivateBundle71": [
+      "Assets/*.xcassets"
+    ]
+  },
+  "dependencies": {
+    "PrivateDependency71": []
+  },
+  "frameworks": [
+    "Security"
+  ],
+  "module_name": "PrivateModule71",
+  "module_map": true,
+  "header_dir": "PrivateHeaders",
+  "static_framework": true,
+  "exclude_files": [
+    "Sources/GeneratedSecret71.swift"
+  ]
+}
