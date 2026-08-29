@@ -34,6 +34,79 @@ Its supported forms follow Core's tagged
 and
 [`Specification::DSL`](https://github.com/CocoaPods/Core/blob/1.17.0/lib/cocoapods-core/specification/dsl.rb).
 
+## Versioned SwiftPM declaration assessment
+
+An already completed inspection can be compared with one explicit SwiftPM
+capability profile:
+
+```swift
+let assessment = try PodspecSwiftPMAssessor().assess(
+    inspection,
+    cocoaPodsProfile: .cocoaPodsCore1_17_0,
+    swiftPMProfile: .swiftToolsVersion6_0
+)
+```
+
+`PodspecSwiftPMAssessment` is schema version 1 and records both caller-supplied
+profiles. The initial SwiftPM profile identifier is
+`swift-tools-version/6.0`. Unknown CocoaPods or SwiftPM profiles return a typed
+`PodspecSwiftPMAssessmentError`; there is no fallback to the latest behavior.
+The supplied CocoaPods profile must also equal the profile embedded in the
+inspection. Decoding an assessment additionally rejects an unknown schema,
+unknown profile, noncanonical reason order, duplicate reason, invalid evidence
+path, or outcome that does not match its strongest reason.
+
+The outcome order, from most to least permissive, is:
+
+| Outcome | Declaration-level meaning |
+| --- | --- |
+| `declarationCompatible` | No modeled declaration requires a downgrade under the pinned profile. |
+| `requiresGeneratedMetadata` | A known declaration category needs explicit future package metadata. |
+| `indeterminate` | Unknown, deferred, opaque, incomplete, or uninspected evidence prevents a capability conclusion. |
+| `unsupported` | The pinned safe profile does not support at least one explicit declaration category. |
+
+The assessor evaluates every piece of evidence and selects the strongest
+downgrade. Adding unknown, deferred, contradictory, or unsupported evidence
+therefore cannot make an outcome more permissive. All reasons are retained,
+deduplicated, and sorted first by downgrade strength, then by stable reason
+code and canonical evidence locator.
+
+The initial profile deliberately treats root-level source/header/resource
+selection, dependency declarations, ordinary linker settings, module/header
+layout, linkage mode, exclusions, and platforms as future generated metadata.
+Subspec and platform-scope inheritance remains indeterminate because the
+semantic model intentionally preserves those declarations without computing
+CocoaPods' effective merge. Vendored artifacts, custom module maps, and literal
+Swift versions are also indeterminate because this layer does not inspect
+files, artifact formats, or version semantics. Weak frameworks, disabled
+module maps, compiler flags, xcconfig settings, configuration-specific
+dependencies, ARC controls, and preserved paths are unsupported by this safe
+profile. A future profile may change capabilities only under a new explicit
+identifier.
+
+Each `PodspecSwiftPMAssessmentReason` contains a typed `code` and a canonical,
+privacy-bounded `evidencePath` that uses RFC 6901 escaping rules. It is an
+assessment locator, not a promise that the string can be dereferenced in the
+original Podspec JSON. Statically named declarations retain familiar field
+paths. Dynamically keyed maps such as dependencies and build settings use a
+deterministic semantic-model index instead of copying their key text. Unknown
+and deferred fields similarly use their stable `/unsupportedFields/<index>`
+slot in the caller-owned inspection. The assessment also never copies a
+corresponding declaration value. An attacker-controlled key, flag,
+credential-bearing source URL, macro, or local path can therefore remain in
+the inspection without being duplicated into the assessment artifact.
+
+The assessment is a pure value transformation. It does not read Podspec bytes,
+the filesystem, environment variables, repositories, or the network; expand
+globs; start a process; resolve dependencies; or generate `Package.swift`. It
+is not consumed by the CLI, registry, classifier, planner, preflight, migration
+engine, or `AUTO` eligibility.
+
+Most importantly, `declarationCompatible` means only that the bounded,
+already-modeled declaration categories did not require a downgrade. It is
+**never** proof of file selection, package validity, source, resource, linkage,
+language, build, or runtime equivalence.
+
 ## Recursive declaration model
 
 `PodspecSemanticModel.root` is an immutable recursive `PodspecNode`. Each node
