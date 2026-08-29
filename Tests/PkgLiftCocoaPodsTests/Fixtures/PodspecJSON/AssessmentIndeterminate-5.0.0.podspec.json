@@ -1,0 +1,51 @@
+{
+  "name": "AssessmentIndeterminate",
+  "version": "5.0.0",
+  "future_private_token_71": true,
+  "source": {
+    "git": "https://token-71@example.invalid/private.git"
+  },
+  "module_map": "/Users/private-71/Modules/module.modulemap",
+  "vendored_frameworks": [
+    "/Users/private-71/Vendor/Secret.framework"
+  ],
+  "swift_version": "5.9",
+  "ios": {
+    "source_files": [
+      "Platform/Private71.swift"
+    ]
+  },
+  "osx": {
+    "public_header_files": [
+      "Platform/Private71.h"
+    ]
+  },
+  "tvos": {
+    "resources": [
+      "Platform/private-token-71.png"
+    ]
+  },
+  "watchos": {
+    "frameworks": [
+      "Security"
+    ]
+  },
+  "visionos": {
+    "vendored_libraries": [
+      "/Users/private-71/Vendor/libSecret.a"
+    ]
+  },
+  "subspecs": [
+    {
+      "name": "PrivateCore71",
+      "resources": [
+        "PrivateCore71/secret.png"
+      ],
+      "ios": {
+        "private_header_files": [
+          "PrivateCore71/Platform/Secret.h"
+        ]
+      }
+    }
+  ]
+}

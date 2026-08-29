@@ -1,6 +1,6 @@
 # Podspec JSON Semantic Inspection
 
-Status: **v0.5.0 development, analysis-only**
+Status: **v0.5.0 source candidate, analysis-only**
 
 PkgLift can inspect a deliberately bounded subset of an already available
 `.podspec.json` document through `PkgLiftCocoaPods`:
@@ -366,3 +366,5 @@ remains a separate v0.6.x concern. Release work is tracked in
 
 Pinned and repository-authored test fixtures are documented in
 [`Tests/PkgLiftCocoaPodsTests/Fixtures/PodspecJSON/README.md`](../Tests/PkgLiftCocoaPodsTests/Fixtures/PodspecJSON/README.md).
+The complete declaration, reason-code, regression, and release-gate matrix is
+recorded in [`Documentation/PodspecV05ReleaseEvidence.md`](PodspecV05ReleaseEvidence.md).

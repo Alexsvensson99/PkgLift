@@ -7,13 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-30
+
 ### Added
-- Add a recursive, analysis-only Podspec model for root, library-subspec, and raw platform scopes, pinned to CocoaPods Core 1.17.0 semantics.
-- Record literal root, subspec, and platform dependency requirements plus validated singular, plural, implicit-all, and `none` default-subspec declarations with exact RFC 6901 evidence paths.
-- Record raw framework, weak-framework, system-library, vendored-input, module, header-layout, project-header, and static-framework declarations with exact paths and deterministic typed values.
+- Add a bounded, offline, in-memory Podspec JSON inspector pinned to CocoaPods Core 1.17.0 semantics, with typed limits and errors at the untrusted JSON boundary.
+- Add an immutable recursive semantic model for root, library-subspec, and raw `ios`, `osx`, `tvos`, `watchos`, and `visionos` scopes. It records exact RFC 6901 evidence paths for supported platform, default-subspec, file, header, resource, dependency, linkage, vendored-input, module, header-layout, compilation, build-setting, ARC, and file-selection declarations.
+- Add a schema-1, deterministic SwiftPM declaration assessment pinned to Swift tools 6.0. The four fail-closed outcomes retain sorted, privacy-bounded reasons for metadata requirements, indeterminate evidence, and unsupported declarations.
+- Add immutable upstream and repository-authored fixtures with documented provenance and SHA-256 checksums, plus a complete v0.5.0 declaration/reason-code evidence matrix and release notes.
+
+### Changed
+- Public semantic-model and assessment values are immutable, `Sendable`, `Equatable`, and `Codable`. Decoding rejects unsupported profiles or schemas, noncanonical reason order, duplicates, invalid evidence paths, and outcomes inconsistent with their strongest reason.
+
+### Fixed
+- Reject malformed or ambiguous configuration, lockfile versions, registry minimum versions, migration requirements, workspace paths, and verify-command options through typed fail-closed errors instead of permissive fallbacks.
 
 ### Security
-- Unknown semantic profiles, malformed requirement forms, duplicate sibling subspecs, ambiguous defaults, and unsupported inheritance or platform merge behavior fail closed without changing registry, classifier, planner, preflight, migration, or `AUTO` behavior.
+- Unknown or deferred CocoaPods fields, malformed modeled evidence, duplicate JSON keys or sibling subspecs, ambiguous defaults, unsupported inheritance or platform merge behavior, and unknown semantic profiles fail closed.
+- Dynamic dependency, build-setting, and unsupported-field names are represented in assessments only by deterministic indices. Raw keys, values, flags, source URLs, macros, and paths are never copied into the assessment artifact.
+- Podspec inspection and assessment remain analysis-only library APIs. They do not read files, execute Ruby, invoke CocoaPods, access the network, generate `Package.swift`, change registry mappings, alter serialized analysis or plan schemas, mutate Xcode projects, or authorize `AUTO`.
 - Linkage and vendored paths remain opaque: PkgLift does not expand globs, traverse paths, follow symlinks, inspect binaries, infer SwiftPM binary targets, or assign semantics to the unsupported `static_library` key.
 
 ## [0.4.0] - 2026-08-22
