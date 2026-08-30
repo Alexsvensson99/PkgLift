@@ -19,6 +19,7 @@ jobs:
     permissions:
       actions: write
       contents: read
+      pull-requests: read
     outputs:
       version: ${{ steps.context.outputs.version }}
       release_tag: ${{ steps.context.outputs.release_tag }}
@@ -32,124 +33,10 @@ jobs:
         id: context
         env:
           BEFORE_SHA: ${{ github.event.before }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          /usr/bin/python3 - <<'PY'
-          import json
-          import os
-          import pathlib
-          import re
-          import subprocess
-          import sys
-
-          before = os.environ.get("BEFORE_SHA", "")
-          current = os.environ["GITHUB_SHA"]
-          output_path = pathlib.Path(os.environ["GITHUB_OUTPUT"])
-          summary_path = pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"])
-
-          if not re.fullmatch(r"[0-9a-f]{40}", before) or set(before) == {"0"}:
-              raise SystemExit("Release manifest requires a concrete previous main commit")
-          if not re.fullmatch(r"[0-9a-f]{40}", current):
-              raise SystemExit("Current workflow SHA is invalid")
-
-          main_ref = subprocess.run(
-              ["git", "ls-remote", "origin", "refs/heads/main"],
-              check=True,
-              text=True,
-              capture_output=True,
-          ).stdout.strip().split()
-          if not main_ref or main_ref[0] != current:
-              raise SystemExit(
-                  f"Release manifest must run at the current main head; expected {current}, got {main_ref[:1]}"
-              )
-
-          changed = subprocess.run(
-              [
-                  "git", "diff", "--name-only", before, current, "--",
-                  ".github/releases/v*.json",
-              ],
-              check=True,
-              text=True,
-              capture_output=True,
-          ).stdout.splitlines()
-          changed = [path for path in changed if path]
-          if len(changed) != 1:
-              raise SystemExit(
-                  f"Expected exactly one changed release manifest; found {len(changed)}: {changed}"
-              )
-
-          manifest_path = pathlib.Path(changed[0])
-          with manifest_path.open(encoding="utf-8") as handle:
-              manifest = json.load(handle)
-
-          if manifest.get("schemaVersion") != 1:
-              raise SystemExit("Release manifest schemaVersion must be 1")
-          version = manifest.get("version")
-          if not isinstance(version, str) or not re.fullmatch(
-              r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", version
-          ):
-              raise SystemExit("Release manifest version is invalid")
-
-          release_tag = f"v{version}"
-          expected_path = pathlib.Path(f".github/releases/{release_tag}.json")
-          if manifest_path != expected_path:
-              raise SystemExit(
-                  f"Manifest path must be {expected_path}, not {manifest_path}"
-              )
-
-          version_source = pathlib.Path("Sources/PkgLiftCore/Version.swift").read_text(
-              encoding="utf-8"
-          )
-          match = re.search(r'pkgLiftVersion\s*=\s*"([^"]+)"', version_source)
-          if match is None or match.group(1) != version:
-              raise SystemExit(
-                  f"Manifest version {version} does not match the source version"
-              )
-
-          changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
-          if f"## [{version}] -" not in changelog:
-              raise SystemExit(f"CHANGELOG.md has no dated {version} release heading")
-
-          prepared = manifest.get("sourcePreparationCommit")
-          if not isinstance(prepared, str) or not re.fullmatch(r"[0-9a-f]{40}", prepared):
-              raise SystemExit("sourcePreparationCommit must be a full commit SHA")
-          ancestor = subprocess.run(
-              ["git", "merge-base", "--is-ancestor", prepared, current]
-          )
-          if ancestor.returncode != 0:
-              raise SystemExit(
-                  f"Source preparation commit {prepared} is not an ancestor of {current}"
-              )
-
-          existing_tag = subprocess.run(
-              [
-                  "git", "ls-remote", "--exit-code", "--tags", "origin",
-                  f"refs/tags/{release_tag}",
-              ],
-              text=True,
-              capture_output=True,
-          )
-          if existing_tag.returncode == 0:
-              raise SystemExit(
-                  f"Tag {release_tag} already exists; refusing duplicate publication"
-              )
-          if existing_tag.returncode != 2:
-              sys.stderr.write(existing_tag.stderr)
-              raise SystemExit("Unable to verify release-tag availability")
-
-          with output_path.open("a", encoding="utf-8") as output:
-              output.write(f"version={version}\n")
-              output.write(f"release_tag={release_tag}\n")
-              output.write(f"target_commitish={current}\n")
-
-          with summary_path.open("a", encoding="utf-8") as summary:
-              summary.write("### Reviewed release manifest\n\n")
-              summary.write(f"- Manifest: `{manifest_path}`\n")
-              summary.write(f"- Version: `{version}`\n")
-              summary.write(f"- Tag to create after validation: `{release_tag}`\n")
-              summary.write(f"- Release target: `{current}`\n")
-              summary.write(f"- Source preparation commit: `{prepared}`\n")
-          PY
+          python3 Scripts/validate-release-manifest.py
 
       - name: Dispatch Signed Distribution Validation
         env:
@@ -376,7 +263,23 @@ jobs:
             sha256sum --check pkglift-macos-arm64.tar.gz.sha256
           )
 
-      - name: Create Tag and GitHub Release
+      - name: Checkout Validated Release Policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ needs.validate-and-package.outputs.target_commitish }}
+
+      - name: Atomically Create and Verify Release Tag
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.validate-and-package.outputs.release_tag }}
+          TARGET_COMMITISH: ${{ needs.validate-and-package.outputs.target_commitish }}
+        run: |
+          set -euo pipefail
+          python3 Scripts/validate-release-manifest.py create-tag
+
+      - name: Create GitHub Release from Verified Tag
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
         with:
           tag_name: ${{ needs.validate-and-package.outputs.release_tag }}
@@ -388,10 +291,6 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
           prerelease: ${{ contains(needs.validate-and-package.outputs.release_tag, '-') }}
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
       - name: Verify Published Tag and Assets
         env:

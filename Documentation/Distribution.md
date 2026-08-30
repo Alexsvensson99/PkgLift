@@ -36,22 +36,31 @@ artifacts to a public GitHub Release receives `contents: write` permission.
 ## Workflow contract
 
 - Prepare and merge the complete product release first. Then create a separate
-  branch whose only product-facing change is one reviewed
-  `.github/releases/vX.Y.Z.json` manifest. Its `sourcePreparationCommit` must be
-  the full merged preparation SHA.
+  branch whose only repository change is one newly added, reviewed
+  `.github/releases/vX.Y.Z.json` manifest. That manifest commit must be the
+  push's only commit and the single direct child of the source-preparation
+  commit on `main`. Its `sourcePreparationCommit`
+  must equal the merged preparation PR's final commit, and its
+  `positivePilotWorkflowRun` must identify the successful
+  `Mixed-Language End-to-End Pilot` push run for that exact commit on `main`.
 - When that manifest reaches `main`, `Publish Reviewed Release Manifest`
-  verifies the manifest path, source version, dated changelog, current main
-  head, source-preparation ancestry, and absence of an existing tag. It then
-  dispatches the signed distribution workflow for that exact main SHA, waits
-  for success, rechecks the artifact checksum, and pauses at the protected
-  `production-release` environment before creating the tag and public release.
+  verifies that the complete push diff contains only the newly added manifest.
+  It also verifies the exact schema, source version, dated changelog, current
+  main head, fast-forward ancestry, merged preparation PR, successful positive
+  pilot evidence, and absence of an existing tag. It then dispatches the signed
+  distribution workflow for that exact manifest-only `main` SHA, waits for
+  success, rechecks the artifact checksum, and pauses at the protected
+  `production-release` environment. After approval it rechecks the current
+  `main` ref, atomically creates the exact lightweight tag with fail-if-exists
+  semantics, verifies that tag's target, and only then creates the public
+  release.
 - A manual `workflow_dispatch` run from `main` signs, notarizes, verifies a
   freshly extracted quarantine-marked CLI, and uploads a private Actions
   artifact. It never creates a GitHub Release. Manual runs from other refs are
   skipped.
-- A `v*` tag runs the same package job and creates a GitHub Release only after
-  every validation has passed and the `production-release` environment is
-  approved. Tags outside `origin/main` are refused.
+- Direct tag pushes never start a distribution or publication workflow. The
+  reviewed release-manifest workflow is the only path that creates a public tag
+  and GitHub Release.
 - A final tag must match the CLI version exactly (for example, CLI `0.5.0`
   requires tag `v0.5.0`); prerelease tags may append a suffix such as
   `v0.5.0-rc.1`.
