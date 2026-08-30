@@ -38,6 +38,49 @@ workflow_paths.each do |path|
   end
 end
 
+release_workflow_path = ".github/workflows/release.yml"
+release_workflow = File.file?(release_workflow_path) ? File.read(release_workflow_path, encoding: "UTF-8") : ""
+unless release_workflow.match?(/^on:\n  workflow_dispatch:\s*$/)
+  errors << "#{release_workflow_path}: signed distribution must be workflow_dispatch-only"
+end
+errors << "#{release_workflow_path}: direct tag pushes must not trigger distribution" if release_workflow.match?(/^  push:\s*$/)
+errors << "#{release_workflow_path}: direct tag publication must not exist" if release_workflow.match?(/^  publish:\s*$/)
+errors << "#{release_workflow_path}: public release action belongs only in the manifest workflow" if release_workflow.include?("softprops/action-gh-release@")
+unless release_workflow.include?("if: github.ref == 'refs/heads/main'")
+  errors << "#{release_workflow_path}: manual distribution must remain restricted to main"
+end
+
+manifest_workflow_path = ".github/workflows/publish-release-manifest.yml"
+manifest_workflow = File.file?(manifest_workflow_path) ? File.read(manifest_workflow_path, encoding: "UTF-8") : ""
+unless manifest_workflow.include?("python3 Scripts/validate-release-manifest.py")
+  errors << "#{manifest_workflow_path}: must use the testable release-manifest validator"
+end
+unless manifest_workflow.include?("pull-requests: read")
+  errors << "#{manifest_workflow_path}: must grant read-only pull-request evidence access"
+end
+atomic_tag_command = "python3 Scripts/validate-release-manifest.py create-tag"
+release_action_marker = "uses: softprops/action-gh-release@"
+atomic_tag_index = manifest_workflow.index(atomic_tag_command)
+release_action_index = manifest_workflow.index(release_action_marker)
+if atomic_tag_index.nil?
+  errors << "#{manifest_workflow_path}: must atomically create and verify the validated tag"
+elsif !release_action_index.nil? && atomic_tag_index >= release_action_index
+  errors << "#{manifest_workflow_path}: must verify the exact tag before public release creation"
+end
+
+release_sink_paths = workflow_paths.select do |path|
+  File.read(path, encoding: "UTF-8").include?("softprops/action-gh-release@")
+end
+unless release_sink_paths == [manifest_workflow_path]
+  errors << "Only #{manifest_workflow_path} may contain the public release action; found #{release_sink_paths.inspect}"
+end
+
+quality_workflow_path = ".github/workflows/quality.yml"
+quality_workflow = File.file?(quality_workflow_path) ? File.read(quality_workflow_path, encoding: "UTF-8") : ""
+unless quality_workflow.include?("-s Tests/ReleaseManifestTests") && quality_workflow.include?("-p 'test_*.py'")
+  errors << "#{quality_workflow_path}: must run release-manifest policy regressions"
+end
+
 required_gates = {
   ".github/workflows/registry.yml" => ["name: Registry Gate", "validate"],
   ".github/workflows/pilots.yml" => ["name: Pinned Pilot Gate", "analyze"],

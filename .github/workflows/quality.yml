@@ -41,3 +41,11 @@ jobs:
 
       - name: Validate Repository YAML
         run: ruby Scripts/validate-repository-yaml.rb
+
+      - name: Test Release Manifest Policy
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: >-
+          python3 -m unittest discover
+          -s Tests/ReleaseManifestTests
+          -p 'test_*.py'
