@@ -1,9 +1,8 @@
 # PkgLift v0.5.0 Podspec Release Evidence
 
-Status: **release-preparation evidence for issue #71; analysis-only.** This
-document describes the bounded Podspec JSON semantic model that is present in
-the v0.5.0 source-preparation candidate. It is a review record, not a claim of
-Podspec-to-SwiftPM migration support.
+Status: **v0.5.0 release evidence; analysis-only.** This document records the
+bounded Podspec JSON semantic model shipped in v0.5.0. It is a completed
+evidence record, not a claim of Podspec-to-SwiftPM migration support.
 
 ## Contract and pinned profiles
 
@@ -134,7 +133,33 @@ with the pre-existing verified `Alamofire` planner contract, and scans
 production migration surfaces to ensure assessment symbols do not cross the
 analysis-only boundary.
 
-## Gates and evidence ownership
+## Release-gate design and evidence ownership
+
+This section records what each v0.5.0 gate was designed to establish and the
+limits of that evidence. It does not broaden the shipped analysis-only
+contract.
+
+### Published release evidence
+
+The source-preparation commit is
+[`5d0b859882574e0a8379f59f5f55496a3044ebc1`](https://github.com/Alexsvensson99/PkgLift/commit/5d0b859882574e0a8379f59f5f55496a3044ebc1).
+Its required Build, Test, Quality, Registry Validation, CodeQL, Pinned Pilots,
+and Mixed-Language End-to-End Pilot workflows completed successfully. The
+reviewed manifest in PR
+[#80](https://github.com/Alexsvensson99/PkgLift/pull/80) bound that source and
+positive pilot evidence to tag commit
+[`b72b8e6c42dbb378ad3a2c86cf4edff256f394dd`](https://github.com/Alexsvensson99/PkgLift/commit/b72b8e6c42dbb378ad3a2c86cf4edff256f394dd).
+
+The signed and notarized distribution run
+[`33465620440`](https://github.com/Alexsvensson99/PkgLift/actions/runs/33465620440)
+completed successfully. The public
+[`v0.5.0`](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.5.0)
+release contains the expected arm64 archive and checksum asset. The initial
+publication job lost its staged files during checkout after validation; the
+approved recovery restored the verified assets, and PR
+[#81](https://github.com/Alexsvensson99/PkgLift/pull/81) corrected the workflow
+ordering and added exact-input regressions for future releases. The historical
+failed job is not treated as successful workflow evidence.
 
 ### Local source-preparation gates
 
