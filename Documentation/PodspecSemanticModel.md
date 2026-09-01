@@ -1,6 +1,6 @@
 # Podspec JSON Semantic Inspection
 
-Status: **v0.5.0 source candidate, analysis-only**
+Status: **released in v0.5.0; analysis-only**
 
 PkgLift can inspect a deliberately bounded subset of an already available
 `.podspec.json` document through `PkgLiftCocoaPods`:
@@ -361,8 +361,8 @@ the declaration forms it was asked to inspect. It does **not** prove that:
 
 The inspector is not connected to the CLI, registry, classifier, planner,
 preflight, project mutation, or verification pipeline. Package generation
-remains a separate v0.6.x concern. Release work is tracked in
-[#63](https://github.com/Alexsvensson99/PkgLift/issues/63).
+remains a separate future concern. The completed v0.5.0 implementation work is
+tracked in [#63](https://github.com/Alexsvensson99/PkgLift/issues/63).
 
 Pinned and repository-authored test fixtures are documented in
 [`Tests/PkgLiftCocoaPodsTests/Fixtures/PodspecJSON/README.md`](../Tests/PkgLiftCocoaPodsTests/Fixtures/PodspecJSON/README.md).

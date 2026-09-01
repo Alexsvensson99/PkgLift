@@ -1,8 +1,6 @@
 # PkgLift 0.5.0
 
-Source-preparation date: 2026-08-30. Public release remains subject to the required GitHub, signing, notarization, and publication gates.
-
-PkgLift 0.5.0 adds a bounded, analysis-only Podspec JSON semantic model and a versioned SwiftPM declaration assessment. Automatic migration scope is unchanged: no Podspec declaration or assessment outcome can authorize `AUTO` or project mutation.
+Released 2026-09-01. PkgLift 0.5.0 adds a bounded, analysis-only Podspec JSON semantic model and a versioned SwiftPM declaration assessment. Automatic migration scope is unchanged: no Podspec declaration or assessment outcome can authorize `AUTO` or project mutation.
 
 ## Highlights
 
@@ -31,6 +29,6 @@ PkgLift 0.5.0 adds a bounded, analysis-only Podspec JSON semantic model and a ve
 
 - The command-line interface and existing analysis/plan JSON contracts are unchanged. The public Podspec APIs are additive in the `PkgLiftCocoaPods` library module.
 - Regenerate saved migration plans before applying them because executable plans remain bound to the creating PkgLift version, even though v0.5.0 does not broaden migration eligibility.
-- Package generation remains a separate v0.6.x concern. Consumers must not treat v0.5 assessment output as a generated manifest, compatibility certificate, registry mapping, or permission to remove CocoaPods.
+- The missing-evidence and read-only package-blueprint contract remains a separate v0.6.x concern, while manifest generation requires a later review. Consumers must not treat v0.5 assessment output as a generated manifest, compatibility certificate, registry mapping, or permission to remove CocoaPods.
 
-Signed and notarized release assets may be published only through the separately reviewed release-manifest workflow after the source-preparation commit is merged and every required check passes. The release manifest, public tag, GitHub Release, and Homebrew formula update are deliberately excluded from this source-preparation change.
+This document records the shipped source and API scope. Release provenance and distribution workflows do not extend the documented migration or generation capabilities.

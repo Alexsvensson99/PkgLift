@@ -96,17 +96,11 @@ External provenance remains analysis evidence only. Every external source is `RE
 
 Release evidence and the completed work breakdown are recorded in the [v0.4.0 tracker](https://github.com/Alexsvensson99/PkgLift/issues/53).
 
----
-
-# Next
-
-These releases describe the active source candidate and the intended sequence after it. Exact future scope may move as real migration evidence reveals dependencies between features.
-
 ## v0.5.0 — Podspec Semantic Analysis
 
 **Goal:** understand what a pod contains, not only what it is called.
 
-Release-candidate scope:
+Released scope:
 
 - Inspect caller-supplied Podspec JSON in memory under a pinned CocoaPods Core 1.17.0 semantic profile.
 - Preserve supported source, header, resource, dependency, platform, linkage, vendored, module, compilation, file-selection, and recursive subspec declarations as deterministic typed evidence.
@@ -116,21 +110,27 @@ Release-candidate scope:
 
 This milestone is an analysis-only architectural prerequisite for safe generated Swift packages. It does not add CLI Podspec loading, package generation, project mutation, build equivalence, or any new route to `AUTO`.
 
-The concrete scope and work breakdown are tracked in the [v0.5.0 Podspec Semantic Model tracker](https://github.com/Alexsvensson99/PkgLift/issues/63). The [release-evidence matrix](Documentation/PodspecV05ReleaseEvidence.md) records the source candidate; required GitHub checks, signed distribution, the public tag and release, and Homebrew publication remain separate gates.
+The completed scope and work breakdown are recorded in the [v0.5.0 Podspec Semantic Model tracker](https://github.com/Alexsvensson99/PkgLift/issues/63). The [release-evidence matrix](Documentation/PodspecV05ReleaseEvidence.md) records the bounded contract and its evidence; it does not expand migration eligibility.
 
-## v0.6.x — Generated Swift Package Prototype
+---
 
-**Goal:** prove that selected pods without native SwiftPM support can be represented safely as generated local Swift packages.
+# Next
+
+This is the sole active direction. Its scope remains provisional until the missing-evidence model, blueprint contract, fixtures, and safety boundary are reviewed.
+
+## v0.6.x — Generated-Package Evidence and Read-Only Blueprint
+
+**Goal:** define the additional evidence and one deliberately narrow package blueprint needed between v0.5 declaration assessment and any later generated-package implementation, without generating or modifying anything.
 
 Candidate work:
 
-- Generate a local `Package.swift` only from fully supported Podspec semantics.
-- Support a deliberately narrow first set of source/resource layouts.
-- Validate generated package structure before modifying the consuming Xcode project.
-- Keep generated packages inside an explicit PkgLift-managed location with deterministic provenance.
-- Compare the generated package against the original pod model during verification.
+- Document why the four v0.5 assessment outcomes are insufficient for a package blueprint and enumerate the additional evidence required for files, languages, target/product topology, dependency products, identity, and provenance.
+- Define exactly one narrow positive declaration shape and its required caller-supplied evidence before adding a new public result type.
+- After that design is reviewed, model a versioned, read-only blueprint that preserves unresolved requirements explicitly and cannot reinterpret `declarationCompatible` as package validity.
+- Exercise the contract with deterministic fixtures and negative cases for missing inventories, opaque or inherited semantics, platform scopes, unsupported declarations, and contradictory evidence.
+- Keep the blueprint isolated from the CLI, registry, classifier, planner, preflight, migration engine, verification pipeline, Xcode mutation, and `AUTO`.
 
-**Important:** this begins as an opt-in or research-grade migration path. It must not become `AUTO` until equivalence can be demonstrated reliably.
+**Important:** v0.6.x must not introduce a second name for the existing v0.5 assessment. `declarationCompatible` is necessary but never sufficient for a positive blueprint. This work does not generate or write `Package.swift`, inspect project files, remove CocoaPods, mutate Xcode projects, or create a route to `AUTO`. Package generation remains a later, separately reviewed milestone.
 
 ---
 
