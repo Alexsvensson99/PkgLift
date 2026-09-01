@@ -249,11 +249,21 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout Validated Release Policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ needs.validate-and-package.outputs.target_commitish }}
+
       - name: Download Validated Publication Input
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: pkglift-publication-input-${{ github.sha }}
           path: release
+
+      - name: Validate Publication Input Before Tagging
+        run: bash Scripts/validate-publication-input.sh release
 
       - name: Recheck Distribution Checksum
         run: |
@@ -262,13 +272,6 @@ jobs:
             cd release
             sha256sum --check pkglift-macos-arm64.tar.gz.sha256
           )
-
-      - name: Checkout Validated Release Policy
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-          ref: ${{ needs.validate-and-package.outputs.target_commitish }}
 
       - name: Atomically Create and Verify Release Tag
         env:
