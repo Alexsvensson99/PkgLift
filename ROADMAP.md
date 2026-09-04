@@ -124,13 +124,21 @@ This is the sole active direction. Its scope remains provisional until the missi
 
 Candidate work:
 
-- Document why the four v0.5 assessment outcomes are insufficient for a package blueprint and enumerate the additional evidence required for files, languages, target/product topology, dependency products, identity, and provenance.
+- Review the [v0.6 Stage 0 generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), which documents why the four v0.5 assessment outcomes are insufficient for a package blueprint and enumerates the additional evidence required for files, languages, target/product topology, dependency products, identity, and provenance.
 - Define exactly one narrow positive declaration shape and its required caller-supplied evidence before adding a new public result type.
 - After that design is reviewed, model a versioned, read-only blueprint that preserves unresolved requirements explicitly and cannot reinterpret `declarationCompatible` as package validity.
 - Exercise the contract with deterministic fixtures and negative cases for missing inventories, opaque or inherited semantics, platform scopes, unsupported declarations, and contradictory evidence.
 - Keep the blueprint isolated from the CLI, registry, classifier, planner, preflight, migration engine, verification pipeline, Xcode mutation, and `AUTO`.
 
 **Important:** v0.6.x must not introduce a second name for the existing v0.5 assessment. `declarationCompatible` is necessary but never sufficient for a positive blueprint. This work does not generate or write `Package.swift`, inspect project files, remove CocoaPods, mutate Xcode projects, or create a route to `AUTO`. Package generation remains a later, separately reviewed milestone.
+
+Stage 0 identifies one decision that must be resolved before a public model is
+added: a source-bearing Podspec receives `requiresGeneratedMetadata` under the
+released v0.5 profile, while the literal positive gate above requires
+`declarationCompatible`. The evidence contract recommends a narrowly
+allow-listed reason-discharge rule without changing or renaming the v0.5
+outcome. Until that recommendation is reviewed, there is no approved positive
+blueprint shape and Stage 1 remains blocked.
 
 ---
 
