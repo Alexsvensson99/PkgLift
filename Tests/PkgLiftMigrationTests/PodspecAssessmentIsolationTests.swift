@@ -86,15 +86,21 @@ final class PodspecAssessmentIsolationTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         let sourcesRoot = repositoryRoot.appendingPathComponent("Sources", isDirectory: true)
-        let assessmentSource = sourcesRoot.appendingPathComponent(
+        // Stage 1 consumes v0.5 only in these explicitly reviewed, pure analysis files.
+        // Keep the allow-list at file scope: the rest of CocoaPods and every migration,
+        // CLI, registry, verification and Xcode source remain outside this boundary.
+        let analysisSources = Set([
             "PkgLiftCocoaPods/PodspecSwiftPMAssessment.swift",
-            isDirectory: false
-        )
+            "PkgLiftCocoaPods/GeneratedPackageBlueprintAssessment.swift",
+            "PkgLiftCocoaPods/GeneratedPackageEvidence.swift",
+            "PkgLiftCocoaPods/GeneratedPackageEvidenceCoding.swift",
+        ].map { sourcesRoot.appendingPathComponent($0).standardizedFileURL })
         let forbiddenSymbols = [
             "PodspecSwiftPMAssessment",
             "PodspecSwiftPMAssessmentReason",
             "PodspecSwiftPMAssessor",
             "SwiftPMCapabilityProfile",
+            "GeneratedPackage",
         ]
 
         let enumerator = try XCTUnwrap(
@@ -105,7 +111,7 @@ final class PodspecAssessmentIsolationTests: XCTestCase {
         )
         for case let fileURL as URL in enumerator
         where fileURL.pathExtension == "swift"
-            && fileURL.standardizedFileURL != assessmentSource.standardizedFileURL {
+            && !analysisSources.contains(fileURL.standardizedFileURL) {
             let contents = try String(contentsOf: fileURL, encoding: .utf8)
             for symbol in forbiddenSymbols {
                 XCTAssertFalse(

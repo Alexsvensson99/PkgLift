@@ -1,12 +1,12 @@
 # Generated-Package Evidence Contract
 
-Status: **v0.6 Stage 0 design candidate; documentation only.**
+Status: **v0.6 Stage 1 local implementation; Option A approved on 2026-09-04.**
 
 This document defines the evidence boundary between the released v0.5
-declaration assessment and any future read-only generated-package blueprint.
-It does not add a public API, bless a manifest shape, or authorize package
-generation. The eligibility decision identified below must be reviewed before
-implementation begins.
+declaration assessment and the synthetic, read-only S1 blueprint. The recovered
+Stage 0 design is retained in local commit `12b8a6b`. Stage 1 implements the
+approved Option A below. It does not establish a manifest shape or authorize
+package generation, publication, or migration.
 
 ## Purpose
 
@@ -23,10 +23,11 @@ v0.5 reason as if the missing evidence had already been supplied.
 
 ## Hard boundary
 
-Stage 0 changes documentation only. It does not:
+Stage 1 is a pure value transformation inside `PkgLiftCocoaPods`. It accepts
+caller-owned JSON bytes and explicit evidence, and hashes those in-memory
+values. It does not:
 
-- add or name a public Swift type;
-- read Podspec bytes or declared paths;
+- read a Podspec file or declared source paths from disk;
 - expand globs, traverse directories, follow symlinks, or hash local files;
 - execute Ruby or CocoaPods, start another process, or access the network;
 - resolve package identities, versions, dependencies, or products;
@@ -45,20 +46,22 @@ milestone explicitly replaces this boundary.
 | --- | --- | --- |
 | `declarationCompatible` | No already-modeled declaration produced a downgrade under the pinned profiles. | Effective file selection, file existence/content, languages, package topology, dependency products, package identity, source provenance, and build/runtime equivalence. |
 | `requiresGeneratedMetadata` | At least one known declaration category would need explicit future package metadata. | The metadata itself, its binding to the declaration, and proof that it is complete and noncontradictory. |
-| `indeterminate` | Some evidence is unknown, deferred, opaque, incomplete, inherited, or requires inspection. | A deterministic resolution of every indeterminate reason. Stage 0 defines no positive path for this outcome. |
-| `unsupported` | At least one explicit declaration is outside the pinned safe profile. | A reviewed compatibility model. Stage 0 defines no workaround or positive path for this outcome. |
+| `indeterminate` | Some evidence is unknown, deferred, opaque, incomplete, inherited, or requires inspection. | A deterministic resolution of every indeterminate reason. S1 defines no positive path for this outcome. |
+| `unsupported` | At least one explicit declaration is outside the pinned safe profile. | A reviewed compatibility model. S1 defines no workaround or positive path for this outcome. |
 
-A future result must carry the original v0.5 schema and profile identifiers
+The result must carry the original v0.5 schema and profile identifiers
 unchanged. It must retain the original outcome and reasons rather than emit a
 second, more optimistic name for the same assessment.
 
 ## Required additional evidence
 
-Every evidence value is caller-supplied. The future assessor may validate its
-shape, internal consistency, canonical ordering, and cryptographic digest
-syntax as a pure value transformation. It cannot claim that a digest matches
-bytes it was never given or that an inventory matches a filesystem it never
-inspected.
+Every evidence value is caller-supplied. The assessor validates shape,
+internal consistency, canonical ordering, and digest bindings as a pure value
+transformation. It derives the inspection and v0.5 assessment from the exact
+JSON bytes supplied to this call. It recomputes the Podspec digest, snapshot
+identifier digest, and canonical inventory digest. Source-file content digests,
+language, regular-file status, completeness and consumer context remain caller
+assertions: no filesystem or source contents are inspected.
 
 ### Snapshot identity and provenance
 
@@ -159,9 +162,9 @@ The first candidate shape requires explicit, complete empty inventories for:
 
 Absence must be evidence, not omission or a default inserted during decoding.
 
-## Consistency finding: the current positive gate is impossible to use safely
+## Stage 0 finding: the original positive gate could not describe useful sources
 
-The current roadmap says that `declarationCompatible` is necessary for a
+The original roadmap said that `declarationCompatible` was necessary for a
 positive blueprint. The released v0.5 profile also assigns
 `sourceSelectionRequiresGeneratedMetadata` whenever root `source_files` is
 present. Its only `declarationCompatible` fixture is a metadata-empty Podspec
@@ -178,19 +181,19 @@ Those facts leave no useful source-bearing positive case:
 4. An empty source inventory avoids the contradiction but does not provide the
    intended Swift library blueprint.
 
-Stage 0 therefore refuses to define a public positive result under the current
-wording. This is a design finding, not a reason to weaken v0.5 or fabricate a
-fixture.
+Stage 0 therefore proposed the evidence-specific rule below. Stage 1 implements
+that rule while preserving the released v0.5 outcome and reasons byte-for-byte
+in canonical encoding.
 
-## Eligibility decision required before Stage 1
+## Reviewed eligibility decision
 
-### Option A — discharge one explicit metadata reason (recommended)
+### Option A — discharge one explicit metadata reason (approved)
 
-Preserve the v0.5 outcome and reasons exactly, but allow a future v0.6
+Preserve the v0.5 outcome and reasons exactly, but allow the v0.6
 assessment to consider one reason discharged only when the corresponding
 caller-supplied evidence is complete and consistent.
 
-The initial candidate shape, `S1`, would require:
+The initial candidate shape, `S1`, requires:
 
 - one root library node with no subspecs or raw platform scopes;
 - implicit-all default-subspec policy and no unsupported/deferred fields;
@@ -205,12 +208,9 @@ The initial candidate shape, `S1`, would require:
   inventory, and provenance evidence defined above; and
 - no claim beyond eligibility to construct one read-only structural blueprint.
 
-This is the only option that gives `requiresGeneratedMetadata` its intended
-future role without renaming it, changing the shipped v0.5 profile, or allowing
-an indeterminate/unsupported reason through. It requires a small roadmap
-clarification: `declarationCompatible` may remain sufficient to prove only an
-empty declaration surface, while an allow-listed metadata reason may be
-discharged by separately modeled evidence.
+The roadmap now records this narrow discharge rule. A metadata-empty
+`declarationCompatible` result does not qualify for S1; the full singleton
+source-selection reason set and all separate evidence are required.
 
 `S1` is therefore a repository-owned, synthetic local evidence slice. It can
 exercise the structural contract but cannot claim support for a conventional
@@ -218,26 +218,19 @@ published Podspec, which normally carries source provenance. Supporting that
 shape requires separately typed provenance semantics; the generic
 `deferredCocoaPodsSemantic` reason is never dischargeable by this profile.
 
-### Option B — retain the literal `declarationCompatible` gate
+### Alternatives considered in Stage 0
 
-Keep the current roadmap wording unchanged. v0.6 may document missing evidence
-but must ship no useful source-bearing positive blueprint, public result type,
-or positive fixture. Stage 1 remains blocked until a later roadmap decision.
+Retaining the literal `declarationCompatible` gate would have left no useful
+source-bearing positive blueprint. Weakening or renaming v0.5 would have
+invalidated the released contract. Option A was approved for local Stage 1
+implementation on 2026-09-04; the restored Stage 0 commit retains the full
+decision comparison.
 
-### Option C — weaken or rename v0.5 (rejected)
+## Read-only result states
 
-Changing the meaning of `declarationCompatible`, silently dropping the source
-selection reason, or introducing a second name for the same v0.5 assessment
-would invalidate a released schema/profile contract. Stage 0 rejects this
-option.
-
-Option A is the recommendation. This document records the recommendation but
-does not approve it or alter the roadmap gate on its own.
-
-## Conceptual read-only result states
-
-These labels describe behavior for review; they are not proposed public API
-names.
+The public result is `GeneratedPackageBlueprintAssessment`. Its four outcomes
+correspond to the first four rows; invalid contracts throw
+`GeneratedPackageEvidenceError` with no caller-controlled values in the error.
 
 | State | Meaning |
 | --- | --- |
@@ -245,19 +238,25 @@ names.
 | Insufficient evidence | Required caller evidence is missing, incomplete, unbound, or lacks a completeness/provenance claim. |
 | Contradictory evidence | Two supplied values disagree, such as identity, profile, digest binding, selection membership, language, target, or product references. |
 | Ineligible shape | The Podspec or caller evidence contains a known shape outside `S1`, including subspecs, platform scopes, another declaration category, multiple targets/products, resources, dependencies, or non-Swift sources. |
-| Invalid contract | Schema/profile, path, digest, canonical ordering, uniqueness, or decoding invariants are invalid. A future implementation must return a typed error before assessment. |
+| Invalid contract | Schema/profile, path, digest, canonical ordering, uniqueness, or decoding invariants are invalid. The assessor returns a typed error without a candidate. |
 
 All observed reasons must be retained, deduplicated, and sorted
 deterministically. Adding evidence may resolve a specifically modeled missing
 field, but it must never erase a contradiction or make an ineligible shape
 more permissive.
 
-## Mandatory negative cases for a future implementation
+Precedence is contradictory evidence, then ineligible shape, then insufficient
+evidence. All observed reasons remain in the result regardless of precedence.
+A complete-but-empty inventory contradicting a nonempty declaration therefore
+retains both the missing-sources reason and the cardinality mismatch. Only an
+empty unresolved reason list can produce a blueprint candidate.
+
+## Mandatory negative cases
 
 | Case | Required result |
 | --- | --- |
 | v0.5 assessment without caller evidence | Insufficient evidence |
-| Empty, duplicate, unsorted, case-colliding, or unbound source inventory | Invalid or insufficient evidence; never a candidate |
+| Empty, duplicate, unsorted, case-colliding, or unbound source inventory | Invalid, insufficient, or contradictory evidence; never a candidate |
 | Raw or inventoried absolute path, glob, backslash, control character, empty segment, `.` or `..` | Invalid contract |
 | Missing or malformed SHA-256, provider/snapshot identifier, unregistered provider profile, provider schema, or snapshot binding | Invalid or insufficient evidence |
 | Podspec identity/version/profile that does not match inspection and assessment | Contradictory evidence |
@@ -273,7 +272,7 @@ more permissive.
 
 ## Determinism and privacy requirements
 
-A future implementation must:
+Stage 1 must:
 
 - use an explicit schema version and pinned CocoaPods, SwiftPM, evidence-provider,
   and path-normalization profiles;
@@ -281,7 +280,8 @@ A future implementation must:
 - require the canonical lowercase SHA-256 and opaque identifier grammars above;
 - accept provider identifiers only from the reviewed profile registry and never
   encode a raw snapshot identifier in the assessment result;
-- use immutable `Sendable`, `Equatable`, and `Codable` values;
+- use immutable `Sendable` and `Equatable` values, a private `Decodable` input,
+  and a separately validated `Codable` portable result;
 - reject missing fields instead of supplying permissive defaults;
 - sort set-like evidence canonically while preserving explicitly ordered input
   only where order is semantic;
@@ -295,10 +295,100 @@ Digests and stable indices may identify caller-owned evidence without copying
 it into a portable result. Privacy bounding must never be described as proof
 that the omitted data was safe or correct.
 
+## Pinned Stage 1 API and encoding
+
+`GeneratedPackageBlueprintAssessor.assess(podspecJSON:evidence:)` takes exact
+in-memory JSON `Data` and optional `GeneratedPackageEvidence`. It never accepts
+a separately manufactured inspection. The evidence's v0.5 assessment is a
+binding that must equal the freshly computed assessment in its entirety.
+
+The private input and `GeneratedPackageSnapshot` deliberately do not conform
+to `Encodable`. `GeneratedPackageInventory` is Codable solely so providers can
+construct its canonical digest. Its encoded bytes include all source, language
+and topology completeness flags, nullable source root and consumer, all source
+entries, targets, products, and all 23 required empty inventory groups.
+
+Construct private inventory values with their explicit initializers, or decode
+them as part of `GeneratedPackageEvidence.decodeJSON`. Nested inventories and
+blueprints do not have standalone decoding entry points. A typical library
+call with already available bytes is:
+
+```swift
+let evidence = try GeneratedPackageEvidence.decodeJSON(evidenceJSON)
+let result = try GeneratedPackageBlueprintAssessor().assess(
+    podspecJSON: podspecJSON,
+    evidence: evidence
+)
+let portableJSON = try result.canonicalJSON()
+```
+
+The [S1 fixture](../Tests/PkgLiftCocoaPodsTests/Fixtures/GeneratedPackageS1/README.md)
+documents the synthetic declaration, caller evidence, and measured fixture
+digests used to exercise this contract.
+
+The sole reviewed provider is `pkglift.synthetic-local/v1`; this permits only
+repository-owned synthetic/local evidence. Selecting that identifier is not
+authentication or a provenance certificate. A production evidence provider
+requires a separately reviewed profile.
+
+The path profile `ascii-relative-path/v1` accepts only ASCII letters, digits,
+underscore, dot, hyphen and slash, up to 512 bytes, with no empty, `.` or `..`
+segment. This is deliberately narrower than arbitrary UTF-8. Source inventories
+must be in ascending UTF-8 byte order, with no duplicate or ASCII case-fold
+collision. Raw declaration order is retained for index binding. The positive
+shape requires the exact `.swift` suffix plus an explicit Swift-language and
+regular-file assertion. Source-root containment uses a slash-delimited prefix.
+
+The synthetic identity grammar is `^[A-Z][A-Za-z0-9_]{0,63}$`; no name is
+normalized or repaired. Package, regular target, and library-product identity
+must match that Podspec name exactly. The consumer profile is `swift-only/v1`
+with one Apple platform. Minimum versions use `major.minor` or
+`major.minor.patch` with a nonzero patch, components of at most three digits,
+positive major, and no leading zeroes. These grammars make the fixture contract
+canonical; they do not claim deployment compatibility or general SwiftPM
+identifier support.
+
+`canonicalSHA256()` hashes the inventory only after validation. The byte
+function is `JSONEncoder` with `.sortedKeys` and `.withoutEscapingSlashes`, no
+pretty printing, and arrays already in their required order. Invalid input is
+never sorted into validity. Nullable fields are encoded explicitly as `null`.
+The snapshot ID digest covers its exact UTF-8 bytes. All digests are lowercase
+SHA-256. Podspec identity/version comparisons use exact UTF-8 bytes.
+
+Both evidence and result expose `decodeJSON(_:)` for untrusted bytes. This
+boundary uses the existing bounded JSON scanner, rejects duplicate object keys,
+and caps input at 1 MiB. A private decoder token requires every evidence,
+inventory, blueprint and result decode to pass through this boundary; direct
+`JSONDecoder().decode(...)` calls are rejected. Nested keys, required fields,
+profile/schema versions, ordering, uniqueness, paths and digest syntax are also
+checked. There are no defaults for omitted evidence fields.
+
+S1 is capped at 256 raw or inventoried source paths, 16 targets/products and
+references per product, 256 entries per empty-inventory group, and 512 bytes per
+label/path. The byte scanner additionally bounds nesting, total values and
+collection sizes. Before returning any result, including a noncandidate with
+all its v0.5 diagnostics, the assessor checks its encoding against the same
+decoder budget. A result that would exceed it throws typed `limitExceeded`.
+
+The portable result keeps the original v0.5 assessment plus unresolved typed
+reasons. A reason uses only its code and an optional numeric input index; group
+indices refer to the exhaustive group-kind list in UTF-8 byte order. Canonical
+reason ordering is descending outcome precedence, code, then index. For a
+candidate, `dischargedReasons` equals the unchanged singleton v0.5 reason and
+the `single-swift-library/v1` blueprint contains identity/version/source-root
+digests, consumer context, and source references ordered by declaration index.
+The raw snapshot ID, names, paths and other inventory values never enter it.
+
+Decoded results are checked for outcome/reason agreement, the exact candidate
+gate, valid profiles and digests, and contiguous unique source references. A
+decoded artifact is still caller data; these checks do not authenticate its
+author, bind edited artifact digests back to source inputs, establish source
+existence, or authorize migration. Any consumer needing eligibility must rerun
+the assessor with the original Podspec bytes and private evidence.
+
 ## Acceptance gate for Stage 1
 
-No public model or fixture work should begin until the eligibility option is
-explicitly reviewed. If Option A is approved, Stage 1 must provide:
+The approved Option A implementation must provide:
 
 1. a versioned, pure, read-only evidence model in `PkgLiftCocoaPods`;
 2. one repository-owned positive `S1` fixture with documented SHA-256 values;
@@ -318,6 +408,9 @@ eligibility remain later, separately reviewed work.
 
 ## Evidence basis
 
+The [Stage 1 validation record](GeneratedPackageStage1Validation.md) records
+the completed local checks and the remaining review gate.
+
 The shipped [Podspec semantic-model contract](PodspecSemanticModel.md) defines
 the pinned v0.5 profiles, raw declaration boundary, and four outcomes. The
 [v0.5.0 release-evidence matrix](PodspecV05ReleaseEvidence.md) records the
@@ -325,15 +418,14 @@ complete reason-code and isolation evidence that this design must preserve.
 
 ## Decision record
 
-- **Recommended:** Option A, with only the exact `S1` source-selection reason
+- **Approved 2026-09-04:** Option A, with only the exact `S1` source-selection reason
   dischargeable in the first profile.
 - **S1 limitation:** repository-owned synthetic local evidence only; no
   conventional Podspec `source` field or published-pod support.
-- **Not decided by Stage 0:** the public type names, encoded schema, evidence
-  provider, or implementation schedule.
-- **Blocked until review:** Stage 1 public model, fixtures, and source changes.
+- **Stage 1:** the API, schema and synthetic provider above are implemented locally.
+- **Later review required:** any broader provider, shape, generation or integration.
 - **Never implied:** package validity, build/runtime equivalence, generation,
   project mutation, CocoaPods removal, or `AUTO`.
 
-The released v0.5 contract remains authoritative until a separately reviewed
-v0.6 design and implementation says otherwise.
+The released v0.5 contract remains unchanged and authoritative for declaration
+assessment. Local Stage 1 work is not a release or new migration support.
