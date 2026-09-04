@@ -1,6 +1,6 @@
 # PkgLift v0.6.0 Release Evidence and Gates
 
-Status: **local release preparation; not a published release.** This document
+Status: **release preparation; not a published release.** This document
 defines the candidate's source and packaging gates and records the already
 completed S1 integration evidence. It does not assert that the final
 preparation commit has passed GitHub CI or distribution checks.
@@ -19,9 +19,10 @@ The candidate implements only the synthetic, read-only S1 contract in
 [GeneratedPackageEvidence.md](GeneratedPackageEvidence.md). The new API is
 confined to `PkgLiftCocoaPods`; it does not generate a manifest, verify supplied
 file contents, widen supported Podspec shapes or change automatic migration.
-`Version.swift` identifies the candidate as `0.6.0`. Keeping the changelog under
-`Unreleased` and the [release notes](ReleaseNotes-0.6.0.md) marked as a candidate
-means this preparation is deliberately not ready for a publication manifest.
+`Version.swift` identifies the candidate as `0.6.0`. The dated changelog and
+[release notes](ReleaseNotes-0.6.0.md) record the planned release date
+`2026-09-05`, with publication still pending. The preparation must be merged and
+its exact final commit must pass CI before a publication manifest is prepared.
 
 ## Source evidence
 
@@ -44,6 +45,19 @@ v0.5 fixtures and regression tests remain part of the full suite.
 
 ## Local candidate acceptance
 
+The local candidate built and audited from clean commit
+`69ddba7173a3379c043dc9e4d5c0d6657ffa7bad` passed debug and arm64 release builds,
+423 Swift tests, 26 release-policy tests and validation of all 22 registry
+mappings. Its archive contains 23 regular files; tar and zip payload file
+hashes match. Both extracted CLI version forms report `0.6.0`, and packaging
+smoke checks passed for registry loading, installed-style symlink lookup and
+typed missing-bundle refusal. The archive SHA-256 is
+`a5def3251b48f9571cfa3fb70a68dc67e69dff46d7680a472cd26b43c2825e58`.
+The candidate is locally ad hoc-signed, without Developer ID signing or
+notarization. This is local process evidence, not a signed provenance claim or
+final preparation-commit CI evidence. The subsequent date/status changes are
+documentation-only and do not change its tested product sources.
+
 Run the following against the final candidate source and record the exact Git
 commit, compiler version, commands, results and artifact SHA-256 separately:
 
@@ -55,11 +69,13 @@ swift run --skip-build pkglift registry validate
 ruby Scripts/validate-repository-yaml.rb
 python3 -m unittest discover -s Tests/ReleaseManifestTests -p 'test_*.py'
 git diff --check 208ee391bd15c72289641718e60a70f62d2a1af4 HEAD
-bash Scripts/package-release.sh release /path/to/a-new-local-rc-directory
+COPYFILE_DISABLE=1 bash Scripts/package-release.sh release /path/to/a-new-local-rc-directory
 ```
 
-Use a new, empty output directory for every packaging attempt. Where the local
-sandbox requires it, use task-local SwiftPM/compiler cache paths and
+Use a new, empty output directory for every packaging attempt.
+`COPYFILE_DISABLE=1` omits macOS AppleDouble metadata from the local tar payload,
+as verified for this candidate. Where the local sandbox requires it, use
+task-local SwiftPM/compiler cache paths and
 `--disable-sandbox`; this does not change the product's safety rules.
 
 Acceptance requires both CLI version forms (`version` and `--version`) to
@@ -82,9 +98,9 @@ evidence from the earlier implementation commit separately from candidate checks
 
 ## Final preparation and publication gates
 
-1. Review the final release scope and date. Move the 0.6.0 changes from
-   `Unreleased` into a dated `## [0.6.0] - YYYY-MM-DD` section and finalize the
-   release notes without claiming publication before it occurs.
+1. Review the final release scope and planned `2026-09-05` date in the dated
+   changelog and release notes. Update that date if the schedule changes before
+   publication; do not claim a public release before it exists.
 2. Merge the reviewed product-preparation PR and require all seven workflows
    on its exact final `main` commit. PR #84 and its pilot run cannot substitute
    for the later preparation PR and commit.
@@ -98,4 +114,4 @@ evidence from the earlier implementation commit separately from candidate checks
    and Homebrew publication remain separately approved steps.
 
 No new release manifest, signing/notarization request, workflow dispatch,
-tag, GitHub Release or Homebrew update belongs to this local candidate phase.
+tag, GitHub Release or Homebrew update belongs to this source-preparation phase.

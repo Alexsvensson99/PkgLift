@@ -130,9 +130,10 @@ Implementation complete:
 - Deterministic synthetic fixtures and negative cases cover missing inventories, opaque or inherited semantics, platform scopes, unsupported declarations, contradictions, decoding boundaries, and canonical output.
 - The blueprint remains isolated from the CLI, registry, classifier, planner, preflight, migration engine, verification pipeline, Xcode mutation, and `AUTO`.
 
-Release preparation in progress:
+Release preparation under review:
 
-- Complete the local v0.6.0 candidate documentation and [release-evidence review](Documentation/GeneratedPackageV06ReleaseEvidence.md).
+- The local v0.6.0 candidate passed validation; its dated changelog, release notes and [release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) are prepared for review.
+- The final merged preparation commit still requires its own CI and separately reviewed distribution/publication steps.
 - Keep the public installation instructions and published-release references on v0.5.0 until a separately approved release publishes v0.6.0.
 - Do not treat local release-candidate evidence as a tag, GitHub Release, Homebrew update, package publication, or broader migration support.
 

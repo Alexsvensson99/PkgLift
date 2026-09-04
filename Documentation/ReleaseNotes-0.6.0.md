@@ -1,7 +1,7 @@
 # PkgLift 0.6.0
 
-Status: **local release candidate; not released.** The latest public release
-remains v0.5.0. No v0.6 publication date is assigned.
+Status: **release preparation; not released.** The planned release date is
+**2026-09-05**. Publication remains pending; the latest public release is v0.5.0.
 
 PkgLift 0.6.0 adds an evidence-backed structural blueprint for one synthetic
 Swift library through the `PkgLiftCocoaPods` library API. It fills the gap

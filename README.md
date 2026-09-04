@@ -59,7 +59,7 @@ CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on Dece
 
 ## v0.6.0 Candidate — Not Released
 
-The public release remains [v0.5.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.5.0). v0.6.0 is a local release candidate under preparation; it has not been tagged, published, or added to Homebrew.
+The public release remains [v0.5.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.5.0). The v0.6.0 candidate has passed local validation and its release preparation is under review; it has not been tagged, published, or added to Homebrew. The [release notes](Documentation/ReleaseNotes-0.6.0.md) record the planned date and pending publication state.
 
 The candidate adds a narrow library API in `PkgLiftCocoaPods` for caller-supplied evidence under `pkglift.synthetic-local/v1`; a positive result uses the `single-swift-library/v1` blueprint shape. The S1 fixture is repository-owned. Given an already available Podspec JSON document and explicit inventory evidence, it can return a deterministic, read-only structural blueprint candidate for one Swift library. The result retains the exact v0.5 declaration assessment and reasons; it never turns that assessment into package-validity or migration evidence.
 
@@ -262,7 +262,7 @@ The released v0.5.0 scope, and the v0.6.0 candidate where stated, retain these s
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md), the analysis-only [Podspec semantic model](Documentation/PodspecSemanticModel.md), the [v0.5.0 release evidence](Documentation/PodspecV05ReleaseEvidence.md), the [v0.6 generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), the [Stage 1 validation record](Documentation/GeneratedPackageStage1Validation.md), and the [changelog](CHANGELOG.md) for shipped scope, safety boundaries, and the next direction. The local v0.6.0 candidate models a synthetic, read-only Swift-library blueprint with explicit caller evidence; it does not add package generation or migration support.
+See [ROADMAP.md](ROADMAP.md), the analysis-only [Podspec semantic model](Documentation/PodspecSemanticModel.md), the [v0.5.0 release evidence](Documentation/PodspecV05ReleaseEvidence.md), the [v0.6 generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), the [Stage 1 validation record](Documentation/GeneratedPackageStage1Validation.md), and the [changelog](CHANGELOG.md) for shipped scope, safety boundaries, and the next direction. The v0.6.0 candidate models a synthetic, read-only Swift-library blueprint with explicit caller evidence; it does not add package generation or migration support.
 
 ## Contributing
 

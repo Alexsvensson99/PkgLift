@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Planned version: **0.6.0**. Source preparation and local release-candidate
-validation are in progress; no publication date is assigned.
+## [0.6.0] - 2026-09-05
+
+**Planned release date; publication is pending.** The local candidate has
+passed validation. The latest public release remains v0.5.0.
 
 ### Added
 - Add a pure, in-memory `GeneratedPackageBlueprintAssessor` in `PkgLiftCocoaPods` for one synthetic Swift-library shape, with explicit snapshot, source, topology, completeness and consumer evidence.
@@ -17,7 +19,7 @@ validation are in progress; no publication date is assigned.
 - Add bounded evidence/result JSON entry points and privacy-bounded portable blueprint output containing digests and numeric references instead of raw names and paths.
 
 ### Changed
-- Set the source version to `0.6.0` for the local candidate. Existing migration plans must be regenerated because preflight binds plans to the creating PkgLift version.
+- Set the source version to `0.6.0`. Existing migration plans must be regenerated because preflight binds plans to the creating PkgLift version.
 
 ### Security
 - Reject direct-decoder bypasses, duplicate or unknown JSON fields, unsupported profiles, noncanonical paths and ordering, invalid bindings and oversized portable output through typed errors.
