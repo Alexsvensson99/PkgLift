@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "providerProfile": "pkglift.synthetic-local/v1",
+  "pathProfile": "ascii-relative-path/v1",
+  "snapshot": {
+    "name": "S1Sample",
+    "version": "1.0.0",
+    "podspecSHA256": "a696bb0855dab24029586a2c9c985e97cc68a172e349c778a88543f841159583",
+    "sourceSnapshotID": "s1-snapshot-20260904",
+    "sourceSnapshotSHA256": "822045a5df55170dbbd6f3fe96730b9e768796fec685b4bce30e9d72dc9c6c57",
+    "inventorySHA256": "3f9ca4976de64e13e5db576610d02bbb1f95e191ab6f20e0bf64661c8702b197"
+  },
+  "assessment": {
+    "schemaVersion": 1,
+    "cocoaPodsProfile": "cocoapods-core/1.17.0",
+    "swiftPMProfile": "swift-tools-version/6.0",
+    "outcome": "requiresGeneratedMetadata",
+    "reasons": [
+      {
+        "code": "sourceSelectionRequiresGeneratedMetadata",
+        "evidencePath": "/source_files"
+      }
+    ]
+  },
+  "inventory": {
+    "sourcesComplete": true,
+    "languagesComplete": true,
+    "topologyComplete": true,
+    "sourceRoot": "Sources",
+    "consumer": {
+      "platform": "ios",
+      "minimumVersion": "15.0",
+      "languageProfile": "swift-only/v1"
+    },
+    "sources": [
+      {
+        "declarationIndex": 0,
+        "path": "Sources/Alpha.swift",
+        "contentSHA256": "96b3c9ff869a77fc84acc3377f049d1a31169718262591cebf5e3dfc34dbadd7",
+        "language": "swift",
+        "kind": "regular",
+        "target": "S1Sample"
+      },
+      {
+        "declarationIndex": 1,
+        "path": "Sources/Beta.swift",
+        "contentSHA256": "9a31b54ad4aded4f93128d6fcf33fa6798f6c84992e20ba14837eb039ef7e810",
+        "language": "swift",
+        "kind": "regular",
+        "target": "S1Sample"
+      }
+    ],
+    "targets": [{"name": "S1Sample", "kind": "regular"}],
+    "products": [{"name": "S1Sample", "kind": "library", "targets": ["S1Sample"]}],
+    "groups": [
+      {"kind":"arcControls","complete":true,"entries":[]},
+      {"kind":"buildSettings","complete":true,"entries":[]},
+      {"kind":"cocoaPodsDependencies","complete":true,"entries":[]},
+      {"kind":"compilerFlags","complete":true,"entries":[]},
+      {"kind":"configurationDependencies","complete":true,"entries":[]},
+      {"kind":"deferredDeclarations","complete":true,"entries":[]},
+      {"kind":"dependencyProducts","complete":true,"entries":[]},
+      {"kind":"excludedFiles","complete":true,"entries":[]},
+      {"kind":"frameworks","complete":true,"entries":[]},
+      {"kind":"generatedFiles","complete":true,"entries":[]},
+      {"kind":"hooks","complete":true,"entries":[]},
+      {"kind":"libraries","complete":true,"entries":[]},
+      {"kind":"moduleLayouts","complete":true,"entries":[]},
+      {"kind":"moduleMaps","complete":true,"entries":[]},
+      {"kind":"preservedPaths","complete":true,"entries":[]},
+      {"kind":"privateHeaders","complete":true,"entries":[]},
+      {"kind":"projectHeaders","complete":true,"entries":[]},
+      {"kind":"publicHeaders","complete":true,"entries":[]},
+      {"kind":"resourceBundles","complete":true,"entries":[]},
+      {"kind":"resources","complete":true,"entries":[]},
+      {"kind":"scripts","complete":true,"entries":[]},
+      {"kind":"vendoredArtifacts","complete":true,"entries":[]},
+      {"kind":"weakFrameworks","complete":true,"entries":[]}
+    ]
+  }
+}

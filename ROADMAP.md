@@ -116,7 +116,7 @@ The completed scope and work breakdown are recorded in the [v0.5.0 Podspec Seman
 
 # Next
 
-This is the sole active direction. Its scope remains provisional until the missing-evidence model, blueprint contract, fixtures, and safety boundary are reviewed.
+This is the sole active direction. The narrow S1 evidence rule is approved for local Stage 1 implementation; broader shapes and generation remain separately reviewed work.
 
 ## v0.6.x — Generated-Package Evidence and Read-Only Blueprint
 
@@ -124,13 +124,19 @@ This is the sole active direction. Its scope remains provisional until the missi
 
 Candidate work:
 
-- Document why the four v0.5 assessment outcomes are insufficient for a package blueprint and enumerate the additional evidence required for files, languages, target/product topology, dependency products, identity, and provenance.
-- Define exactly one narrow positive declaration shape and its required caller-supplied evidence before adding a new public result type.
-- After that design is reviewed, model a versioned, read-only blueprint that preserves unresolved requirements explicitly and cannot reinterpret `declarationCompatible` as package validity.
+- Preserve the [v0.6 generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), including the approved Option A rule, required evidence, and synthetic S1 limitation.
+- Model exactly one narrow positive declaration shape with explicit caller-supplied evidence and a versioned, read-only result.
+- Preserve the original v0.5 assessment and all unresolved requirements; a blueprint candidate is not package validity.
 - Exercise the contract with deterministic fixtures and negative cases for missing inventories, opaque or inherited semantics, platform scopes, unsupported declarations, and contradictory evidence.
 - Keep the blueprint isolated from the CLI, registry, classifier, planner, preflight, migration engine, verification pipeline, Xcode mutation, and `AUTO`.
 
-**Important:** v0.6.x must not introduce a second name for the existing v0.5 assessment. `declarationCompatible` is necessary but never sufficient for a positive blueprint. This work does not generate or write `Package.swift`, inspect project files, remove CocoaPods, mutate Xcode projects, or create a route to `AUTO`. Package generation remains a later, separately reviewed milestone.
+**Important:** S1 preserves `requiresGeneratedMetadata` and its exact singleton `sourceSelectionRequiresGeneratedMetadata` reason at `/source_files`. Only complete, canonical and consistent separate evidence can discharge that reason in the v0.6 result. `declarationCompatible` alone does not qualify. This work does not generate or write `Package.swift`, inspect project files, remove CocoaPods, mutate Xcode projects, or create a route to `AUTO`. Package generation remains a later, separately reviewed milestone.
+
+Option A was approved on 2026-09-04 for local Stage 1 implementation. S1 is
+repository-owned synthetic evidence for one Swift library, with literal files
+and explicit empty dependency/resource/build inventories. Conventional Podspec
+`source` fields, broader provenance, and production evidence providers remain
+ineligible. Local implementation does not imply publication or release.
 
 ---
 

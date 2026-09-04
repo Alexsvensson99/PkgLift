@@ -1,0 +1,8 @@
+{
+  "name": "S1Sample",
+  "version": "1.0.0",
+  "source_files": [
+    "Sources/Alpha.swift",
+    "Sources/Beta.swift"
+  ]
+}
