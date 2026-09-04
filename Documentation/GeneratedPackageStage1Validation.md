@@ -1,6 +1,6 @@
 # Generated-Package Stage 1 Validation
 
-Status: **locally implemented and verified on 2026-09-04; not published.**
+Status: **merged and verified on `main`; v0.6.0 is not released.**
 
 Stage 1 implements the approved Option A from the
 [generated-package evidence contract](GeneratedPackageEvidence.md). It produces
@@ -13,6 +13,9 @@ the exact Podspec JSON bytes. Other inputs retain typed refusal reasons.
 The work starts from main commit
 `5a1db0123cf2eb07076b8f736a813b5e29ea5314` on local branch
 `codex/v0.6-stage1`. Commit `12b8a6b` first restores the original Stage 0 design.
+The implementation was merged by [PR #84](https://github.com/Alexsvensson99/PkgLift/pull/84)
+as [`208ee39`](https://github.com/Alexsvensson99/PkgLift/commit/208ee391bd15c72289641718e60a70f62d2a1af4).
+Its merged tree exactly matches the reviewed implementation commit `c7d2722`.
 Implementation was prepared in a separate local working copy; the original
 checkout's existing changes were preserved.
 
@@ -30,7 +33,7 @@ test now permits the three exact new analysis files alongside the original
 assessment file, and forbids the `GeneratedPackage` prefix everywhere else
 under `Sources`.
 
-## Completed checks
+## Local checks completed on 2026-09-04
 
 | Check | Verified result |
 | --- | --- |
@@ -62,10 +65,28 @@ Raw debug, optimized-build and test logs remain in the ignored
 is `full-tests-final.log`; the optimized-build and policy logs are
 `release-build.log` and `release-policy.log`.
 
+## Integration checks completed on 2026-09-05
+
+All 22 pull-request checks passed before merge. On the exact merged commit,
+all seven workflows and 21 commit checks passed:
+
+- [Build](https://github.com/Alexsvensson99/PkgLift/actions/runs/33927637326)
+- [Test](https://github.com/Alexsvensson99/PkgLift/actions/runs/33927637225)
+- [Quality](https://github.com/Alexsvensson99/PkgLift/actions/runs/33927637174)
+- [Registry Validation](https://github.com/Alexsvensson99/PkgLift/actions/runs/33927637249)
+- [CodeQL](https://github.com/Alexsvensson99/PkgLift/actions/runs/33927637290)
+- [Pinned Pilots](https://github.com/Alexsvensson99/PkgLift/actions/runs/33927637242)
+- [Mixed-Language End-to-End Pilot](https://github.com/Alexsvensson99/PkgLift/actions/runs/33927637158)
+
+The migration pilots establish regression coverage for existing migration
+behavior; they do not establish S1 package generation or migration support.
+
 ## Remaining gate
 
-The next gate is review of the local diff for a pull request. No branch push,
-pull request, tag, release or package publication was performed.
+Stage 1 integration is complete. The separate
+[v0.6 release preparation](GeneratedPackageV06ReleaseEvidence.md) must verify
+the versioned candidate and its packaged artifact, then obtain CI evidence for
+the final merged preparation commit. No v0.6 tag or release is recorded here.
 
 S1 remains an in-memory analysis API. Source existence, file contents and
 provider claims are not independently verified. Package manifest generation,

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Planned version: **0.6.0**. Source preparation and local release-candidate
+validation are in progress; no publication date is assigned.
+
+### Added
+- Add a pure, in-memory `GeneratedPackageBlueprintAssessor` in `PkgLiftCocoaPods` for one synthetic Swift-library shape, with explicit snapshot, source, topology, completeness and consumer evidence.
+- Recompute and compare the complete v0.5 assessment from the exact Podspec bytes. Bind the snapshot using SHA-256 digests of those Podspec bytes, snapshot identifier bytes and canonical inventory JSON. Preserve the original assessment while allowing only the exact S1 source-selection reason to be discharged in a separate blueprint result.
+- Add four deterministic outcomes and 25 typed reason codes, a repository-owned S1 fixture, and regression coverage for missing, contradictory, unsupported, malformed and oversized evidence.
+- Add bounded evidence/result JSON entry points and privacy-bounded portable blueprint output containing digests and numeric references instead of raw names and paths.
+
+### Changed
+- Set the source version to `0.6.0` for the local candidate. Existing migration plans must be regenerated because preflight binds plans to the creating PkgLift version.
+
+### Security
+- Reject direct-decoder bypasses, duplicate or unknown JSON fields, unsupported profiles, noncanonical paths and ordering, invalid bindings and oversized portable output through typed errors.
+- Retain the v0.5 semantic contract and all migration safety gates. Source existence, contents and provider claims remain caller assertions; S1 is not a package-validity or provenance certificate.
+- Keep generated-package symbols confined to the reviewed analysis files. The new API performs no filesystem or network access, package generation, project mutation or new `AUTO` classification.
+
 ## [0.5.0] - 2026-09-01
 
 ### Added
