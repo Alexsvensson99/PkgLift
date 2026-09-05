@@ -1,6 +1,7 @@
 # Generated-Package Stage 1 Validation
 
-Status: **merged and verified on `main`; v0.6.0 is not released.**
+Status: **merged and verified on `main`; v0.6.0 was publicly released on
+2026-09-05.**
 
 Stage 1 implements the approved Option A from the
 [generated-package evidence contract](GeneratedPackageEvidence.md). It produces
@@ -81,12 +82,13 @@ all seven workflows and 21 commit checks passed:
 The migration pilots establish regression coverage for existing migration
 behavior; they do not establish S1 package generation or migration support.
 
-## Remaining gate
+## Release evidence
 
 Stage 1 integration is complete. The separate
-[v0.6 release preparation](GeneratedPackageV06ReleaseEvidence.md) must verify
-the versioned candidate and its packaged artifact, then obtain CI evidence for
-the final merged preparation commit. No v0.6 tag or release is recorded here.
+[v0.6 release evidence](GeneratedPackageV06ReleaseEvidence.md) records the
+final released artifact and distribution evidence. The local and integration
+checks above remain historical S1 implementation evidence; they are distinct
+from final release evidence.
 
 S1 remains an in-memory analysis API. Source existence, file contents and
 provider claims are not independently verified. Package manifest generation,

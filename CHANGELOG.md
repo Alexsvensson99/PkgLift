@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.0] - 2026-09-05
 
-**Planned release date; publication is pending.** The local candidate has
-passed validation. The latest public release remains v0.5.0.
+Released as a signed and notarized [GitHub download](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.6.0)
+and through [Homebrew](https://github.com/Alexsvensson99/homebrew-tap/pull/9).
 
 ### Added
 - Add a pure, in-memory `GeneratedPackageBlueprintAssessor` in `PkgLiftCocoaPods` for one synthetic Swift-library shape, with explicit snapshot, source, topology, completeness and consumer evidence.

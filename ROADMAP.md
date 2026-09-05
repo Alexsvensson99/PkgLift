@@ -112,17 +112,11 @@ This milestone is an analysis-only architectural prerequisite for safe generated
 
 The completed scope and work breakdown are recorded in the [v0.5.0 Podspec Semantic Model tracker](https://github.com/Alexsvensson99/PkgLift/issues/63). The [release-evidence matrix](Documentation/PodspecV05ReleaseEvidence.md) records the bounded contract and its evidence; it does not expand migration eligibility.
 
----
-
-# Next
-
-This is the sole active direction. The narrow S1 evidence rule is implemented; v0.6.0 release preparation is in progress. The candidate is not yet a tag, public release, or Homebrew update. Broader shapes and generation remain separately reviewed work.
-
-## v0.6.x — Generated-Package Evidence and Read-Only Blueprint
+## v0.6.0 — Generated-Package Evidence and Read-Only Blueprint
 
 **Goal:** define the additional evidence and one deliberately narrow package blueprint needed between v0.5 declaration assessment and any later generated-package implementation, without generating or modifying anything.
 
-Implementation complete:
+Released scope:
 
 - The [v0.6 generated-package evidence contract](Documentation/GeneratedPackageEvidence.md) records the approved Option A rule, required evidence, and synthetic S1 limitation.
 - `PkgLiftCocoaPods` models exactly one narrow positive declaration shape with explicit caller-supplied evidence and a versioned, read-only result.
@@ -130,12 +124,11 @@ Implementation complete:
 - Deterministic synthetic fixtures and negative cases cover missing inventories, opaque or inherited semantics, platform scopes, unsupported declarations, contradictions, decoding boundaries, and canonical output.
 - The blueprint remains isolated from the CLI, registry, classifier, planner, preflight, migration engine, verification pipeline, Xcode mutation, and `AUTO`.
 
-Release preparation under review:
+Release completed on 2026-09-05:
 
-- The local v0.6.0 candidate passed validation; its dated changelog, release notes and [release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) are prepared for review.
-- The final merged preparation commit still requires its own CI and separately reviewed distribution/publication steps.
-- Keep the public installation instructions and published-release references on v0.5.0 until a separately approved release publishes v0.6.0.
-- Do not treat local release-candidate evidence as a tag, GitHub Release, Homebrew update, package publication, or broader migration support.
+- [PkgLift v0.6.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.6.0) is publicly available as a Developer ID-signed, Apple-notarized arm64 archive for macOS 14 or later.
+- [Homebrew PR #9](https://github.com/Alexsvensson99/homebrew-tap/pull/9) publishes the same verified archive; installation and uninstall checks passed before and after merge.
+- The [release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) binds source preparation, the publication manifest, final CI, signing, notarization, public assets and Homebrew to their exact commits and workflows.
 
 **Important:** S1 preserves `requiresGeneratedMetadata` and its exact singleton `sourceSelectionRequiresGeneratedMetadata` reason at `/source_files`. Only complete, canonical and consistent separate evidence can discharge that reason in the v0.6 result. `declarationCompatible` alone does not qualify. This work does not generate or write `Package.swift`, inspect project files, remove CocoaPods, mutate Xcode projects, or create a route to `AUTO`. Package generation remains a later, separately reviewed milestone.
 
@@ -144,8 +137,17 @@ repository-owned synthetic caller evidence for one Swift library, with literal
 source-selection paths and explicit empty dependency/resource/build
 inventories. It does not verify actual local files, source bytes, content
 digests, or provenance. Conventional Podspec `source` fields, broader
-provenance, and production evidence providers remain ineligible. Local
-implementation and release preparation do not imply publication or release.
+provenance, and production evidence providers remain ineligible. The published
+release retains this exact synthetic S1 boundary.
+
+---
+
+# Next
+
+The next implementation scope remains to be reviewed. Broader blueprint shapes,
+production evidence providers and package generation require separate design,
+safety evidence and implementation review. The v0.6.0 release does not select
+an additional version or expand the supported S1 shape.
 
 ---
 

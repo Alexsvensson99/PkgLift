@@ -4,6 +4,11 @@ PkgLift v0.1.1 and later is distributed for Apple Silicon on macOS 14 or later.
 The public archive must contain a Developer ID-signed, Apple-notarized executable
 and the adjacent `PkgLift_PkgLiftRegistry.bundle` resource directory.
 
+[PkgLift v0.6.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.6.0)
+was published on 2026-09-05 and is available through the Homebrew tap. The
+[release evidence](GeneratedPackageV06ReleaseEvidence.md) records its exact
+source commit, public checksum and completed distribution checks.
+
 ## Release credentials
 
 The release workflow requires a Developer ID Application certificate exported as
@@ -61,9 +66,9 @@ artifacts to a public GitHub Release receives `contents: write` permission.
 - Direct tag pushes never start a distribution or publication workflow. The
   reviewed release-manifest workflow is the only path that creates a public tag
   and GitHub Release.
-- A final tag must match the CLI version exactly (for example, CLI `0.5.0`
-  requires tag `v0.5.0`); prerelease tags may append a suffix such as
-  `v0.5.0-rc.1`.
+- A final tag must match the CLI version exactly (for example, CLI `0.6.0`
+  requires tag `v0.6.0`); prerelease tags may append a suffix such as
+  `v0.6.0-rc.1`.
 - The notarization ZIP is a temporary submission format. Public releases contain
   only `pkglift-macos-arm64.tar.gz` and its `.sha256` file.
 
@@ -95,19 +100,22 @@ update the formula with the exact public archive SHA-256. For a new tap checkout
 the scaffold command is:
 
 ```bash
-bash Scripts/scaffold-homebrew-tap.sh /tmp/homebrew-tap 0.5.0 VERIFIED_SHA256
+bash Scripts/scaffold-homebrew-tap.sh /tmp/homebrew-tap 0.6.0 VERIFIED_SHA256
 ```
 
-The command refuses to overwrite an existing path and creates the tap README,
-formula, and CI workflow. The v0.5.0 `Formula/pkglift.rb` contract is:
+The command refuses to overwrite an existing path and creates an initial tap
+README, formula and CI workflow. Remove the scaffold's explicit `version`
+stanza when Homebrew can infer the version from the URL; strict audit rejects
+the redundant stanza. The published v0.6.0
+[`Formula/pkglift.rb`](https://github.com/Alexsvensson99/homebrew-tap/blob/35431a6351c3242d75296262201682ee77475153/Formula/pkglift.rb)
+is:
 
 ```ruby
 class Pkglift < Formula
   desc "Safely migrate CocoaPods dependencies to Swift Package Manager"
   homepage "https://github.com/Alexsvensson99/PkgLift"
-  url "https://github.com/Alexsvensson99/PkgLift/releases/download/v0.5.0/pkglift-macos-arm64.tar.gz"
-  version "0.5.0"
-  sha256 "REPLACE_WITH_VERIFIED_RELEASE_SHA256"
+  url "https://github.com/Alexsvensson99/PkgLift/releases/download/v0.6.0/pkglift-macos-arm64.tar.gz"
+  sha256 "87533df993ab31af4764eb4c15734b06a3a64364dd493d042a9b7d16333f4088"
   license "MIT"
 
   depends_on arch: :arm64
@@ -119,7 +127,7 @@ class Pkglift < Formula
   end
 
   test do
-    assert_equal "0.5.0", shell_output("#{bin}/pkglift version").strip
+    assert_equal "0.6.0", shell_output("#{bin}/pkglift version").strip
     system bin/"pkglift", "registry", "validate"
   end
 end

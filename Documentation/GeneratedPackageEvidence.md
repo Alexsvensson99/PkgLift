@@ -1,6 +1,8 @@
 # Generated-Package Evidence Contract
 
-Status: **v0.6 Stage 1 merged; v0.6.0 release preparation remains unreleased.**
+Status: **v0.6 Stage 1 merged and publicly released as v0.6.0 on 2026-09-05.**
+Final released-artifact and distribution evidence is recorded in the
+[v0.6 release evidence](GeneratedPackageV06ReleaseEvidence.md).
 
 This document defines the evidence boundary between the released v0.5
 declaration assessment and the synthetic, read-only S1 blueprint. The recovered
@@ -410,7 +412,9 @@ eligibility remain later, separately reviewed work.
 ## Evidence basis
 
 The [Stage 1 validation record](GeneratedPackageStage1Validation.md) records
-the completed local and integration checks and the next v0.6 release-preparation gate.
+the completed local and integration checks. The separate
+[v0.6 release evidence](GeneratedPackageV06ReleaseEvidence.md) records the
+published artifact, signing, notarization and Homebrew verification.
 
 The shipped [Podspec semantic-model contract](PodspecSemanticModel.md) defines
 the pinned v0.5 profiles, raw declaration boundary, and four outcomes. The
@@ -425,9 +429,11 @@ complete reason-code and isolation evidence that this design must preserve.
   conventional Podspec `source` field or published-pod support.
 - **Stage 1:** the API, schema and synthetic provider above are merged in `main`
   at `208ee391bd15c72289641718e60a70f62d2a1af4`; all seven integration workflows passed.
+- **v0.6.0:** publicly released on 2026-09-05 through GitHub and Homebrew,
+  with the exact S1 scope and separate distribution evidence linked above.
 - **Later review required:** any broader provider, shape, generation or integration.
 - **Never implied:** package validity, build/runtime equivalence, generation,
   project mutation, CocoaPods removal, or `AUTO`.
 
 The released v0.5 contract remains unchanged and authoritative for declaration
-assessment. Stage 1 integration is not a public release or new migration support.
+assessment. Publishing v0.6.0 does not add migration support to the S1 result.
