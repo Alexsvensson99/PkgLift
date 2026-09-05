@@ -1,7 +1,8 @@
 # PkgLift 0.6.0
 
-Status: **release preparation; not released.** The planned release date is
-**2026-09-05**. Publication remains pending; the latest public release is v0.5.0.
+**Released 2026-09-05.** Available as a signed and notarized
+[GitHub download](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.6.0)
+and through [Homebrew](https://github.com/Alexsvensson99/homebrew-tap/pull/9).
 
 PkgLift 0.6.0 adds an evidence-backed structural blueprint for one synthetic
 Swift library through the `PkgLiftCocoaPods` library API. It fills the gap
@@ -30,7 +31,7 @@ Swift source paths, one regular target and library product, one explicit
 consumer context, and complete empty inventories for unsupported categories.
 The reviewed provider is `pkglift.synthetic-local/v1`. A normal Podspec `source`
 field, dependencies, resources, subspecs, platform scopes, other languages and
-broader topology remain outside this candidate's positive shape.
+broader topology remain outside S1's positive shape.
 
 Source existence, content digests, language, regular-file status, completeness
 and provider claims remain caller assertions. The assessor checks their shape
@@ -58,6 +59,6 @@ original Podspec bytes and caller-owned evidence.
 
 See the [evidence contract](GeneratedPackageEvidence.md),
 [S1 integration record](GeneratedPackageStage1Validation.md) and
-[v0.6 release gates](GeneratedPackageV06ReleaseEvidence.md) for the exact
-boundaries and verification requirements. Developer ID distribution,
-notarization, publication and Homebrew remain later release steps.
+[v0.6 release evidence](GeneratedPackageV06ReleaseEvidence.md) for the exact
+boundaries, published archive checksum, and completed source, signing,
+notarization, publication and Homebrew verification.
