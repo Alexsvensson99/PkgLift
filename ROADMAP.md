@@ -116,27 +116,36 @@ The completed scope and work breakdown are recorded in the [v0.5.0 Podspec Seman
 
 # Next
 
-This is the sole active direction. The narrow S1 evidence rule is approved for local Stage 1 implementation; broader shapes and generation remain separately reviewed work.
+This is the sole active direction. The narrow S1 evidence rule is implemented; v0.6.0 release preparation is in progress. The candidate is not yet a tag, public release, or Homebrew update. Broader shapes and generation remain separately reviewed work.
 
 ## v0.6.x — Generated-Package Evidence and Read-Only Blueprint
 
 **Goal:** define the additional evidence and one deliberately narrow package blueprint needed between v0.5 declaration assessment and any later generated-package implementation, without generating or modifying anything.
 
-Candidate work:
+Implementation complete:
 
-- Preserve the [v0.6 generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), including the approved Option A rule, required evidence, and synthetic S1 limitation.
-- Model exactly one narrow positive declaration shape with explicit caller-supplied evidence and a versioned, read-only result.
-- Preserve the original v0.5 assessment and all unresolved requirements; a blueprint candidate is not package validity.
-- Exercise the contract with deterministic fixtures and negative cases for missing inventories, opaque or inherited semantics, platform scopes, unsupported declarations, and contradictory evidence.
-- Keep the blueprint isolated from the CLI, registry, classifier, planner, preflight, migration engine, verification pipeline, Xcode mutation, and `AUTO`.
+- The [v0.6 generated-package evidence contract](Documentation/GeneratedPackageEvidence.md) records the approved Option A rule, required evidence, and synthetic S1 limitation.
+- `PkgLiftCocoaPods` models exactly one narrow positive declaration shape with explicit caller-supplied evidence and a versioned, read-only result.
+- The result preserves the original v0.5 assessment and unresolved requirements; a blueprint candidate is not package validity.
+- Deterministic synthetic fixtures and negative cases cover missing inventories, opaque or inherited semantics, platform scopes, unsupported declarations, contradictions, decoding boundaries, and canonical output.
+- The blueprint remains isolated from the CLI, registry, classifier, planner, preflight, migration engine, verification pipeline, Xcode mutation, and `AUTO`.
+
+Release preparation under review:
+
+- The local v0.6.0 candidate passed validation; its dated changelog, release notes and [release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) are prepared for review.
+- The final merged preparation commit still requires its own CI and separately reviewed distribution/publication steps.
+- Keep the public installation instructions and published-release references on v0.5.0 until a separately approved release publishes v0.6.0.
+- Do not treat local release-candidate evidence as a tag, GitHub Release, Homebrew update, package publication, or broader migration support.
 
 **Important:** S1 preserves `requiresGeneratedMetadata` and its exact singleton `sourceSelectionRequiresGeneratedMetadata` reason at `/source_files`. Only complete, canonical and consistent separate evidence can discharge that reason in the v0.6 result. `declarationCompatible` alone does not qualify. This work does not generate or write `Package.swift`, inspect project files, remove CocoaPods, mutate Xcode projects, or create a route to `AUTO`. Package generation remains a later, separately reviewed milestone.
 
-Option A was approved on 2026-09-04 for local Stage 1 implementation. S1 is
-repository-owned synthetic evidence for one Swift library, with literal files
-and explicit empty dependency/resource/build inventories. Conventional Podspec
-`source` fields, broader provenance, and production evidence providers remain
-ineligible. Local implementation does not imply publication or release.
+Option A was approved on 2026-09-04 and Stage 1 is implemented. S1 is
+repository-owned synthetic caller evidence for one Swift library, with literal
+source-selection paths and explicit empty dependency/resource/build
+inventories. It does not verify actual local files, source bytes, content
+digests, or provenance. Conventional Podspec `source` fields, broader
+provenance, and production evidence providers remain ineligible. Local
+implementation and release preparation do not imply publication or release.
 
 ---
 

@@ -1,11 +1,12 @@
 # Generated-Package Evidence Contract
 
-Status: **v0.6 Stage 1 local implementation; Option A approved on 2026-09-04.**
+Status: **v0.6 Stage 1 merged; v0.6.0 release preparation remains unreleased.**
 
 This document defines the evidence boundary between the released v0.5
 declaration assessment and the synthetic, read-only S1 blueprint. The recovered
-Stage 0 design is retained in local commit `12b8a6b`. Stage 1 implements the
-approved Option A below. It does not establish a manifest shape or authorize
+Stage 0 design was restored in commit `12b8a6b`. Stage 1 implements Option A,
+approved on 2026-09-04 and merged in [PR #84](https://github.com/Alexsvensson99/PkgLift/pull/84).
+It does not establish a manifest shape or authorize
 package generation, publication, or migration.
 
 ## Purpose
@@ -409,7 +410,7 @@ eligibility remain later, separately reviewed work.
 ## Evidence basis
 
 The [Stage 1 validation record](GeneratedPackageStage1Validation.md) records
-the completed local checks and the remaining review gate.
+the completed local and integration checks and the next v0.6 release-preparation gate.
 
 The shipped [Podspec semantic-model contract](PodspecSemanticModel.md) defines
 the pinned v0.5 profiles, raw declaration boundary, and four outcomes. The
@@ -422,10 +423,11 @@ complete reason-code and isolation evidence that this design must preserve.
   dischargeable in the first profile.
 - **S1 limitation:** repository-owned synthetic local evidence only; no
   conventional Podspec `source` field or published-pod support.
-- **Stage 1:** the API, schema and synthetic provider above are implemented locally.
+- **Stage 1:** the API, schema and synthetic provider above are merged in `main`
+  at `208ee391bd15c72289641718e60a70f62d2a1af4`; all seven integration workflows passed.
 - **Later review required:** any broader provider, shape, generation or integration.
 - **Never implied:** package validity, build/runtime equivalence, generation,
   project mutation, CocoaPods removal, or `AUTO`.
 
 The released v0.5 contract remains unchanged and authoritative for declaration
-assessment. Local Stage 1 work is not a release or new migration support.
+assessment. Stage 1 integration is not a public release or new migration support.
