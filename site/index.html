@@ -31,7 +31,7 @@
   "name": "PkgLift",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS 14 or later on Apple Silicon",
-  "softwareVersion": "0.4.0",
+  "softwareVersion": "0.6.0",
   "description": "A conservative command-line tool for partial CocoaPods-to-SwiftPM migration in native Xcode projects.",
   "url": "https://www.svensson.design/PkgLift/",
   "downloadUrl": "https://github.com/Alexsvensson99/PkgLift/releases/latest",
@@ -57,11 +57,15 @@
       <h1>Move dependencies.<br><span>Keep the certainty.</span></h1>
       <p class="lead">PkgLift analyzes native Xcode projects, creates a reviewable migration plan, and applies only dependency changes backed by exact evidence.</p>
       <div class="hero-actions">
-        <a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/">Start the migration guide</a>
+        <a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/#install">Install &amp; analyze your project</a>
         <a class="button" href="https://github.com/Alexsvensson99/PkgLift">View &amp; star on GitHub</a>
       </div>
-      <div class="command-card"><code>brew install Alexsvensson99/tap/pkglift</code><button class="copy-button" type="button" data-copy="brew install Alexsvensson99/tap/pkglift">Copy</button></div>
-      <p class="fine-print" style="margin-top:.8rem">Apple Silicon · macOS 14 or later · MIT licensed</p>
+      <p class="fine-print">Apple Silicon · macOS 14 or later · MIT licensed</p>
+      <p>1. Install PkgLift:</p>
+      <div class="command-card"><code>brew install Alexsvensson99/tap/pkglift</code><button class="copy-button" type="button" data-copy="brew install Alexsvensson99/tap/pkglift" aria-label="Copy install command">Copy</button></div>
+      <p style="margin-top:1rem">2. Open Terminal in your project's folder and run:</p>
+      <div class="command-card"><code>pkglift analyze</code><button class="copy-button" type="button" data-copy="pkglift analyze" aria-label="Copy analyze command">Copy</button></div>
+      <p class="fine-print" style="margin-top:.8rem">Analysis prints its findings in Terminal. Your Xcode project and Podfile stay unchanged.</p>
     </div>
     <div class="terminal" aria-label="Example PkgLift terminal session">
       <div class="terminal-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="terminal-title">migration — zsh</span></div>
@@ -101,23 +105,21 @@ Preserved 2 CocoaPods dependencies.
     <div class="proof-item"><strong>Signed & notarized</strong><span>Developer ID distribution for macOS.</span></div>
   </div>
 </section>
-<section class="section section-border" aria-labelledby="new-in-v040">
-  <div class="container grid-2 v040-grid" style="align-items:center">
+<section class="section section-border" aria-labelledby="latest-release">
+  <div class="container grid-2 release-grid" style="align-items:center">
     <div>
-      <div class="eyebrow">New in v0.4.0</div>
-      <h2 id="new-in-v040">External Git sources are now explainable—without becoming automatic.</h2>
-      <p class="lead">PkgLift now records bounded, credential-redacted provenance for supported literal <code>:git</code> declarations and checks it against CocoaPods lockfile evidence.</p>
-      <div class="callout callout-warning" style="margin-top:1.5rem"><strong>Safety boundary:</strong> external Git sources remain <code>REVIEW</code>, <code>BLOCKED</code>, or <code>UNKNOWN</code>. They never authorize <code>AUTO</code> migration.</div>
+      <div class="eyebrow">Latest release</div>
+      <h2 class="anchor-heading" id="latest-release">PkgLift 0.6.0 is available</h2>
+      <p class="lead">Use the CLI to analyze and plan supported migrations. The new work in 0.6.0 explores package structure through an experimental library API.</p>
+      <p>Install through Homebrew or download the signed, notarized macOS release. Already using PkgLift? Run <code>brew update &amp;&amp; brew upgrade pkglift</code> to update a Homebrew installation.</p>
       <div class="hero-actions">
-        <a class="button button-primary" href="https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.4.0">Read the v0.4.0 release</a>
-        <a class="button" href="/PkgLift/pilots/">Inspect the pilot evidence</a>
+        <a class="button button-primary" href="https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.6.0">Read the v0.6.0 release</a>
+        <a class="button" href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/GeneratedPackageEvidence.md">Explore the library API</a>
       </div>
     </div>
     <div class="grid-2">
-      <div class="card"><h3>Typed provenance</h3><p class="subtle">Literal Git declarations are reconciled with lockfile source and checkout evidence.</p></div>
-      <div class="card"><h3>Deterministic reasons</h3><p class="subtle">Mutable, unpinned, incomplete, conflicting, and unsupported evidence stays visible.</p></div>
-      <div class="card"><h3>Sensitive URL data removed</h3><p class="subtle">User information, credentials, queries, and fragments are stripped before JSON is created.</p></div>
-      <div class="card"><h3>Fail-closed preflight</h3><p class="subtle">Changed or lossy external evidence stops mutation before project files are written.</p></div>
+      <div class="card"><h3>Use today: migration CLI</h3><p class="subtle">Review a plan, preview the changes, and apply only entries backed by exact registry, version, target, and language evidence. Uncertain dependencies stay with CocoaPods.</p><p class="subtle">The automatic migration scope is unchanged in 0.6.0.</p></div>
+      <div class="card"><h3>Experimental: package structure</h3><p class="subtle">The library API assesses a possible package structure for one synthetic Swift library, using in-memory Podspec JSON and evidence supplied by the caller.</p><p class="subtle">It does not inspect source files, generate <code>Package.swift</code>, or authorize migration. The CLI does not load Podspecs.</p></div>
     </div>
   </div>
 </section>
@@ -195,9 +197,9 @@ Preserved 2 CocoaPods dependencies.
 <section class="section">
   <div class="container cta">
     <div class="eyebrow">Ready to inspect your project?</div>
-    <h2>Start with analysis. Change nothing yet.</h2>
-    <p class="lead">Install PkgLift, run <code>analyze</code>, and review what can move safely before generating a plan.</p>
-    <div class="hero-actions"><a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/">Open the guide</a><a class="button" href="https://github.com/Alexsvensson99/PkgLift">Star PkgLift on GitHub</a><a class="button" href="https://github.com/Alexsvensson99/PkgLift/releases/latest">Download latest release</a></div>
+    <h2>See what PkgLift finds in your project</h2>
+    <p class="lead">Run <code>pkglift analyze</code> from your project's folder. It prints a report without modifying your Xcode project or Podfile. Review the findings before creating a migration plan.</p>
+    <div class="hero-actions"><a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/#analyze">Run your first analysis</a><a class="button" href="https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml">Share a migration result</a><a class="button" href="https://github.com/Alexsvensson99/PkgLift/releases/latest">Download latest release</a></div>
   </div>
 </section>
 </main>
