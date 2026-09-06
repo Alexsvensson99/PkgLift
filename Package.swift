@@ -34,11 +34,14 @@ let package = Package(
                 "PkgLiftRegistry",
                 "PkgLiftMigration",
                 "PkgLiftVerification",
+                "PkgLiftSignalSupport",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
 
         // MARK: - Libraries
+
+        .target(name: "PkgLiftSignalSupport"),
 
         .target(
             name: "PkgLiftCore",

@@ -22,6 +22,19 @@ struct MigrateCommand: AsyncParsableCommand {
     var allowDirty: Bool = false
 
     mutating func run() async throws {
+        try await run(checkpoint: { _ in })
+    }
+
+    /// Internal deterministic seam for testing interruption at actual writes.
+    mutating func run(checkpoint: (MigrationStage) throws -> Void) async throws {
+        if apply {
+            // Recovery refusal must precede parsing a possibly half-written
+            // project, stale plan, empty AUTO list, or --allow-dirty handling.
+            let root = URL(fileURLWithPath: common.path).standardizedFileURL.resolvingSymlinksInPath()
+            try AtomicMigration.checkForIncompleteMigration(
+                backupDir: root.appendingPathComponent(".pkglift/backup")
+            )
+        }
         let context = try await CommandContext.load(from: common)
         let plan = try loadPlan(at: context.planURL)
 
@@ -77,13 +90,48 @@ struct MigrateCommand: AsyncParsableCommand {
             throw MigrateError.planProjectMismatch(planned: plan.projectPath, current: projectPath)
         }
 
-        let backupDir = context.planURL.deletingLastPathComponent().appendingPathComponent("backup")
-        try MigrationEngine().execute(
-            prepared: prepared,
-            podfileURL: podfileURL,
-            projectPath: projectPath,
-            backupDir: backupDir
-        )
+        let backupDir = URL(fileURLWithPath: context.discovery.rootPath, isDirectory: true)
+            .appendingPathComponent(".pkglift/backup")
+        let signals = try MigrationSignals()
+        var failure: Error?
+        var completed = false
+        do {
+            try MigrationEngine().execute(
+                prepared: prepared,
+                podfileURL: podfileURL,
+                projectPath: projectPath,
+                backupDir: backupDir,
+                checkCancellation: signals.checkCancellation,
+                checkpoint: checkpoint
+            )
+            completed = true
+            try signals.checkCancellation()
+        } catch {
+            failure = error
+        }
+        do {
+            try signals.restore()
+        } catch {
+            // Preserve an unrelated migration/rollback error if both fail.
+            if failure == nil { failure = error }
+            else { FileHandle.standardError.write(Data("\(error.localizedDescription)\n".utf8)) }
+        }
+        if let failure {
+            let interruption: MigrationInterrupted?
+            if case AtomicMigration.MigrationError.actionFailed(let underlying) = failure {
+                interruption = underlying as? MigrationInterrupted
+            } else {
+                interruption = failure as? MigrationInterrupted
+            }
+            if let interruption {
+                let message = completed
+                    ? "Migration completed before the interruption was observed; files are fully migrated."
+                    : failure.localizedDescription
+                FileHandle.standardError.write(Data("\(message)\n".utf8))
+                throw ExitCode(interruption.exitCode)
+            }
+            throw failure
+        }
 
         print("Applied \(autoEntries.count) validated AUTO migration(s).")
         print("Run `pod install` to update the remaining CocoaPods integration, then run `pkglift verify`.")

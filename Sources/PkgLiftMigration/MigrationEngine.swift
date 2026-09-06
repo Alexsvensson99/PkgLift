@@ -39,14 +39,18 @@ public struct MigrationEngine: Sendable {
         }
     }
 
-    /// Applies a validated execution contract atomically across the Podfile and
-    /// `.xcodeproj` directory. No fallback decisions are made here.
+    /// Applies a validated contract with rollback across the Podfile and project.
+    /// Checkpoints run on the normal call stack, never in a signal handler.
     public func execute(
         prepared: PreparedMigration,
         podfileURL: URL,
         projectPath: String,
-        backupDir: URL
+        backupDir: URL,
+        checkCancellation: () throws -> Void = {},
+        checkpoint: (MigrationStage) throws -> Void = { _ in }
     ) throws {
+        try AtomicMigration.checkForIncompleteMigration(backupDir: backupDir)
+        try checkCancellation()
         let podfileEditor = PodfileEditor()
         let podfileContent = try String(contentsOf: podfileURL, encoding: .utf8)
         let podfileEdit = podfileEditor.removeWithResult(
@@ -62,25 +66,36 @@ public struct MigrationEngine: Sendable {
         let xcodeEditor = XcodeProjectEditor()
         try AtomicMigration().perform(
             files: [podfileURL, projectURL],
-            backupDir: backupDir
+            backupDir: backupDir,
+            checkCancellation: checkCancellation
         ) {
+            try checkpoint(.beforeMutation)
+            try checkCancellation()
             try podfileEdit.content.write(to: podfileURL, atomically: true, encoding: .utf8)
+            try checkpoint(.podfileWritten)
+            try checkCancellation()
 
-            for package in prepared.packagesToAdd {
+            for (index, package) in prepared.packagesToAdd.enumerated() {
+                try checkCancellation()
                 try xcodeEditor.addSwiftPMPackage(
                     repositoryURL: package.repositoryURL,
                     requirement: package.requirement,
                     to: projectPath
                 )
+                try checkpoint(.packageAdded(index))
+                try checkCancellation()
             }
 
-            for link in prepared.productsToLink {
+            for (index, link) in prepared.productsToLink.enumerated() {
+                try checkCancellation()
                 try xcodeEditor.linkSwiftPMProduct(
                     productName: link.productName,
                     toTarget: link.targetName,
                     repositoryURL: link.repositoryURL,
                     in: projectPath
                 )
+                try checkpoint(.productLinked(index))
+                try checkCancellation()
             }
         }
     }
@@ -91,4 +106,11 @@ public struct MigrationEngine: Sendable {
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(MigrationPlan.self, from: data)
     }
+}
+
+public enum MigrationStage: Sendable, Equatable {
+    case beforeMutation
+    case podfileWritten
+    case packageAdded(Int)
+    case productLinked(Int)
 }
