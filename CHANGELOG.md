@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - Unreleased
+
+PkgLift 0.6.1 — Interrupted migration recovery and rollback hardening.
+
+### Fixed
+- Restore the original Podfile and complete `.xcodeproj` when `migrate --apply`
+  observes SIGINT or SIGTERM before commit. After successful rollback, exit with
+  conventional status 130 or 143 respectively.
+- Attempt restoration of every original after a handled migration error; report
+  rollback failures separately and retain recovery state if restoration fails.
+- Detect incomplete migration state before parsing a potentially partial project
+  or permitting another apply, including with `--allow-dirty`.
+
+### Security
+- Reserve and synchronize a minimal transaction marker before preparing backups
+  or mutating originals. Unclean termination cannot run rollback; surviving
+  recovery state causes the next apply to fail closed.
+- Preserve the known-good backup of an incomplete migration. Only a backup with
+  a valid completed receipt matching the current migration context may be reused;
+  legacy, malformed, mismatched, or active recovery state is never overwritten.
+
+### Changed
+- Set the source version to `0.6.1`. Saved plans remain bound to the creating
+  PkgLift version and must be regenerated after upgrading.
+
 ## [0.6.0] - 2026-09-05
 
 Released as a signed and notarized [GitHub download](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.6.0)

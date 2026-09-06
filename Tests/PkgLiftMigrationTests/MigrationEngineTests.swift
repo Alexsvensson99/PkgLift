@@ -53,6 +53,87 @@ final class MigrationEngineTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: podfile), original)
         XCTAssertEqual(try String(contentsOf: projectMarker), "unchanged")
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("backup").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("migration-in-progress").path))
+    }
+
+    func testCancellationBeforeMutationCreatesNoRecoveryState() throws {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let podfile = root.appendingPathComponent("Podfile")
+        let content = "target 'App' do\n  pod 'Alamofire'\nend\n"
+        try content.write(to: podfile, atomically: true, encoding: .utf8)
+        XCTAssertThrowsError(try MigrationEngine().execute(
+            prepared: PreparedMigration(podsToRemove: ["Alamofire"], packagesToAdd: [], productsToLink: []),
+            podfileURL: podfile,
+            projectPath: root.appendingPathComponent("App.xcodeproj").path,
+            backupDir: root.appendingPathComponent("backup"),
+            checkCancellation: { throw CancellationError() }
+        )) { XCTAssertTrue($0 is CancellationError) }
+        XCTAssertEqual(try String(contentsOf: podfile, encoding: .utf8), content)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("backup").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("migration-in-progress").path))
+    }
+
+    func testXcodeEditErrorAfterPodfileWriteRestoresBothOriginals() throws {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let podfile = root.appendingPathComponent("Podfile")
+        let project = root.appendingPathComponent("App.xcodeproj")
+        let pbxproj = project.appendingPathComponent("project.pbxproj")
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: false)
+        let originalPodfile = Data("target 'App' do\n  pod 'Alamofire'\nend\n".utf8)
+        let originalProject = Data("invalid project causes a real Xcode editor error".utf8)
+        try originalPodfile.write(to: podfile)
+        try originalProject.write(to: pbxproj)
+        let prepared = PreparedMigration(
+            podsToRemove: ["Alamofire"],
+            packagesToAdd: [.init(repositoryURL: "https://github.com/Alamofire/Alamofire", requirement: .exact("5.0.0"))],
+            productsToLink: []
+        )
+        var observedPodfileWrite = false
+        XCTAssertThrowsError(try MigrationEngine().execute(
+            prepared: prepared,
+            podfileURL: podfile,
+            projectPath: project.path,
+            backupDir: root.appendingPathComponent("backup"),
+            checkpoint: { stage in
+                if stage == .podfileWritten {
+                    observedPodfileWrite = true
+                    XCTAssertNotEqual(try Data(contentsOf: podfile), originalPodfile)
+                }
+            }
+        )) { error in
+            guard case AtomicMigration.MigrationError.actionFailed(let underlying) = error else {
+                return XCTFail("Expected original editor error after rollback: \(error)")
+            }
+            XCTAssertFalse(underlying is CancellationError)
+        }
+        XCTAssertTrue(observedPodfileWrite)
+        XCTAssertEqual(try Data(contentsOf: podfile), originalPodfile)
+        XCTAssertEqual(try Data(contentsOf: pbxproj), originalProject)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("migration-in-progress").path))
+    }
+
+    func testExistingRecoveryStateIsRefusedBeforeReadingPartialPodfile() throws {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let marker = root.appendingPathComponent("migration-in-progress")
+        let markerData = Data("interrupted marker".utf8)
+        try markerData.write(to: marker)
+        let backup = root.appendingPathComponent("backup")
+        try FileManager.default.createDirectory(at: backup, withIntermediateDirectories: false)
+        let original = Data("known-good Podfile".utf8)
+        try original.write(to: backup.appendingPathComponent("Podfile"))
+        for _ in 0..<2 {
+            XCTAssertThrowsError(try MigrationEngine().execute(
+                prepared: PreparedMigration(podsToRemove: [], packagesToAdd: [], productsToLink: []),
+                podfileURL: root.appendingPathComponent("missing-Podfile"),
+                projectPath: root.appendingPathComponent("missing.xcodeproj").path,
+                backupDir: backup
+            )) { XCTAssertTrue($0.localizedDescription.lowercased().contains("incomplete")) }
+            XCTAssertEqual(try Data(contentsOf: marker), markerData)
+            XCTAssertEqual(try Data(contentsOf: backup.appendingPathComponent("Podfile")), original)
+        }
     }
 
     private func makePlan() -> MigrationPlan {
