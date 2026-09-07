@@ -87,6 +87,7 @@ let package = Package(
             name: "PkgLiftVerification",
             dependencies: [
                 "PkgLiftCore",
+                "PkgLiftCocoaPods",
                 "PkgLiftXcode",
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]

@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import PkgLiftCocoaPods
 
 /// Conservative Podfile modification
 public struct PodfileEditor: Sendable {
@@ -27,37 +28,30 @@ public struct PodfileEditor: Sendable {
     /// Removes only exact, statically declared pod lines and reports what was found.
     /// Target blocks and all unrelated Ruby are always preserved.
     public func removeWithResult(pods: Set<String>, from podfileContent: String) -> EditResult {
-        let lines = podfileContent.components(separatedBy: .newlines)
-        var newLines = [String]()
+        // Use the same declaration evidence as analysis. This preserves Ruby
+        // comments/data sections and recognizes every supported literal form.
+        let parsed = PodfileParser().parse(content: podfileContent)
+        var removedLines: Set<Int> = []
         var removedPods: Set<String> = []
-        
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            
-            if trimmed.hasPrefix("pod ") {
-                let podDeclaration = trimmed.dropFirst(4).trimmingCharacters(in: .whitespaces)
-                let firstQuoteIndex = podDeclaration.firstIndex(where: { $0 == "'" || $0 == "\"" })
-                
-                if let quote = firstQuoteIndex {
-                    let quoteChar = podDeclaration[quote]
-                    let afterFirstQuote = podDeclaration[podDeclaration.index(after: quote)...]
-                    if let secondQuote = afterFirstQuote.firstIndex(of: quoteChar) {
-                        let podName = String(afterFirstQuote[..<secondQuote])
-                        if pods.contains(podName) {
-                            removedPods.insert(podName)
-                            continue // Remove pod
-                        }
-                    }
-                }
-                
+        for dependency in parsed.directDependencies where pods.contains(dependency.name) {
+            guard dependency.source == .registry else { continue }
+            for declaration in dependency.declarations ?? [] {
+                removedLines.insert(declaration.line)
+                removedPods.insert(dependency.name)
             }
-            
-            newLines.append(line)
         }
-        
-        return EditResult(content: newLines.joined(separator: "\n"), removedPods: removedPods)
+        // Match the parser's physical LF lines, retaining CRLF and the final
+        // newline exactly on every untouched line.
+        let lines = podfileContent.unicodeScalars.split(
+            omittingEmptySubsequences: false, whereSeparator: { $0 == "\n" }
+        ).map(String.init)
+        let content = lines.enumerated()
+            .filter { !removedLines.contains($0.offset + 1) }
+            .map(\.element)
+            .joined(separator: "\n")
+        return EditResult(content: content, removedPods: removedPods)
     }
-    
+
     public func removeWithBackup(pods: Set<String>, podfile: URL, backupDir: URL) throws {
         let fm = FileManager.default
         if !fm.fileExists(atPath: backupDir.path) {

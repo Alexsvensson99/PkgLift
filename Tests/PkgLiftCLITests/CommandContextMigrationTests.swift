@@ -7,6 +7,32 @@ import PkgLiftXcode
 @testable import PkgLiftCLI
 
 final class CommandContextMigrationTests: XCTestCase {
+    func testMixedDeclarationFormsApplyAndVerifyWithoutSelectingBackupProject() async throws {
+        let original = "target 'App' do\n  pod 'Alamofire'\n  pod('Alamofire')\n  pod\t'Alamofire'\nend\n"
+        let fixture = try makeFixture(
+            podfile: original,
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let arguments = ["--path", fixture.root.path]
+        var plan = try PlanCommand.parse(arguments)
+        try await plan.run()
+        var apply = try MigrateCommand.parse(arguments + ["--apply"])
+        try await apply.run()
+        let podfile = fixture.root.appendingPathComponent("Podfile")
+        XCTAssertEqual(try String(contentsOf: podfile, encoding: .utf8), "target 'App' do\nend\n")
+        XCTAssertEqual(
+            try String(contentsOf: fixture.root.appendingPathComponent(".pkglift/backup/Podfile"), encoding: .utf8),
+            original
+        )
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fixture.root.appendingPathComponent(".pkglift/migration-in-progress").path))
+        var analyze = try AnalyzeCommand.parse(arguments)
+        try await analyze.run()
+        var verify = try VerifyCommand.parse(arguments)
+        try await verify.run()
+    }
+
     func testPlanDryRunApplyAndVerifyEndToEndInNonGitProject() async throws {
         let fixture = try makeFixture(
             podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",

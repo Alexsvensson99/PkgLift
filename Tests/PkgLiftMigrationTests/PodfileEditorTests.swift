@@ -7,6 +7,39 @@ import XCTest
 @testable import PkgLiftMigration
 
 final class PodfileEditorTests: XCTestCase {
+    func testRemovesAllSupportedFormsAndPreservesCommentsDataAndCRLF() {
+        let original = """
+        # pod 'Alamofire' is mentioned in a comment
+        =begin
+        pod 'Alamofire'
+        =end
+        target 'App' do
+          pod 'Alamofire'
+          pod('Alamofire')
+          pod\t'Alamofire' # actual declaration
+          pod 'SnapKit'
+        end
+        __END__
+        pod 'Alamofire'
+
+        """.replacingOccurrences(of: "\n", with: "\r\n")
+        let expected = """
+        # pod 'Alamofire' is mentioned in a comment
+        =begin
+        pod 'Alamofire'
+        =end
+        target 'App' do
+          pod 'SnapKit'
+        end
+        __END__
+        pod 'Alamofire'
+
+        """.replacingOccurrences(of: "\n", with: "\r\n")
+        let result = PodfileEditor().removeWithResult(pods: ["Alamofire"], from: original)
+        XCTAssertEqual(result.content, expected)
+        XCTAssertEqual(result.removedPods, ["Alamofire"])
+    }
+
     func testRemoveSinglePod() {
         let editor = PodfileEditor()
         let podfile = """

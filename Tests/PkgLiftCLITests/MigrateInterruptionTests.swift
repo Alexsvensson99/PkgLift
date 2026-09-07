@@ -13,6 +13,7 @@ final class MigrateInterruptionTests: XCTestCase {
     private static let helperProjectEnvironment = "PKGLIFT_TEST_INTERRUPT_PROJECT"
     private static let helperStageEnvironment = "PKGLIFT_TEST_INTERRUPT_STAGE"
     private static let helperSignalEnvironment = "PKGLIFT_TEST_INTERRUPT_SIGNAL"
+    private static let beforeSignalRestoreStage = "beforeSignalRestore"
 
     func testSIGINTAfterPodfileWriteRollsBackAndPreservesBackup() async throws {
         try await assertInterruptedMigrationRollsBack(stage: .podfileWritten, signal: SIGINT)
@@ -22,12 +23,28 @@ final class MigrateInterruptionTests: XCTestCase {
         try await assertInterruptedMigrationRollsBack(stage: .packageAdded(0), signal: SIGINT)
     }
 
+    func testSIGINTAfterProductLinkRollsBackAndPreservesBackup() async throws {
+        try await assertInterruptedMigrationRollsBack(stage: .productLinked(0), signal: SIGINT)
+    }
+
     func testSIGTERMAfterPodfileWriteRollsBackAndPreservesBackup() async throws {
         try await assertInterruptedMigrationRollsBack(stage: .podfileWritten, signal: SIGTERM)
     }
 
     func testSIGTERMAfterPackageAddRollsBackAndPreservesBackup() async throws {
         try await assertInterruptedMigrationRollsBack(stage: .packageAdded(0), signal: SIGTERM)
+    }
+
+    func testSIGTERMAfterProductLinkRollsBackAndPreservesBackup() async throws {
+        try await assertInterruptedMigrationRollsBack(stage: .productLinked(0), signal: SIGTERM)
+    }
+
+    func testSIGINTAfterCompletedMigrationBeforeHandlerRestoreExits130WithFullyMigratedFiles() async throws {
+        try await assertLateSignalLeavesCompletedMigration(signal: SIGINT)
+    }
+
+    func testSIGTERMAfterCompletedMigrationBeforeHandlerRestoreExits143WithFullyMigratedFiles() async throws {
+        try await assertLateSignalLeavesCompletedMigration(signal: SIGTERM)
     }
 
     func testSIGKILLLeavesRecoveryMarkerAndBackupThatRefusesAnotherApply() async throws {
@@ -53,7 +70,7 @@ final class MigrateInterruptionTests: XCTestCase {
             signal: SIGKILL,
             expectsRegularExit: false
         )
-        XCTAssertEqual(terminationStatus, SIGKILL)
+        XCTAssertEqual(terminationStatus.terminationStatus, SIGKILL)
 
         let stateDirectory = fixture.root.appendingPathComponent(".pkglift", isDirectory: true)
         let marker = stateDirectory.appendingPathComponent("migration-in-progress")
@@ -110,16 +127,32 @@ final class MigrateInterruptionTests: XCTestCase {
                 "--apply",
                 "--allow-dirty",
             ])
-            try await command.run(checkpoint: { stage in
-                guard Self.matches(stage, configuredAs: stageName) else { return }
-                guard Darwin.raise(signal) == 0 else {
-                    Darwin.exit(1)
+            try await command.run(
+                checkpoint: { stage in
+                    guard Self.matches(stage, configuredAs: stageName) else { return }
+                    guard Darwin.raise(signal) == 0 else {
+                        Darwin.exit(1)
+                    }
+                },
+                beforeSignalRestore: { signals in
+                    guard stageName == Self.beforeSignalRestoreStage else { return }
+                    guard Self.raiseSynchronously(signal) else {
+                        Darwin.exit(1)
+                    }
+                    let capturedSignal = signals.capturedInterruption()?.signal ?? 0
+                    guard capturedSignal == signal else {
+                        Self.writeChildDiagnostic(
+                            "handler did not capture signal: expected=\(signal) captured=\(capturedSignal)"
+                        )
+                        Darwin.exit(1)
+                    }
                 }
-            })
+            )
             Darwin.exit(1)
         } catch let exitCode as ExitCode {
             Darwin.exit(exitCode.rawValue)
         } catch {
+            Self.writeChildDiagnostic("unexpected child error: \(String(reflecting: error))")
             Darwin.exit(1)
         }
     }
@@ -202,7 +235,12 @@ final class MigrateInterruptionTests: XCTestCase {
             stage: stage,
             signal: signal
         )
-        XCTAssertEqual(terminationStatus, signal == SIGINT ? 130 : 143, file: file, line: line)
+        XCTAssertEqual(
+            terminationStatus.terminationStatus,
+            signal == SIGINT ? 130 : 143,
+            file: file,
+            line: line
+        )
         XCTAssertEqual(try Data(contentsOf: podfile), originalPodfile, file: file, line: line)
         XCTAssertEqual(
             try regularFileContents(beneath: fixture.project),
@@ -226,12 +264,89 @@ final class MigrateInterruptionTests: XCTestCase {
         )
     }
 
+    private func assertLateSignalLeavesCompletedMigration(
+        signal: Int32,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        try await writePlan(for: fixture)
+
+        let result = try runChildProcess(
+            fixture: fixture,
+            stageName: Self.beforeSignalRestoreStage,
+            signal: signal
+        )
+        XCTAssertEqual(
+            result.terminationStatus,
+            signal == SIGINT ? 130 : 143,
+            file: file,
+            line: line
+        )
+        XCTAssertTrue(
+            result.standardError.contains(
+                "Migration completed before the interruption was observed; files are fully migrated."
+            ),
+            "Expected the terminal fully-migrated message, got: \(result.standardError)",
+            file: file,
+            line: line
+        )
+
+        let podfile = try String(
+            contentsOf: fixture.root.appendingPathComponent("Podfile"),
+            encoding: .utf8
+        )
+        XCTAssertFalse(podfile.contains("pod 'Alamofire'"), file: file, line: line)
+
+        let migratedProject = try XcodeProj(pathString: fixture.project.path)
+        let rootProject = try XCTUnwrap(try migratedProject.pbxproj.rootProject(), file: file, line: line)
+        let target = try XCTUnwrap(
+            migratedProject.pbxproj.nativeTargets.first { $0.name == "App" },
+            file: file,
+            line: line
+        )
+        let frameworks = try XCTUnwrap(try target.frameworksBuildPhase(), file: file, line: line)
+        XCTAssertEqual(rootProject.remotePackages.count, 1, file: file, line: line)
+        XCTAssertEqual(target.packageProductDependencies?.count, 1, file: file, line: line)
+        XCTAssertEqual(frameworks.files?.count, 1, file: file, line: line)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.root
+                    .appendingPathComponent(".pkglift", isDirectory: true)
+                    .appendingPathComponent("migration-in-progress")
+                    .path
+            ),
+            file: file,
+            line: line
+        )
+    }
+
+    private struct ChildProcessResult {
+        let terminationStatus: Int32
+        let standardError: String
+    }
+
     private func runChildProcess(
         fixture: (root: URL, project: URL),
         stage: MigrationStage,
         signal: Int32,
         expectsRegularExit: Bool = true
-    ) throws -> Int32 {
+    ) throws -> ChildProcessResult {
+        try runChildProcess(
+            fixture: fixture,
+            stageName: Self.name(for: stage),
+            signal: signal,
+            expectsRegularExit: expectsRegularExit
+        )
+    }
+
+    private func runChildProcess(
+        fixture: (root: URL, project: URL),
+        stageName: String,
+        signal: Int32,
+        expectsRegularExit: Bool = true
+    ) throws -> ChildProcessResult {
         let process = Process()
         process.executableURL = try xctestExecutableURL()
         process.arguments = [
@@ -242,11 +357,12 @@ final class MigrateInterruptionTests: XCTestCase {
         var environment = ProcessInfo.processInfo.environment
         environment[Self.helperRootEnvironment] = fixture.root.path
         environment[Self.helperProjectEnvironment] = fixture.project.path
-        environment[Self.helperStageEnvironment] = Self.name(for: stage)
+        environment[Self.helperStageEnvironment] = stageName
         environment[Self.helperSignalEnvironment] = String(signal)
         process.environment = environment
         process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
+        let standardError = Pipe()
+        process.standardError = standardError
         let finished = DispatchSemaphore(value: 0)
         process.terminationHandler = { _ in finished.signal() }
         try process.run()
@@ -254,13 +370,20 @@ final class MigrateInterruptionTests: XCTestCase {
             _ = Darwin.kill(process.processIdentifier, SIGKILL)
             process.waitUntilExit()
             XCTFail("Interrupted migration child process did not exit within 10 seconds")
-            return -1
+            return ChildProcessResult(terminationStatus: -1, standardError: "")
         }
         XCTAssertEqual(
             process.terminationReason,
             expectsRegularExit ? .exit : .uncaughtSignal
         )
-        return process.terminationStatus
+        let errorText = String(
+            data: standardError.fileHandleForReading.readDataToEndOfFile(),
+            encoding: .utf8
+        ) ?? ""
+        return ChildProcessResult(
+            terminationStatus: process.terminationStatus,
+            standardError: errorText
+        )
     }
 
     private func xctestExecutableURL() throws -> URL {
@@ -287,6 +410,52 @@ final class MigrateInterruptionTests: XCTestCase {
 
     private static func matches(_ stage: MigrationStage, configuredAs name: String) -> Bool {
         name == Self.name(for: stage)
+    }
+
+    private static func raiseSynchronously(_ signal: Int32) -> Bool {
+        // Darwin rejects pthread_kill on Swift's executor workers. Use a
+        // dedicated thread and rendezvous after delivery, without a timing race.
+        let finished = DispatchSemaphore(value: 0)
+        let worker = Thread {
+            guard sendSignalFromCurrentThread(signal) else {
+                Darwin.exit(1)
+            }
+            finished.signal()
+        }
+        worker.start()
+        guard finished.wait(timeout: .now() + 5) == .success else {
+            writeChildDiagnostic("dedicated signal thread did not finish")
+            return false
+        }
+        return true
+    }
+
+    private static func sendSignalFromCurrentThread(_ signal: Int32) -> Bool {
+        var signalSet = sigset_t()
+        let emptyResult = sigemptyset(&signalSet)
+        let addResult = sigaddset(&signalSet, signal)
+        guard emptyResult == 0, addResult == 0 else {
+            writeChildDiagnostic("signal-set setup failed: empty=\(emptyResult) add=\(addResult)")
+            return false
+        }
+
+        var previousMask = sigset_t()
+        let unblockResult = pthread_sigmask(SIG_UNBLOCK, &signalSet, &previousMask)
+        guard unblockResult == 0 else {
+            writeChildDiagnostic("signal unblock failed: \(unblockResult)")
+            return false
+        }
+        let raiseResult = pthread_kill(pthread_self(), signal)
+        let restoreResult = pthread_sigmask(SIG_SETMASK, &previousMask, nil)
+        guard raiseResult == 0, restoreResult == 0 else {
+            writeChildDiagnostic("signal delivery failed: kill=\(raiseResult) restore=\(restoreResult)")
+            return false
+        }
+        return true
+    }
+
+    private static func writeChildDiagnostic(_ message: String) {
+        FileHandle.standardError.write(Data("PKGLIFT signal-test diagnostic: \(message)\n".utf8))
     }
 
     private static func name(for stage: MigrationStage) -> String {

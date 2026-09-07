@@ -11,9 +11,13 @@ final class MigrationSignals {
     }
 
     func checkCancellation() throws {
-        let signal = pkglift_signals_received()
-        if signal != 0 { throw MigrationInterrupted(signal: signal) }
+        if let interruption = capturedInterruption() { throw interruption }
         try Task.checkCancellation()
+    }
+
+    func capturedInterruption() -> MigrationInterrupted? {
+        let signal = pkglift_signals_received()
+        return signal == 0 ? nil : MigrationInterrupted(signal: signal)
     }
 
     func restore() throws {
