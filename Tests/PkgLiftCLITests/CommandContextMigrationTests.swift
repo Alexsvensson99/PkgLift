@@ -1,3 +1,5 @@
+import Darwin
+import Dispatch
 import Foundation
 import PathKit
 import XCTest
@@ -7,6 +9,25 @@ import PkgLiftXcode
 @testable import PkgLiftCLI
 
 final class CommandContextMigrationTests: XCTestCase {
+    private static let childApplyArgumentsEnvironment = "PKGLIFT_TEST_APPLY_ARGUMENTS_JSON"
+
+    /// This is deliberately a normal no-op in the suite. Parent cases select
+    /// it explicitly in a fresh XCTest process so each successful apply owns
+    /// its signal handlers for the lifetime of that process.
+    func testChildProcessRunsConfiguredApply() async throws {
+        guard let encodedArguments = ProcessInfo.processInfo.environment[
+            Self.childApplyArgumentsEnvironment
+        ], let arguments = try? JSONDecoder().decode(
+            [String].self,
+            from: Data(encodedArguments.utf8)
+        ) else {
+            return
+        }
+
+        var command = try MigrateCommand.parse(arguments)
+        try await command.run()
+    }
+
     func testMixedDeclarationFormsApplyAndVerifyWithoutSelectingBackupProject() async throws {
         let original = "target 'App' do\n  pod 'Alamofire'\n  pod('Alamofire')\n  pod\t'Alamofire'\nend\n"
         let fixture = try makeFixture(
@@ -18,8 +39,7 @@ final class CommandContextMigrationTests: XCTestCase {
         let arguments = ["--path", fixture.root.path]
         var plan = try PlanCommand.parse(arguments)
         try await plan.run()
-        var apply = try MigrateCommand.parse(arguments + ["--apply"])
-        try await apply.run()
+        try runApplyInFreshXCTestProcess(arguments + ["--apply"])
         let podfile = fixture.root.appendingPathComponent("Podfile")
         XCTAssertEqual(try String(contentsOf: podfile, encoding: .utf8), "target 'App' do\nend\n")
         XCTAssertEqual(
@@ -54,8 +74,7 @@ final class CommandContextMigrationTests: XCTestCase {
         try await dryRun.run()
         XCTAssertEqual(try String(contentsOf: podfile), beforeDryRun)
 
-        var apply = try MigrateCommand.parse(arguments + ["--apply"])
-        try await apply.run()
+        try runApplyInFreshXCTestProcess(arguments + ["--apply"])
         XCTAssertFalse(try String(contentsOf: podfile).contains("pod 'Alamofire'"))
         let analysis = try XcodeProjectAnalyzer().analyzeProject(at: fixture.project.path)
         XCTAssertEqual(analysis.swiftPMState.packages.count, 1)
@@ -127,8 +146,7 @@ final class CommandContextMigrationTests: XCTestCase {
         }
         XCTAssertEqual(try String(contentsOf: podfile), beforeRefusal)
 
-        var allowed = try MigrateCommand.parse(arguments + ["--apply", "--allow-dirty"])
-        try await allowed.run()
+        try runApplyInFreshXCTestProcess(arguments + ["--apply", "--allow-dirty"])
         XCTAssertFalse(try String(contentsOf: podfile).contains("pod 'Alamofire'"))
     }
 
@@ -767,6 +785,76 @@ final class CommandContextMigrationTests: XCTestCase {
             ) ?? ""
             XCTFail("git failed: \(detail)")
         }
+    }
+
+    private func runApplyInFreshXCTestProcess(_ arguments: [String]) throws {
+        let process = Process()
+        process.executableURL = try xctestExecutableURL()
+        process.arguments = [
+            "-XCTest",
+            "PkgLiftCLITests.CommandContextMigrationTests/testChildProcessRunsConfiguredApply",
+            Bundle(for: CommandContextMigrationTests.self).bundleURL.path,
+        ]
+        var environment = ProcessInfo.processInfo.environment
+        let encodedArguments = try JSONEncoder().encode(arguments)
+        environment[Self.childApplyArgumentsEnvironment] = String(decoding: encodedArguments, as: UTF8.self)
+        process.environment = environment
+        process.standardOutput = FileHandle.nullDevice
+        let standardError = Pipe()
+        process.standardError = standardError
+
+        let finished = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in finished.signal() }
+        try process.run()
+        guard finished.wait(timeout: .now() + 15) == .success else {
+            _ = Darwin.kill(process.processIdentifier, SIGKILL)
+            process.waitUntilExit()
+            let errorText = String(
+                data: standardError.fileHandleForReading.readDataToEndOfFile(),
+                encoding: .utf8
+            ) ?? ""
+            XCTFail("Apply child process did not exit within 15 seconds. stderr: \(errorText)")
+            return
+        }
+
+        let errorText = String(
+            data: standardError.fileHandleForReading.readDataToEndOfFile(),
+            encoding: .utf8
+        ) ?? ""
+        XCTAssertEqual(
+            process.terminationReason,
+            .exit,
+            "Apply child process terminated unexpectedly. stderr: \(errorText)"
+        )
+        XCTAssertEqual(
+            process.terminationStatus,
+            0,
+            "Apply child process failed. stderr: \(errorText)"
+        )
+        // XCTest itself writes its normal suite progress to stderr. A failed
+        // command is reported by the child test and its nonzero exit status.
+    }
+
+    private func xctestExecutableURL() throws -> URL {
+        let lookup = Process()
+        lookup.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+        lookup.arguments = ["--find", "xctest"]
+        let output = Pipe()
+        lookup.standardOutput = output
+        lookup.standardError = FileHandle.nullDevice
+        try lookup.run()
+        lookup.waitUntilExit()
+        guard lookup.terminationStatus == 0 else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+        let path = String(
+            data: output.fileHandleForReading.readDataToEndOfFile(),
+            encoding: .utf8
+        )?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !path.isEmpty else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+        return URL(fileURLWithPath: path)
     }
 
     private func normalizedJSON<T: Encodable>(_ value: T) throws -> Data {

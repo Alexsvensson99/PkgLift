@@ -18,9 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before migration commit so failed removal follows normal rollback.
 - Exclude `.pkglift` recovery projects and workspaces from automatic project
   discovery, keeping `analyze` and `verify` usable after a successful apply.
-- Preserve SIGINT/SIGTERM captured during the final handoff back to normal signal
-  handlers, returning 130/143 even when migration has already completed. Existing
-  migration and rollback errors continue to take precedence.
+- Atomically finalize SIGINT/SIGTERM handling, including handlers delayed on
+  another thread until after migration completion. Return 130/143 without relying
+  on a final unsynchronized flag snapshot. Preserve existing migration, rollback
+  and signal-restoration errors, and refuse signal-owner reuse within one process.
 
 ### Changed
 - Set the source version to `0.6.2`. Saved plans remain version-bound and must be

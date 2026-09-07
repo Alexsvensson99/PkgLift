@@ -25,11 +25,19 @@ another apply when recovery state remains.
 
 ## Signals at completion
 
-A SIGINT or SIGTERM captured after the last migration checkpoint but before
-normal signal handlers are restored is no longer discarded. The command returns
-130 or 143 and explains when the files were already fully migrated. Existing
-migration/rollback errors retain precedence. This does not extend the rollback
-boundary beyond terminal commit or change the documented SIGKILL/crash limits.
+Signal completion now uses an atomic terminal outcome. A signal recorded before
+closure returns 130 or 143 through the normal CLI path. A handler delayed on
+another thread until after successful closure exits with the same conventional
+status directly, without depending on another Swift flag check. Concurrent late
+signals use the first terminal signal's status. This direct path may omit the
+detailed interruption message.
+
+Existing migration, rollback and signal-restoration errors retain precedence.
+The late-exit path is armed only after successful migration and restoration of
+both previous signal dispositions. Ownership is one-shot per CLI process to
+prevent delayed handlers from affecting a later installation. Separate CLI
+invocations continue to work normally. This does not extend rollback beyond
+terminal commit or change the documented SIGKILL/crash limits.
 
 ## Compatibility and release status
 

@@ -6,6 +6,7 @@ import PathKit
 import XCTest
 import XcodeProj
 import PkgLiftMigration
+import PkgLiftSignalTestSupport
 @testable import PkgLiftCLI
 
 final class MigrateInterruptionTests: XCTestCase {
@@ -14,6 +15,9 @@ final class MigrateInterruptionTests: XCTestCase {
     private static let helperStageEnvironment = "PKGLIFT_TEST_INTERRUPT_STAGE"
     private static let helperSignalEnvironment = "PKGLIFT_TEST_INTERRUPT_SIGNAL"
     private static let beforeSignalRestoreStage = "beforeSignalRestore"
+    private static let delayedHandlerAfterRestoreStage = "delayedHandlerAfterRestore"
+    private static let delayedHandlerWithPriorFailureStage = "delayedHandlerWithPriorFailure"
+    private static let reinstallAfterFinishStage = "reinstallAfterFinish"
 
     func testSIGINTAfterPodfileWriteRollsBackAndPreservesBackup() async throws {
         try await assertInterruptedMigrationRollsBack(stage: .podfileWritten, signal: SIGINT)
@@ -45,6 +49,61 @@ final class MigrateInterruptionTests: XCTestCase {
 
     func testSIGTERMAfterCompletedMigrationBeforeHandlerRestoreExits143WithFullyMigratedFiles() async throws {
         try await assertLateSignalLeavesCompletedMigration(signal: SIGTERM)
+    }
+
+    func testDelayedSIGINTHandlerAfterRestoreExits130WithFullyMigratedFiles() async throws {
+        try await assertDelayedHandlerLeavesCompletedMigration(signal: SIGINT)
+    }
+
+    func testDelayedSIGTERMHandlerAfterRestoreExits143WithFullyMigratedFiles() async throws {
+        try await assertDelayedHandlerLeavesCompletedMigration(signal: SIGTERM)
+    }
+
+    func testDelayedSIGTERMAfterEarlierMigrationFailurePreservesOriginalFailureAndRollback() async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        try await writePlan(for: fixture)
+
+        let originalPodfile = try Data(contentsOf: fixture.root.appendingPathComponent("Podfile"))
+        let originalProject = try regularFileContents(beneath: fixture.project)
+        let result = try runChildProcess(
+            fixture: fixture,
+            stageName: Self.delayedHandlerWithPriorFailureStage,
+            signal: SIGTERM
+        )
+
+        XCTAssertEqual(result.terminationStatus, 1)
+        XCTAssertTrue(
+            result.standardError.contains(ChildInjectedFailure.message),
+            "Expected the original failure diagnostic, got: \(result.standardError)"
+        )
+        XCTAssertEqual(
+            try Data(contentsOf: fixture.root.appendingPathComponent("Podfile")),
+            originalPodfile
+        )
+        XCTAssertEqual(try regularFileContents(beneath: fixture.project), originalProject)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.root.appendingPathComponent(".pkglift/migration-in-progress").path
+            )
+        )
+    }
+
+    func testSignalHandlerOwnershipCannotBeReinstalledInSameProcess() async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        try await writePlan(for: fixture)
+
+        let result = try runChildProcess(
+            fixture: fixture,
+            stageName: Self.reinstallAfterFinishStage,
+            signal: SIGINT
+        )
+        XCTAssertEqual(result.terminationStatus, 0)
+        XCTAssertTrue(
+            result.standardError.contains("reinstall refused with EALREADY"),
+            "Expected typed one-shot ownership refusal, got: \(result.standardError)"
+        )
     }
 
     func testSIGKILLLeavesRecoveryMarkerAndBackupThatRefusesAnotherApply() async throws {
@@ -129,30 +188,71 @@ final class MigrateInterruptionTests: XCTestCase {
             ])
             try await command.run(
                 checkpoint: { stage in
+                    if stageName == Self.delayedHandlerWithPriorFailureStage,
+                       stage == .podfileWritten {
+                        throw ChildInjectedFailure()
+                    }
                     guard Self.matches(stage, configuredAs: stageName) else { return }
                     guard Darwin.raise(signal) == 0 else {
                         Darwin.exit(1)
                     }
                 },
                 beforeSignalRestore: { signals in
-                    guard stageName == Self.beforeSignalRestoreStage else { return }
-                    guard Self.raiseSynchronously(signal) else {
-                        Darwin.exit(1)
+                    if stageName == Self.beforeSignalRestoreStage {
+                        guard Self.raiseSynchronously(signal) else {
+                            Darwin.exit(1)
+                        }
+                        let capturedSignal = signals.capturedInterruption()?.signal ?? 0
+                        guard capturedSignal == signal else {
+                            Self.writeChildDiagnostic(
+                                "handler did not capture signal: expected=\(signal) captured=\(capturedSignal)"
+                            )
+                            Darwin.exit(1)
+                        }
+                    } else if Self.isDelayedHandlerStage(stageName) {
+                        Self.startDelayedSignal(signal)
                     }
-                    let capturedSignal = signals.capturedInterruption()?.signal ?? 0
-                    guard capturedSignal == signal else {
-                        Self.writeChildDiagnostic(
-                            "handler did not capture signal: expected=\(signal) captured=\(capturedSignal)"
-                        )
-                        Darwin.exit(1)
+                },
+                afterSignalRestore: {
+                    if Self.isDelayedHandlerStage(stageName) {
+                        Self.releaseDelayedSignalAndWait()
+                    }
+                    if stageName == Self.reinstallAfterFinishStage {
+                        do {
+                            _ = try MigrationSignals()
+                            Self.writeChildDiagnostic("signal handlers unexpectedly reinstalled")
+                            Darwin.exit(1)
+                        } catch MigrationSignals.SignalError.installationFailed(let code)
+                            where code == EALREADY {
+                            Self.writeChildDiagnostic("reinstall refused with EALREADY")
+                            Darwin.exit(0)
+                        } catch {
+                            Self.writeChildDiagnostic(
+                                "unexpected reinstallation error: \(String(reflecting: error))"
+                            )
+                            Darwin.exit(1)
+                        }
                     }
                 }
             )
             Darwin.exit(1)
         } catch let exitCode as ExitCode {
             Darwin.exit(exitCode.rawValue)
+        } catch AtomicMigration.MigrationError.actionFailed(let underlyingError) {
+            if let injectedFailure = underlyingError as? ChildInjectedFailure {
+                Self.writeChildDiagnostic(
+                    "preserved typed failure: \(injectedFailure.localizedDescription)"
+                )
+            } else {
+                Self.writeChildDiagnostic(
+                    "unexpected action failure: \(String(reflecting: underlyingError))"
+                )
+            }
+            Darwin.exit(1)
         } catch {
-            Self.writeChildDiagnostic("unexpected child error: \(String(reflecting: error))")
+            Self.writeChildDiagnostic(
+                "unexpected child error: \(error.localizedDescription) [\(String(reflecting: error))]"
+            )
             Darwin.exit(1)
         }
     }
@@ -269,13 +369,43 @@ final class MigrateInterruptionTests: XCTestCase {
         file: StaticString = #filePath,
         line: UInt = #line
     ) async throws {
+        try await assertSignalLeavesCompletedMigration(
+            signal: signal,
+            stageName: Self.beforeSignalRestoreStage,
+            expectsSwiftMessage: true,
+            file: file,
+            line: line
+        )
+    }
+
+    private func assertDelayedHandlerLeavesCompletedMigration(
+        signal: Int32,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async throws {
+        try await assertSignalLeavesCompletedMigration(
+            signal: signal,
+            stageName: Self.delayedHandlerAfterRestoreStage,
+            expectsSwiftMessage: false,
+            file: file,
+            line: line
+        )
+    }
+
+    private func assertSignalLeavesCompletedMigration(
+        signal: Int32,
+        stageName: String,
+        expectsSwiftMessage: Bool,
+        file: StaticString,
+        line: UInt
+    ) async throws {
         let fixture = try makeFixture()
         defer { try? FileManager.default.removeItem(at: fixture.root) }
         try await writePlan(for: fixture)
 
         let result = try runChildProcess(
             fixture: fixture,
-            stageName: Self.beforeSignalRestoreStage,
+            stageName: stageName,
             signal: signal
         )
         XCTAssertEqual(
@@ -284,14 +414,16 @@ final class MigrateInterruptionTests: XCTestCase {
             file: file,
             line: line
         )
-        XCTAssertTrue(
-            result.standardError.contains(
-                "Migration completed before the interruption was observed; files are fully migrated."
-            ),
-            "Expected the terminal fully-migrated message, got: \(result.standardError)",
-            file: file,
-            line: line
-        )
+        if expectsSwiftMessage {
+            XCTAssertTrue(
+                result.standardError.contains(
+                    "Migration completed before the interruption was observed; files are fully migrated."
+                ),
+                "Expected the terminal fully-migrated message, got: \(result.standardError)",
+                file: file,
+                line: line
+            )
+        }
 
         let podfile = try String(
             contentsOf: fixture.root.appendingPathComponent("Podfile"),
@@ -325,6 +457,12 @@ final class MigrateInterruptionTests: XCTestCase {
     private struct ChildProcessResult {
         let terminationStatus: Int32
         let standardError: String
+    }
+
+    private struct ChildInjectedFailure: LocalizedError {
+        static let message = "injected prior migration failure"
+
+        var errorDescription: String? { Self.message }
     }
 
     private func runChildProcess(
@@ -410,6 +548,40 @@ final class MigrateInterruptionTests: XCTestCase {
 
     private static func matches(_ stage: MigrationStage, configuredAs name: String) -> Bool {
         name == Self.name(for: stage)
+    }
+
+    private static func isDelayedHandlerStage(_ stageName: String) -> Bool {
+        stageName == delayedHandlerAfterRestoreStage ||
+            stageName == delayedHandlerWithPriorFailureStage
+    }
+
+    private static func startDelayedSignal(_ signal: Int32) {
+        let installResult = pkglift_test_delayed_signal_install(signal)
+        guard installResult == 0 else {
+            writeChildDiagnostic("delayed-handler install failed: \(installResult)")
+            Darwin.exit(1)
+        }
+
+        let worker = Thread {
+            guard sendSignalFromCurrentThread(signal) else {
+                Darwin.exit(1)
+            }
+        }
+        worker.start()
+
+        let enteredResult = pkglift_test_delayed_signal_wait_until_entered()
+        guard enteredResult == 0 else {
+            writeChildDiagnostic("delayed handler did not enter: \(enteredResult)")
+            Darwin.exit(1)
+        }
+    }
+
+    private static func releaseDelayedSignalAndWait() {
+        let result = pkglift_test_delayed_signal_release_and_wait()
+        guard result == 0 else {
+            writeChildDiagnostic("delayed handler did not complete: \(result)")
+            Darwin.exit(1)
+        }
     }
 
     private static func raiseSynchronously(_ signal: Int32) -> Bool {
