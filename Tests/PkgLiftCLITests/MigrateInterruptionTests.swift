@@ -193,7 +193,12 @@ final class MigrateInterruptionTests: XCTestCase {
                         throw ChildInjectedFailure()
                     }
                     guard Self.matches(stage, configuredAs: stageName) else { return }
-                    guard Darwin.raise(signal) == 0 else {
+                    // SIGKILL cannot be handled. For handled signals, wait for
+                    // capture before the engine advances to its next checkpoint.
+                    let delivered = signal == SIGKILL
+                        ? Darwin.raise(signal) == 0
+                        : Self.raiseSynchronously(signal)
+                    guard delivered else {
                         Darwin.exit(1)
                     }
                 },
