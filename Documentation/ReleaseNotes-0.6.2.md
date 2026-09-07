@@ -45,6 +45,6 @@ The source version is `0.6.2`. Generate migration plans again after upgrading;
 plans remain bound to the version that created them. No classification or registry
 mapping has been broadened, and there is no new recovery command.
 
-This document describes a locally prepared patch. Public release, signed and
-notarized assets, and a Homebrew update require their existing release gates.
-No release manifest is created as part of product preparation.
+The product changes are merged and verified. Signed and notarized distribution
+assets, public release, and a Homebrew update remain subject to the existing
+release gates. No release manifest is included in product preparation.
