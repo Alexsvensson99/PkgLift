@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - Unreleased
+
+### Fixed
+- Use the analysis parser's declaration evidence when removing CocoaPods entries,
+  including parenthesized calls, tab separators and repeated declarations. Preserve
+  comments, Ruby data sections and untouched line endings.
+- Verify remaining Podfile declarations with the same parser, and fail verification
+  when unsupported Ruby prevents proving removal. Check the actual written Podfile
+  before migration commit so failed removal follows normal rollback.
+- Exclude `.pkglift` recovery projects and workspaces from automatic project
+  discovery, keeping `analyze` and `verify` usable after a successful apply.
+- Atomically finalize SIGINT/SIGTERM handling, including handlers delayed on
+  another thread until after migration completion. Return 130/143 without relying
+  on a final unsynchronized flag snapshot. Preserve existing migration, rollback
+  and signal-restoration errors, and refuse signal-owner reuse within one process.
+
+### Changed
+- Set the source version to `0.6.2`. Saved plans remain version-bound and must be
+  regenerated after upgrading. Migration eligibility and `AUTO` rules are unchanged.
+
 ## [0.6.1] - 2026-09-06
 
 PkgLift 0.6.1 — Interrupted migration recovery and rollback hardening.

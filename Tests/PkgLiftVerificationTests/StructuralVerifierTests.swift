@@ -7,6 +7,41 @@ import PkgLiftXcode
 @testable import PkgLiftVerification
 
 final class StructuralVerifierTests: XCTestCase {
+    func testRemainingSupportedPodFormsFailVerification() throws {
+        let fixture = try makeProjectFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let podfile = fixture.root.appendingPathComponent("Podfile")
+        for declaration in ["pod('Alamofire')", "pod\t'Alamofire'", "pod 'Alamofire' # still present"] {
+            try "target 'App' do\n  \(declaration)\nend\n".write(
+                to: podfile, atomically: true, encoding: .utf8
+            )
+            let result = StructuralVerifier().verify(
+                projectPath: fixture.project.path,
+                migratedPods: ["Alamofire"],
+                podfilePath: podfile.path
+            )
+            XCTAssertFalse(result.passed, declaration)
+            XCTAssertEqual(result.checks.first { $0.name == "pod_removed_Alamofire" }?.passed, false)
+        }
+    }
+
+    func testDynamicPodfileCannotProveRemoval() throws {
+        let fixture = try makeProjectFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let podfile = fixture.root.appendingPathComponent("Podfile")
+        try "target 'App' do\n  pod selected_pod\nend\n".write(
+            to: podfile, atomically: true, encoding: .utf8
+        )
+        let result = StructuralVerifier().verify(
+            projectPath: fixture.project.path,
+            migratedPods: ["Alamofire"],
+            podfilePath: podfile.path
+        )
+        XCTAssertFalse(result.passed)
+        XCTAssertEqual(result.checks.first { $0.name == "podfile_declarations_verifiable" }?.passed, false)
+        XCTAssertEqual(result.checks.first { $0.name == "pod_removed_Alamofire" }?.passed, false)
+    }
+
     func testVerifiesExactPackageProductTargetAndIgnoresCommentedPod() throws {
         let fixture = try makeProjectFixture()
         defer { try? FileManager.default.removeItem(at: fixture.root) }

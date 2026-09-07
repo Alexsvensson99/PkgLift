@@ -4,6 +4,40 @@ import PkgLiftCore
 @testable import PkgLiftMigration
 
 final class MigrationEngineTests: XCTestCase {
+    func testFailedPodfilePostconditionRestoresBothOriginals() throws {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let podfile = root.appendingPathComponent("Podfile")
+        let project = root.appendingPathComponent("App.xcodeproj")
+        let projectFile = project.appendingPathComponent("project.pbxproj")
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        let original = "target 'App' do\n  pod 'Alamofire'\nend\n"
+        try original.write(to: podfile, atomically: true, encoding: .utf8)
+        try Data("original project".utf8).write(to: projectFile)
+        XCTAssertThrowsError(try MigrationEngine().execute(
+            prepared: PreparedMigration(podsToRemove: ["Alamofire"], packagesToAdd: [], productsToLink: []),
+            podfileURL: podfile,
+            projectPath: project.path,
+            backupDir: root.appendingPathComponent("backup"),
+            checkpoint: { stage in
+                if stage == .podfileWritten {
+                    try "target 'App' do\n  pod('Alamofire')\nend\n".write(
+                        to: podfile, atomically: true, encoding: .utf8
+                    )
+                    try Data("changed project".utf8).write(to: projectFile)
+                }
+            }
+        )) { error in
+            guard case AtomicMigration.MigrationError.actionFailed(let underlying) = error else {
+                return XCTFail("Expected rollback, got \(error)")
+            }
+            XCTAssertEqual(underlying as? MigrationEngineError, .podRemovalNotVerified)
+        }
+        XCTAssertEqual(try String(contentsOf: podfile, encoding: .utf8), original)
+        XCTAssertEqual(try Data(contentsOf: projectFile), Data("original project".utf8))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("migration-in-progress").path))
+    }
+
     func testLegacyApplyWithoutProjectContextIsRefusedBeforePodfileMutation() throws {
         let root = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }

@@ -1,13 +1,17 @@
 import Foundation
 import PkgLiftCore
+import PkgLiftCocoaPods
 import PkgLiftXcode
 
 public enum MigrationEngineError: LocalizedError, Sendable, Equatable {
     case projectContextRequired
     case missingPodDeclarations([String])
+    case podRemovalNotVerified
 
     public var errorDescription: String? {
         switch self {
+        case .podRemovalNotVerified:
+            return "Migrated Podfile declarations remain or cannot be verified statically. Migration cannot be completed."
         case .projectContextRequired:
             return "Applying a migration requires a validated Xcode project and target context. Use the full migration execution API."
         case .missingPodDeclarations(let dependencies):
@@ -96,6 +100,15 @@ public struct MigrationEngine: Sendable {
                 )
                 try checkpoint(.productLinked(index))
                 try checkCancellation()
+            }
+
+            // Verify the actual written Podfile before finalizing recovery
+            // state; any failed postcondition follows normal rollback.
+            let written = try String(contentsOf: podfileURL, encoding: .utf8)
+            let parsed = PodfileParser().parse(content: written)
+            guard !parsed.features.hasDynamicRuby,
+                  prepared.podsToRemove.isDisjoint(with: parsed.directDependencies.map(\.name)) else {
+                throw MigrationEngineError.podRemovalNotVerified
             }
         }
     }

@@ -2,6 +2,7 @@
 // Verifies the structural integrity of a project after migration.
 
 import Foundation
+import PkgLiftCocoaPods
 import PkgLiftCore
 import PkgLiftXcode
 import XcodeProj
@@ -135,13 +136,28 @@ public struct StructuralVerifier: Sendable {
                 ))
                 return VerificationResult(passed: false, checks: checks, issues: issues)
             }
+            let parsed = PodfileParser().parse(content: podfileContent)
+            if parsed.features.hasDynamicRuby {
+                checks.append(VerificationCheck(
+                    name: "podfile_declarations_verifiable",
+                    description: "Podfile declarations can be verified statically",
+                    passed: false,
+                    detail: "Unsupported or dynamic Ruby prevents proving migrated pods are absent"
+                ))
+                issues.append(MigrationIssue(
+                    severity: .error,
+                    message: "Unable to verify migrated Podfile declarations"
+                ))
+            }
+            let declaredPods = Set(parsed.directDependencies.map(\.name))
             for podName in migratedPods {
-                let stillPresent = containsPodDeclaration(named: podName, in: podfileContent)
+                let stillPresent = declaredPods.contains(podName)
                 checks.append(VerificationCheck(
                     name: "pod_removed_\(podName)",
                     description: "Pod '\(podName)' removed from Podfile",
-                    passed: !stillPresent,
-                    detail: stillPresent ? "Pod declaration still found in Podfile" : nil
+                    passed: !stillPresent && !parsed.features.hasDynamicRuby,
+                    detail: stillPresent ? "Pod declaration still found in Podfile"
+                        : (parsed.features.hasDynamicRuby ? "Pod removal cannot be established statically" : nil)
                 ))
                 if stillPresent {
                     issues.append(MigrationIssue(
@@ -160,17 +176,5 @@ public struct StructuralVerifier: Sendable {
             checks: checks,
             issues: issues
         )
-    }
-
-    private func containsPodDeclaration(named podName: String, in content: String) -> Bool {
-        content.components(separatedBy: .newlines).contains { line in
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.hasPrefix("#"), trimmed.hasPrefix("pod ") else { return false }
-            let escaped = NSRegularExpression.escapedPattern(for: podName)
-            return trimmed.range(
-                of: "^pod\\s+(['\"])\(escaped)\\1(?:\\s*,|\\s*$)",
-                options: .regularExpression
-            ) != nil
-        }
     }
 }

@@ -66,7 +66,9 @@ The static Podfile parser recognizes the exact call markers `use_react_native!`,
 
 PkgLift discovers `.xcodeproj` and `.xcworkspace` directories recursively beneath
 `--path` without descending into generated `Pods`, `.build`, `.swiftpm`,
-`Carthage`, or `DerivedData` trees. Project bundles and workspace bundles are
+`Carthage`, `DerivedData`, or PkgLift-owned `.pkglift` trees. Recovery copies do
+not become project/workspace candidates; the separate incomplete-migration check
+still refuses apply while recovery state exists. Project bundles and workspace bundles are
 terminal discovery nodes, so internal Xcode metadata is not treated as another
 user workspace.
 
@@ -82,9 +84,9 @@ Unsupported workspace location schemes are refused instead of guessed.
 
 When no recovery marker is present, `pkglift migrate --apply` validates the entire saved AUTO contract before the first write. It regenerates the current migration evidence in memory and refuses when the saved AUTO entry no longer exactly matches the current Podfile, lockfile, registry mapping, configuration, actions, target attribution, target language profile, or supported mapping languages. It separately compares every safely comparable external `sourceProvenance` snapshot plus its version, declaration origins, and target attribution with current analysis. Added, removed, or changed evidence refuses mutation. Redacted, malformed, incomplete, conflicting, credential-bearing, or otherwise lossy provenance cannot prove equality and also refuses an unrelated `AUTO` apply. It also refuses stale project paths, missing Podfile declarations, missing or conflicting versions, and missing or ambiguous targets. Every AUTO entry must carry non-empty literal declaration provenance, explicit exact target attribution, and complete consumer-language evidence that agree with the typed actions; it must not contain external source provenance.
 
-Older schema-1 plans remain decodable, but legacy target arrays are treated only as partial context. An AUTO entry without current provenance or consumer-language evidence is refused and must be regenerated before migration. Existing executable plans must also be regenerated with PkgLift 0.6.1 because preflight binds a plan to the version that created it.
+Older schema-1 plans remain decodable, but legacy target arrays are treated only as partial context. An AUTO entry without current provenance or consumer-language evidence is refused and must be regenerated before migration. Existing executable plans must also be regenerated with PkgLift 0.6.2 because preflight binds a plan to the version that created it.
 
-Podfile editing removes only exact, literal pod declarations. Target blocks, similarly named pods, remaining CocoaPods dependencies, comments, and unrelated Ruby are preserved. PkgLift does not run the Podfile as Ruby.
+Podfile editing uses the same parser and declaration-line evidence as analysis, including supported parenthesized calls, tab separators, and repeated declarations. Target blocks, similarly named pods, remaining CocoaPods dependencies, comments, Ruby data sections, and untouched line endings are preserved. Before committing, migration reparses the actual written Podfile and refuses completion if a migrated declaration remains or dynamic Ruby prevents verification; that failure follows normal rollback. Structural verification also uses the parser and fails closed when removal cannot be established. PkgLift does not run the Podfile as Ruby.
 
 Registry-backed SwiftPM package references and product links are de-duplicated. Equivalent registry repository URLs with an optional `.git` suffix or trailing slash resolve to the same identity. External Git provenance uses its stricter transport boundary described above: HTTPS is not assumed equivalent to SSH. Existing requirements are preserved; a conflict stops migration.
 
@@ -97,9 +99,13 @@ Registry-backed SwiftPM package references and product links are de-duplicated. 
 
 ## Rollback boundary
 
-Before applying changes, PkgLift reserves recovery state with the active migration marker, then backs up the Podfile and complete `.xcodeproj` directory under `.pkglift/backup`. The marker reservation occurs before the backup copy so that a second apply cannot race an in-progress recovery setup. The signal handler itself is a tiny C helper that sets only an async-signal-safe, lock-free atomic flag. It does not allocate memory, read or write files, or attempt rollback. The migration engine checks that flag at checkpoints between writes.
+Before applying changes, PkgLift reserves recovery state with the active migration marker, then backs up the Podfile and complete `.xcodeproj` directory under `.pkglift/backup`. The marker reservation occurs before the backup copy so that a second apply cannot race an in-progress recovery setup. During mutation, a small C signal handler records the first signal in a lock-free atomic state. It does not allocate memory, perform file I/O, or attempt rollback. The migration engine checks that state at checkpoints between writes.
 
 For a handled `SIGINT` or `SIGTERM` before terminal commit, PkgLift attempts rollback at the next checkpoint. A successful rollback clears the active marker, finalizes the backup receipt, and exits with status `130` for `SIGINT` or `143` for `SIGTERM`. A signal observed after terminal commit reports that the files are fully migrated; it does not claim rollback occurred. A normal Swift write or edit error also attempts to restore both the Podfile and `.xcodeproj` and surfaces the original error after successful restoration. If rollback reports an error, PkgLift makes a best-effort restoration attempt for both files, preserves the marker and backup, and reports a distinct rollback failure. It does not claim that separate filesystem updates form one durable operating-system transaction.
+
+After migration and any rollback attempt have finished, the CLI restores both previous signal dispositions and atomically closes the signal outcome. A signal recorded before successful closure is returned to Swift for the conventional exit status. A handler already dispatched on another thread but delayed until after successful closure uses async-signal-safe `_exit` with status `130` or `143`; concurrent late handlers use the first terminal signal's status. This path runs no Swift cleanup and may exit without the detailed interruption message. It is armed only after successful migration and signal-disposition restoration. An existing migration, rollback, or restoration error instead closes a failure outcome and keeps its original error reporting.
+
+Signal ownership is deliberately one-shot within the CLI process. A later installation in the same process is refused, so a delayed handler cannot act on a reset state or a new migration. Normal CLI invocations run in separate processes; this does not prevent a later invocation from applying a valid new plan. As with any process, there is no signal-handling guarantee after it has already terminated.
 
 On normal terminal completion, the backup carries an internal receipt that identifies it as a known completed backup and permits its later reuse. A legacy backup, or one without a valid receipt, is ambiguous and causes apply to refuse rather than replace it.
 

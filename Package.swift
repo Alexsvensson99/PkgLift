@@ -87,12 +87,18 @@ let package = Package(
             name: "PkgLiftVerification",
             dependencies: [
                 "PkgLiftCore",
+                "PkgLiftCocoaPods",
                 "PkgLiftXcode",
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]
         ),
 
         // MARK: - Test Targets
+
+        .target(
+            name: "PkgLiftSignalTestSupport",
+            path: "Tests/PkgLiftSignalTestSupport"
+        ),
 
         .testTarget(
             name: "PkgLiftCoreTests",
@@ -134,6 +140,7 @@ let package = Package(
             name: "PkgLiftCLITests",
             dependencies: [
                 "PkgLiftCLI",
+                "PkgLiftSignalTestSupport",
                 "PkgLiftCore",
                 "PkgLiftXcode",
                 .product(name: "XcodeProj", package: "XcodeProj"),

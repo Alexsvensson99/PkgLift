@@ -2,8 +2,8 @@ import Darwin
 import Foundation
 import PkgLiftSignalSupport
 
-/// Owns process signal dispositions only for the synchronous apply/rollback
-/// scope. The C handler records a flag; checkpoints throw on the normal stack.
+/// One apply owns signals for the executable's lifetime. During mutation the
+/// handler records a flag; after successful finish a delayed handler can exit.
 final class MigrationSignals {
     init() throws {
         let result = pkglift_signals_install()
@@ -11,14 +11,20 @@ final class MigrationSignals {
     }
 
     func checkCancellation() throws {
-        let signal = pkglift_signals_received()
-        if signal != 0 { throw MigrationInterrupted(signal: signal) }
+        if let interruption = capturedInterruption() { throw interruption }
         try Task.checkCancellation()
     }
 
-    func restore() throws {
-        let result = pkglift_signals_restore()
+    func capturedInterruption() -> MigrationInterrupted? {
+        let signal = pkglift_signals_received()
+        return signal == 0 ? nil : MigrationInterrupted(signal: signal)
+    }
+
+    func finish(succeeded: Bool) throws -> MigrationInterrupted? {
+        var signal: Int32 = 0
+        let result = pkglift_signals_finish(succeeded ? 1 : 0, &signal)
         guard result == 0 else { throw SignalError.restorationFailed(result) }
+        return signal == 0 ? nil : MigrationInterrupted(signal: signal)
     }
 
     enum SignalError: LocalizedError {
