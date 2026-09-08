@@ -35,6 +35,7 @@ let package = Package(
                 "PkgLiftMigration",
                 "PkgLiftVerification",
                 "PkgLiftSignalSupport",
+                "PkgLiftInspection",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
@@ -42,6 +43,11 @@ let package = Package(
         // MARK: - Libraries
 
         .target(name: "PkgLiftSignalSupport"),
+
+        .target(
+            name: "PkgLiftInspection",
+            dependencies: ["PkgLiftCocoaPods"]
+        ),
 
         .target(
             name: "PkgLiftCore",
@@ -95,6 +101,11 @@ let package = Package(
 
         // MARK: - Test Targets
 
+        .testTarget(
+            name: "PkgLiftInspectionTests",
+            dependencies: ["PkgLiftInspection", "PkgLiftCocoaPods"]
+        ),
+
         .target(
             name: "PkgLiftSignalTestSupport",
             path: "Tests/PkgLiftSignalTestSupport"
@@ -140,6 +151,7 @@ let package = Package(
             name: "PkgLiftCLITests",
             dependencies: [
                 "PkgLiftCLI",
+                "PkgLiftInspection",
                 "PkgLiftSignalTestSupport",
                 "PkgLiftCore",
                 "PkgLiftXcode",
