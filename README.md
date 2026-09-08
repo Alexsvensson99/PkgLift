@@ -65,15 +65,16 @@ The release adds a narrow library API in `PkgLiftCocoaPods` for caller-supplied 
 
 The API does not read, expand, traverse, hash, or otherwise verify local files. It does not verify source provenance, resolve packages or products, generate `Package.swift`, load Podspecs through the CLI, change a migration plan, mutate an Xcode project, remove CocoaPods, or broaden `AUTO` eligibility. See the [v0.6.0 release notes](Documentation/ReleaseNotes-0.6.0.md), [generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), [Stage 1 validation record](Documentation/GeneratedPackageStage1Validation.md), and [v0.6 release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) for the pinned S1 boundary and verification results.
 
-## Unreleased local source-inspection candidate
+## Local source inspection — 0.7.0 release candidate
 
-This checkout also contains an unreleased 0.7 candidate; the source version remains
-`0.6.2`. Its `pkglift podspec inspect --podspec <file> --source-root <directory>`
+This checkout contains the unreleased 0.7.0 release candidate. Its
+`pkglift podspec inspect --podspec <file> --source-root <directory>`
 command reports observed local root-source bytes under
 `pkglift.local-source-inspection/v1`. This is separate from the released,
 synthetic `pkglift.synthetic-local/v1` S1 API: it does not create or supply S1
 evidence, prove SwiftPM compatibility or provenance, or affect package validity,
-migration eligibility, or `AUTO`. See [Local source inspection](Documentation/LocalSourceInspection.md).
+migration eligibility, or `AUTO`. See [Local source inspection](Documentation/LocalSourceInspection.md)
+and the [0.7.0 release notes](Documentation/ReleaseNotes-0.7.0.md).
 
 ## What Is New in v0.5.0
 

@@ -1,8 +1,10 @@
 # Local source inspection — local validation
 
-Validated 2026-09-08 on Apple Silicon with Apple Swift 6.3.3. This is an
-**unreleased local implementation**, based on main
-`eefd6d09d18a2a517c26df121e871c4ad12c8c60`. Source version remains 0.6.2.
+Historical validation from 2026-09-08 on Apple Silicon with Apple Swift 6.3.3.
+The **unreleased local implementation** was based on main
+`eefd6d09d18a2a517c26df121e871c4ad12c8c60`. At validation time, the source version was 0.6.2.
+Subsequent implementation CI and 0.7.0 source preparation are recorded in the
+[0.7.0 release notes](ReleaseNotes-0.7.0.md).
 The [command contract](LocalSourceInspection.md) describes the new behavior.
 
 ## Completed checks
@@ -23,8 +25,8 @@ The [command contract](LocalSourceInspection.md) describes the new behavior.
 SwiftPM commands reused the existing cache with `--disable-sandbox`,
 `--disable-automatic-resolution` and `--jobs 4`. Dependency versions were not
 changed. User-cache write warnings were environmental; all final commands exited
-successfully. The hosted CI toolchain (Xcode 16.4) has not been run for this local
-change and remains a required gate before merge/release.
+successfully. At this snapshot, hosted CI on Xcode 16.4 had not yet run for this
+change and remained a required gate before merge/release.
 
 ## Pilot results
 
@@ -68,5 +70,6 @@ multiple simultaneous refusals, privacy and deterministic digest bindings.
 Only the two new inspection files may retain declaration-assessment symbols;
 generated-package symbols remain prohibited there. No registry mapping,
 classification rule, migration operation, source version, release manifest,
-signing workflow or Homebrew formula changed. Hosted CI, release preparation,
-signing/notarization and public distribution remain separate outstanding gates.
+signing workflow or Homebrew formula changed in that implementation snapshot.
+Hosted CI, release preparation, signing/notarization and public distribution
+were separate outstanding gates at that time.

@@ -146,8 +146,9 @@ release retains this exact synthetic S1 boundary.
 
 ## v0.7 candidate — Local source inspection
 
-The approved implementation scope is present locally but unreleased; the source
-version remains `0.6.2`. It does not establish a 0.7 distribution, public pilot
+The implementation is merged to main. Release preparation sets the source
+version to `0.7.0`; distribution remains unreleased. It does not establish a
+0.7 distribution, public pilot
 result, Homebrew update, or release date.
 
 - Add `pkglift podspec inspect` with explicit `--podspec`, `--source-root`, and

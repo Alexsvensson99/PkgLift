@@ -1,7 +1,7 @@
 # Local source inspection (unreleased candidate)
 
-This document describes the local PkgLift 0.7 candidate in this source checkout.
-It is not a release claim: the source version remains **0.6.2**, and no 0.7
+This document describes the PkgLift 0.7.0 release candidate in this source checkout.
+It is not a release claim: the source version is **0.7.0**, and no 0.7
 archive, Homebrew formula, public pilot result, or migration capability is
 implied by this document.
 
