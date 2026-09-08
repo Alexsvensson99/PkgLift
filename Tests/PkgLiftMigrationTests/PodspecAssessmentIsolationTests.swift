@@ -87,13 +87,18 @@ final class PodspecAssessmentIsolationTests: XCTestCase {
             .deletingLastPathComponent()
         let sourcesRoot = repositoryRoot.appendingPathComponent("Sources", isDirectory: true)
         // Stage 1 consumes v0.5 only in these explicitly reviewed, pure analysis files.
-        // Keep the allow-list at file scope: the rest of CocoaPods and every migration,
-        // CLI, registry, verification and Xcode source remain outside this boundary.
+        // Keep the allow-list at file scope. The separate local-inspection adapter
+        // may retain v0.5 assessment values, but never consume generated-package
+        // evidence. Migration, CLI, registry, verification and Xcode stay outside.
         let analysisSources = Set([
             "PkgLiftCocoaPods/PodspecSwiftPMAssessment.swift",
             "PkgLiftCocoaPods/GeneratedPackageBlueprintAssessment.swift",
             "PkgLiftCocoaPods/GeneratedPackageEvidence.swift",
             "PkgLiftCocoaPods/GeneratedPackageEvidenceCoding.swift",
+        ].map { sourcesRoot.appendingPathComponent($0).standardizedFileURL })
+        let localInspectionSources = Set([
+            "PkgLiftInspection/LocalSourceInspector.swift",
+            "PkgLiftInspection/LocalSourceInspectionReport.swift",
         ].map { sourcesRoot.appendingPathComponent($0).standardizedFileURL })
         let forbiddenSymbols = [
             "PodspecSwiftPMAssessment",
@@ -114,6 +119,9 @@ final class PodspecAssessmentIsolationTests: XCTestCase {
             && !analysisSources.contains(fileURL.standardizedFileURL) {
             let contents = try String(contentsOf: fileURL, encoding: .utf8)
             for symbol in forbiddenSymbols {
+                if localInspectionSources.contains(fileURL.standardizedFileURL), symbol != "GeneratedPackage" {
+                    continue
+                }
                 XCTAssertFalse(
                     contents.contains(symbol),
                     "\(symbol) crossed the analysis-only boundary into \(fileURL.path)"

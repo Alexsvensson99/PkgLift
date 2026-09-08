@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add an unreleased local source-inspection candidate: `pkglift podspec inspect`
+  reads explicit Podspec JSON and source-root inputs through the internal
+  `PkgLiftInspection` adapter and reports only bounded, observed local bytes.
+  It preserves the original v0.5 assessment, uses the separate
+  `pkglift.local-source-inspection/v1` profile, and does not add S1 evidence,
+  package generation, migration eligibility, or `AUTO` behavior. See
+  [Local source inspection](Documentation/LocalSourceInspection.md).
+
 ## [0.6.2] - 2026-09-07
 
 ### Fixed
