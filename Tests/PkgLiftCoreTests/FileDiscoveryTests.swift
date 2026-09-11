@@ -141,6 +141,37 @@ final class FileDiscoveryTests: XCTestCase {
         XCTAssertTrue(result.workspacePaths.isEmpty)
     }
 
+    func testRecursiveDiscoveryIgnoresPkgLiftRecoveryProjectsAndPreservesRecoveryData() throws {
+        let root = try makeDirectory(prefix: "PkgLiftRecoveryDiscovery")
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let recoveryRoot = root.appendingPathComponent(".pkglift")
+        let recoveryDirectory = recoveryRoot.appendingPathComponent("backup")
+        let recoveryMarker = recoveryRoot.appendingPathComponent("migration-in-progress")
+        let recoveryContents = Data("recovery state".utf8)
+        try FileManager.default.createDirectory(
+            at: recoveryDirectory.appendingPathComponent("Recovered.xcodeproj"),
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(
+            at: recoveryDirectory.appendingPathComponent("Recovered.xcworkspace"),
+            withIntermediateDirectories: true
+        )
+        try recoveryContents.write(to: recoveryMarker)
+
+        let project = root.appendingPathComponent("App/App.xcodeproj")
+        let workspace = root.appendingPathComponent("App/App.xcworkspace")
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: true)
+
+        let result = try FileDiscovery().discover(in: root.path)
+
+        XCTAssertEqual(result.projectPaths, [project.path])
+        XCTAssertEqual(result.workspacePaths, [workspace.path])
+        XCTAssertEqual(try Data(contentsOf: recoveryMarker), recoveryContents)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: recoveryDirectory.path))
+    }
+
     private func makeDirectory(prefix: String) throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(prefix)-\(UUID().uuidString)")

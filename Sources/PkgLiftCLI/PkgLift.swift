@@ -19,6 +19,7 @@ struct PkgLift: AsyncParsableCommand {
             VerifyCommand.self,
             DiagnosticsCommand.self,
             RegistryCommand.self,
+            PodspecCommand.self,
             VersionCommand.self,
         ]
     )

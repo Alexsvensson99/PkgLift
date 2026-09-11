@@ -87,6 +87,7 @@ public struct FileDiscovery: Sendable {
     private static let skippedDirectoryNames: Set<String> = [
         ".build",
         ".git",
+        ".pkglift",
         ".swiftpm",
         "carthage",
         "deriveddata",

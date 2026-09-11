@@ -25,8 +25,13 @@ struct MigrateCommand: AsyncParsableCommand {
         try await run(checkpoint: { _ in })
     }
 
-    /// Internal deterministic seam for testing interruption at actual writes.
-    mutating func run(checkpoint: (MigrationStage) throws -> Void) async throws {
+    /// Internal deterministic seams for testing interruption at actual writes
+    /// and on either side of signal-handler finalization.
+    mutating func run(
+        checkpoint: (MigrationStage) throws -> Void,
+        beforeSignalRestore: (MigrationSignals) throws -> Void = { _ in },
+        afterSignalRestore: () throws -> Void = {}
+    ) async throws {
         if apply {
             // Recovery refusal must precede parsing a possibly half-written
             // project, stale plan, empty AUTO list, or --allow-dirty handling.
@@ -110,9 +115,23 @@ struct MigrateCommand: AsyncParsableCommand {
             failure = error
         }
         do {
-            try signals.restore()
+            try beforeSignalRestore(signals)
+        } catch {
+            if failure == nil { failure = error }
+            else { FileHandle.standardError.write(Data("\(error.localizedDescription)\n".utf8)) }
+        }
+        do {
+            if let interruption = try signals.finish(succeeded: failure == nil) {
+                failure = interruption
+            }
         } catch {
             // Preserve an unrelated migration/rollback error if both fail.
+            if failure == nil { failure = error }
+            else { FileHandle.standardError.write(Data("\(error.localizedDescription)\n".utf8)) }
+        }
+        do {
+            try afterSignalRestore()
+        } catch {
             if failure == nil { failure = error }
             else { FileHandle.standardError.write(Data("\(error.localizedDescription)\n".utf8)) }
         }

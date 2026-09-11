@@ -144,10 +144,28 @@ release retains this exact synthetic S1 boundary.
 
 # Next
 
-The next implementation scope remains to be reviewed. Broader blueprint shapes,
-production evidence providers and package generation require separate design,
-safety evidence and implementation review. The v0.6.0 release does not select
-an additional version or expand the supported S1 shape.
+## v0.7 candidate — Local source inspection
+
+The implementation is merged to main. Release preparation sets the source
+version to `0.7.0`; distribution remains unreleased. It does not establish a
+0.7 distribution, public pilot
+result, Homebrew update, or release date.
+
+- Add `pkglift podspec inspect` with explicit `--podspec`, `--source-root`, and
+  text or canonical JSON output.
+- Observe only literal root `.swift` selections through a no-follow, bounded
+  filesystem adapter; reject symlink paths, glob expansion, traversal,
+  case-fold collisions, unsafe file types, limits, and observed changes.
+- Report `verifiedObservedBytes`, `unsupportedSelection`, or `unavailable` while
+  retaining the exact original v0.5 assessment and its reasons.
+- Keep disk-derived `pkglift.local-source-inspection/v1` reports separate from
+  the released synthetic `pkglift.synthetic-local/v1` S1 evidence contract.
+
+Observed bytes remain neither compatibility nor provenance evidence, and this
+candidate creates no package validity, migration-eligibility, classifier,
+planner, preflight, project-mutation, or `AUTO` path. Broader blueprint shapes,
+production evidence providers, package generation, and any distribution require
+separate design, safety evidence, implementation review, and release approval.
 
 ---
 
