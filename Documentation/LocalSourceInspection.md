@@ -1,9 +1,8 @@
-# Local source inspection (unreleased candidate)
+# Local source inspection
 
-This document describes the PkgLift 0.7.0 release candidate in this source checkout.
-It is not a release claim: the source version is **0.7.0**, and no 0.7
-archive, Homebrew formula, public pilot result, or migration capability is
-implied by this document.
+Local source inspection shipped in PkgLift 0.7.0. This checkout prepares 0.7.1
+with clearer text presentation and the same JSON contract and inspection limits.
+See [0.7.1 release notes](ReleaseNotes-0.7.1.md) for candidate status.
 
 `pkglift podspec inspect` reads a caller-supplied Podspec JSON document and a
 caller-supplied local source root. Its complete result says which root source

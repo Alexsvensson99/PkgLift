@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-09-12
+
 ### Changed
 - Share debug compilation across build, tests and registry validation, and one
   verified release binary across both pilot groups. Preserve required checks,
@@ -14,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Explain local source inspection results and reason codes in text output before
   the separate declaration assessment. Clarify empty inventories and normalized
   evidence indexes without changing JSON, exit codes, or inspection safety.
+- Set the source version to `0.7.1`. Regenerate saved migration plans after
+  upgrading; plans remain bound to their creating version.
 
 ## [0.7.0] - 2026-09-09
 
