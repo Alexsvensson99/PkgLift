@@ -59,6 +59,18 @@ artifacts to a public GitHub Release receives `contents: write` permission.
   `main` ref, atomically creates the exact lightweight tag with fail-if-exists
   semantics, verifies that tag's target, and only then creates the public
   release.
+- Restarting manifest validation first attaches to an active distribution for
+  the exact repository, commit, main branch and release workflow. Otherwise it
+  reuses a successful run only when the expected nonexpired artifact exists.
+  With neither available, it checks current main and dispatches once. After a
+  dispatch, historical run IDs cannot satisfy the wait; the selected run ID and
+  attempt remain fixed. API errors, ambiguous new runs, changed identity and
+  selected-run failures stop validation rather than trigger another dispatch.
+  History discovery is bounded to 1,000 runs and fails if that bound is reached.
+  Artifact contents and checksums are still checked downstream, and both
+  protected approval environments remain in force. Concurrent manual dispatches
+  are not an atomic transaction with this lookup; multiple visible new matches
+  are refused. An uncertain dispatch response is never automatically retried.
 - A manual `workflow_dispatch` run from `main` signs, notarizes, verifies a
   freshly extracted quarantine-marked CLI, and uploads a private Actions
   artifact. It never creates a GitHub Release. Manual runs from other refs are
