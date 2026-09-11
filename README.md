@@ -1,7 +1,6 @@
 # PkgLift
 
-[![Build](https://github.com/Alexsvensson99/PkgLift/actions/workflows/build.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/build.yml)
-[![Test](https://github.com/Alexsvensson99/PkgLift/actions/workflows/test.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/test.yml)
+[![CI](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/positive-e2e.yml)
 [![CodeQL](https://github.com/Alexsvensson99/PkgLift/actions/workflows/codeql.yml/badge.svg)](https://github.com/Alexsvensson99/PkgLift/actions/workflows/codeql.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Alexsvensson99/PkgLift)](https://github.com/Alexsvensson99/PkgLift/releases/latest)
 

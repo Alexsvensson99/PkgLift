@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Share debug compilation across build, tests and registry validation, and one
+  verified release binary across both pilot groups. Preserve required checks,
+  exact-source release evidence and independent CodeQL analysis.
 - Explain local source inspection results and reason codes in text output before
   the separate declaration assessment. Clarify empty inventories and normalized
   evidence indexes without changing JSON, exit codes, or inspection safety.

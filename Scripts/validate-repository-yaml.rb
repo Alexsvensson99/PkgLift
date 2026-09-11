@@ -81,130 +81,148 @@ unless quality_workflow.include?("-s Tests/ReleaseManifestTests") && quality_wor
   errors << "#{quality_workflow_path}: must run release-manifest policy regressions"
 end
 
-required_gates = {
-  ".github/workflows/registry.yml" => ["name: Registry Gate", "validate"],
-  ".github/workflows/pilots.yml" => ["name: Pinned Pilot Gate", "analyze"],
-  ".github/workflows/positive-e2e.yml" => ["name: Mixed-Language Pilot Gate", "migrate-and-build"],
-  ".github/workflows/codeql.yml" => ["name: CodeQL", "analyze"],
-}.freeze
-required_gates.each do |path, (marker, heavy_job_id)|
-  content = File.file?(path) ? File.read(path, encoding: "UTF-8") : ""
-  unless content.include?(marker)
-    errors << "#{path}: missing required stable gate #{marker.inspect}"
-  end
-
-  errors << "#{path}: pull requests must run the heavy validation" unless content.match?(/^  pull_request:\s*$/)
-  errors << "#{path}: pull_request_target must not execute candidate code" if content.match?(/^  pull_request_target:\s*$/)
-  errors << "#{path}: path relevance must not control a required gate" if content.include?("ci-paths-relevant.py")
-  errors << "#{path}: required gates must not accept skipped heavy validation" if content.include?("safely skipped")
-
-  workflow = load_yaml(path, errors)
-  jobs = workflow.is_a?(Hash) ? workflow["jobs"] : nil
-  next unless jobs.is_a?(Hash)
-
-  heavy_job = jobs[heavy_job_id]
-  gate_job = jobs["gate"]
-  unless heavy_job.is_a?(Hash)
-    errors << "#{path}: missing heavy job #{heavy_job_id.inspect}"
-    next
-  end
-  unless gate_job.is_a?(Hash)
-    errors << "#{path}: missing gate job"
-    next
-  end
-
-  errors << "#{path}: heavy job #{heavy_job_id.inspect} must run unconditionally" if heavy_job.key?("if")
-  unless Array(gate_job["needs"]).include?(heavy_job_id)
-    errors << "#{path}: gate must require heavy job #{heavy_job_id.inspect}"
-  end
-  errors << "#{path}: gate must use always()" unless gate_job["if"] == "always()"
-
-  gate_steps = Array(gate_job["steps"])
-  gate_result_refs = gate_steps.map { |step| step["env"] if step.is_a?(Hash) }.compact
-    .flat_map(&:values)
-    .select { |value| value.is_a?(String) }
-  unless gate_result_refs.any? { |value| value.include?("needs.#{heavy_job_id}.result") }
-    errors << "#{path}: gate must inspect the result of #{heavy_job_id.inspect}"
-  end
-  gate_scripts = gate_steps.map { |step| step["run"] if step.is_a?(Hash) }.compact.join("\n")
-  errors << "#{path}: gate must require a successful heavy job" unless gate_scripts.include?("== 'success'")
-  errors << "#{path}: gate must not accept skipped heavy validation" if gate_scripts.include?("'skipped'")
+shared_workflow_path = ".github/workflows/positive-e2e.yml"
+%w[build test registry pilots].each do |name|
+  path = ".github/workflows/#{name}.yml"
+  errors << "#{path}: duplicate ordinary CI entrypoint must not exist" if File.exist?(path)
 end
 
-pilot_workflow_path = ".github/workflows/pilots.yml"
+required_gates = [
+  [shared_workflow_path, "test", "test", ["build_pilot_toolchain"]],
+  [shared_workflow_path, "registry_gate", "Registry Gate", ["build_pilot_toolchain"]],
+  [shared_workflow_path, "pinned_gate", "Pinned Pilot Gate", %w[build_pilot_toolchain analyze]],
+  [shared_workflow_path, "gate", "Mixed-Language Pilot Gate", %w[build_pilot_toolchain migrate-and-build]],
+  [".github/workflows/codeql.yml", "gate", "CodeQL", ["analyze"]],
+].freeze
+required_gates.each do |path, gate_id, name, heavy_ids|
+  workflow = load_yaml(path, errors)
+  next unless workflow.is_a?(Hash)
+
+  events = workflow["on"] || workflow[true]
+  unless events.is_a?(Hash) && events.key?("pull_request") && events["pull_request"].nil? &&
+      events["push"] == { "branches" => ["main"] } && !events.key?("pull_request_target")
+    errors << "#{path}: required validation must run on every pull request and main push without path filters"
+  end
+  jobs = workflow["jobs"]
+  next unless jobs.is_a?(Hash)
+  gate_job = jobs[gate_id]
+  unless gate_job.is_a?(Hash) && gate_job["name"] == name
+    errors << "#{path}: missing required stable gate #{name.inspect}"
+    next
+  end
+  errors << "#{path}: #{gate_id} must use always()" unless gate_job["if"] == "always()"
+  errors << "#{path}: #{gate_id} must not continue on error" if gate_job.key?("continue-on-error")
+  gate_steps = Array(gate_job["steps"])
+  gate_steps.each do |step|
+    next unless step.is_a?(Hash)
+    errors << "#{path}: #{gate_id} steps must fail closed unconditionally" if step.key?("if") || step.key?("continue-on-error")
+  end
+  heavy_ids.each do |heavy_id|
+    heavy = jobs[heavy_id]
+    unless heavy.is_a?(Hash)
+      errors << "#{path}: missing heavy job #{heavy_id.inspect}"
+      next
+    end
+    if heavy.key?("if") || heavy.key?("continue-on-error")
+      errors << "#{path}: heavy job #{heavy_id.inspect} must run unconditionally and fail closed"
+    end
+    if path == ".github/workflows/codeql.yml"
+      Array(heavy["steps"]).each do |step|
+        next unless step.is_a?(Hash)
+        if step.key?("if") || step.key?("continue-on-error")
+          errors << "#{path}: CodeQL analysis steps must run unconditionally and fail closed"
+        end
+      end
+    end
+    unless Array(gate_job["needs"]).include?(heavy_id)
+      errors << "#{path}: #{gate_id} must require heavy job #{heavy_id.inspect}"
+    end
+    checks_result = gate_steps.any? do |step|
+      next false unless step.is_a?(Hash) && step["env"].is_a?(Hash) && step["run"].is_a?(String)
+      step["env"].any? do |variable, value|
+        check = %Q([[ "$#{variable}" == 'success' ]])
+        check += " || exit 1" if path == shared_workflow_path
+        value == "${{ needs.#{heavy_id}.result }}" &&
+          step["run"].lines.any? { |line| line.strip == check } &&
+          step["run"].lines.any? { |line| line.strip == "set -euo pipefail" }
+      end
+    end
+    errors << "#{path}: #{gate_id} must require successful #{heavy_id} result" unless checks_result
+  end
+end
+
+pilot_workflow_path = shared_workflow_path
 pilot_workflow = load_yaml(pilot_workflow_path, errors)
 pilot_jobs = pilot_workflow.is_a?(Hash) ? pilot_workflow["jobs"] : nil
 if pilot_jobs.is_a?(Hash)
   producer_id = "build_pilot_toolchain"
   producer = pilot_jobs[producer_id]
-  analyze = pilot_jobs["analyze"]
-  gate = pilot_jobs["gate"]
-
   if !producer.is_a?(Hash)
     errors << "#{pilot_workflow_path}: missing shared pilot artifact producer #{producer_id.inspect}"
   else
-    errors << "#{pilot_workflow_path}: shared pilot producer must run unconditionally" if producer.key?("if")
+    errors << "#{pilot_workflow_path}: producer must preserve build check name" unless producer["name"] == "build"
     errors << "#{pilot_workflow_path}: shared pilot producer must run on macos-15" unless producer["runs-on"] == "macos-15"
     required_outputs = %w[archive_sha256 artifact_name artifact_run_attempt binary_sha256]
     missing_outputs = required_outputs - Hash(producer["outputs"]).keys
-    unless missing_outputs.empty?
-      errors << "#{pilot_workflow_path}: shared pilot producer is missing outputs #{missing_outputs.sort.join(', ')}"
-    end
-
+    errors << "#{pilot_workflow_path}: shared pilot producer is missing outputs #{missing_outputs.join(', ')}" unless missing_outputs.empty?
     producer_steps = Array(producer["steps"])
+    producer_steps.each do |step|
+      next unless step.is_a?(Hash)
+      errors << "#{pilot_workflow_path}: producer steps must run unconditionally and fail closed" if step.key?("if") || step.key?("continue-on-error")
+    end
     producer_scripts = producer_steps.map { |step| step["run"] if step.is_a?(Hash) }.compact.join("\n")
-    producer_actions = producer_steps.map { |step| step["uses"] if step.is_a?(Hash) }.compact
+    ["swift build -j 2", "swift test -j 2", "swift run --skip-build pkglift registry validate",
+     "swift build -c release -j 2 --arch arm64"].each do |command|
+      unless producer_scripts.lines.count { |line| line.strip == command } == 1
+        errors << "#{pilot_workflow_path}: producer must run #{command.inspect} exactly once"
+      end
+    end
     unless producer_scripts.include?("Scripts/package-pilot-artifact.sh")
       errors << "#{pilot_workflow_path}: shared pilot producer must use the verified packager"
-    end
-    unless producer_scripts.include?("swift build -c release -j 2 --arch arm64")
-      errors << "#{pilot_workflow_path}: shared pilot producer must build the arm64 release binary once"
     end
     unless producer_scripts.include?("git rev-parse HEAD") && producer_scripts.include?("GITHUB_SHA")
       errors << "#{pilot_workflow_path}: shared pilot producer must verify its exact source SHA"
     end
-    unless producer_actions.any? { |action| action.start_with?("actions/upload-artifact@") }
+    unless producer_steps.any? { |step| step.is_a?(Hash) && step.fetch("uses", "").start_with?("actions/upload-artifact@") }
       errors << "#{pilot_workflow_path}: shared pilot producer must upload its artifact"
     end
   end
 
-  if analyze.is_a?(Hash)
-    unless Array(analyze["needs"]).include?(producer_id)
-      errors << "#{pilot_workflow_path}: analyze must require the shared pilot producer"
+  %w[analyze migrate-and-build].each do |consumer_id|
+    consumer = pilot_jobs[consumer_id]
+    next unless consumer.is_a?(Hash)
+    unless Array(consumer["needs"]).include?(producer_id)
+      errors << "#{pilot_workflow_path}: #{consumer_id} must require the shared pilot producer"
     end
-    analyze_steps = Array(analyze["steps"])
-    analyze_scripts = analyze_steps.map { |step| step["run"] if step.is_a?(Hash) }.compact.join("\n")
-    analyze_actions = analyze_steps.map { |step| step["uses"] if step.is_a?(Hash) }.compact
-    if analyze_scripts.include?("swift build")
-      errors << "#{pilot_workflow_path}: analyze must consume the shared binary instead of rebuilding"
+    steps = Array(consumer["steps"])
+    scripts = steps.map { |step| step["run"] if step.is_a?(Hash) }.compact.join("\n")
+    errors << "#{pilot_workflow_path}: #{consumer_id} must consume the shared binary instead of rebuilding" if scripts.include?("swift build")
+    download = steps.find { |step| step.is_a?(Hash) && step.fetch("uses", "").start_with?("actions/download-artifact@") }
+    unless download && download.dig("with", "name") == "${{ needs.build_pilot_toolchain.outputs.artifact_name }}" &&
+        !download.fetch("with", {}).key?("run-id") && !download.fetch("with", {}).key?("repository")
+      errors << "#{pilot_workflow_path}: #{consumer_id} must download this run's shared artifact"
     end
-    unless analyze_scripts.include?("Scripts/verify-pilot-artifact.py")
-      errors << "#{pilot_workflow_path}: analyze must fail closed through the artifact verifier"
+    verifier = steps.find { |step| step.is_a?(Hash) && step.fetch("run", "").include?("Scripts/verify-pilot-artifact.py") }
+    expected = {
+      "PKGLIFT_EXPECTED_ARCHIVE_SHA256" => "${{ needs.build_pilot_toolchain.outputs.archive_sha256 }}",
+      "PKGLIFT_EXPECTED_BINARY_SHA256" => "${{ needs.build_pilot_toolchain.outputs.binary_sha256 }}",
+      "PKGLIFT_EXPECTED_PRODUCER_ATTEMPT" => "${{ needs.build_pilot_toolchain.outputs.artifact_run_attempt }}",
+      "PKGLIFT_EXPECTED_REPOSITORY" => "${{ github.repository }}",
+      "PKGLIFT_EXPECTED_RUN_ID" => "${{ github.run_id }}",
+      "PKGLIFT_EXPECTED_SOURCE_SHA" => "${{ github.sha }}",
+    }
+    unless verifier && expected.all? { |key, value| verifier.dig("env", key) == value }
+      errors << "#{pilot_workflow_path}: #{consumer_id} must verify all artifact identity and checksum evidence"
     end
-    unless analyze_actions.any? { |action| action.start_with?("actions/download-artifact@") }
-      errors << "#{pilot_workflow_path}: analyze must download the shared pilot artifact"
+    runner_script = consumer_id == "analyze" ? "Scripts/run-pinned-pilot.sh" : "Scripts/run-positive-e2e-pilot.sh"
+    runner_step = steps.find { |step| step.is_a?(Hash) && step.fetch("run", "").include?(runner_script) }
+    unless download && verifier && runner_step && steps.index(download) < steps.index(verifier) && steps.index(verifier) < steps.index(runner_step)
+      errors << "#{pilot_workflow_path}: #{consumer_id} must verify the downloaded artifact before running pilots"
     end
-  end
-
-  if gate.is_a?(Hash)
-    gate_needs = Array(gate["needs"])
-    unless gate_needs.include?(producer_id) && gate_needs.include?("analyze")
-      errors << "#{pilot_workflow_path}: pilot gate must require both producer and analyze jobs"
-    end
-    gate_steps = Array(gate["steps"])
-    gate_values = gate_steps.map { |step| step["env"] if step.is_a?(Hash) }.compact
-      .flat_map(&:values)
-      .select { |value| value.is_a?(String) }
-    unless gate_values.any? { |value| value.include?("needs.#{producer_id}.result") }
-      errors << "#{pilot_workflow_path}: pilot gate must inspect the shared producer result"
-    end
-    gate_scripts = gate_steps.map { |step| step["run"] if step.is_a?(Hash) }.compact.join("\n")
-    required_gate_checks = [
-      %q([[ "$BUILD_RESULT" == 'success' ]]),
-      %q([[ "$ANALYZE_RESULT" == 'success' ]]),
-    ]
-    unless required_gate_checks.all? { |check| gate_scripts.include?(check) }
-      errors << "#{pilot_workflow_path}: pilot gate must require successful producer and analyze jobs"
+    [download, verifier, runner_step].compact.each do |step|
+      if step.key?("if") || step.key?("continue-on-error")
+        errors << "#{pilot_workflow_path}: #{consumer_id} artifact and pilot steps must fail closed unconditionally"
+      end
     end
   end
 end
