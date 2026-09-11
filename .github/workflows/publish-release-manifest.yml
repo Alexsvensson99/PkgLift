@@ -283,7 +283,7 @@ jobs:
           python3 Scripts/validate-release-manifest.py create-tag
 
       - name: Create GitHub Release from Verified Tag
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           tag_name: ${{ needs.validate-and-package.outputs.release_tag }}
           target_commitish: ${{ needs.validate-and-package.outputs.target_commitish }}
