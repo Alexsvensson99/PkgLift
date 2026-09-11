@@ -159,6 +159,47 @@ final class PodspecCommandTests: XCTestCase {
         XCTAssertFalse(output.contains(fixture.root.path))
     }
 
+    func testGlobExplanationPrecedesDeclarationDetailsAndKeepsJSONUnchanged() throws {
+        let fixture = try makeFixture(sourceFiles: "Source/*.swift", includePlatforms: true)
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let report = LocalSourceInspector().inspect(podspecPath: fixture.podspec.path, sourceRoot: fixture.sourceRoot.path)
+        let jsonBefore = try report.canonicalJSON()
+        let text = try PodspecInspectCommand.render(report, format: .text)
+        XCTAssertTrue(text.hasPrefix("Source selection is not supported."))
+        let reason = try XCTUnwrap(text.range(of: "does not expand glob patterns"))
+        let details = try XCTUnwrap(text.range(of: "Declaration assessment:"))
+        XCTAssertLessThan(reason.lowerBound, details.lowerBound)
+        XCTAssertTrue(text.contains("Keep the original Podspec intact"))
+        XCTAssertTrue(text.contains("zero-based source_files index"))
+        XCTAssertEqual(try report.canonicalJSON(), jsonBefore)
+        XCTAssertEqual(try PodspecInspectCommand.render(report, format: .json), String(decoding: jsonBefore, as: UTF8.self))
+    }
+
+    func testSubspecSourcesAreNotDescribedAsMissingProjectFiles() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let data = Data(#"{"name":"secret","version":"1.0.0","subspecs":[{"name":"Core","source_files":"Source/*.swift"}]}"#.utf8)
+        try data.write(to: fixture.podspec)
+        let report = LocalSourceInspector().inspect(podspecPath: fixture.podspec.path, sourceRoot: fixture.sourceRoot.path)
+        let text = try PodspecInspectCommand.render(report, format: .text)
+        XCTAssertEqual(report.status, .unsupportedSelection)
+        XCTAssertTrue(text.contains("at the Podspec root"))
+        XCTAssertTrue(text.contains("does not mean the project has no source files"))
+        XCTAssertFalse(text.contains("Source/*.swift"))
+        XCTAssertFalse(text.contains("secret"))
+    }
+
+    func testUnavailableSummaryDoesNotPromiseEmptyProjectOrPartialEvidence() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let report = LocalSourceInspector().inspect(podspecPath: fixture.podspec.path, sourceRoot: fixture.root.appendingPathComponent("absent").path)
+        let text = try PodspecInspectCommand.render(report, format: .text)
+        XCTAssertTrue(text.hasPrefix("Inspection could not complete."))
+        XCTAssertTrue(text.contains("No partial source-file inventory is reported"))
+        XCTAssertEqual(report.exitCode, 1)
+        XCTAssertFalse(text.contains(fixture.root.path))
+    }
+
     private func makeFixture(
         sourceFiles: String = "Source/Example.swift",
         includePlatforms: Bool = false
