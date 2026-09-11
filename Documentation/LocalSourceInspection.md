@@ -72,6 +72,20 @@ pod is SwiftPM-compatible, that a source directory came from the declared
 repository, or that migration is approved. `unavailable` still writes its report
 before returning 1.
 
+## Text presentation
+
+The default text format starts with the inspection result and explains inspection
+reasons before the separate declaration assessment. Reason codes remain visible.
+Declaration numbers are zero-based `source_files` indexes; assessment evidence
+paths such as `/unsupportedFields/N` identify normalized assessment entries, not
+original JSON field names.
+
+An unsupported selection or unavailable inspection produces no source inventory;
+this does not mean the project contains no source files. Keep the original
+Podspec intact when investigating a limitation. Removing declarations changes
+what is inspected and does not establish compatibility. These presentation
+changes do not change canonical JSON, exit codes, or inspection limits.
+
 ## Report contract
 
 The canonical JSON report is schema version 1 and identifies the separate
