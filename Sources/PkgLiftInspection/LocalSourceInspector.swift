@@ -1,8 +1,8 @@
 import Foundation
 import PkgLiftCocoaPods
 
-/// Read-only, bounded local file observation. No Ruby, glob expansion, process,
-/// network, project discovery or mutation is performed by this adapter.
+/// Read-only, bounded local file observation with an explicit selection profile.
+/// No Ruby, process, network, project discovery or mutation is performed.
 public struct LocalSourceInspector: Sendable {
     private let observer: (@Sendable (LocalSourceInspectionEvent) -> Void)?
     private static let maximumSources = 256
@@ -16,6 +16,12 @@ public struct LocalSourceInspector: Sendable {
     }
 
     public func inspect(podspecPath: String, sourceRoot: String) -> LocalSourceInspectionReport {
+        inspect(podspecPath: podspecPath, sourceRoot: sourceRoot, sourceSelection: .literalOnly)
+    }
+
+    public func inspect(
+        podspecPath: String, sourceRoot: String, sourceSelection: LocalSourceSelectionMode
+    ) -> LocalSourceInspectionReport {
         var assessment: PodspecSwiftPMAssessment?
         var podspecDigest: String?
         var currentIndex: Int?
@@ -47,18 +53,31 @@ public struct LocalSourceInspector: Sendable {
 
             let rootPath = try InspectionInputPath(sourceRoot)
             let directory = try InspectionDirectory(isAbsolute: rootPath.isAbsolute, components: rootPath.components)
-            let selectionReasons = try Self.selectionReasons(for: inspection)
+            let selectionReasons = try Self.selectionReasons(for: inspection, mode: sourceSelection)
             var sources: [LocalSourceInspectionReport.Source] = []
             var observations: [(Int, InspectionDirectory.Observation)] = []
+            var directories: [(Int, InspectionDirectory.DirectoryObservation)] = []
             if selectionReasons.isEmpty {
                 var totalBytes = 0
-                for (index, path) in inspection.podspec.root.declarations.sourceFiles.enumerated() {
+                let selection = try selectSources(
+                    inspection.podspec.root.declarations.sourceFiles,
+                    mode: sourceSelection, directory: directory
+                )
+                directories = selection.directories
+                for selected in selection.sources {
+                    let index = selected.declarationIndex
+                    let path = selected.path
                     currentIndex = index
                     let read = try directory.read(
                         components: path.split(separator: "/").map(String.init),
                         maximumBytes: min(Self.maximumFileBytes, Self.maximumTotalBytes - totalBytes),
+                        expectedStamp: selected.stamp,
+                        strictByteLimit: sourceSelection == .flatSwiftGlobs,
                         afterChunk: { observer?(.afterSourceChunk(index)) }
                     )
+                    if let stamp = selected.stamp, stamp != read.observation.stamp {
+                        throw LocalSourceInspectionFailure(.changedDuringRead)
+                    }
                     totalBytes += read.observation.byteCount
                     observations.append((index, read.observation))
                     sources.append(.init(
@@ -75,9 +94,29 @@ public struct LocalSourceInspector: Sendable {
             try directory.validate()
             try podspecDirectory.validate()
             try podspecDirectory.validate(podspecRead.observation, maximumBytes: jsonLimit)
+            var enumeratedEntries = 0
+            for (index, observation) in directories {
+                currentIndex = index
+                try directory.validateEntries(
+                    observation, maximumEntries: min(4096, 8192 - enumeratedEntries),
+                    afterEntry: { observer?(.afterDirectoryEntry(declarationIndex: index, pass: 2)) }
+                )
+                enumeratedEntries += observation.entryCount
+                observer?(.afterDirectoryEnumeration(declarationIndex: index, pass: 2))
+            }
             for (index, observation) in observations {
                 currentIndex = index
-                try directory.validate(observation, maximumBytes: Self.maximumFileBytes)
+                // In v2 every reread is capped at its original length. The sum is
+                // therefore at most the first pass's 64 MiB, including changed files.
+                try directory.validate(
+                    observation,
+                    maximumBytes: sourceSelection == .flatSwiftGlobs ? observation.byteCount : Self.maximumFileBytes,
+                    strictByteLimit: sourceSelection == .flatSwiftGlobs
+                )
+            }
+            for (index, observation) in directories {
+                currentIndex = index
+                try directory.validateDirectoryBinding(observation)
             }
             currentIndex = nil
             try directory.validate()
@@ -85,14 +124,18 @@ public struct LocalSourceInspector: Sendable {
 
             if !selectionReasons.isEmpty {
                 return Self.boundedReport(
-                    assessment: assessment, podspecSHA256: podspecDigest,
+                    sourceSelection: sourceSelection, assessment: assessment, podspecSHA256: podspecDigest,
                     status: .unsupportedSelection, sources: [], inventorySHA256: nil,
                     reasons: selectionReasons
                 )
             }
-            let inventory = LocalSourceInventory(podspecSHA256: podspecRead.observation.contentSHA256, sources: sources)
+            let inventory = LocalSourceInventory(
+                schemaVersion: sourceSelection.schemaVersion, providerProfile: sourceSelection.providerProfile,
+                pathProfile: sourceSelection.pathProfile, selectionProfile: sourceSelection.selectionProfile,
+                podspecSHA256: podspecRead.observation.contentSHA256, sources: sources
+            )
             return Self.boundedReport(
-                assessment: assessment, podspecSHA256: podspecDigest,
+                sourceSelection: sourceSelection, assessment: assessment, podspecSHA256: podspecDigest,
                 status: .verifiedObservedBytes, sources: sources,
                 inventorySHA256: localInspectionSHA256(try localInspectionJSON(inventory)), reasons: []
             )
@@ -100,40 +143,37 @@ public struct LocalSourceInspector: Sendable {
             let failure = error as? LocalSourceInspectionFailure
             let code = failure?.code ?? .unreadableInput
             return Self.boundedReport(
-                assessment: assessment, podspecSHA256: podspecDigest,
+                sourceSelection: sourceSelection, assessment: assessment, podspecSHA256: podspecDigest,
                 status: .unavailable, sources: [], inventorySHA256: nil,
                 reasons: [.init(code: code, declarationIndex: currentIndex ?? failure?.declarationIndex)]
             )
         }
     }
 
-    private static func selectionReasons(for inspection: PodspecInspection) throws -> [LocalSourceInspectionReport.Reason] {
+    private static func selectionReasons(
+        for inspection: PodspecInspection, mode: LocalSourceSelectionMode
+    ) throws -> [LocalSourceInspectionReport.Reason] {
         let root = inspection.podspec.root
         let paths = root.declarations.sourceFiles
         guard paths.count <= maximumSources else { throw LocalSourceInspectionFailure(.limitExceeded) }
         var seen: Set<String> = []
         var reasons: [LocalSourceInspectionReport.Reason] = []
         for (index, path) in paths.enumerated() {
-            guard path.utf8.count <= 512 else {
-                throw LocalSourceInspectionFailure(.limitExceeded, declarationIndex: index)
-            }
-            guard !path.isEmpty, !path.hasPrefix("/"),
-                  path.utf8.allSatisfy({
-                      (65...90).contains($0) || (97...122).contains($0) || (48...57).contains($0)
-                          || [UInt8(95), 46, 45, 47, 42, 63, 91, 93, 123, 125].contains($0)
-                  }) else { throw LocalSourceInspectionFailure(.invalidSourcePath, declarationIndex: index) }
-            let components = path.split(separator: "/", omittingEmptySubsequences: false)
-            guard components.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }) else {
-                throw LocalSourceInspectionFailure(.invalidSourcePath, declarationIndex: index)
-            }
+            try InspectionSourcePath.validate(path, declarationIndex: index, mode: mode)
             guard seen.insert(path.lowercased()).inserted else {
                 throw LocalSourceInspectionFailure(.duplicateSourcePath, declarationIndex: index)
             }
-            if path.contains(where: { "*?[]{}".contains($0) }) {
-                reasons.append(.init(code: .unsupportedGlob, declarationIndex: index))
+            if InspectionSourcePath.containsPattern(path) {
+                if mode == .literalOnly || InspectionSourcePath.flatGlobDirectory(path) == nil {
+                    reasons.append(.init(code: .unsupportedGlob, declarationIndex: index))
+                }
             } else if !path.hasSuffix(".swift") {
                 reasons.append(.init(code: .unsupportedSourceType, declarationIndex: index))
             }
+        }
+        if mode == .flatSwiftGlobs {
+            let directories = Set(paths.compactMap(InspectionSourcePath.flatGlobDirectory).map { $0.joined(separator: "/") })
+            guard directories.count <= 16 else { throw LocalSourceInspectionFailure(.limitExceeded) }
         }
         // Validate the entire declared root list before reporting an unsupported
         // shape: an early glob must not hide a later traversal, duplicate or limit.
@@ -155,20 +195,83 @@ public struct LocalSourceInspector: Sendable {
         }
     }
 
+    private struct SelectedSource {
+        let declarationIndex: Int
+        let path: String
+        let stamp: InspectionFileStamp?
+    }
+
+    private struct Selection {
+        var sources: [SelectedSource] = []
+        var directories: [(Int, InspectionDirectory.DirectoryObservation)] = []
+    }
+
+    private func selectSources(
+        _ paths: [String], mode: LocalSourceSelectionMode, directory: InspectionDirectory
+    ) throws -> Selection {
+        var selection = Selection()
+        var seen: Set<String> = []
+        var enumeratedEntries = 0
+        for (index, path) in paths.enumerated() {
+            do {
+                if mode == .flatSwiftGlobs, let components = InspectionSourcePath.flatGlobDirectory(path) {
+                    let observation = try directory.observeEntries(
+                        components: components, maximumEntries: min(4096, 8192 - enumeratedEntries),
+                        afterEntry: { observer?(.afterDirectoryEntry(declarationIndex: index, pass: 1)) }
+                    )
+                    enumeratedEntries += observation.entryCount
+                    selection.directories.append((index, observation))
+                    observer?(.afterDirectoryEnumeration(declarationIndex: index, pass: 1))
+                    var matches = 0
+                    for entry in observation.entries where InspectionSourcePath.matchesFlatSwiftName(entry.nameBytes) {
+                        let matched = try InspectionSourcePath.matchedPath(
+                            directory: components, nameBytes: entry.nameBytes, declarationIndex: index
+                        )
+                        guard !entry.stamp.isSymlink else { throw LocalSourceInspectionFailure(.symbolicLink) }
+                        guard entry.stamp.isRegular else { throw LocalSourceInspectionFailure(.nonRegularFile) }
+                        try appendSource(matched, index: index, stamp: entry.stamp, to: &selection, seen: &seen)
+                        matches += 1
+                    }
+                    guard matches > 0 else { throw LocalSourceInspectionFailure(.noSourceMatches) }
+                } else {
+                    try appendSource(path, index: index, stamp: nil, to: &selection, seen: &seen)
+                }
+            } catch {
+                throw LocalSourceInspectionFailure(
+                    (error as? LocalSourceInspectionFailure)?.code ?? .unreadableInput,
+                    declarationIndex: index
+                )
+            }
+        }
+        return selection
+    }
+
+    private func appendSource(
+        _ path: String, index: Int, stamp: InspectionFileStamp?,
+        to selection: inout Selection, seen: inout Set<String>
+    ) throws {
+        guard seen.insert(path.lowercased()).inserted else {
+            throw LocalSourceInspectionFailure(.duplicateSourcePath)
+        }
+        guard selection.sources.count < Self.maximumSources else { throw LocalSourceInspectionFailure(.limitExceeded) }
+        selection.sources.append(.init(declarationIndex: index, path: path, stamp: stamp))
+    }
+
     private static func boundedReport(
+        sourceSelection: LocalSourceSelectionMode,
         assessment: PodspecSwiftPMAssessment?, podspecSHA256: String?,
         status: LocalSourceInspectionReport.Status, sources: [LocalSourceInspectionReport.Source],
         inventorySHA256: String?, reasons: [LocalSourceInspectionReport.Reason]
     ) -> LocalSourceInspectionReport {
         let report = LocalSourceInspectionReport(
-            assessment: assessment, podspecSHA256: podspecSHA256, status: status,
+            sourceSelection: sourceSelection, assessment: assessment, podspecSHA256: podspecSHA256, status: status,
             sources: sources, inventorySHA256: inventorySHA256, reasons: reasons
         )
         guard (try? report.canonicalJSON()) != nil else {
             // An oversized diagnostic cannot bypass the output budget by being
             // attached to an error. Preserve the exact-byte binding and refuse.
             return LocalSourceInspectionReport(
-                assessment: nil, podspecSHA256: podspecSHA256, status: .unavailable,
+                sourceSelection: sourceSelection, assessment: nil, podspecSHA256: podspecSHA256, status: .unavailable,
                 sources: [], inventorySHA256: nil,
                 reasons: [.init(code: .limitExceeded, declarationIndex: nil)]
             )
@@ -178,9 +281,10 @@ public struct LocalSourceInspector: Sendable {
 }
 
 private struct LocalSourceInventory: Encodable {
-    let schemaVersion = 1
-    let providerProfile = "pkglift.local-source-inspection/v1"
-    let pathProfile = "ascii-relative-path/v1"
+    let schemaVersion: Int
+    let providerProfile: String
+    let pathProfile: String
+    let selectionProfile: String?
     let podspecSHA256: String
     let sources: [LocalSourceInspectionReport.Source]
 }

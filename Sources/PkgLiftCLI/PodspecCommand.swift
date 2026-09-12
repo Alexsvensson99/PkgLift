@@ -26,6 +26,20 @@ struct PodspecInspectCommand: AsyncParsableCommand {
         case json
     }
 
+    enum SourceSelectionOption: String, ExpressibleByArgument {
+        case literalOnly = "literal-only"
+        case flatSwiftGlobs = "flat-swift-globs"
+
+        var mode: LocalSourceSelectionMode {
+            switch self {
+            case .literalOnly:
+                return .literalOnly
+            case .flatSwiftGlobs:
+                return .flatSwiftGlobs
+            }
+        }
+    }
+
     static let configuration = CommandConfiguration(
         commandName: "inspect",
         abstract: "Inspect explicit local source bytes referenced by a Podspec JSON document."
@@ -49,10 +63,17 @@ struct PodspecInspectCommand: AsyncParsableCommand {
     )
     var format: OutputFormat = .text
 
+    @Option(
+        name: .customLong("source-selection"),
+        help: "Source selection profile: literal-only (default) or flat-swift-globs."
+    )
+    var sourceSelection: SourceSelectionOption = .literalOnly
+
     mutating func run() async throws {
         let report = LocalSourceInspector().inspect(
             podspecPath: podspecPath,
-            sourceRoot: sourceRoot
+            sourceRoot: sourceRoot,
+            sourceSelection: sourceSelection.mode
         )
 
         do {
@@ -92,15 +113,22 @@ struct PodspecInspectCommand: AsyncParsableCommand {
             "Migration eligibility: \(report.migrationEligibility)",
         ]
 
+        if let selectionProfile = report.selectionProfile {
+            lines.insert("Selection profile: \(selectionProfile)", at: 2)
+            if report.status == .verifiedObservedBytes {
+                lines.insert("Matched source files: \(report.sources.count)", at: 3)
+            }
+        }
+
         if report.reasons.isEmpty {
             lines.append("Inspection reasons: none")
         } else {
             lines.append("Inspection reasons:")
             lines.append(contentsOf: report.reasons.map { reason in
                 if let declarationIndex = reason.declarationIndex {
-                    return "  - [\(reason.code.rawValue)] declaration #\(declarationIndex) (zero-based source_files index): \(explanation(for: reason.code))"
+                    return "  - [\(reason.code.rawValue)] declaration #\(declarationIndex) (zero-based source_files index): \(explanation(for: reason.code, selectionProfile: report.selectionProfile))"
                 }
-                return "  - [\(reason.code.rawValue)] \(explanation(for: reason.code))"
+                return "  - [\(reason.code.rawValue)] \(explanation(for: reason.code, selectionProfile: report.selectionProfile))"
             })
         }
 
@@ -168,7 +196,10 @@ struct PodspecInspectCommand: AsyncParsableCommand {
         }
     }
 
-    private static func explanation(for code: LocalSourceInspectionReport.Reason.Code) -> String {
+    private static func explanation(
+        for code: LocalSourceInspectionReport.Reason.Code,
+        selectionProfile: String? = nil
+    ) -> String {
         switch code {
         case .invalidInputPath:
             return "An explicit input path is invalid; use a path without traversal or control characters."
@@ -191,6 +222,9 @@ struct PodspecInspectCommand: AsyncParsableCommand {
         case .missingSourceSelection:
             return "No source_files entries were found at the Podspec root. Sources inside subspecs do not count as a root selection."
         case .unsupportedGlob:
+            if selectionProfile != nil {
+                return "This source pattern is outside the flat Swift glob profile; only a literal relative directory followed by /*.swift is supported."
+            }
             return "A source_files entry contains a pattern. This version accepts literal Swift file paths only and does not expand glob patterns."
         case .unsupportedSourceType:
             return "A source_files entry is not a supported literal Swift source selection."
@@ -202,6 +236,8 @@ struct PodspecInspectCommand: AsyncParsableCommand {
             return "Some declarations have unresolved selection semantics. See the separate declaration reasons; this report cannot identify their original field names safely."
         case .duplicateSourcePath:
             return "Source entries repeat or collide when compared without case. No inventory is accepted."
+        case .noSourceMatches:
+            return "The flat Swift glob matched no immediate regular .swift files. No inventory was produced."
         }
     }
 

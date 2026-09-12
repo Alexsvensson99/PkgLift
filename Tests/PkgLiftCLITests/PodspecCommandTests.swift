@@ -14,6 +14,17 @@ final class PodspecCommandTests: XCTestCase {
         XCTAssertEqual(command.podspecPath, "/tmp/example.podspec.json")
         XCTAssertEqual(command.sourceRoot, "/tmp/example-source")
         XCTAssertEqual(command.format.rawValue, "json")
+        XCTAssertEqual(command.sourceSelection.rawValue, "literal-only")
+    }
+
+    func testParsesFlatSwiftGlobSelectionOption() throws {
+        let command = try PodspecInspectCommand.parse([
+            "--podspec", "/tmp/example.podspec.json",
+            "--source-root", "/tmp/example-source",
+            "--source-selection", "flat-swift-globs",
+        ])
+
+        XCTAssertEqual(command.sourceSelection, .flatSwiftGlobs)
     }
 
     func testRequiresBothExplicitInputOptions() {
@@ -40,6 +51,16 @@ final class PodspecCommandTests: XCTestCase {
         }
     }
 
+    func testRejectsUnknownSourceSelectionWithArgumentParserUsage() {
+        XCTAssertThrowsError(try PodspecInspectCommand.parse([
+            "--podspec", "/tmp/example.podspec.json",
+            "--source-root", "/tmp/example-source",
+            "--source-selection", "recursive-globs",
+        ])) { error in
+            XCTAssertTrue(PodspecInspectCommand.message(for: error).contains("--source-selection"))
+        }
+    }
+
     func testRootAndInspectHelpRegisterTheNestedCommand() {
         XCTAssertTrue(PkgLift.helpMessage(includeHidden: false, columns: 120).contains("podspec"))
 
@@ -52,6 +73,7 @@ final class PodspecCommandTests: XCTestCase {
         XCTAssertTrue(help.contains("--podspec"))
         XCTAssertTrue(help.contains("--source-root"))
         XCTAssertTrue(help.contains("--format"))
+        XCTAssertTrue(help.contains("--source-selection"))
     }
 
     func testTextReportDescribesObservedBytesWithoutLeakingInputs() throws {
@@ -112,6 +134,7 @@ final class PodspecCommandTests: XCTestCase {
         XCTAssertEqual(object["origin"] as? String, "notVerified")
         XCTAssertEqual(object["packageValidity"] as? String, "notAssessed")
         XCTAssertEqual(object["migrationEligibility"] as? String, "notAssessed")
+        XCTAssertEqual(object["pathProfile"] as? String, "ascii-relative-path/v1")
         XCTAssertNotNil(object["podspecSHA256"] as? String)
         XCTAssertNotNil(object["inventorySHA256"] as? String)
         XCTAssertEqual((object["sources"] as? [[String: Any]])?.count, 1)
@@ -157,6 +180,71 @@ final class PodspecCommandTests: XCTestCase {
         XCTAssertTrue(output.contains("Local source inspection: unsupportedSelection"))
         XCTAssertTrue(output.contains("[unsupportedGlob] declaration #0"))
         XCTAssertFalse(output.contains(fixture.root.path))
+    }
+
+    func testV2LiteralReportIncludesProfileCountAndKeepsInputsPrivate() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+
+        let report = LocalSourceInspector().inspect(
+            podspecPath: fixture.podspec.path,
+            sourceRoot: fixture.sourceRoot.path,
+            sourceSelection: .flatSwiftGlobs
+        )
+        let text = try PodspecInspectCommand.render(report, format: .text)
+        let json = try PodspecInspectCommand.render(report, format: .json)
+
+        XCTAssertEqual(report.schemaVersion, 2)
+        XCTAssertEqual(report.selectionProfile, "root-literals-and-flat-swift-globs/v1")
+        XCTAssertEqual(report.pathProfile, "ascii-relative-path/v2")
+        XCTAssertEqual(report.status, .verifiedObservedBytes)
+        XCTAssertTrue(text.contains("Selection profile: root-literals-and-flat-swift-globs/v1"))
+        XCTAssertTrue(text.contains("Matched source files: 1"))
+        XCTAssertTrue(json.contains("selectionProfile"))
+        XCTAssertFalse(text.contains(fixture.root.path))
+        XCTAssertFalse(text.contains("Source/Example.swift"))
+        XCTAssertFalse(json.contains(fixture.root.path))
+    }
+
+    func testV2EmptyGlobReportsNoMatchesWithoutInventory() throws {
+        let fixture = try makeFixture(sourceFiles: "Source/*.swift")
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        try FileManager.default.removeItem(at: fixture.sourceRoot.appendingPathComponent("Source/Example.swift"))
+
+        let report = LocalSourceInspector().inspect(
+            podspecPath: fixture.podspec.path,
+            sourceRoot: fixture.sourceRoot.path,
+            sourceSelection: .flatSwiftGlobs
+        )
+        let text = try PodspecInspectCommand.render(report, format: .text)
+
+        XCTAssertEqual(report.status, .unavailable)
+        XCTAssertEqual(report.exitCode, 1)
+        XCTAssertTrue(report.reasons.contains { $0.code == .noSourceMatches })
+        XCTAssertEqual(report.pathProfile, "ascii-relative-path/v2")
+        XCTAssertTrue(text.contains("no immediate regular .swift files"))
+        XCTAssertTrue(report.sources.isEmpty)
+    }
+
+    func testV2RecursiveGlobRemainsUnsupportedAndExplainsProfile() throws {
+        let fixture = try makeFixture(sourceFiles: "Source/**/*.swift")
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+
+        let report = LocalSourceInspector().inspect(
+            podspecPath: fixture.podspec.path,
+            sourceRoot: fixture.sourceRoot.path,
+            sourceSelection: .flatSwiftGlobs
+        )
+        let text = try PodspecInspectCommand.render(report, format: .text)
+
+        XCTAssertEqual(report.status, .unsupportedSelection)
+        XCTAssertEqual(report.exitCode, 0)
+        XCTAssertTrue(report.reasons.contains { $0.code == .unsupportedGlob })
+        XCTAssertEqual(report.pathProfile, "ascii-relative-path/v2")
+        XCTAssertTrue(text.contains("outside the flat Swift glob profile"))
+        XCTAssertFalse(text.contains("Matched source files: 0"))
+        XCTAssertFalse(text.contains("Source/**/*.swift"))
+        XCTAssertTrue(text.contains("Selection profile: root-literals-and-flat-swift-globs/v1"))
     }
 
     func testGlobExplanationPrecedesDeclarationDetailsAndKeepsJSONUnchanged() throws {

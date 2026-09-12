@@ -37,8 +37,13 @@ or migration approval.
 
 ## Release status
 
-This is preparation for an unreleased 0.7.1 candidate. Publication requires the
-merged preparation commit and its own successful main CI, followed by reviewed
-release metadata and signed/notarized distribution checks. No release manifest
-is included in this product-preparation change. GitHub and Homebrew publication
-remain separate approval steps under the [distribution contract](Distribution.md).
+[PkgLift 0.7.1](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.1)
+was published on 2026-09-12 at
+`a97aa7e627b72be25d9a79774709bb7d728dc8b0`, following the reviewed manifest and
+successful main checks. The [signed distribution run](https://github.com/Alexsvensson99/PkgLift/actions/runs/34672420166)
+completed Apple notarization and artifact acceptance; the
+[publication run](https://github.com/Alexsvensson99/PkgLift/actions/runs/34672414870)
+published the verified archive. [Homebrew update #13](https://github.com/Alexsvensson99/homebrew-tap/pull/13)
+was merged and its supported macOS CI passed the formula's full installation
+checks. Future releases retain the separate approval steps in the
+[distribution contract](Distribution.md).
