@@ -144,22 +144,26 @@ release retains this exact synthetic S1 boundary.
 
 # Next
 
-## v0.7 candidate — Local source inspection
+## v0.8.0 candidate — Bounded flat Swift source selection
 
-The implementation is merged to main. Release preparation sets the source
-version to `0.7.0`; distribution remains unreleased. It does not establish a
-0.7 distribution, public pilot
-result, Homebrew update, or release date.
+Local source inspection is published in v0.7.1. The bounded flat-glob feature
+is merged to main, and this checkout prepares source version `0.8.0` for a
+separate release. No v0.8.0 distribution, tag or Homebrew update is claimed.
 
-- Add `pkglift podspec inspect` with explicit `--podspec`, `--source-root`, and
-  text or canonical JSON output.
-- Observe only literal root `.swift` selections through a no-follow, bounded
-  filesystem adapter; reject symlink paths, glob expansion, traversal,
-  case-fold collisions, unsafe file types, limits, and observed changes.
+- Keep the default `pkglift podspec inspect` literal-only v1 path grammar,
+  canonical JSON and text unchanged.
+- Add explicit `--source-selection flat-swift-globs` for literal Swift paths
+  and nonrecursive `<literal-directory>/*.swift` selections. V2 allows literal
+  `+` in path components; recursive patterns, exclusions and subspec selection
+  remain unsupported.
+- Retain no-follow, bounded filesystem access and reject empty matches,
+  overlapping selections, case-fold collisions, unsafe file types, exceeded
+  limits and observed changes without partial inventories.
 - Report `verifiedObservedBytes`, `unsupportedSelection`, or `unavailable` while
   retaining the exact original v0.5 assessment and its reasons.
-- Keep disk-derived `pkglift.local-source-inspection/v1` reports separate from
-  the released synthetic `pkglift.synthetic-local/v1` S1 evidence contract.
+- Use separate v2 report/path identities and an explicit selection profile;
+  neither v1 nor v2 disk reports supply synthetic `pkglift.synthetic-local/v1`
+  S1 evidence. See the [0.8.0 release notes](Documentation/ReleaseNotes-0.8.0.md).
 
 Observed bytes remain neither compatibility nor provenance evidence, and this
 candidate creates no package validity, migration-eligibility, classifier,

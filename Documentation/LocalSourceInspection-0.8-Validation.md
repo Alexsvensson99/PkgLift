@@ -1,9 +1,10 @@
 # Local source inspection 0.8 — validation record
 
-Recorded **2026-09-12** for the unreleased 0.8 feature candidate. The source version
-remains `0.7.1` until release preparation. The local checks and all eight
-debug/release field-pilot comparisons below **passed**. This
-record does not establish CI completion, a merge or publication of 0.8.
+Recorded **2026-09-12** for the unreleased 0.8 feature change, before 0.8.0
+release preparation. At that time the source version was `0.7.1`. The local
+checks and all eight debug/release field-pilot comparisons below **passed**.
+This historical record does not establish 0.8.0 candidate-version verification,
+CI completion, a merge or publication.
 
 ## Contract under test
 
@@ -63,10 +64,12 @@ identical JSON from copied physical roots, privacy checks and per-run unchanged
 input bytes, modes and link targets all passed. The five unsupported cases
 retained empty inventories and omitted the inventory hash.
 
-## Candidate identity and limits
+## Historical feature-validation identity and limits
 
-The tested source files are included in this feature change, based on main
-`a97aa7e627b72be25d9a79774709bb7d728dc8b0`. Binary SHA-256 values are:
+The tested source files were included in this feature change, based on main
+`a97aa7e627b72be25d9a79774709bb7d728dc8b0`, while the source version was
+`0.7.1`. The following binary SHA-256 values identify those historical local
+executables only:
 
 | Executable | SHA-256 |
 | --- | --- |
@@ -76,8 +79,8 @@ The tested source files are included in this feature change, based on main
 
 The reference archive SHA-256 was independently checked against the public
 release asset: `cec8f04d732ec8c2c3d901c1b4b6d1a6215fd7ba0ef51a222b8e95e99aec553d`.
-Candidate fingerprints identify these local executables; they are not signed
-0.8 distribution artifacts.
+These historical fingerprints do not identify 0.8.0 candidate executables and
+are not signed 0.8.0 distribution artifacts.
 
 CI, merge and public distribution require their own exact-source evidence and
 are outside this local validation record. No third-party source files or private

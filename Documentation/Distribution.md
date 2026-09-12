@@ -6,9 +6,11 @@ and the adjacent `PkgLift_PkgLiftRegistry.bundle` resource directory.
 
 [PkgLift v0.7.1](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.1)
 is published and available through the [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
-This checkout develops the unreleased 0.8 inspection candidate; its source
-version remains `0.7.1` until separate release preparation. No 0.8 distribution
-is published by this feature change.
+This checkout develops the unreleased 0.8.0 inspection release candidate; its source
+version is `0.8.0` for release preparation. No 0.8.0 distribution is published;
+[0.7.1 remains the public release](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.1).
+See the [0.8.0 release notes](ReleaseNotes-0.8.0.md) for the candidate scope and
+remaining verification boundary.
 The [v0.6 release evidence](GeneratedPackageV06ReleaseEvidence.md) remains a
 historical record of that release's checks.
 

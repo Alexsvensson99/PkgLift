@@ -2,9 +2,10 @@
 
 Local source inspection shipped in PkgLift 0.7.0, and
 [0.7.1 is published](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.1)
-with clearer text diagnostics. This checkout develops the **unreleased 0.8
-candidate**, which adds an explicit flat Swift glob mode. Its source version
-remains `0.7.1` until separate release preparation.
+with clearer text diagnostics. This checkout develops the **unreleased 0.8.0
+release candidate**, which adds an explicit flat Swift glob mode. Its source
+version is `0.8.0`; [0.7.1 remains the published release](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.1).
+See the [0.8.0 release notes](ReleaseNotes-0.8.0.md) for candidate status.
 
 `pkglift podspec inspect` reads a caller-supplied Podspec JSON document and a
 caller-supplied local source root. Its complete result says which root source
