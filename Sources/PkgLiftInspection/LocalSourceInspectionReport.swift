@@ -23,16 +23,17 @@ public struct LocalSourceInspectionReport: Sendable, Encodable {
             case limitExceeded, changedDuringRead
             case missingSourceSelection, unsupportedGlob, unsupportedSourceType
             case ambiguousScope, excludedSources, unknownSelectionSemantics
-            case duplicateSourcePath
+            case duplicateSourcePath, noSourceMatches
         }
 
         public let code: Code
         public let declarationIndex: Int?
     }
 
-    public let schemaVersion: Int = 1
-    public let providerProfile: String = "pkglift.local-source-inspection/v1"
-    public let pathProfile: String = "ascii-relative-path/v1"
+    public let schemaVersion: Int
+    public let providerProfile: String
+    public let selectionProfile: String?
+    public let pathProfile: String
     public let origin: String = "notVerified"
     public let selectionCoverage: String = "declaredRootSourcesOnly"
     public let packageValidity: String = "notAssessed"
@@ -43,6 +44,23 @@ public struct LocalSourceInspectionReport: Sendable, Encodable {
     public let sources: [Source]
     public let inventorySHA256: String?
     public let reasons: [Reason]
+
+    init(
+        sourceSelection: LocalSourceSelectionMode = .literalOnly,
+        assessment: PodspecSwiftPMAssessment?, podspecSHA256: String?,
+        status: Status, sources: [Source], inventorySHA256: String?, reasons: [Reason]
+    ) {
+        schemaVersion = sourceSelection.schemaVersion
+        pathProfile = sourceSelection.pathProfile
+        providerProfile = sourceSelection.providerProfile
+        selectionProfile = sourceSelection.selectionProfile
+        self.assessment = assessment
+        self.podspecSHA256 = podspecSHA256
+        self.status = status
+        self.sources = sources
+        self.inventorySHA256 = inventorySHA256
+        self.reasons = reasons
+    }
 
     public var exitCode: Int32 { status == .unavailable ? 1 : 0 }
 
@@ -72,6 +90,8 @@ enum LocalSourceInspectionEvent: Sendable, Equatable {
     case afterSourceChunk(Int)
     case afterSourceRead(Int)
     case beforeFinalValidation
+    case afterDirectoryEntry(declarationIndex: Int, pass: Int)
+    case afterDirectoryEnumeration(declarationIndex: Int, pass: Int)
 }
 
 func localInspectionJSON(_ value: some Encodable) throws -> Data {

@@ -4,9 +4,11 @@ PkgLift v0.1.1 and later is distributed for Apple Silicon on macOS 14 or later.
 The public archive must contain a Developer ID-signed, Apple-notarized executable
 and the adjacent `PkgLift_PkgLiftRegistry.bundle` resource directory.
 
-[PkgLift v0.7.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.0)
+[PkgLift v0.7.1](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.1)
 is published and available through the [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
-This checkout prepares 0.7.1; it does not claim a published 0.7.1 distribution.
+This checkout develops the unreleased 0.8 inspection candidate; its source
+version remains `0.7.1` until separate release preparation. No 0.8 distribution
+is published by this feature change.
 The [v0.6 release evidence](GeneratedPackageV06ReleaseEvidence.md) remains a
 historical record of that release's checks.
 
