@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-12
+
 ### Added
-- Add the 0.8 candidate's opt-in `podspec inspect --source-selection flat-swift-globs`
+- Add the opt-in `podspec inspect --source-selection flat-swift-globs`
   mode for literal Swift paths and bounded, nonrecursive `<literal-directory>/*.swift`
   selections. Its separate v2 report binds the selection profile and complete
   ordered source inventory. The v2 path profile accepts literal `+` characters
@@ -18,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bound directory observation and revalidation; refuse empty matches, overlaps,
   unsafe entries, exceeded budgets and observed changes without partial inventories.
   Original Podspec assessment, provenance and migration boundaries remain intact.
+
+### Changed
+- Set the source version to `0.8.0`. Regenerate saved migration plans after
+  upgrading; plans remain bound to their creating version.
 
 ## [0.7.1] - 2026-09-12
 

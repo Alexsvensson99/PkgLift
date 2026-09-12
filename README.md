@@ -64,13 +64,13 @@ The release adds a narrow library API in `PkgLiftCocoaPods` for caller-supplied 
 
 The API does not read, expand, traverse, hash, or otherwise verify local files. It does not verify source provenance, resolve packages or products, generate `Package.swift`, load Podspecs through the CLI, change a migration plan, mutate an Xcode project, remove CocoaPods, or broaden `AUTO` eligibility. See the [v0.6.0 release notes](Documentation/ReleaseNotes-0.6.0.md), [generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), [Stage 1 validation record](Documentation/GeneratedPackageStage1Validation.md), and [v0.6 release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) for the pinned S1 boundary and verification results.
 
-## Local source inspection — 0.7.1 released, 0.8 candidate
+## Local source inspection — 0.7.1 released, 0.8.0 release candidate
 
 [PkgLift 0.7.1](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.1) is published.
 Its
 `pkglift podspec inspect --podspec <file> --source-root <directory>`
 command reports observed local root-source bytes from literal Swift paths under
-`pkglift.local-source-inspection/v1`. The unreleased 0.8 candidate adds the explicit
+`pkglift.local-source-inspection/v1`. The unreleased 0.8.0 release candidate adds the explicit
 `--source-selection flat-swift-globs` option for immediate Swift files selected by
 a pattern such as `Sources/*.swift`, using a separate v2 report. Its
 `ascii-relative-path/v2` profile also accepts literal `+` in path components,
@@ -81,8 +81,9 @@ exclusions and subspec selection remain unsupported.
 Local inspection is separate from the released,
 synthetic `pkglift.synthetic-local/v1` S1 API: it does not create or supply S1
 evidence, prove SwiftPM compatibility or provenance, or affect package validity,
-migration eligibility, or `AUTO`. See [Local source inspection](Documentation/LocalSourceInspection.md)
-and the [0.7.1 release notes](Documentation/ReleaseNotes-0.7.1.md).
+migration eligibility, or `AUTO`. See [Local source inspection](Documentation/LocalSourceInspection.md),
+the [0.8.0 release notes](Documentation/ReleaseNotes-0.8.0.md), and the
+[0.7.1 release notes](Documentation/ReleaseNotes-0.7.1.md).
 
 ## What Is New in v0.5.0
 
@@ -126,7 +127,7 @@ PkgLift targets partial CocoaPods-to-SwiftPM migration in native Xcode projects.
 | Kotlin Multiplatform (KMP) | No heuristic detection is claimed; local pods and dynamic generation remain non-automatic under existing safety rules |
 | External Git pod | Since v0.4.0, PkgLift can analyze bounded literal repository/ref provenance, but the dependency remains `REVIEW`, `BLOCKED`, or `UNKNOWN` and is never migrated automatically |
 | Local `:path` pod | Detected as an external source; typed local provenance and automatic migration are not implemented |
-| Podspec JSON declarations | Released v0.5.0/v0.6.0 APIs inspect caller-supplied in-memory declarations and one synthetic S1 blueprint shape. This checkout's unreleased local-report command is separate, observes only explicitly selected bytes, and cannot authorize migration |
+| Podspec JSON declarations | Released v0.5.0/v0.6.0 APIs inspect caller-supplied in-memory declarations and one synthetic S1 blueprint shape. The local-report command is separate, observes only explicitly selected bytes, and cannot authorize migration |
 
 Host support remains macOS 14 or later on Apple Silicon (`arm64`). Distribution is through a Developer ID-signed and Apple-notarized binary, Homebrew, or a source build. See [Limitations](#limitations) for the intentionally conservative boundaries.
 
@@ -209,7 +210,7 @@ pkglift verify \
 - `verify`: Verifies the project after migration and can optionally resolve packages and run a build.
 - `diagnostics`: Writes a local, privacy-preserving JSON report without uploading it.
 - `registry validate`: Validates local and bundled registry mappings.
-- `podspec inspect`: Reads only explicit `--podspec` and `--source-root` inputs and reports observed local source bytes. The unreleased 0.8 candidate offers `--source-selection flat-swift-globs`; the default retains the released literal-only behavior. It does not discover a project or authorize migration. See [Local source inspection](Documentation/LocalSourceInspection.md).
+- `podspec inspect`: Reads only explicit `--podspec` and `--source-root` inputs and reports observed local source bytes. The unreleased 0.8.0 release candidate offers `--source-selection flat-swift-globs`; the default retains the released literal-only behavior. It does not discover a project or authorize migration. See [Local source inspection](Documentation/LocalSourceInspection.md).
 - `version`: Prints the current version.
 
 `analyze` and `plan` accept `--portable-json` as an alternative to `--json`. Portable output removes local paths and URL credentials and adds `portableOutput.version = 1`, but still contains dependency and target names. External Git literals are already canonicalized and stripped of credentials, queries, and fragments before either standard or portable JSON is constructed. `plan --portable-json` prints the portable representation while keeping the standard executable plan in `.pkglift/plan.json`.
@@ -271,7 +272,7 @@ PkgLift retains these safety boundaries:
 - Dynamic Ruby, install hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, external pod sources, and ambiguous target mappings are non-automatic. PkgLift analyzes only bounded literal `:git` provenance; every external dependency still resolves to `REVIEW`, `BLOCKED`, or `UNKNOWN`, never `AUTO`.
 - Local `:path` provenance, repository network resolution, Podspec generation, and automatic external-source migration are not implemented.
 - The pure Podspec assessment library accepts caller-supplied in-memory JSON. It does not read Podspec files, execute Ruby or CocoaPods, resolve effective inheritance, inspect filesystem paths or artifacts, generate package metadata, or change migration classification. The v0.6 S1 API validates supplied paths and digest bindings but does not verify source-file existence, source contents, source-content digest assertions, or provenance.
-- Local source inspection observes bytes only through explicit CLI paths. The default refuses all wildcards; the unreleased 0.8 option supports only bounded, nonrecursive `<literal-directory>/*.swift` selections. Both modes refuse symlink paths, unsupported selectors, unsafe filesystem inputs, limits, and observed changes. Neither establishes compatibility, provenance, package validity, or migration eligibility.
+- Local source inspection observes bytes only through explicit CLI paths. The default refuses all wildcards; the unreleased 0.8.0 release candidate supports only bounded, nonrecursive `<literal-directory>/*.swift` selections. Both modes refuse symlink paths, unsupported selectors, unsafe filesystem inputs, limits, and observed changes. Neither establishes compatibility, provenance, package validity, or migration eligibility.
 - Confirmed Carthage integration and React Native, Flutter, or Capacitor Podfile markers prevent `AUTO`; PkgLift does not migrate or remove those integrations.
 - KMP is not detected through speculative file or name heuristics.
 - Base pod mappings never apply automatically to undeclared subspecs.
