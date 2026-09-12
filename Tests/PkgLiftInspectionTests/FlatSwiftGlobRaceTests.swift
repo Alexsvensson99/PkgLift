@@ -154,8 +154,10 @@ struct FlatSwiftGlobRaceTests {
         }
         let report = fixture.inspect()
         if kind == "exactTotal" {
+            let totalBytes: Int = report.sources.reduce(0) { $0 + $1.byteCount }
+            let expectedBytes: Int = 64 * 1_024 * 1_024
             #expect(report.status == .verifiedObservedBytes)
-            #expect(report.sources.reduce(0) { $0 + $1.byteCount } == 64 * 1_024 * 1_024)
+            #expect(totalBytes == expectedBytes)
         } else {
             refuse(report, code: .limitExceeded)
         }
