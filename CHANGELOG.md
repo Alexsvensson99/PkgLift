@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-15
+
 ### Added
 - Add KeychainAccess 4.2.2 and DeviceKit 5.8.0 registry mappings for Swift
   consumers targeting iOS 15 or later, after independent CocoaPods and SwiftPM
@@ -20,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Update the pinned CodeQL Action to 4.38.0.
+- Set the source version to `0.9.0`. Regenerate saved migration plans after
+  upgrading; plans remain bound to their creating version.
 
 ## [0.8.0] - 2026-09-12
 

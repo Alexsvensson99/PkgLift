@@ -64,6 +64,26 @@ The release adds a narrow library API in `PkgLiftCocoaPods` for caller-supplied 
 
 The API does not read, expand, traverse, hash, or otherwise verify local files. It does not verify source provenance, resolve packages or products, generate `Package.swift`, load Podspecs through the CLI, change a migration plan, mutate an Xcode project, remove CocoaPods, or broaden `AUTO` eligibility. See the [v0.6.0 release notes](Documentation/ReleaseNotes-0.6.0.md), [generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), [Stage 1 validation record](Documentation/GeneratedPackageStage1Validation.md), and [v0.6 release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) for the pinned S1 boundary and verification results.
 
+## Verified Swift consumer mappings — 0.9.0 release candidate
+
+[PkgLift 0.8.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.8.0)
+remains the public release. The unreleased 0.9.0 release candidate adds exact
+registry mappings for KeychainAccess 4.2.2 and DeviceKit 5.8.0, limited to
+Swift-only iOS consumers targeting iOS 15 or later. The mappings were admitted
+through CocoaPods and SwiftPM consumer builds, then exercised through full
+migration and build coverage. DeviceKit additionally checks generated source
+and built privacy resources. Candidate-specific proof is recorded from the
+preparation pull request and exact-main checks, with separate private artifact
+acceptance under the [distribution contract](Documentation/Distribution.md).
+
+The mappings use registry schema 2 to bind consumer platform and deployment
+target evidence. The existing `swiftpm.minimumVersion` policy is unchanged:
+later stable lockfile versions at or above the minimum can qualify for `AUTO`
+when all other checks pass. The concrete consumer builds prove only the two
+pinned versions above. Older clients reject schema-2 mappings, while schema-1 mappings
+retain their existing behavior. See [verified consumer mappings](Documentation/VerifiedConsumerMappings.md)
+and the [0.9.0 release notes](Documentation/ReleaseNotes-0.9.0.md).
+
 ## Local source inspection — 0.8.0 released
 
 [PkgLift 0.8.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.8.0) is published.
@@ -269,7 +289,7 @@ PkgLift retains these safety boundaries:
 - Only CocoaPods-to-SwiftPM migration is supported.
 - Migration is partial: non-automatic pods and their CocoaPods integration are preserved.
 - A stable `major.minor.patch` lockfile version at or above the exact mapping's verified SwiftPM minimum, exactly one matching Xcode target, a complete non-empty target language profile, and mapping support for every detected language are required for `AUTO`.
-- Schema-2 mappings also require a matching, statically resolved consumer platform and a deployment target at or above their verified minimum. The unreleased KeychainAccess and DeviceKit mappings are limited to Swift consumers targeting iOS 15 or later; see [consumer build evidence](Documentation/VerifiedConsumerMappings.md).
+- Schema-2 mappings also require a matching, statically resolved consumer platform and a deployment target at or above their verified minimum. The 0.9.0 release candidate's KeychainAccess and DeviceKit mappings are limited to Swift consumers targeting iOS 15 or later; see [consumer build evidence](Documentation/VerifiedConsumerMappings.md).
 - Dynamic Ruby, install hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, external pod sources, and ambiguous target mappings are non-automatic. PkgLift analyzes only bounded literal `:git` provenance; every external dependency still resolves to `REVIEW`, `BLOCKED`, or `UNKNOWN`, never `AUTO`.
 - Local `:path` provenance, repository network resolution, Podspec generation, and automatic external-source migration are not implemented.
 - The pure Podspec assessment library accepts caller-supplied in-memory JSON. It does not read Podspec files, execute Ruby or CocoaPods, resolve effective inheritance, inspect filesystem paths or artifacts, generate package metadata, or change migration classification. The v0.6 S1 API validates supplied paths and digest bindings but does not verify source-file existence, source contents, source-content digest assertions, or provenance.

@@ -10,6 +10,10 @@ is published for source commit
 [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
 See the [0.8.0 release notes](ReleaseNotes-0.8.0.md) for the shipped scope,
 signed distribution, publication and Homebrew evidence.
+This checkout prepares the unreleased 0.9.0 release candidate. No 0.9.0
+distribution is published; 0.8.0 remains the public release. Its candidate
+checks, private artifact acceptance and the protected approval gates below must
+complete separately. See the [0.9.0 release notes](ReleaseNotes-0.9.0.md).
 The [v0.6 release evidence](GeneratedPackageV06ReleaseEvidence.md) remains a
 historical record of that release's checks.
 

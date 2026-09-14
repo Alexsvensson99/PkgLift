@@ -174,22 +174,25 @@ safety evidence, implementation review and release approval.
 
 # Next
 
-## v0.9 — Verified Swift Consumer Mappings
+## v0.9.0 — Verified Swift Consumer Mappings
 
-PkgLift 0.8.0 remains the current public release. v0.9 is an unreleased roadmap
-target; the source version remains `0.8.0` until a separately reviewed release
-preparation change. The goal is to add exact mappings that produce verified
-migration value for supported Swift consumers, rather than infer migration
-eligibility from local source inspection.
+PkgLift 0.8.0 remains the current public release. Version 0.9.0 is an
+unreleased release candidate prepared from
+`733964a3c9fa93ed4ab213d83cbf96a482f1b36b`. It adds exact mappings that
+produce verified migration value for supported Swift consumers, rather than
+infer migration eligibility from local source inspection. Candidate-specific
+proof is recorded through preparation pull-request and exact-main checks, with
+separate private artifact acceptance before distribution.
 
 [KeychainAccess #55](https://github.com/Alexsvensson99/PkgLift/issues/55) and
 [DeviceKit #58](https://github.com/Alexsvensson99/PkgLift/issues/58) are the first
 two mappings. Both passed the [consumer build admission](Documentation/VerifiedConsumerMappings.md)
 before their registry entries were added, including DeviceKit's generated source
-and built privacy resources. [PR #110](https://github.com/Alexsvensson99/PkgLift/pull/110)
-tracks implementation and requires the complete migration/build gates before
-integration. New platform constraints use registry schema 2 so older clients
-reject the mapping instead of ignoring its safety boundary.
+and built privacy resources. The feature baseline also passed full KeychainAccess
+and DeviceKit consumer, migration and build coverage in
+[run 34905481290](https://github.com/Alexsvensson99/PkgLift/actions/runs/34905481290).
+New platform constraints use registry schema 2 so older clients reject the
+mapping instead of ignoring its safety boundary.
 
 Acceptance criteria for each mapping:
 
@@ -205,8 +208,8 @@ Acceptance criteria for each mapping:
   Limit the new mappings to their verified iOS 15-or-later Swift consumer profile.
   DeviceKit fixture checks must fail when required resources or generated source
   are absent, changed or unverified.
-- Pass every required pull-request check and the exact-main checks before release
-  preparation.
+- Pass every required candidate check and the exact-main checks before any
+  distribution preparation.
 
 This milestone does not add Podspec or package generation, infer source
 provenance, or make a dependency `AUTO` without the existing exact registry,
