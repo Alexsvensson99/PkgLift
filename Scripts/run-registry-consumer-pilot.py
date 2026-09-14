@@ -54,6 +54,15 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def verify_migrated_podfile(original: bytes, migrated: bytes, name: str, version: str):
+    """Only the fixture's exact pod declaration may disappear; keep its target."""
+    declaration = f"  pod '{name}', '{version}', :modular_headers => true\n".encode()
+    lines = original.splitlines(keepends=True)
+    require(lines.count(declaration) == 1, "Fixture must contain exactly one reviewed pod declaration")
+    expected = b"".join(line for line in lines if line != declaration)
+    require(migrated == expected, "Migrated Podfile must remove only the reviewed pod declaration")
+
+
 def tree_state(root):
     result = []
     for path in sorted(root.rglob("*")):
@@ -214,6 +223,7 @@ def main():
             shutil.copytree(fixture, migration)
             run("migration-pod-install", ["pod", "install", "--clean-install"], migration, seconds=600)
             lock_check(migration)
+            podfile_before = (migration / "Podfile").read_bytes()
             app_before = tree_state(migration / "App")
             common = ["--path", migration, "--project", target + ".xcodeproj", "--no-color"]
             analysis = json.loads(run("analysis", [binary, "analyze", *common, "--json"], json_output=True).read_text())
@@ -234,7 +244,8 @@ def main():
             run("dry-run", [binary, "migrate", *common])
             require(tree_state(migration) == dry_before, "Dry run mutated the fixture")
             run("apply", [binary, "migrate", *common, "--apply"])
-            require(args.case not in (migration / "Podfile").read_text(), "Migrated pod declaration remains")
+            shutil.copyfile(migration / "Podfile", reports / "migrated-Podfile")
+            verify_migrated_podfile(podfile_before, (migration / "Podfile").read_bytes(), args.case, case["version"])
             run("migrated-pod-install", ["pod", "install", "--clean-install"], migration, seconds=600)
             migrated_lock = migration / "Podfile.lock"
             require(not migrated_lock.exists() or args.case not in migrated_lock.read_text(),

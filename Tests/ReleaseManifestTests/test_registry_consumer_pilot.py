@@ -143,5 +143,68 @@ class RegistryConsumerPilotGuardsTests(unittest.TestCase):
         )
 
 
+class MigratedPodfileTests(unittest.TestCase):
+    @staticmethod
+    def declaration(name, version):
+        return f"  pod '{name}', '{version}', :modular_headers => true\n".encode()
+
+    def original_podfile(self, name, version):
+        return (
+            b"platform :ios, '15.0'\n"
+            + f"target 'Swift{name}' do\n".encode()
+            + self.declaration(name, version)
+            + b"end\n"
+        )
+
+    def verify(self, original, migrated, name, version):
+        return pilot.verify_migrated_podfile(original, migrated, name, version)
+
+    def test_accepts_each_reviewed_target_when_only_its_pod_declaration_is_removed(self):
+        for name, version in (("KeychainAccess", "4.2.2"), ("DeviceKit", "5.8.0")):
+            with self.subTest(name=name):
+                original = self.original_podfile(name, version)
+                expected = original.replace(self.declaration(name, version), b"")
+                self.assertIsNone(self.verify(original, expected, name, version))
+
+    def test_rejects_retained_or_changed_pod_declaration(self):
+        name, version = "DeviceKit", "5.8.0"
+        original = self.original_podfile(name, version)
+        declaration = self.declaration(name, version)
+        variants = {
+            "retained": original,
+            "changed-version": original.replace(declaration, self.declaration(name, "5.8.1")),
+            "changed-options": original.replace(declaration, b"  pod 'DeviceKit', '5.8.0'\n"),
+        }
+        for label, migrated in variants.items():
+            with self.subTest(label=label):
+                with self.assertRaises(RuntimeError):
+                    self.verify(original, migrated, name, version)
+
+    def test_rejects_any_unrelated_podfile_change(self):
+        name, version = "KeychainAccess", "4.2.2"
+        original = self.original_podfile(name, version)
+        expected = original.replace(self.declaration(name, version), b"")
+        variants = {
+            "target": expected.replace(b"SwiftKeychainAccess", b"SwiftDifferentTarget"),
+            "platform": expected.replace(b"'15.0'", b"'16.0'"),
+        }
+        for label, migrated in variants.items():
+            with self.subTest(label=label):
+                with self.assertRaises(RuntimeError):
+                    self.verify(original, migrated, name, version)
+
+    def test_rejects_original_without_exactly_one_expected_declaration(self):
+        name, version = "DeviceKit", "5.8.0"
+        declaration = self.declaration(name, version)
+        originals = {
+            "missing": b"platform :ios, '15.0'\ntarget 'SwiftDeviceKit' do\nend\n",
+            "duplicate": b"platform :ios, '15.0'\n" + declaration + declaration + b"end\n",
+        }
+        for label, original in originals.items():
+            with self.subTest(label=label):
+                with self.assertRaises(RuntimeError):
+                    self.verify(original, original.replace(declaration, b""), name, version)
+
+
 if __name__ == "__main__":
     unittest.main()
