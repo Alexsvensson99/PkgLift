@@ -365,4 +365,91 @@ final class RegistryLoaderTests: XCTestCase {
             }
         }
     }
+
+    func testConsumerPlatformEvidenceLoadsFromYAML() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftRegistryPlatforms-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let mapping = """
+        schemaVersion: 2
+        pod:
+          name: PlatformPod
+        swiftpm:
+          repository: https://example.com/owner/repository
+          products: [PlatformPod]
+          supportedConsumerPlatforms:
+            - platform: iOS
+              minimumDeploymentTarget: "15.0"
+        migration:
+          confidence: verified
+        """
+        try mapping.write(
+            to: directory.appendingPathComponent("PlatformPod.yml"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let loader = RegistryLoader(configPaths: [directory], useBundledRegistry: false)
+
+        try await loader.load()
+
+        let loaded = await loader.lookup(name: "PlatformPod")
+        XCTAssertEqual(
+            loaded?.swiftpm.supportedConsumerPlatforms,
+            [SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.0")]
+        )
+    }
+
+    func testConsumerPlatformSchemaContractIsRejectedDuringLoad() async throws {
+        let cases = [
+            """
+            schemaVersion: 1
+            pod:
+              name: SchemaOneConstraint
+            swiftpm:
+              repository: https://example.com/owner/repository
+              products: [SchemaOneConstraint]
+              supportedConsumerPlatforms:
+                - platform: iOS
+                  minimumDeploymentTarget: "15.0"
+            migration:
+              confidence: verified
+            """,
+            """
+            schemaVersion: 2
+            pod:
+              name: SchemaTwoMissingConstraint
+            swiftpm:
+              repository: https://example.com/owner/repository
+              products: [SchemaTwoMissingConstraint]
+            migration:
+              confidence: verified
+            """,
+        ]
+
+        for mapping in cases {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("PkgLiftRegistryPlatformSchema-\(UUID().uuidString)")
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            try mapping.write(
+                to: directory.appendingPathComponent("Mapping.yml"),
+                atomically: true,
+                encoding: .utf8
+            )
+            let loader = RegistryLoader(configPaths: [directory], useBundledRegistry: false)
+
+            do {
+                try await loader.load()
+                XCTFail("Expected consumer-platform schema validation failure")
+            } catch let error as RegistryError {
+                guard case .validationFailed(let errors) = error else {
+                    return XCTFail("Expected validationFailed, got \(error)")
+                }
+                XCTAssertTrue(errors.contains {
+                    $0.fieldPath == "swiftpm.supportedConsumerPlatforms"
+                })
+            }
+        }
+    }
 }

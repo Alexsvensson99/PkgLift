@@ -7,10 +7,3 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - KeychainAccess
-
-SPEC CHECKSUMS:
-  KeychainAccess: c0c4f7f38f6fc7bbe58f5702e25f7bd2f65abf51
-
-PODFILE CHECKSUM: 8abc3ccc8416cdabd2c5ea072f796772479f2fad
-
-COCOAPODS: 1.16.2

@@ -32,5 +32,6 @@ registry mapping or classify it AUTO until CI has built both integration paths:
 After the mapping is added, the post-migration fixture must also pass
 `pkglift verify --build` before integration.
 
-The committed lockfile is a parser fixture for the exact resolved version. The
-baseline CI run refreshes it with CocoaPods and records the resulting lockfile.
+The committed lockfile is a synthetic parser fixture for the exact resolved
+version and deliberately omits installation checksums and tool versions. The
+baseline CI run refreshes it with CocoaPods and records the actual lockfile.

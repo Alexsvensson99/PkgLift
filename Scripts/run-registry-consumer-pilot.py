@@ -19,7 +19,7 @@ CASES = {
         "revision": "84e546727d66f1adc5439debad16270d0fdd04e7",
         "source": "Lib/KeychainAccess/Keychain.swift",
         "sourceSHA256": "643188af53d8dbecddd3de1a6e6888ea801d1bc4f022138a4a56a6aea0e7a274",
-        "specURL": "https://cdn.cocoapods.org/Specs/f/6/3/KeychainAccess/4.2.2/KeychainAccess.podspec.json",
+        "specURL": "https://raw.githubusercontent.com/CocoaPods/Specs/79116babc7079cdce2f90f34adbb2667532e637d/Specs/f/6/3/KeychainAccess/4.2.2/KeychainAccess.podspec.json",
         "specSHA256": "4ce03eee844a5d98600f81b6284cb17968005d0504e4a7a5b86ad4f4e87cbc48",
     },
     "DeviceKit": {
@@ -27,7 +27,7 @@ CASES = {
         "revision": "56b997e8a61707218f9af09f32b2a1d1806fd792",
         "source": "Source/Device.generated.swift",
         "sourceSHA256": "025d97e3d3071b1b7a080a4ed6b22d342a57aa872454a8ad389b51f8c27b3ad5",
-        "specURL": "https://cdn.cocoapods.org/Specs/d/e/6/DeviceKit/5.8.0/DeviceKit.podspec.json",
+        "specURL": "https://raw.githubusercontent.com/CocoaPods/Specs/d9713efb46e5742f0817e67905d465f429c579c2/Specs/d/e/6/DeviceKit/5.8.0/DeviceKit.podspec.json",
         "specSHA256": "87970b1f51a445b9d1e22b4cca1f8c2a7b70bafbb4ed8cd46d2c98691cfa43a8",
     },
 }
@@ -145,6 +145,10 @@ def main():
         require(all(p.is_file() for p in mapping_paths) if args.phase == "migration"
                 else not any(p.exists() for p in mapping_paths),
                 "Equivalence must precede both registry entries; migration requires both entries")
+        if args.phase == "migration":
+            require(mapping_paths[0].read_bytes() == mapping_paths[1].read_bytes(), "Registry copies differ")
+            require(re.findall(r"^schemaVersion: ([0-9]+)$", mapping_paths[0].read_text(), re.MULTILINE) == ["2"],
+                    "Platform-constrained mappings require registry schema 2")
         fixture_hash = tree_state(fixture)
         probe_hash = digest(fixture / "App/Consumer.swift")
         with urllib.request.urlopen(case["specURL"], timeout=30) as response:
@@ -214,6 +218,8 @@ def main():
                     "Reviewed AUTO set differs from the exact candidate")
             require(entries[0]["packageCandidate"]["products"] == [args.case], "Unexpected package product")
             require(entries[0]["packageCandidate"]["supportedConsumerLanguages"] == ["swift"], "Unproven consumer languages")
+            require(entries[0]["packageCandidate"]["supportedConsumerPlatforms"]
+                    == [{"platform": "iOS", "minimumDeploymentTarget": "15.0"}], "Unproven consumer platforms")
             require(entries[0]["targetSourceProfile"] == {"languages": ["swift"], "completeness": "complete"},
                     "Consumer target language evidence changed")
             dry_before = tree_state(migration)
@@ -222,11 +228,21 @@ def main():
             run("apply", [binary, "migrate", *common, "--apply"])
             require(args.case not in (migration / "Podfile").read_text(), "Migrated pod declaration remains")
             run("migrated-pod-install", ["pod", "install", "--clean-install"], migration, seconds=600)
-            require(args.case not in (migration / "Podfile.lock").read_text(), "Migrated pod remains locked")
+            migrated_lock = migration / "Podfile.lock"
+            require(not migrated_lock.exists() or args.case not in migrated_lock.read_text(),
+                    "Migrated pod remains locked")
             migrated_data = root / "migrated-derived"
             run("verification", [binary, "verify", *common, "--workspace", target + ".xcworkspace", "--build",
                 "--scheme", target, "--configuration", "Debug", "--sdk", "iphonesimulator", "--destination",
                 "generic/platform=iOS Simulator", "--derived-data-path", migrated_data, "--json"], json_output=True)
+            migrated_pins = list(migration.rglob("Package.resolved"))
+            require(len(migrated_pins) == 1, "Missing or ambiguous migrated SwiftPM resolution file")
+            pins_check(migrated_pins[0])
+            shutil.copyfile(migrated_pins[0], reports / "migrated-Package.resolved")
+            migrated_checkouts = [p for p in (migrated_data / "SourcePackages/checkouts").iterdir()
+                                  if (p / case["source"]).is_file()]
+            require(len(migrated_checkouts) == 1, "Missing or ambiguous migrated package source checkout")
+            source_check(migrated_checkouts[0])
             require(tree_state(migration / "App") == app_before, "Migration changed consumer sources")
             summary["migratedPrivacy"] = privacy_check(migrated_data / "Build/Products/Debug-iphonesimulator" / (target + ".app"))
             summary["migration"] = "passed"

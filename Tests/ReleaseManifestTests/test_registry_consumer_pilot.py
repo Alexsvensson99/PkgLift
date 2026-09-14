@@ -18,7 +18,7 @@ SPEC.loader.exec_module(pilot)
 
 
 class RegistryConsumerPilotGuardsTests(unittest.TestCase):
-    def run_guard(self, phase, fixture_kind, registry_paths, expected_message):
+    def run_guard(self, phase, fixture_kind, registry_contents, expected_message):
         with tempfile.TemporaryDirectory(prefix="pkglift-registry-guard-") as directory:
             root = Path(directory)
             workspace = root / "workspace"
@@ -26,10 +26,10 @@ class RegistryConsumerPilotGuardsTests(unittest.TestCase):
             workspace.mkdir()
             runner_temp.mkdir()
             self.create_fixture(workspace, fixture_kind)
-            for relative_path in registry_paths:
+            for relative_path, contents in registry_contents.items():
                 path = workspace / relative_path
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text("reviewed: false\n")
+                path.write_text(contents)
 
             environment = {
                 "GITHUB_WORKSPACE": str(workspace),
@@ -92,7 +92,7 @@ class RegistryConsumerPilotGuardsTests(unittest.TestCase):
                 self.run_guard(
                     phase="equivalence",
                     fixture_kind="directory",
-                    registry_paths=[registry_copy],
+                    registry_contents={registry_copy: "reviewed: false\n"},
                     expected_message="Equivalence must precede both registry entries",
                 )
 
@@ -106,15 +106,39 @@ class RegistryConsumerPilotGuardsTests(unittest.TestCase):
                 self.run_guard(
                     phase="migration",
                     fixture_kind="directory",
-                    registry_paths=[registry_copy],
+                    registry_contents={registry_copy: "reviewed: false\n"},
                     expected_message="migration requires both entries",
                 )
+
+    def test_migration_rejects_schema_one_registry_copies_before_network_or_build(self):
+        copies = {
+            Path("Registry/D/DeviceKit.yml"): "schemaVersion: 1\n",
+            Path("Sources/PkgLiftRegistry/BundledRegistry/D/DeviceKit.yml"): "schemaVersion: 1\n",
+        }
+        self.run_guard(
+            phase="migration",
+            fixture_kind="directory",
+            registry_contents=copies,
+            expected_message="Platform-constrained mappings require registry schema 2",
+        )
+
+    def test_migration_rejects_nonidentical_registry_copies_before_network_or_build(self):
+        copies = {
+            Path("Registry/D/DeviceKit.yml"): "schemaVersion: 2\nmetadata: primary\n",
+            Path("Sources/PkgLiftRegistry/BundledRegistry/D/DeviceKit.yml"): "schemaVersion: 2\nmetadata: bundled\n",
+        }
+        self.run_guard(
+            phase="migration",
+            fixture_kind="directory",
+            registry_contents=copies,
+            expected_message="Registry copies differ",
+        )
 
     def test_symlinked_fixture_root_is_refused_before_network_or_build(self):
         self.run_guard(
             phase="equivalence",
             fixture_kind="symlink",
-            registry_paths=[],
+            registry_contents={},
             expected_message="Unsafe fixture",
         )
 

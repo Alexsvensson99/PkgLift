@@ -16,7 +16,7 @@ The explicitly named count fields distinguish literal Podfile rows from unique d
 
 Target platform and deployment values apply project xcconfig, project settings, target xcconfig, and target settings in increasing precedence. Xcconfig resolution is confined to regular files beneath the selected project root after symlink resolution and uses bounded file-count and byte budgets. Values are emitted only when the relevant settings resolve statically and agree across every target build configuration; containment escapes, unsupported macros or conditions, unreadable include graphs, unsupported syntax, budget violations, or configuration mismatches leave both fields unset. Target, SwiftPM package, and linked-product arrays are deterministically ordered.
 
-Each `TargetInfo` may include a `sourceProfile` with sorted `languages` values and `completeness`. The values are derived only from PBX compiled-source metadata. A candidate's `packageCandidate.supportedConsumerLanguages` records the mapping evidence. `detectedIntegrations` contains only typed enum values such as `carthage`, `reactNative`, `flutter`, and `capacitor`; it never carries integration filenames or source contents.
+Each `TargetInfo` may include a `sourceProfile` with sorted `languages` values and `completeness`. The values are derived only from PBX compiled-source metadata. A candidate's `packageCandidate.supportedConsumerLanguages` records the mapping's language evidence. Its optional `supportedConsumerPlatforms` array records explicit platform and minimum-deployment constraints copied from a schema-2 registry mapping; schema 2 requires the constraint, while schema-1 mappings must omit it for compatibility with older clients. When that array is present, AUTO requires the exact target's statically resolved platform to have one matching entry and its deployment target to meet or exceed the recorded minimum. `detectedIntegrations` contains only typed enum values such as `carthage`, `reactNative`, `flutter`, and `capacitor`; it never carries integration filenames or source contents.
 
 ### External Git source provenance
 
@@ -52,6 +52,7 @@ Current reason codes are grouped below. New codes may be added compatibly, so co
 | Dependency and declaration | `transitive_dependency`, `declaration_unrepresentable`, `declaration_provenance_missing` |
 | Podfile and integration | `podfile_install_hook`, `podfile_script_phase`, `podfile_dynamic_ruby`, `podfile_use_frameworks`, `podfile_inherit_search_paths`, `podfile_abstract_target`, `carthage_integration`, `react_native_integration`, `flutter_integration`, `capacitor_integration` |
 | Language and target | `consumer_language_evidence_missing`, `consumer_language_evidence_invalid`, `target_source_profile_incomplete`, `target_source_profile_empty`, `target_language_unsupported`, `target_source_profile_missing`, `target_not_found`, `target_attribution_multiple`, `target_attribution_partial`, `target_attribution_unresolved` |
+| Platform and deployment target | `consumer_platform_evidence_invalid`, `target_platform_evidence_missing`, `target_platform_unsupported`, `target_deployment_target_evidence_missing`, `target_deployment_target_invalid`, `target_deployment_target_unsupported` |
 | Version | `resolved_version_invalid`, `minimum_version_invalid`, `minimum_version_missing`, `version_below_minimum`, `version_requirement_unrepresentable` |
 | Configuration and current project state | `configuration_denied`, `configuration_not_allowed`, `automatic_evidence_incomplete`, `existing_package_requirement_conflict` |
 | Successful evidence | `verified_automatic_migration` |
@@ -68,7 +69,7 @@ The policy composes with human output, `--json`, or `--portable-json`. Both JSON
 
 `pkglift plan --json` writes the same `MigrationPlan` object to stdout and `.pkglift/plan.json`. Important top-level fields are `projectPath`, `entries`, `issues`, `readinessScore`, and optional `counts`.
 
-Repeated literal declarations of the same exact pod name are represented by one deterministic entry whose `declarations` array retains every origin. An executable AUTO entry must also contain explicit `targetAttribution` with status `exact`, one target, and no unresolved declarations. Every declaration must identify that target and use the registry source. It must also contain a complete, non-empty `targetSourceProfile`; every listed language must appear in `packageCandidate.supportedConsumerLanguages`.
+Repeated literal declarations of the same exact pod name are represented by one deterministic entry whose `declarations` array retains every origin. An executable AUTO entry must also contain explicit `targetAttribution` with status `exact`, one target, and no unresolved declarations. Every declaration must identify that target and use the registry source. It must also contain a complete, non-empty `targetSourceProfile`; every listed language must appear in `packageCandidate.supportedConsumerLanguages`. A present `packageCandidate.supportedConsumerPlatforms` value is executable evidence: it must be non-empty, duplicate-free, and valid, and the live exact target must satisfy it during preflight. Removing or changing the saved constraint relative to the regenerated current plan makes the AUTO entry stale. Older candidates that omit this additive field retain their prior platform behavior.
 
 Plan entries use the same additive `reasonDetails` representation and preserve the same legacy `reasons` array. Preflight intentionally does not use reason text or reason details as authorization; it recomputes and compares the typed executable evidence described below.
 
@@ -103,7 +104,7 @@ An executable AUTO entry contains typed actions like:
 ]
 ```
 
-`migrate --apply` rejects unsupported schema or PkgLift versions and rejects entries whose action list does not exactly agree with their package, version, products, pod, target, declaration, target-attribution, and consumer-language metadata.
+`migrate --apply` rejects unsupported schema or PkgLift versions and rejects entries whose action list does not exactly agree with their package, version, products, pod, target, declaration, target-attribution, and consumer-language metadata. Present consumer-platform constraints must agree with the regenerated package candidate and the live target environment before mutation.
 
 The new evidence fields are additive, so older schema-1 JSON remains decodable for inspection with absent source provenance. Compatibility is deliberately fail-closed: an older AUTO entry without explicit declaration provenance, exact target attribution, mapping languages, or a complete target profile is not executable and its plan must be regenerated.
 

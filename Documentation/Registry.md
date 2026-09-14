@@ -26,6 +26,26 @@ Subspec mappings add `pod.subspec`. Identifiers are exact: a base pod mapping ne
 
 `swiftpm.supportedConsumerLanguages` records the Xcode target languages for which the exact package and product mapping has concrete consumer evidence. Allowed values are `swift`, `objectiveC`, `objectiveCPlusPlus`, `c`, and `cPlusPlus`. A mixed target requires every detected language. New executable mappings must use a non-empty, duplicate-free list; empty, duplicate, or unknown values fail validation. Older external schema-1 mappings without this field remain readable but are `REVIEW`-only.
 
+`swiftpm.supportedConsumerPlatforms` narrows a mapping to consumer environments with concrete build evidence. Constrained mappings use schema version 2 so clients that predate this field reject the mapping instead of silently ignoring its safety boundary. Schema 2 requires a present, non-empty list; schema 1 rejects the field and remains the unchanged legacy format. Each entry uses one canonical platform (`iOS`, `macOS`, `tvOS`, `watchOS`, or `visionOS`) and a quoted, strict numeric `minimumDeploymentTarget` string with one to three components:
+
+```yaml
+schemaVersion: 2
+pod:
+  name: PodName
+swiftpm:
+  repository: https://github.com/org/repo
+  products: [ProductName]
+  minimumVersion: 1.0.0
+  supportedConsumerLanguages: [swift]
+  supportedConsumerPlatforms:
+    - platform: iOS
+      minimumDeploymentTarget: "15.0"
+migration:
+  confidence: verified
+```
+
+The list must contain each platform at most once and use valid deployment versions. The analyzed target must resolve to one listed platform and a deployment target greater than or equal to the recorded minimum across every build configuration; missing, ambiguous, malformed, unlisted, or lower target evidence produces `REVIEW`, and migration preflight checks the live target again before mutation. Existing schema-1 mappings without this field retain their prior behavior. New executable mappings must use schema 2 with concrete platform evidence and focused refusal tests.
+
 The bundled registry currently records Swift support for Alamofire, Kingfisher, Lottie, Moya, SnapKit, and SwiftyJSON, and Swift plus Objective-C support for the mapped Firebase identities, SDWebImage, and Sentry.
 
 `lottie-ios` maps exactly to the `Lottie` product from `https://github.com/airbnb/lottie-ios`, verified from `3.2.2` against the [upstream manifest](https://github.com/airbnb/lottie-ios/blob/3.2.2/Package.swift).

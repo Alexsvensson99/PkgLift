@@ -53,6 +53,7 @@ public struct MigrationClassifier: Sendable {
         isAlreadyMigrated: Bool = false,
         isTargetMappingKnown: Bool = true,
         targetSourceProfile: TargetSourceProfile? = nil,
+        targetInfo: TargetInfo? = nil,
         projectIntegrations: [ProjectIntegration] = [],
         podfileFeatures: PodfileFeatures = PodfileFeatures()
     ) -> MigrationClassification {
@@ -100,13 +101,21 @@ public struct MigrationClassifier: Sendable {
         
         let mappingInfo = mapping.map {
             RegistryMappingInfo(
+                schemaVersion: $0.schemaVersion,
                 identifier: $0.pod.fullName,
                 confidence: $0.migration.confidence,
                 repositoryURL: $0.swiftpm.repository,
                 products: $0.swiftpm.products,
                 minimumVersion: $0.swiftpm.minimumVersion,
-                supportedConsumerLanguages: $0.swiftpm.supportedConsumerLanguages
+                supportedConsumerLanguages: $0.swiftpm.supportedConsumerLanguages,
+                supportedConsumerPlatforms: $0.swiftpm.supportedConsumerPlatforms
             )
+        }
+        let effectiveTargetSourceProfile: TargetSourceProfile?
+        if let targetInfo {
+            effectiveTargetSourceProfile = targetInfo.sourceProfile
+        } else {
+            effectiveTargetSourceProfile = targetSourceProfile
         }
         
         return classify(
@@ -114,7 +123,8 @@ public struct MigrationClassifier: Sendable {
             mapping: mappingInfo,
             isAlreadyMigrated: isAlreadyMigrated,
             isTargetMappingKnown: isTargetMappingKnown,
-            targetSourceProfile: targetSourceProfile,
+            targetSourceProfile: effectiveTargetSourceProfile,
+            targetInfo: targetInfo,
             projectIntegrations: Array(Set(
                 projectIntegrations + podfileFeatures.integrationMarkers
             )).sorted()
@@ -127,6 +137,7 @@ public struct MigrationClassifier: Sendable {
         isAlreadyMigrated: Bool = false,
         isTargetMappingKnown: Bool = true,
         targetSourceProfile: TargetSourceProfile? = nil,
+        targetInfo: TargetInfo? = nil,
         projectIntegrations: [ProjectIntegration] = []
     ) -> MigrationClassification {
         var reasons: [MigrationReason] = []
@@ -314,6 +325,63 @@ public struct MigrationClassifier: Sendable {
                     remediation: "Analyze an exact Xcode target with complete compiled source metadata."
                 ))
             }
+
+            let hasValidPlatformSchema = switch mapping.schemaVersion {
+            case 1:
+                mapping.supportedConsumerPlatforms == nil
+            case 2:
+                mapping.supportedConsumerPlatforms != nil
+            default:
+                false
+            }
+            if !hasValidPlatformSchema {
+                reasons.append(MigrationReason(
+                    code: .consumerPlatformEvidenceInvalid,
+                    message: "Registry mapping consumer-platform evidence is invalid",
+                    remediation: "Use schema version 1 without platform constraints or schema version 2 with verified platform constraints, then revalidate the mapping."
+                ))
+            } else if let requirements = mapping.supportedConsumerPlatforms {
+                switch evaluatePlatformRequirements(requirements, targetInfo: targetInfo) {
+                case .compatible:
+                    break
+                case .invalidRequirements:
+                    reasons.append(MigrationReason(
+                        code: .consumerPlatformEvidenceInvalid,
+                        message: "Registry mapping consumer-platform evidence is invalid",
+                        remediation: "Use a non-empty, duplicate-free platform list with strict deployment-target versions and revalidate the mapping."
+                    ))
+                case .targetPlatformMissing:
+                    reasons.append(MigrationReason(
+                        code: .targetPlatformEvidenceMissing,
+                        message: "Target platform evidence is missing or ambiguous",
+                        remediation: "Resolve one exact platform across every target build configuration before regenerating the plan."
+                    ))
+                case .targetPlatformUnsupported(let platform):
+                    reasons.append(MigrationReason(
+                        code: .targetPlatformUnsupported,
+                        message: "Target platform is not supported by the registry mapping: \(platform)",
+                        remediation: "Keep the dependency on CocoaPods or add concrete consumer evidence for this platform."
+                    ))
+                case .targetDeploymentTargetMissing:
+                    reasons.append(MigrationReason(
+                        code: .targetDeploymentTargetEvidenceMissing,
+                        message: "Target deployment-target evidence is missing or ambiguous",
+                        remediation: "Resolve one exact deployment target across every target build configuration before regenerating the plan."
+                    ))
+                case .targetDeploymentTargetInvalid(let value):
+                    reasons.append(MigrationReason(
+                        code: .targetDeploymentTargetInvalid,
+                        message: "Target deployment target is invalid: \(value)",
+                        remediation: "Use a static numeric Apple deployment target before regenerating the plan."
+                    ))
+                case .targetDeploymentTargetUnsupported(let actual, let minimum):
+                    reasons.append(MigrationReason(
+                        code: .targetDeploymentTargetUnsupported,
+                        message: "Target deployment target \(actual) is below verified support at \(minimum)",
+                        remediation: "Raise the target deployment version to at least \(minimum) or keep the dependency on CocoaPods."
+                    ))
+                }
+            }
         }
 
         switch dependency.targetAttributionStatus {
@@ -405,12 +473,15 @@ public struct MigrationClassifier: Sendable {
         if stableReasons.isEmpty,
            let resolvedVersion,
            let minimumVersion {
+            let verifiedEvidence = mapping?.supportedConsumerPlatforms == nil
+                ? "Verified exact registry mapping and target language support"
+                : "Verified exact registry mapping and target language and platform support"
             return MigrationClassification(
                 category: .auto,
                 reasonDetails: [
                     MigrationReason(
                         code: .verifiedAutomaticMigration,
-                        message: "Verified exact registry mapping and target language support; resolved version \(resolvedVersion) meets minimum \(minimumVersion)"
+                        message: "\(verifiedEvidence); resolved version \(resolvedVersion) meets minimum \(minimumVersion)"
                     ),
                 ]
             )
@@ -434,6 +505,53 @@ private func deduplicated(_ values: [String]) -> [String] {
 private func deduplicated(_ values: [MigrationReason]) -> [MigrationReason] {
     var seen: Set<String> = []
     return values.filter { seen.insert($0.message).inserted }
+}
+
+enum PlatformRequirementEvaluation {
+    case compatible
+    case invalidRequirements
+    case targetPlatformMissing
+    case targetPlatformUnsupported(String)
+    case targetDeploymentTargetMissing
+    case targetDeploymentTargetInvalid(String)
+    case targetDeploymentTargetUnsupported(actual: String, minimum: String)
+}
+
+func evaluatePlatformRequirements(
+    _ requirements: [SupportedConsumerPlatform],
+    targetInfo: TargetInfo?
+) -> PlatformRequirementEvaluation {
+    guard !requirements.isEmpty,
+          Set(requirements.map(\.platform)).count == requirements.count,
+          requirements.allSatisfy({
+              DeploymentTargetVersion(rawValue: $0.minimumDeploymentTarget) != nil
+          }) else {
+        return .invalidRequirements
+    }
+
+    guard let platformText = targetInfo?.platform else {
+        return .targetPlatformMissing
+    }
+    guard let platform = ConsumerPlatform(rawValue: platformText),
+          let requirement = requirements.first(where: { $0.platform == platform }) else {
+        return .targetPlatformUnsupported(platformText)
+    }
+    guard let deploymentTarget = targetInfo?.deploymentTarget else {
+        return .targetDeploymentTargetMissing
+    }
+    guard let actual = DeploymentTargetVersion(rawValue: deploymentTarget) else {
+        return .targetDeploymentTargetInvalid(deploymentTarget)
+    }
+    guard let minimum = DeploymentTargetVersion(rawValue: requirement.minimumDeploymentTarget) else {
+        return .invalidRequirements
+    }
+    guard actual >= minimum else {
+        return .targetDeploymentTargetUnsupported(
+            actual: deploymentTarget,
+            minimum: requirement.minimumDeploymentTarget
+        )
+    }
+    return .compatible
 }
 
 private extension ProjectIntegration {
@@ -513,12 +631,14 @@ private extension GitSourceEvidenceStatus {
 }
 
 private struct RegistryMappingInfo: Sendable {
+    let schemaVersion: Int
     let identifier: String
     let confidence: PkgLiftCore.MigrationConfidence
     let repositoryURL: String
     let products: [String]
     let minimumVersion: String?
     let supportedConsumerLanguages: [SourceLanguage]?
+    let supportedConsumerPlatforms: [SupportedConsumerPlatform]?
 }
 
 private struct DependencyInfo: Sendable {

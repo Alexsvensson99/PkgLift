@@ -6,8 +6,8 @@ import Foundation
 /// Stable machine-readable codes for migration classification evidence.
 ///
 /// Codes are additive reporting metadata. Executable migration safety remains
-/// defined by the typed package, declaration, target, language, version, and
-/// action evidence validated by migration preflight.
+/// defined by the typed package, declaration, target, language, platform,
+/// version, and action evidence validated by migration preflight.
 public enum MigrationReasonCode: String, Sendable, Codable, CaseIterable {
     case externalSourceWithoutMapping = "external_source_without_mapping"
     case registryMappingMissing = "registry_mapping_missing"
@@ -43,6 +43,12 @@ public enum MigrationReasonCode: String, Sendable, Codable, CaseIterable {
     case targetSourceProfileEmpty = "target_source_profile_empty"
     case targetLanguageUnsupported = "target_language_unsupported"
     case targetSourceProfileMissing = "target_source_profile_missing"
+    case consumerPlatformEvidenceInvalid = "consumer_platform_evidence_invalid"
+    case targetPlatformEvidenceMissing = "target_platform_evidence_missing"
+    case targetPlatformUnsupported = "target_platform_unsupported"
+    case targetDeploymentTargetEvidenceMissing = "target_deployment_target_evidence_missing"
+    case targetDeploymentTargetInvalid = "target_deployment_target_invalid"
+    case targetDeploymentTargetUnsupported = "target_deployment_target_unsupported"
     case targetNotFound = "target_not_found"
     case targetAttributionMultiple = "target_attribution_multiple"
     case targetAttributionPartial = "target_attribution_partial"

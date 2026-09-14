@@ -774,6 +774,99 @@ final class MigrationClassifierTests: XCTestCase {
         }
     }
 
+    func testPlatformConstrainedMappingAcceptsOnlyVerifiedEnvironment() {
+        let mapping = makeMapping(
+            minimumVersion: "5.0.0",
+            supportedPlatforms: [
+                SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.0"),
+            ]
+        )
+        let dependency = makeDependency(version: "5.0.0")
+
+        for deploymentTarget in ["15", "15.0", "16.0"] {
+            let result = MigrationClassifier().classify(
+                dependency: dependency,
+                mapping: mapping,
+                targetInfo: targetInfo(platform: "iOS", deploymentTarget: deploymentTarget)
+            )
+            XCTAssertEqual(result.category, .auto, deploymentTarget)
+            XCTAssertEqual(result.reasonDetails.map(\.code), [.verifiedAutomaticMigration])
+        }
+    }
+
+    func testPlatformConstrainedMappingRefusesUnknownOtherAndLowerEnvironments() {
+        let mapping = makeMapping(
+            minimumVersion: "5.0.0",
+            supportedPlatforms: [
+                SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.0"),
+            ]
+        )
+        let dependency = makeDependency(version: "5.0.0")
+        let cases: [(TargetInfo, MigrationReasonCode)] = [
+            (targetInfo(platform: nil, deploymentTarget: nil), .targetPlatformEvidenceMissing),
+            (targetInfo(platform: "macOS", deploymentTarget: "15.0"), .targetPlatformUnsupported),
+            (targetInfo(platform: "iOS", deploymentTarget: nil), .targetDeploymentTargetEvidenceMissing),
+            (targetInfo(platform: "iOS", deploymentTarget: "15.x"), .targetDeploymentTargetInvalid),
+            (targetInfo(platform: "iOS", deploymentTarget: "14.9"), .targetDeploymentTargetUnsupported),
+        ]
+
+        for (target, reasonCode) in cases {
+            let result = MigrationClassifier().classify(
+                dependency: dependency,
+                mapping: mapping,
+                targetInfo: target
+            )
+            XCTAssertEqual(result.category, .review, String(describing: reasonCode))
+            XCTAssertTrue(
+                result.reasonDetails.contains { $0.code == reasonCode },
+                String(describing: result.reasonDetails)
+            )
+        }
+    }
+
+    func testInvalidPlatformRequirementsProduceTypedReviewReason() {
+        let duplicatePlatforms = [
+            SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.0"),
+            SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "16.0"),
+        ]
+        let cases: [[SupportedConsumerPlatform]] = [
+            [],
+            duplicatePlatforms,
+            [SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.x")],
+        ]
+
+        for platforms in cases {
+            let result = MigrationClassifier().classify(
+                dependency: makeDependency(version: "5.0.0"),
+                mapping: makeMapping(
+                    minimumVersion: "5.0.0",
+                    supportedPlatforms: platforms
+                ),
+                targetInfo: targetInfo(platform: "iOS", deploymentTarget: "15.0")
+            )
+            XCTAssertEqual(result.category, .review)
+            XCTAssertTrue(result.reasonDetails.contains {
+                $0.code == .consumerPlatformEvidenceInvalid
+            })
+        }
+    }
+
+    func testSchemaTwoWithoutPlatformConstraintProducesTypedReviewReason() {
+        let result = MigrationClassifier().classify(
+            dependency: makeDependency(version: "5.0.0"),
+            mapping: makeMapping(
+                minimumVersion: "5.0.0",
+                schemaVersion: 2
+            ),
+            targetInfo: targetInfo(platform: "iOS", deploymentTarget: "15.0")
+        )
+
+        XCTAssertEqual(result.category, .review)
+        XCTAssertTrue(result.reasonDetails.contains {
+            $0.code == .consumerPlatformEvidenceInvalid
+        })
+    }
+
     private func makeDependency(
         name: String = "SDWebImage",
         version: String,
@@ -805,17 +898,34 @@ final class MigrationClassifierTests: XCTestCase {
 
     private func makeMapping(
         minimumVersion: String?,
-        supportedLanguages: [SourceLanguage]? = [.swift, .objectiveC]
+        supportedLanguages: [SourceLanguage]? = [.swift, .objectiveC],
+        supportedPlatforms: [SupportedConsumerPlatform]? = nil,
+        schemaVersion: Int? = nil
     ) -> RegistryMapping {
         RegistryMapping(
+            schemaVersion: schemaVersion ?? (supportedPlatforms == nil ? 1 : 2),
             pod: PodIdentifier(name: "SDWebImage"),
             swiftpm: SwiftPMPackageInfo(
                 repository: "https://github.com/SDWebImage/SDWebImage",
                 products: ["SDWebImage"],
                 minimumVersion: minimumVersion,
-                supportedConsumerLanguages: supportedLanguages
+                supportedConsumerLanguages: supportedLanguages,
+                supportedConsumerPlatforms: supportedPlatforms
             ),
             migration: MigrationInfo(confidence: .verified)
+        )
+    }
+
+    private func targetInfo(
+        platform: String?,
+        deploymentTarget: String?
+    ) -> TargetInfo {
+        TargetInfo(
+            name: "App",
+            type: "application",
+            platform: platform,
+            deploymentTarget: deploymentTarget,
+            sourceProfile: swiftProfile
         )
     }
 }

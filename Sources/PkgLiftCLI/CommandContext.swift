@@ -116,7 +116,7 @@ struct CommandContext: Sendable {
                 mapping: mapping,
                 isAlreadyMigrated: isAlreadyMigrated,
                 isTargetMappingKnown: targetInfo != nil,
-                targetSourceProfile: targetInfo?.sourceProfile,
+                targetInfo: targetInfo,
                 projectIntegrations: detectedProjectIntegrations,
                 podfileFeatures: podfileFeatures
             )
@@ -164,7 +164,8 @@ struct CommandContext: Sendable {
                     products: mapping.swiftpm.products,
                     versionRequirement: versionRequirement,
                     confidence: mapping.migration.confidence,
-                    supportedConsumerLanguages: mapping.swiftpm.supportedConsumerLanguages
+                    supportedConsumerLanguages: mapping.swiftpm.supportedConsumerLanguages,
+                    supportedConsumerPlatforms: mapping.swiftpm.supportedConsumerPlatforms
                 )
             } else {
                 mappedPackage = nil
@@ -179,6 +180,10 @@ struct CommandContext: Sendable {
                 !hasCompatibleLanguageEvidence(
                     profile: targetInfo?.sourceProfile,
                     supportedLanguages: mappedPackage?.supportedConsumerLanguages
+                ) ||
+                !hasCompatiblePlatformEvidence(
+                    targetInfo: targetInfo,
+                    supportedPlatforms: mappedPackage?.supportedConsumerPlatforms
                 )) {
                 coreClassification = .review
                 reasonDetails.append(MigrationReason(
@@ -624,6 +629,30 @@ private func hasCompatibleLanguageEvidence(
         return false
     }
     return Set(profile.languages).isSubset(of: Set(supportedLanguages))
+}
+
+func hasCompatiblePlatformEvidence(
+    targetInfo: TargetInfo?,
+    supportedPlatforms: [SupportedConsumerPlatform]?
+) -> Bool {
+    // Omission is the compatibility contract for mappings that predate this
+    // additive evidence. Once present, every part of the target environment is
+    // required and checked again by migration preflight.
+    guard let supportedPlatforms else { return true }
+    guard !supportedPlatforms.isEmpty,
+          Set(supportedPlatforms.map(\.platform)).count == supportedPlatforms.count,
+          supportedPlatforms.allSatisfy({
+              DeploymentTargetVersion(rawValue: $0.minimumDeploymentTarget) != nil
+          }),
+          let platformText = targetInfo?.platform,
+          let platform = ConsumerPlatform(rawValue: platformText),
+          let requirement = supportedPlatforms.first(where: { $0.platform == platform }),
+          let deploymentTarget = targetInfo?.deploymentTarget,
+          let actual = DeploymentTargetVersion(rawValue: deploymentTarget),
+          let minimum = DeploymentTargetVersion(rawValue: requirement.minimumDeploymentTarget) else {
+        return false
+    }
+    return actual >= minimum
 }
 
 enum CommandContextError: LocalizedError {

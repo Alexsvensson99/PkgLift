@@ -68,18 +68,27 @@ public struct PackageCandidate: Sendable, Codable, Equatable {
     /// sufficient for automatic migration.
     public let supportedConsumerLanguages: [SourceLanguage]?
 
+    /// Consumer-platform evidence copied from the registry mapping.
+    ///
+    /// Optional for backward decoding. A present value narrows automatic
+    /// migration to matching target environments during classification and
+    /// migration preflight.
+    public let supportedConsumerPlatforms: [SupportedConsumerPlatform]?
+
     public init(
         repositoryURL: String,
         products: [String],
         versionRequirement: SwiftPMVersionRequirement? = nil,
         confidence: MigrationConfidence = .verified,
-        supportedConsumerLanguages: [SourceLanguage]? = nil
+        supportedConsumerLanguages: [SourceLanguage]? = nil,
+        supportedConsumerPlatforms: [SupportedConsumerPlatform]? = nil
     ) {
         self.repositoryURL = repositoryURL
         self.products = products
         self.versionRequirement = versionRequirement
         self.confidence = confidence
         self.supportedConsumerLanguages = supportedConsumerLanguages
+        self.supportedConsumerPlatforms = supportedConsumerPlatforms
     }
 }
 

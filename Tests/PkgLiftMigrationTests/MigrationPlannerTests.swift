@@ -331,10 +331,76 @@ final class MigrationPlannerTests: XCTestCase {
         XCTAssertTrue(entry.reasons.contains("Target source-language profile is missing"))
     }
 
-    private func swiftTarget(_ name: String) -> TargetInfo {
+    func testPlanPropagatesPlatformConstraintAndUsesExactTargetEnvironment() {
+        let dependency = CocoaPodDependency(
+            name: "Alamofire",
+            version: "5.0.0",
+            source: .registry,
+            isDirect: true,
+            targets: ["App"],
+            declarations: [
+                PodfileDeclaration(
+                    line: 1,
+                    scope: .target,
+                    scopeName: "App",
+                    targetName: "App",
+                    source: .registry
+                ),
+            ],
+            targetAttribution: TargetAttribution(status: .exact, targets: ["App"])
+        )
+        let platforms = [
+            SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.0"),
+        ]
+        let mapping = RegistryMapping(
+            schemaVersion: 2,
+            pod: PodIdentifier(name: "Alamofire"),
+            swiftpm: SwiftPMPackageInfo(
+                repository: "https://github.com/Alamofire/Alamofire",
+                products: ["Alamofire"],
+                minimumVersion: "5.0.0",
+                supportedConsumerLanguages: [.swift],
+                supportedConsumerPlatforms: platforms
+            ),
+            migration: MigrationInfo(confidence: .verified)
+        )
+
+        let accepted = MigrationPlanner().generatePlan(
+            dependencies: ["Alamofire": dependency],
+            mappings: ["Alamofire": mapping],
+            availableTargetInfos: [
+                swiftTarget("App", platform: "iOS", deploymentTarget: "15.0"),
+            ]
+        ).entries[0]
+        let refused = MigrationPlanner().generatePlan(
+            dependencies: ["Alamofire": dependency],
+            mappings: ["Alamofire": mapping],
+            availableTargetInfos: [
+                swiftTarget("App", platform: "macOS", deploymentTarget: "15.0"),
+            ]
+        ).entries[0]
+
+        XCTAssertEqual(accepted.classification, .auto)
+        XCTAssertEqual(accepted.packageCandidate?.supportedConsumerPlatforms, platforms)
+        XCTAssertEqual(refused.classification, .review)
+        XCTAssertEqual(
+            refused.reasonDetails?.contains(where: {
+                $0.code == .targetPlatformUnsupported
+            }),
+            true
+        )
+    }
+
+    private func swiftTarget(
+        _ name: String,
+        platform: String? = nil,
+        deploymentTarget: String? = nil
+    ) -> TargetInfo {
         TargetInfo(
             name: name,
             type: "application",
+            platform: platform,
+            deploymentTarget: deploymentTarget,
             sourceProfile: TargetSourceProfile(
                 languages: [.swift],
                 completeness: .complete

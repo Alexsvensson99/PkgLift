@@ -52,6 +52,12 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
     case conflictingRequirements(repositoryURL: String)
     case staleAutoEntry(dependency: String)
     case staleSourceProvenance(dependency: String)
+    case invalidConsumerPlatformEvidence(dependency: String)
+    case targetPlatformEvidenceMissing(dependency: String)
+    case targetPlatformUnsupported(dependency: String, platform: String)
+    case targetDeploymentTargetEvidenceMissing(dependency: String)
+    case targetDeploymentTargetInvalid(dependency: String, value: String)
+    case targetDeploymentTargetUnsupported(dependency: String, actual: String, minimum: String)
 
     public var errorDescription: String? {
         switch self {
@@ -73,6 +79,18 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
             return "Automatic migration refused for '\(dependency)': the saved plan no longer matches the current Podfile, lockfile, registry mapping, configuration, or target evidence. Regenerate the plan."
         case .staleSourceProvenance(let dependency):
             return "Automatic migration refused for '\(dependency)': external Git source provenance changed, is missing, or cannot be compared safely. Regenerate the plan before any mutation."
+        case .invalidConsumerPlatformEvidence(let dependency):
+            return "Automatic migration refused for '\(dependency)': saved consumer-platform evidence is invalid. Regenerate the plan from a validated registry."
+        case .targetPlatformEvidenceMissing(let dependency):
+            return "Automatic migration refused for '\(dependency)': the target platform is missing or ambiguous. Resolve one platform across every build configuration and regenerate the plan."
+        case .targetPlatformUnsupported(let dependency, let platform):
+            return "Automatic migration refused for '\(dependency)': target platform '\(platform)' is outside the registry mapping's verified support."
+        case .targetDeploymentTargetEvidenceMissing(let dependency):
+            return "Automatic migration refused for '\(dependency)': the target deployment version is missing or ambiguous. Resolve one value across every build configuration and regenerate the plan."
+        case .targetDeploymentTargetInvalid(let dependency, let value):
+            return "Automatic migration refused for '\(dependency)': target deployment version '\(value)' is invalid."
+        case .targetDeploymentTargetUnsupported(let dependency, let actual, let minimum):
+            return "Automatic migration refused for '\(dependency)': target deployment version \(actual) is below verified support at \(minimum)."
         }
     }
 }
@@ -199,6 +217,15 @@ public struct MigrationPlanPreflight: Sendable {
                     detail: "verified SwiftPM consumer-language evidence is missing or invalid. Regenerate the plan."
                 )
             }
+            if let supportedPlatforms = package.supportedConsumerPlatforms,
+               case .invalidRequirements = evaluatePlatformRequirements(
+                   supportedPlatforms,
+                   targetInfo: nil
+               ) {
+                throw MigrationPlanPreflightError.invalidConsumerPlatformEvidence(
+                    dependency: dependency
+                )
+            }
             guard let targetName = entry.targetName?.trimmingCharacters(in: .whitespacesAndNewlines),
                   !targetName.isEmpty else {
                 throw MigrationPlanPreflightError.incompleteAutoEntry(
@@ -286,6 +313,44 @@ public struct MigrationPlanPreflight: Sendable {
             }
             guard matchingTargets[0].sourceProfile == targetSourceProfile else {
                 throw MigrationPlanPreflightError.staleAutoEntry(dependency: dependency)
+            }
+
+            if let supportedPlatforms = package.supportedConsumerPlatforms {
+                switch evaluatePlatformRequirements(
+                    supportedPlatforms,
+                    targetInfo: matchingTargets[0]
+                ) {
+                case .compatible:
+                    break
+                case .invalidRequirements:
+                    throw MigrationPlanPreflightError.invalidConsumerPlatformEvidence(
+                        dependency: dependency
+                    )
+                case .targetPlatformMissing:
+                    throw MigrationPlanPreflightError.targetPlatformEvidenceMissing(
+                        dependency: dependency
+                    )
+                case .targetPlatformUnsupported(let platform):
+                    throw MigrationPlanPreflightError.targetPlatformUnsupported(
+                        dependency: dependency,
+                        platform: platform
+                    )
+                case .targetDeploymentTargetMissing:
+                    throw MigrationPlanPreflightError.targetDeploymentTargetEvidenceMissing(
+                        dependency: dependency
+                    )
+                case .targetDeploymentTargetInvalid(let value):
+                    throw MigrationPlanPreflightError.targetDeploymentTargetInvalid(
+                        dependency: dependency,
+                        value: value
+                    )
+                case .targetDeploymentTargetUnsupported(let actual, let minimum):
+                    throw MigrationPlanPreflightError.targetDeploymentTargetUnsupported(
+                        dependency: dependency,
+                        actual: actual,
+                        minimum: minimum
+                    )
+                }
             }
 
             for product in package.products {
