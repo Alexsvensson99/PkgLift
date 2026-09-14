@@ -1,0 +1,5 @@
+platform :ios, '15.0'
+
+target 'SwiftDeviceKit' do
+  pod 'DeviceKit', '5.8.0', :modular_headers => true
+end

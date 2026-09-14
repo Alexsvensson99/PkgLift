@@ -27,6 +27,7 @@ class SharedCIWorkflowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='pkglift-ci-policy-') as directory:
             root = Path(directory)
             shutil.copytree(ROOT / '.github', root / '.github')
+            shutil.copytree(ROOT / 'Registry', root / 'Registry')
             (root / 'Scripts').mkdir()
             for name in ('validate-repository-yaml.rb', 'run-pinned-pilot.sh'):
                 shutil.copy2(ROOT / 'Scripts' / name, root / 'Scripts' / name)
@@ -103,7 +104,7 @@ class SharedCIWorkflowTests(unittest.TestCase):
                     'without path filters')
 
     def test_each_consumer_requires_current_run_artifact(self):
-        for job in ('analyze', 'migrate-and-build'):
+        for job in ('analyze', 'migrate-and-build', 'registry_consumers'):
             with self.subTest(job=job):
                 def mutate(w):
                     step = next(s for s in w['jobs'][job]['steps']
@@ -114,7 +115,7 @@ class SharedCIWorkflowTests(unittest.TestCase):
     def test_each_consumer_must_verify_every_evidence_field(self):
         fields = ('ARCHIVE_SHA256', 'BINARY_SHA256', 'PRODUCER_ATTEMPT',
                   'REPOSITORY', 'RUN_ID', 'SOURCE_SHA')
-        for job in ('analyze', 'migrate-and-build'):
+        for job in ('analyze', 'migrate-and-build', 'registry_consumers'):
             for field in fields:
                 with self.subTest(job=job, field=field):
                     def mutate(w):
@@ -136,6 +137,18 @@ class SharedCIWorkflowTests(unittest.TestCase):
             steps.append(verifier)
         self.reject(reordered, 'must verify the downloaded artifact before running pilots')
 
+    def test_registry_candidate_cannot_skip_equivalence_or_required_migration(self):
+        self.reject(lambda w: w['jobs']['registry_consumers']['strategy']['matrix']['include'].pop(),
+                    'registry consumer matrix')
+        self.reject(lambda w: w['jobs']['registry_consumers']['strategy']['matrix']['include'][0].update({'phase': 'skip'}),
+                    'registry consumer matrix')
+        def skip_script(w):
+            step = next(s for s in w['jobs']['registry_consumers']['steps'] if s.get('name') == 'Verify Registry Consumer')
+            step['run'] = 'echo skipped'
+        self.reject(skip_script, 'registry consumer must execute the exact case')
+        self.reject(lambda w: w['jobs']['registry_gate'].update({'needs': ['build_pilot_toolchain']}),
+                    'must require heavy job')
+
     def test_required_check_names_cannot_change(self):
         for job in ('build_pilot_toolchain', 'test', 'registry_gate', 'pinned_gate', 'gate'):
             with self.subTest(job=job):
@@ -143,10 +156,11 @@ class SharedCIWorkflowTests(unittest.TestCase):
                 self.reject(lambda w: w['jobs'][job].update({'name': 'wrong-name'}), diagnostic)
 
     def test_pilot_or_verifier_failure_cannot_be_ignored(self):
-        for job in ('analyze', 'migrate-and-build'):
+        for job in ('analyze', 'migrate-and-build', 'registry_consumers'):
             for marker in ('Scripts/verify-pilot-artifact.py',
-                           'Scripts/run-pinned-pilot.sh' if job == 'analyze'
-                           else 'Scripts/run-positive-e2e-pilot.sh'):
+                           {'analyze': 'Scripts/run-pinned-pilot.sh',
+                            'migrate-and-build': 'Scripts/run-positive-e2e-pilot.sh',
+                            'registry_consumers': 'Scripts/run-registry-consumer-pilot.py'}[job]):
                 with self.subTest(job=job, marker=marker):
                     def mutate(w):
                         step = next(s for s in w['jobs'][job]['steps']

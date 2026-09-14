@@ -1,0 +1,5 @@
+platform :ios, '15.0'
+
+target 'SwiftKeychainAccess' do
+  pod 'KeychainAccess', '4.2.2', :modular_headers => true
+end
