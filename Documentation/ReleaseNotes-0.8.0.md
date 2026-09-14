@@ -1,6 +1,8 @@
 # PkgLift 0.8.0 — Bounded flat Swift source selection
 
-PkgLift 0.8.0 is an unreleased release candidate. [PkgLift 0.7.1](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.1) remains the public release.
+[PkgLift 0.8.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.8.0)
+was published on 2026-09-14 as a signed and notarized GitHub release and is
+available through the [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
 
 ## Opt-in local inspection mode
 
@@ -71,7 +73,24 @@ These are local candidate fingerprints, not signed distribution artifacts.
 
 ## Release status
 
-This source-preparation change does not publish a tag, GitHub Release or
-Homebrew update. Signed artifact acceptance and public distribution retain
-their separate checks and approval gates in the
+[PkgLift 0.8.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.8.0)
+was published on 2026-09-14 at
+`244d525cf1bd69bb4956d3ba03c5a9f32c3c6546`. The
+[signed distribution run](https://github.com/Alexsvensson99/PkgLift/actions/runs/34725098718)
+completed the release checks, Developer ID signing and accepted Apple
+notarization. The
+[publication run](https://github.com/Alexsvensson99/PkgLift/actions/runs/34725091722/attempts/2)
+verified that distribution and published the protected tag and release. The
+public `pkglift-macos-arm64.tar.gz` was anonymously downloaded and verified byte
+for byte; its SHA-256 is
+`447871a7f21c58113ebf5682683d50d8e09beafc6a3eb43a535f8719d0f3f00a`.
+
+[Homebrew update #14](https://github.com/Alexsvensson99/homebrew-tap/pull/14)
+was merged as
+[`916ce70`](https://github.com/Alexsvensson99/homebrew-tap/commit/916ce70fccd8a18a439d7d99eb0cfefad19ff99b)
+after its [supported macOS PR CI](https://github.com/Alexsvensson99/homebrew-tap/actions/runs/34890816317)
+passed. The tap's
+[published-main CI](https://github.com/Alexsvensson99/homebrew-tap/actions/runs/34890993842)
+then passed the complete supported formula validation, including uninstall.
+Future releases retain the separate checks and approval gates in the
 [distribution contract](Distribution.md).

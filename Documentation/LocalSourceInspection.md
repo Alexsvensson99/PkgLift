@@ -1,11 +1,10 @@
 # Local source inspection
 
-Local source inspection shipped in PkgLift 0.7.0, and
-[0.7.1 is published](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.1)
-with clearer text diagnostics. This checkout develops the **unreleased 0.8.0
-release candidate**, which adds an explicit flat Swift glob mode. Its source
-version is `0.8.0`; [0.7.1 remains the published release](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.7.1).
-See the [0.8.0 release notes](ReleaseNotes-0.8.0.md) for candidate status.
+Local source inspection shipped in PkgLift 0.7.0, and 0.7.1 added clearer text
+diagnostics. [PkgLift 0.8.0 is published](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.8.0)
+with an explicit flat Swift glob mode. Its source version is `0.8.0`. See the
+[0.8.0 release notes](ReleaseNotes-0.8.0.md) for the shipped scope and release
+evidence.
 
 `pkglift podspec inspect` reads a caller-supplied Podspec JSON document and a
 caller-supplied local source root. Its complete result says which root source
@@ -18,8 +17,8 @@ The [original local validation record](LocalSourceInspectionValidation.md)
 describes the literal-only implementation's checks. The
 [0.8 validation record](LocalSourceInspection-0.8-Validation.md) records the
 completed local candidate checks and eight debug/release field-pilot comparisons.
-The contract below also specifies the candidate mode; a contract is not evidence
-of a published release.
+The contract below specifies the released v2 mode; the historical validation
+record alone was not evidence of a published release.
 
 ## Command
 
@@ -53,7 +52,7 @@ Both modes accept only the root library's `source_files` selection. Each literal
 path must be relative, end in case-sensitive `.swift`, and contain no absolute
 prefix, empty component, `.` or `..` component. The default
 `ascii-relative-path/v1` grammar accepts ASCII letters, digits, `_`, `.`, `-` and
-`/`. The candidate mode uses the separate `ascii-relative-path/v2` grammar,
+`/`. The explicit v2 mode uses the separate `ascii-relative-path/v2` grammar,
 which additionally accepts literal `+` characters in directory and filename
 components, such as `Sources/Constraint+Layout.swift`. A full relative path is
 limited to 512 ASCII bytes in both profiles. Duplicate paths and ASCII case-fold
@@ -63,7 +62,7 @@ The default mode accepts only literal paths under its unchanged v1 grammar;
 `+` remains invalid there. Every wildcard form is unsupported, even if it would
 match exactly one file.
 
-The candidate `flat-swift-globs` mode additionally accepts exactly
+The `flat-swift-globs` mode additionally accepts exactly
 `<literal-relative-directory>/*.swift`. Examples are `Sources/*.swift` and
 `Lib/KeychainAccess/*.swift`. There must be at least one literal directory
 component; a standalone `*.swift` at the source root is unsupported.
