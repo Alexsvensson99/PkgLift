@@ -140,36 +140,79 @@ digests, or provenance. Conventional Podspec `source` fields, broader
 provenance, and production evidence providers remain ineligible. The published
 release retains this exact synthetic S1 boundary.
 
----
+## v0.8.0 — Bounded Flat Swift Source Selection
 
-# Next
+Local source inspection shipped in v0.7.0, with clearer diagnostics in v0.7.1.
+[PkgLift v0.8.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.8.0)
+was published on 2026-09-14 as a Developer ID-signed, Apple-notarized arm64
+archive for macOS 14 or later. [Homebrew update #14](https://github.com/Alexsvensson99/homebrew-tap/pull/14)
+publishes the same verified release through the
+[public tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
 
-## v0.8.0 candidate — Bounded flat Swift source selection
-
-Local source inspection is published in v0.7.1. The bounded flat-glob feature
-is merged to main, and this checkout prepares source version `0.8.0` for a
-separate release. No v0.8.0 distribution, tag or Homebrew update is claimed.
-
-- Keep the default `pkglift podspec inspect` literal-only v1 path grammar,
+- Keeps the default `pkglift podspec inspect` literal-only v1 path grammar,
   canonical JSON and text unchanged.
-- Add explicit `--source-selection flat-swift-globs` for literal Swift paths
+- Adds explicit `--source-selection flat-swift-globs` for literal Swift paths
   and nonrecursive `<literal-directory>/*.swift` selections. V2 allows literal
   `+` in path components; recursive patterns, exclusions and subspec selection
   remain unsupported.
-- Retain no-follow, bounded filesystem access and reject empty matches,
+- Retains no-follow, bounded filesystem access and reject empty matches,
   overlapping selections, case-fold collisions, unsafe file types, exceeded
   limits and observed changes without partial inventories.
-- Report `verifiedObservedBytes`, `unsupportedSelection`, or `unavailable` while
+- Reports `verifiedObservedBytes`, `unsupportedSelection`, or `unavailable` while
   retaining the exact original v0.5 assessment and its reasons.
-- Use separate v2 report/path identities and an explicit selection profile;
+- Uses separate v2 report/path identities and an explicit selection profile;
   neither v1 nor v2 disk reports supply synthetic `pkglift.synthetic-local/v1`
   S1 evidence. See the [0.8.0 release notes](Documentation/ReleaseNotes-0.8.0.md).
 
 Observed bytes remain neither compatibility nor provenance evidence, and this
-candidate creates no package validity, migration-eligibility, classifier,
+release creates no package validity, migration-eligibility, classifier,
 planner, preflight, project-mutation, or `AUTO` path. Broader blueprint shapes,
-production evidence providers, package generation, and any distribution require
-separate design, safety evidence, implementation review, and release approval.
+production evidence providers and package generation require separate design,
+safety evidence, implementation review and release approval.
+
+---
+
+# Next
+
+## v0.9 — Verified Swift Consumer Mappings
+
+PkgLift 0.8.0 remains the current public release. v0.9 is an unreleased roadmap
+target; the source version remains `0.8.0` until a separately reviewed release
+preparation change. The goal is to add exact mappings that produce verified
+migration value for supported Swift consumers, rather than infer migration
+eligibility from local source inspection.
+
+[KeychainAccess #55](https://github.com/Alexsvensson99/PkgLift/issues/55) and
+[DeviceKit #58](https://github.com/Alexsvensson99/PkgLift/issues/58) are the first
+two mappings. Both passed the [consumer build admission](Documentation/VerifiedConsumerMappings.md)
+before their registry entries were added, including DeviceKit's generated source
+and built privacy resources. [PR #110](https://github.com/Alexsvensson99/PkgLift/pull/110)
+tracks implementation and requires the complete migration/build gates before
+integration. New platform constraints use registry schema 2 so older clients
+reject the mapping instead of ignoring its safety boundary.
+
+Acceptance criteria for each mapping:
+
+- Bind the CocoaPods identity and locked version to an exact SwiftPM repository,
+  version and product. Support only consumer languages that were actually
+  compiled in the accepted evidence.
+- Build the same pinned dependency and representative consumer through both
+  CocoaPods and SwiftPM before adding the mapping.
+- After adding the mapping, exercise the complete **Analyze → Plan → Migrate →
+  Verify** path and require the migrated consumer to resolve and build.
+- Update and validate both registry copies, and add focused negative gates for
+  mismatched identity, version, product, language or target-platform evidence.
+  Limit the new mappings to their verified iOS 15-or-later Swift consumer profile.
+  DeviceKit fixture checks must fail when required resources or generated source
+  are absent, changed or unverified.
+- Pass every required pull-request check and the exact-main checks before release
+  preparation.
+
+This milestone does not add Podspec or package generation, infer source
+provenance, or make a dependency `AUTO` without the existing exact registry,
+project-graph, version, product and consumer-language evidence. Additional
+mappings remain independently reviewable candidates until they meet the same
+build and migration proof.
 
 ---
 

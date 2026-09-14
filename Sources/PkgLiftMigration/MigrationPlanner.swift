@@ -48,15 +48,17 @@ public struct MigrationPlanner: Sendable {
                 }
                 return availableTargetInfos.filter { $0.name == target }.count == 1
             } ?? false
-            let targetSourceProfile = targetName.flatMap { target in
+            let targetInfo = targetName.flatMap { target in
                 let matches = availableTargetInfos.filter { $0.name == target }
-                return matches.count == 1 ? matches[0].sourceProfile : nil
+                return matches.count == 1 ? matches[0] : nil
             }
+            let targetSourceProfile = targetInfo?.sourceProfile
             let classification = classifier.classify(
                 dependency: dep,
                 mapping: mapping,
                 isTargetMappingKnown: targetIsKnown,
                 targetSourceProfile: targetSourceProfile,
+                targetInfo: targetInfo,
                 projectIntegrations: detectedIntegrations,
                 podfileFeatures: podfileFeatures
             )
@@ -78,7 +80,8 @@ public struct MigrationPlanner: Sendable {
                     products: $0.swiftpm.products,
                     versionRequirement: versionRequirement,
                     confidence: $0.migration.confidence,
-                    supportedConsumerLanguages: $0.swiftpm.supportedConsumerLanguages
+                    supportedConsumerLanguages: $0.swiftpm.supportedConsumerLanguages,
+                    supportedConsumerPlatforms: $0.swiftpm.supportedConsumerPlatforms
                 )
             }
             

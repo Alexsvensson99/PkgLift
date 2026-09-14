@@ -89,7 +89,7 @@ end
 
 required_gates = [
   [shared_workflow_path, "test", "test", ["build_pilot_toolchain"]],
-  [shared_workflow_path, "registry_gate", "Registry Gate", ["build_pilot_toolchain"]],
+  [shared_workflow_path, "registry_gate", "Registry Gate", %w[build_pilot_toolchain registry_consumers]],
   [shared_workflow_path, "pinned_gate", "Pinned Pilot Gate", %w[build_pilot_toolchain analyze]],
   [shared_workflow_path, "gate", "Mixed-Language Pilot Gate", %w[build_pilot_toolchain migrate-and-build]],
   [".github/workflows/codeql.yml", "gate", "CodeQL", ["analyze"]],
@@ -188,7 +188,24 @@ if pilot_jobs.is_a?(Hash)
     end
   end
 
-  %w[analyze migrate-and-build].each do |consumer_id|
+  registry_consumer = pilot_jobs["registry_consumers"]
+  if registry_consumer.is_a?(Hash)
+    entries = registry_consumer.dig("strategy", "matrix", "include")
+    expected_entries = ["KeychainAccess", "DeviceKit"].map do |library|
+      mapping = "Registry/#{library[0]}/#{library}.yml"
+      { "library" => library, "phase" => File.file?(mapping) ? "migration" : "equivalence" }
+    end
+    unless entries == expected_entries
+      errors << "#{pilot_workflow_path}: registry consumer matrix must prove every candidate and migrate every mapped identity"
+    end
+    expected_runner = 'python3 Scripts/run-registry-consumer-pilot.py --case "${{ matrix.library }}" --phase "${{ matrix.phase }}"'
+    runner = Array(registry_consumer["steps"]).find { |step| step.is_a?(Hash) && step["name"] == "Verify Registry Consumer" }
+    unless runner && runner["run"] == expected_runner
+      errors << "#{pilot_workflow_path}: registry consumer must execute the exact case and required phase"
+    end
+  end
+
+  %w[analyze migrate-and-build registry_consumers].each do |consumer_id|
     consumer = pilot_jobs[consumer_id]
     next unless consumer.is_a?(Hash)
     unless Array(consumer["needs"]).include?(producer_id)
@@ -214,7 +231,7 @@ if pilot_jobs.is_a?(Hash)
     unless verifier && expected.all? { |key, value| verifier.dig("env", key) == value }
       errors << "#{pilot_workflow_path}: #{consumer_id} must verify all artifact identity and checksum evidence"
     end
-    runner_script = consumer_id == "analyze" ? "Scripts/run-pinned-pilot.sh" : "Scripts/run-positive-e2e-pilot.sh"
+    runner_script = { "analyze" => "Scripts/run-pinned-pilot.sh", "migrate-and-build" => "Scripts/run-positive-e2e-pilot.sh", "registry_consumers" => "Scripts/run-registry-consumer-pilot.py" }.fetch(consumer_id)
     runner_step = steps.find { |step| step.is_a?(Hash) && step.fetch("run", "").include?(runner_script) }
     unless download && verifier && runner_step && steps.index(download) < steps.index(verifier) && steps.index(verifier) < steps.index(runner_step)
       errors << "#{pilot_workflow_path}: #{consumer_id} must verify the downloaded artifact before running pilots"

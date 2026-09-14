@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add KeychainAccess 4.2.2 and DeviceKit 5.8.0 registry mappings for Swift
+  consumers targeting iOS 15 or later, after independent CocoaPods and SwiftPM
+  consumer builds. Require full migration and build pilots in the Registry Gate;
+  DeviceKit also checks generated source and built privacy resources.
+- Add registry schema 2 for explicit consumer-platform and deployment-target
+  constraints. Validate the exact target during classification and preflight,
+  and refuse stale plans or missing, ambiguous, unsupported and lower target
+  evidence. Older clients reject these mappings; schema-1 mappings retain their
+  existing behavior.
+
+### Changed
+- Update the pinned CodeQL Action to 4.38.0.
+
 ## [0.8.0] - 2026-09-12
 
 ### Added

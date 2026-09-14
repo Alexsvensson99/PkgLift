@@ -14,8 +14,8 @@ public struct RegistryValidator: Sendable {
         var errors: [RegistryValidationError] = []
         
         // 1. Schema version
-        if mapping.schemaVersion != 1 {
-            errors.append(RegistryValidationError(filePath: filePath, fieldPath: "schemaVersion", message: "Unsupported schema version: \(mapping.schemaVersion). Currently only version 1 is supported."))
+        if ![1, 2].contains(mapping.schemaVersion) {
+            errors.append(RegistryValidationError(filePath: filePath, fieldPath: "schemaVersion", message: "Unsupported schema version: \(mapping.schemaVersion). Currently versions 1 and 2 are supported."))
         }
         
         // 2. Pod identifier
@@ -79,6 +79,56 @@ public struct RegistryValidator: Sendable {
                     fieldPath: "swiftpm.supportedConsumerLanguages",
                     message: "Supported consumer languages cannot contain duplicates."
                 ))
+            }
+        }
+
+        // 7. Consumer-platform evidence requires schema 2 so older PkgLift
+        // versions reject the entire mapping instead of silently ignoring its
+        // safety constraint. Schema 1 remains the unchanged legacy contract.
+        if mapping.schemaVersion == 1,
+           mapping.swiftpm.supportedConsumerPlatforms != nil {
+            errors.append(RegistryValidationError(
+                filePath: filePath,
+                fieldPath: "swiftpm.supportedConsumerPlatforms",
+                message: "Supported consumer platforms require schema version 2."
+            ))
+        }
+        if mapping.schemaVersion == 2,
+           mapping.swiftpm.supportedConsumerPlatforms == nil {
+            errors.append(RegistryValidationError(
+                filePath: filePath,
+                fieldPath: "swiftpm.supportedConsumerPlatforms",
+                message: "Schema version 2 requires supported consumer platforms."
+            ))
+        }
+
+        // Once present, the constraint must identify each platform once and
+        // use an unambiguous Apple deployment-target version.
+        if let platforms = mapping.swiftpm.supportedConsumerPlatforms {
+            if platforms.isEmpty {
+                errors.append(RegistryValidationError(
+                    filePath: filePath,
+                    fieldPath: "swiftpm.supportedConsumerPlatforms",
+                    message: "Supported consumer platforms cannot be empty when provided."
+                ))
+            }
+
+            var seenPlatforms = Set<ConsumerPlatform>()
+            for (index, support) in platforms.enumerated() {
+                if !seenPlatforms.insert(support.platform).inserted {
+                    errors.append(RegistryValidationError(
+                        filePath: filePath,
+                        fieldPath: "swiftpm.supportedConsumerPlatforms[\(index)].platform",
+                        message: "Supported consumer platforms cannot contain duplicate platform entries."
+                    ))
+                }
+                if DeploymentTargetVersion(rawValue: support.minimumDeploymentTarget) == nil {
+                    errors.append(RegistryValidationError(
+                        filePath: filePath,
+                        fieldPath: "swiftpm.supportedConsumerPlatforms[\(index)].minimumDeploymentTarget",
+                        message: "Minimum deployment target must use one to three numeric components without whitespace, suffixes, or leading zeroes."
+                    ))
+                }
             }
         }
         

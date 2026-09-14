@@ -90,16 +90,26 @@ public struct SwiftPMPackageInfo: Sendable, Codable, Equatable {
     /// missing value is absence of evidence and must not be treated as support.
     public let supportedConsumerLanguages: [SourceLanguage]?
 
+    /// Consumer platforms and minimum deployment targets covered by evidence.
+    ///
+    /// Schema-1 mappings omit this field and keep their existing behavior.
+    /// Schema-2 mappings require it so older clients reject the mapping rather
+    /// than ignore the constraint. When present, automatic migration is limited
+    /// to a target environment that satisfies one listed requirement.
+    public let supportedConsumerPlatforms: [SupportedConsumerPlatform]?
+
     public init(
         repository: String,
         products: [String],
         minimumVersion: String? = nil,
-        supportedConsumerLanguages: [SourceLanguage]? = nil
+        supportedConsumerLanguages: [SourceLanguage]? = nil,
+        supportedConsumerPlatforms: [SupportedConsumerPlatform]? = nil
     ) {
         self.repository = repository
         self.products = products
         self.minimumVersion = minimumVersion
         self.supportedConsumerLanguages = supportedConsumerLanguages
+        self.supportedConsumerPlatforms = supportedConsumerPlatforms
     }
 }
 

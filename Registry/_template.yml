@@ -1,4 +1,4 @@
-schemaVersion: 1
+schemaVersion: 2
 
 pod:
   name: PodName
@@ -11,6 +11,9 @@ swiftpm:
   minimumVersion: 1.0.0
   supportedConsumerLanguages:
     - swift
+  supportedConsumerPlatforms:
+    - platform: iOS
+      minimumDeploymentTarget: "15.0"
 
 migration:
   confidence: verified

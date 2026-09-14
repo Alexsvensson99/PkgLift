@@ -19,7 +19,7 @@ final class RegistryValidatorTests: XCTestCase {
     
     func testInvalidMapping() {
         let mapping = RegistryMapping(
-            schemaVersion: 2, // Invalid schema
+            schemaVersion: 99, // Invalid schema
             pod: PodIdentifier(name: ""), // Invalid name
             swiftpm: SwiftPMPackageInfo(repository: "invalid-url", products: []), // Invalid repo & products
             migration: MigrationInfo(confidence: .verified)
@@ -139,5 +139,115 @@ final class RegistryValidatorTests: XCTestCase {
                 $0.fieldPath == "swiftpm.supportedConsumerLanguages"
             })
         }
+    }
+
+    func testValidConsumerPlatformEvidenceIsAccepted() {
+        let mapping = RegistryMapping(
+            schemaVersion: 2,
+            pod: PodIdentifier(name: "PlatformPod"),
+            swiftpm: SwiftPMPackageInfo(
+                repository: "https://github.com/org/repo",
+                products: ["PlatformPod"],
+                supportedConsumerPlatforms: [
+                    SupportedConsumerPlatform(
+                        platform: .iOS,
+                        minimumDeploymentTarget: "15.0"
+                    ),
+                    SupportedConsumerPlatform(
+                        platform: .macOS,
+                        minimumDeploymentTarget: "14"
+                    ),
+                ]
+            ),
+            migration: MigrationInfo(confidence: .verified)
+        )
+
+        let errors = RegistryValidator().validate(mapping, filePath: "PlatformPod.yml")
+
+        XCTAssertFalse(errors.contains {
+            $0.fieldPath.hasPrefix("swiftpm.supportedConsumerPlatforms")
+        })
+    }
+
+    func testEmptyDuplicateAndMalformedConsumerPlatformEvidenceIsInvalid() {
+        let packages = [
+            SwiftPMPackageInfo(
+                repository: "https://github.com/org/repo",
+                products: ["Empty"],
+                supportedConsumerPlatforms: []
+            ),
+            SwiftPMPackageInfo(
+                repository: "https://github.com/org/repo",
+                products: ["Duplicate"],
+                supportedConsumerPlatforms: [
+                    SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.0"),
+                    SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "16.0"),
+                ]
+            ),
+            SwiftPMPackageInfo(
+                repository: "https://github.com/org/repo",
+                products: ["Malformed"],
+                supportedConsumerPlatforms: [
+                    SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.x"),
+                ]
+            ),
+        ]
+
+        for package in packages {
+            let mapping = RegistryMapping(
+                schemaVersion: 2,
+                pod: PodIdentifier(name: "InvalidPlatforms"),
+                swiftpm: package,
+                migration: MigrationInfo(confidence: .verified)
+            )
+            let errors = RegistryValidator().validate(
+                mapping,
+                filePath: "InvalidPlatforms.yml"
+            )
+            XCTAssertTrue(errors.contains {
+                $0.fieldPath.hasPrefix("swiftpm.supportedConsumerPlatforms")
+            })
+        }
+    }
+
+    func testSchemaOneRejectsPlatformConstraintOlderClientsWouldIgnore() {
+        let mapping = RegistryMapping(
+            schemaVersion: 1,
+            pod: PodIdentifier(name: "UnsafeSchemaOnePod"),
+            swiftpm: SwiftPMPackageInfo(
+                repository: "https://github.com/org/repo",
+                products: ["UnsafeSchemaOnePod"],
+                supportedConsumerPlatforms: [
+                    SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.0"),
+                ]
+            ),
+            migration: MigrationInfo(confidence: .verified)
+        )
+
+        let errors = RegistryValidator().validate(mapping, filePath: "UnsafeSchemaOnePod.yml")
+
+        XCTAssertTrue(errors.contains {
+            $0.fieldPath == "swiftpm.supportedConsumerPlatforms"
+                && $0.message.contains("schema version 2")
+        })
+    }
+
+    func testSchemaTwoRequiresPlatformConstraint() {
+        let mapping = RegistryMapping(
+            schemaVersion: 2,
+            pod: PodIdentifier(name: "IncompleteSchemaTwoPod"),
+            swiftpm: SwiftPMPackageInfo(
+                repository: "https://github.com/org/repo",
+                products: ["IncompleteSchemaTwoPod"]
+            ),
+            migration: MigrationInfo(confidence: .verified)
+        )
+
+        let errors = RegistryValidator().validate(mapping, filePath: "IncompleteSchemaTwoPod.yml")
+
+        XCTAssertTrue(errors.contains {
+            $0.fieldPath == "swiftpm.supportedConsumerPlatforms"
+                && $0.message.contains("Schema version 2 requires")
+        })
     }
 }

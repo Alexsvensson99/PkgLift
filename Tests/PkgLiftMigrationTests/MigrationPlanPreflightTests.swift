@@ -552,6 +552,139 @@ final class MigrationPlanPreflightTests: XCTestCase {
         }
     }
 
+    func testPlatformConstrainedEntryAcceptsMatchingDeploymentTarget() throws {
+        let entry = makeEntry(packageCandidate: platformPackage())
+
+        let prepared = try MigrationPlanPreflight().prepare(
+            plan: makePlan(entries: [entry]),
+            availableTargetInfos: [
+                targetInfo("App", platform: "iOS", deploymentTarget: "15.0"),
+            ]
+        )
+
+        XCTAssertEqual(prepared.podsToRemove, ["Alamofire"])
+    }
+
+    func testPlatformConstrainedEntryRefusesUnknownOtherAndLowerEnvironments() {
+        let plan = makePlan(entries: [makeEntry(packageCandidate: platformPackage())])
+        let cases: [(TargetInfo, MigrationPlanPreflightError)] = [
+            (
+                targetInfo("App", platform: nil, deploymentTarget: nil),
+                .targetPlatformEvidenceMissing(dependency: "Alamofire")
+            ),
+            (
+                targetInfo("App", platform: "macOS", deploymentTarget: "15.0"),
+                .targetPlatformUnsupported(dependency: "Alamofire", platform: "macOS")
+            ),
+            (
+                targetInfo("App", platform: "iOS", deploymentTarget: nil),
+                .targetDeploymentTargetEvidenceMissing(dependency: "Alamofire")
+            ),
+            (
+                targetInfo("App", platform: "iOS", deploymentTarget: "15.x"),
+                .targetDeploymentTargetInvalid(dependency: "Alamofire", value: "15.x")
+            ),
+            (
+                targetInfo("App", platform: "iOS", deploymentTarget: "14.9"),
+                .targetDeploymentTargetUnsupported(
+                    dependency: "Alamofire",
+                    actual: "14.9",
+                    minimum: "15.0"
+                )
+            ),
+        ]
+
+        for (target, expectedError) in cases {
+            XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+                plan: plan,
+                availableTargetInfos: [target]
+            )) { error in
+                XCTAssertEqual(error as? MigrationPlanPreflightError, expectedError)
+            }
+        }
+    }
+
+    func testInvalidSavedPlatformEvidenceIsRefused() {
+        let package = PackageCandidate(
+            repositoryURL: "https://github.com/Alamofire/Alamofire",
+            products: ["Alamofire"],
+            versionRequirement: .exact("5.0.0"),
+            confidence: .verified,
+            supportedConsumerLanguages: [.swift],
+            supportedConsumerPlatforms: []
+        )
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: makePlan(entries: [makeEntry(packageCandidate: package)]),
+            availableTargetInfos: [
+                targetInfo("App", platform: "iOS", deploymentTarget: "15.0"),
+            ]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .invalidConsumerPlatformEvidence(dependency: "Alamofire")
+            )
+        }
+    }
+
+    func testAddedPlatformConstraintMakesSavedAutoEntryStale() {
+        let saved = makePlan(entries: [makeEntry()])
+        let current = makePlan(entries: [makeEntry(packageCandidate: platformPackage())])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: saved,
+            currentPlan: current,
+            availableTargetInfos: [
+                targetInfo("App", platform: "iOS", deploymentTarget: "15.0"),
+            ]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleAutoEntry(dependency: "Alamofire")
+            )
+        }
+    }
+
+    func testRemovedPlatformConstraintMakesSavedAutoEntryStale() {
+        let saved = makePlan(entries: [makeEntry(packageCandidate: platformPackage())])
+        let current = makePlan(entries: [makeEntry()])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: saved,
+            currentPlan: current,
+            availableTargetInfos: [
+                targetInfo("App", platform: "iOS", deploymentTarget: "15.0"),
+            ]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleAutoEntry(dependency: "Alamofire")
+            )
+        }
+    }
+
+    func testLegacyPackageCandidateOmitsPlatformFieldFromJSON() throws {
+        let data = try JSONEncoder().encode(makePackage())
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        XCTAssertNil(object["supportedConsumerPlatforms"])
+    }
+
+    func testPlatformConstraintRoundTripsInPlanJSON() throws {
+        let plan = makePlan(entries: [makeEntry(packageCandidate: platformPackage())])
+
+        let decoded = try JSONDecoder().decode(
+            MigrationPlan.self,
+            from: JSONEncoder().encode(plan)
+        )
+
+        XCTAssertEqual(
+            decoded.entries[0].packageCandidate?.supportedConsumerPlatforms,
+            [SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.0")]
+        )
+    }
+
     private func makePlan(entries: [MigrationPlanEntry]) -> MigrationPlan {
         MigrationPlan(projectPath: "/tmp/App.xcodeproj", entries: entries, issues: [], readinessScore: 100)
     }
@@ -566,14 +699,31 @@ final class MigrationPlanPreflightTests: XCTestCase {
         )
     }
 
+    private func platformPackage() -> PackageCandidate {
+        PackageCandidate(
+            repositoryURL: "https://github.com/Alamofire/Alamofire",
+            products: ["Alamofire"],
+            versionRequirement: .exact("5.0.0"),
+            confidence: .verified,
+            supportedConsumerLanguages: [.swift],
+            supportedConsumerPlatforms: [
+                SupportedConsumerPlatform(platform: .iOS, minimumDeploymentTarget: "15.0"),
+            ]
+        )
+    }
+
     private func targetInfo(
         _ name: String,
         languages: [SourceLanguage] = [.swift],
-        completeness: SourceProfileCompleteness = .complete
+        completeness: SourceProfileCompleteness = .complete,
+        platform: String? = nil,
+        deploymentTarget: String? = nil
     ) -> TargetInfo {
         TargetInfo(
             name: name,
             type: "application",
+            platform: platform,
+            deploymentTarget: deploymentTarget,
             sourceProfile: TargetSourceProfile(
                 languages: languages,
                 completeness: completeness
@@ -583,9 +733,10 @@ final class MigrationPlanPreflightTests: XCTestCase {
 
     private func makeEntry(
         targetName: String = "App",
-        sourceProvenance: DependencySourceProvenance? = nil
+        sourceProvenance: DependencySourceProvenance? = nil,
+        packageCandidate: PackageCandidate? = nil
     ) -> MigrationPlanEntry {
-        let package = makePackage()
+        let package = packageCandidate ?? makePackage()
         return MigrationPlanEntry(
             podName: "Alamofire",
             currentVersion: "5.0.0",

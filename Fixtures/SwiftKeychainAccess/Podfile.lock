@@ -1,0 +1,9 @@
+PODS:
+  - KeychainAccess (4.2.2)
+
+DEPENDENCIES:
+  - KeychainAccess (= 4.2.2)
+
+SPEC REPOS:
+  trunk:
+    - KeychainAccess
