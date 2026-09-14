@@ -1,0 +1,18 @@
+schemaVersion: 2
+pod:
+  name: DeviceKit
+swiftpm:
+  repository: https://github.com/devicekit/DeviceKit
+  products:
+    - DeviceKit
+  minimumVersion: 5.8.0
+  supportedConsumerLanguages:
+    - swift
+  supportedConsumerPlatforms:
+    - platform: iOS
+      minimumDeploymentTarget: "15.0"
+migration:
+  confidence: verified
+metadata:
+  notes: "Identical Swift iOS 15 consumer built with CocoaPods and SwiftPM at 56b997e8a61707218f9af09f32b2a1d1806fd792; generated source and built privacy resources verified. See Documentation/VerifiedConsumerMappings.md."
+  lastVerified: "2026-09-15"

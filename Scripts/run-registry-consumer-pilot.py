@@ -124,13 +124,11 @@ def main():
         require(spec_path.is_absolute() and spec_path.is_file() and spec_path.suffix == ".json",
                 "Resolved registry podspec is not a regular JSON file")
         spec_bytes = spec_path.read_bytes()
+        (reports / (directory.name + "-resolved-podspec.json")).write_bytes(spec_bytes)
         require(re.findall(r"^  " + re.escape(args.case) + r": ([0-9a-f]{40})$", lock, re.MULTILINE)
                 == [hashlib.sha1(spec_bytes).hexdigest()], "Resolved podspec does not match the installed lock checksum")
-        (reports / (directory.name + "-resolved-podspec.json")).write_bytes(spec_bytes)
         local = json.loads(spec_bytes)
-        for field in ["name", "version", "source", "source_files", "platforms", "resource_bundles",
-                      "dependencies", "prepare_command", "script_phases", "exclude_files", "vendored_frameworks"]:
-            require(local.get(field) == spec.get(field), f"Installed podspec changed field {field}")
+        require(local == spec, "Resolved podspec differs from the pinned public specification")
         source_check(directory / "Pods" / args.case)
 
     def pins_check(path):

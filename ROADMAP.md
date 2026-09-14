@@ -182,10 +182,14 @@ preparation change. The goal is to add exact mappings that produce verified
 migration value for supported Swift consumers, rather than infer migration
 eligibility from local source inspection.
 
-[KeychainAccess #55](https://github.com/Alexsvensson99/PkgLift/issues/55) is the
-first mapping candidate. [DeviceKit #58](https://github.com/Alexsvensson99/PkgLift/issues/58)
-is next only after its resource and generated-code behavior has concrete evidence
-for every supported consumer path.
+[KeychainAccess #55](https://github.com/Alexsvensson99/PkgLift/issues/55) and
+[DeviceKit #58](https://github.com/Alexsvensson99/PkgLift/issues/58) are the first
+two mappings. Both passed the [consumer build admission](Documentation/VerifiedConsumerMappings.md)
+before their registry entries were added, including DeviceKit's generated source
+and built privacy resources. [PR #110](https://github.com/Alexsvensson99/PkgLift/pull/110)
+tracks implementation and requires the complete migration/build gates before
+integration. New platform constraints use registry schema 2 so older clients
+reject the mapping instead of ignoring its safety boundary.
 
 Acceptance criteria for each mapping:
 
