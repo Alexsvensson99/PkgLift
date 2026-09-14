@@ -84,10 +84,10 @@ def main():
     summary = {"case": args.case, "phase": args.phase, "platform": "iOS", "deploymentTarget": "15.0",
                "consumerLanguages": ["swift"], "status": "incomplete", "sourceRevision": case["revision"]}
 
-    def run(label, command, cwd=None, seconds=1200, json_output=False):
-        output = reports / (label + (".json" if json_output else ".log"))
+    def run(label, command, cwd=None, seconds=1200, json_output=False, text_output=False):
+        output = reports / (label + (".json" if json_output else ".txt" if text_output else ".log"))
         wrapper = [sys.executable, str(repo / "Scripts/run-with-timeout.py"), "--seconds", str(seconds)]
-        if json_output:
+        if json_output or text_output:
             wrapper += ["--stdout", str(output), "--stderr", str(reports / (label + ".stderr.log"))]
         else:
             wrapper += ["--combined-log", str(output)]
@@ -114,9 +114,20 @@ def main():
 
     def lock_check(directory):
         lock = (directory / "Podfile.lock").read_text()
+        shutil.copyfile(directory / "Podfile.lock", reports / (directory.name + "-Podfile.lock"))
         require(re.search(r"^  - " + re.escape(args.case) + r" \(" + re.escape(case["version"]) + r"\)",
                           lock, re.MULTILINE), "CocoaPods did not resolve the exact pinned version")
-        local = json.loads((directory / f"Pods/Local Podspecs/{args.case}.podspec.json").read_text())
+        paths = run(directory.name + "-resolved-spec-path", ["pod", "spec", "which", args.case,
+                    "--version=" + case["version"], "--no-ansi"], directory, seconds=60, text_output=True).read_text().splitlines()
+        require(len(paths) == 1, "Missing or ambiguous resolved registry podspec")
+        spec_path = Path(paths[0])
+        require(spec_path.is_absolute() and spec_path.is_file() and spec_path.suffix == ".json",
+                "Resolved registry podspec is not a regular JSON file")
+        spec_bytes = spec_path.read_bytes()
+        require(re.findall(r"^  " + re.escape(args.case) + r": ([0-9a-f]{40})$", lock, re.MULTILINE)
+                == [hashlib.sha1(spec_bytes).hexdigest()], "Resolved podspec does not match the installed lock checksum")
+        (reports / (directory.name + "-resolved-podspec.json")).write_bytes(spec_bytes)
+        local = json.loads(spec_bytes)
         for field in ["name", "version", "source", "source_files", "platforms", "resource_bundles",
                       "dependencies", "prepare_command", "script_phases", "exclude_files", "vendored_frameworks"]:
             require(local.get(field) == spec.get(field), f"Installed podspec changed field {field}")
@@ -163,7 +174,6 @@ def main():
         target = "Swift" + args.case
         run("baseline-pod-install", ["pod", "install", "--clean-install"], baseline, seconds=600)
         lock_check(baseline)
-        shutil.copyfile(baseline / "Podfile.lock", reports / "baseline-Podfile.lock")
         baseline_data = root / "baseline-derived"
         run("baseline-build", ["xcodebuild", "-workspace", baseline / (target + ".xcworkspace"),
             "-scheme", target, "-configuration", "Debug", "-sdk", "iphonesimulator", "-destination",
