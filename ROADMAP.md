@@ -172,8 +172,6 @@ safety evidence, implementation review and release approval.
 
 ---
 
-# Current release
-
 ## v0.9.0 — Verified Swift Consumer Mappings
 
 [PkgLift 0.9.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.9.0)
