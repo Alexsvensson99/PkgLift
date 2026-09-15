@@ -194,22 +194,22 @@ and DeviceKit consumer, migration and build coverage in
 New platform constraints use registry schema 2 so older clients reject the
 mapping instead of ignoring its safety boundary.
 
-Acceptance criteria for each mapping:
+Completed acceptance for both mappings:
 
-- Bind the CocoaPods identity and locked version to an exact SwiftPM repository,
-  version and product. Support only consumer languages that were actually
-  compiled in the accepted evidence.
-- Build the same pinned dependency and representative consumer through both
+- Bound the CocoaPods identity and locked version to an exact SwiftPM repository,
+  version and product, with support limited to consumer languages compiled in
+  the accepted evidence.
+- Built the same pinned dependency and representative consumer through both
   CocoaPods and SwiftPM before adding the mapping.
-- After adding the mapping, exercise the complete **Analyze → Plan → Migrate →
-  Verify** path and require the migrated consumer to resolve and build.
-- Update and validate both registry copies, and add focused negative gates for
+- Exercised the complete **Analyze → Plan → Migrate → Verify** path after adding
+  the mapping and verified that the migrated consumer resolved and built.
+- Updated and validated both registry copies, with focused negative gates for
   mismatched identity, version, product, language or target-platform evidence.
-  Limit the new mappings to their verified iOS 15-or-later Swift consumer profile.
-  DeviceKit fixture checks must fail when required resources or generated source
-  are absent, changed or unverified.
-- Pass every required candidate check and the exact-main checks before any
-  distribution preparation.
+  Both mappings are limited to their verified iOS 15-or-later Swift profile.
+  DeviceKit fixture checks reject absent, changed or unverified required
+  resources and generated source.
+- Passed the required release-preparation and exact release-commit checks
+  before public distribution.
 
 This milestone does not add Podspec or package generation, infer source
 provenance, or make a dependency `AUTO` without the existing exact registry,
