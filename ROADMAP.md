@@ -172,17 +172,17 @@ safety evidence, implementation review and release approval.
 
 ---
 
-# Next
+# Current release
 
 ## v0.9.0 — Verified Swift Consumer Mappings
 
-PkgLift 0.8.0 remains the current public release. Version 0.9.0 is an
-unreleased release candidate prepared from
-`733964a3c9fa93ed4ab213d83cbf96a482f1b36b`. It adds exact mappings that
+[PkgLift 0.9.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.9.0)
+is the current public release at
+`eaecabf570d06ccff905ef45723c5e49d126c0ba`. It adds exact mappings that
 produce verified migration value for supported Swift consumers, rather than
-infer migration eligibility from local source inspection. Candidate-specific
-proof is recorded through preparation pull-request and exact-main checks, with
-separate private artifact acceptance before distribution.
+infer migration eligibility from local source inspection. It was prepared by
+[PR #111](https://github.com/Alexsvensson99/PkgLift/pull/111) and its reviewed
+manifest [PR #112](https://github.com/Alexsvensson99/PkgLift/pull/112).
 
 [KeychainAccess #55](https://github.com/Alexsvensson99/PkgLift/issues/55) and
 [DeviceKit #58](https://github.com/Alexsvensson99/PkgLift/issues/58) are the first
