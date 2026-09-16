@@ -87,3 +87,18 @@ the pods' iOS 9 deployment settings. The recorded success is specifically the
 explicit iOS 15 build configuration above. It does not establish that the original
 podspec defaults build on Xcode 27. No new GitHub Actions result or release is
 claimed by this local evidence.
+
+## Ordinary CI integration
+
+The ordinary [pilot workflow](../.github/workflows/positive-e2e.yml) runs both cases
+on macOS 15/Xcode 16.4. Each consumes the same source-bound, checksum-verified CLI
+artifact produced by the build job. The two cases run serially; no additional
+PkgLift compilation is introduced. Each uses separate baseline and post-migration
+DerivedData directories and uploads its report even when the pilot fails.
+
+The existing `Mixed-Language Pilot Gate` requires the original mixed-language
+pilot **and both partial-migration cases** to succeed. Failure, cancellation,
+skipping or missing jobs cannot satisfy the gate. Repository policy tests protect
+the matrix, exact runner invocation, artifact checks and dependency on both cases.
+CI results for this change must be read from its exact PR head; the local Xcode 27
+evidence above does not substitute for the hosted Xcode 16.4 runs.

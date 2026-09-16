@@ -91,7 +91,7 @@ required_gates = [
   [shared_workflow_path, "test", "test", ["build_pilot_toolchain"]],
   [shared_workflow_path, "registry_gate", "Registry Gate", %w[build_pilot_toolchain registry_consumers]],
   [shared_workflow_path, "pinned_gate", "Pinned Pilot Gate", %w[build_pilot_toolchain analyze]],
-  [shared_workflow_path, "gate", "Mixed-Language Pilot Gate", %w[build_pilot_toolchain migrate-and-build]],
+  [shared_workflow_path, "gate", "Mixed-Language Pilot Gate", %w[build_pilot_toolchain migrate-and-build partial_migrations]],
   [".github/workflows/codeql.yml", "gate", "CodeQL", ["analyze"]],
 ].freeze
 required_gates.each do |path, gate_id, name, heavy_ids|
@@ -205,7 +205,71 @@ if pilot_jobs.is_a?(Hash)
     end
   end
 
-  %w[analyze migrate-and-build registry_consumers].each do |consumer_id|
+  partial_migrations = pilot_jobs["partial_migrations"]
+  if partial_migrations.is_a?(Hash)
+    expected_cases = [{ "case" => "PartialSwift" }, { "case" => "PartialMixed" }]
+    strategy = partial_migrations["strategy"]
+    unless strategy.is_a?(Hash) && strategy["fail-fast"] == false && strategy["max-parallel"] == 1
+      errors << "#{pilot_workflow_path}: partial migration matrix must be fail-fast false with max-parallel 1"
+    end
+    unless strategy.is_a?(Hash) && strategy["matrix"] == { "include" => expected_cases }
+      errors << "#{pilot_workflow_path}: partial migration matrix must contain exactly PartialSwift and PartialMixed"
+    end
+    unless partial_migrations["runs-on"] == "macos-15" &&
+        partial_migrations.dig("env", "DEVELOPER_DIR") == "/Applications/Xcode_16.4.app/Contents/Developer"
+      errors << "#{pilot_workflow_path}: partial migrations must use macos-15 with Xcode 16.4"
+    end
+    unless Array(partial_migrations["needs"]) == [producer_id]
+      errors << "#{pilot_workflow_path}: partial migrations must depend only on the shared pilot producer"
+    end
+
+    partial_steps = Array(partial_migrations["steps"])
+    expected_download = {
+      "name" => "Download Shared PkgLift",
+      "uses" => "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+      "with" => {
+        "name" => "${{ needs.build_pilot_toolchain.outputs.artifact_name }}",
+        "path" => "${{ runner.temp }}/pkglift-pilot-artifact",
+      },
+    }
+    expected_verifier = {
+      "name" => "Verify Shared PkgLift",
+      "shell" => "bash",
+      "env" => {
+        "PKGLIFT_EXPECTED_ARCHIVE_SHA256" => "${{ needs.build_pilot_toolchain.outputs.archive_sha256 }}",
+        "PKGLIFT_EXPECTED_BINARY_SHA256" => "${{ needs.build_pilot_toolchain.outputs.binary_sha256 }}",
+        "PKGLIFT_EXPECTED_PRODUCER_ATTEMPT" => "${{ needs.build_pilot_toolchain.outputs.artifact_run_attempt }}",
+        "PKGLIFT_EXPECTED_REPOSITORY" => "${{ github.repository }}",
+        "PKGLIFT_EXPECTED_RUN_ID" => "${{ github.run_id }}",
+        "PKGLIFT_EXPECTED_SOURCE_SHA" => "${{ github.sha }}",
+      },
+      "run" => <<~'VERIFY',
+        set -euo pipefail
+        /usr/bin/python3 Scripts/verify-pilot-artifact.py \
+          "$RUNNER_TEMP/pkglift-pilot-artifact/pkglift-pilot-binary.tar.gz" \
+          "$RUNNER_TEMP/pkglift-pilot-runtime"
+      VERIFY
+    }
+    download = partial_steps.find { |step| step.is_a?(Hash) && step["name"] == "Download Shared PkgLift" }
+    verifier = partial_steps.find { |step| step.is_a?(Hash) && step["name"] == "Verify Shared PkgLift" }
+    unless download == expected_download && verifier == expected_verifier
+      errors << "#{pilot_workflow_path}: partial migrations must use the exact shared artifact download and verifier"
+    end
+
+    expected_runner = 'python3 Scripts/run-partial-migration-pilot.py --case "${{ matrix.case }}" --output "$RUNNER_TEMP/pkglift-partial-${{ matrix.case }}" --pkglift "$PKGLIFT_BIN" --jobs 2'
+    runner = partial_steps.find { |step| step.is_a?(Hash) && step["name"] == "Verify Partial Migration" }
+    unless runner && runner["run"] == expected_runner
+      errors << "#{pilot_workflow_path}: partial migrations must execute the exact bounded pilot command"
+    end
+  end
+
+  consumer_runners = {
+    "analyze" => "Scripts/run-pinned-pilot.sh",
+    "migrate-and-build" => "Scripts/run-positive-e2e-pilot.sh",
+    "registry_consumers" => "Scripts/run-registry-consumer-pilot.py",
+    "partial_migrations" => "Scripts/run-partial-migration-pilot.py",
+  }
+  consumer_runners.each do |consumer_id, runner_script|
     consumer = pilot_jobs[consumer_id]
     next unless consumer.is_a?(Hash)
     unless Array(consumer["needs"]).include?(producer_id)
@@ -231,7 +295,6 @@ if pilot_jobs.is_a?(Hash)
     unless verifier && expected.all? { |key, value| verifier.dig("env", key) == value }
       errors << "#{pilot_workflow_path}: #{consumer_id} must verify all artifact identity and checksum evidence"
     end
-    runner_script = { "analyze" => "Scripts/run-pinned-pilot.sh", "migrate-and-build" => "Scripts/run-positive-e2e-pilot.sh", "registry_consumers" => "Scripts/run-registry-consumer-pilot.py" }.fetch(consumer_id)
     runner_step = steps.find { |step| step.is_a?(Hash) && step.fetch("run", "").include?(runner_script) }
     unless download && verifier && runner_step && steps.index(download) < steps.index(verifier) && steps.index(verifier) < steps.index(runner_step)
       errors << "#{pilot_workflow_path}: #{consumer_id} must verify the downloaded artifact before running pilots"
