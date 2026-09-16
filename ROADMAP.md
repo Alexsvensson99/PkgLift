@@ -27,6 +27,7 @@ Every planned release follows these rules:
 Roadmap items are grouped by confidence rather than by speculative release dates:
 
 - **Released** — shipped and supported.
+- **Release preparation** — accepted and merged product scope awaiting candidate validation, private distribution acceptance, and public release approval.
 - **Next** — the active release target with concrete acceptance criteria.
 - **Planned** — intended direction after the next release; scope may still change based on evidence.
 - **Research** — technically promising work that is not yet committed to a release.
@@ -217,16 +218,27 @@ build and migration proof.
 
 ---
 
-# Next
+# Release preparation
 
-## v0.10.0 — Verified CryptoSwift Migration
+## v0.10.0 — Verified CryptoSwift Migration (unpublished)
 
-Prove the exact CryptoSwift identity and 1.10.0 version boundary with the same
-Swift iOS 15 consumer built through CocoaPods and SwiftPM, including privacy
-resources. Admit a schema-2 mapping only after that evidence passes, then prove
-the complete migration and final build. The [0.10 plan](Documentation/Plan-0.10.md)
-defines scope, acceptance and the fail-closed boundary for
-[issue #59](https://github.com/Alexsvensson99/PkgLift/issues/59).
+[PR #114](https://github.com/Alexsvensson99/PkgLift/pull/114) completed and merged
+the CryptoSwift implementation. The accepted evidence binds CryptoSwift 1.10.0
+to the same Swift iOS 15 consumer built through CocoaPods and SwiftPM, including
+all 113 compiled core Swift sources and the named built privacy resources.
+The schema-2 mapping was admitted only after that evidence passed; the complete
+migration and final build then passed in
+[run 35051095147](https://github.com/Alexsvensson99/PkgLift/actions/runs/35051095147).
+The existing minimumVersion threshold policy remains unchanged; the concrete
+build evidence is limited to 1.10.0.
+
+The remaining work is release-candidate validation, private signing and
+notarization acceptance, followed by the separate approval gate for public
+release and Homebrew distribution. Public distribution remains at 0.9.0.
+The [0.10 plan](Documentation/Plan-0.10.md),
+[candidate release notes](Documentation/ReleaseNotes-0.10.0.md), and
+[distribution contract](Documentation/Distribution.md) record these boundaries
+for [issue #59](https://github.com/Alexsvensson99/PkgLift/issues/59).
 
 SwiftSoup and DGCharts remain independent research candidates. No additional
 platform, language, package generation or automatic-migration shortcut is
