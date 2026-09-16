@@ -180,6 +180,228 @@ final class CommandContextMigrationTests: XCTestCase {
         XCTAssertTrue(analysis.swiftPMState.packages.isEmpty)
     }
 
+    func testExistingPackageRequirementConflictPlansReviewAndApplyDoesNotMutateInputs() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let sourceURL = fixture.root.appendingPathComponent("AppSource0")
+        try Data("import Foundation\nlet fixtureValue = 1\n".utf8).write(to: sourceURL)
+
+        let editor = XcodeProjectEditor()
+        try editor.addSwiftPMPackage(
+            repositoryURL: "https://github.com/Alamofire/Alamofire.git/",
+            requirement: .from("5.0.0"),
+            to: fixture.project.path
+        )
+        try editor.linkSwiftPMProduct(
+            productName: "Alamofire",
+            toTarget: "App",
+            repositoryURL: "https://github.com/Alamofire/Alamofire",
+            in: fixture.project.path
+        )
+
+        let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+        var planCommand = try PlanCommand.parse(arguments)
+        try await planCommand.run()
+
+        let planURL = fixture.root.appendingPathComponent(".pkglift/plan.json")
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let plan = try decoder.decode(MigrationPlan.self, from: Data(contentsOf: planURL))
+        let entry = try XCTUnwrap(plan.entries.first)
+        XCTAssertEqual(entry.classification, .review)
+        XCTAssertTrue(try XCTUnwrap(entry.reasonDetails).contains {
+            $0.code == .existingPackageRequirementConflict
+        })
+        XCTAssertTrue(entry.actions.allSatisfy { action in
+            if case .manual = action { return true }
+            return false
+        })
+
+        let podfileURL = fixture.root.appendingPathComponent("Podfile")
+        let lockfileURL = fixture.root.appendingPathComponent("Podfile.lock")
+        let projectFileURL = fixture.project.appendingPathComponent("project.pbxproj")
+        let podfileBefore = try Data(contentsOf: podfileURL)
+        let lockfileBefore = try Data(contentsOf: lockfileURL)
+        let projectBefore = try Data(contentsOf: projectFileURL)
+        let sourceBefore = try Data(contentsOf: sourceURL)
+        let planBefore = try Data(contentsOf: planURL)
+
+        var apply = try MigrateCommand.parse(arguments + ["--apply"])
+        try await apply.run()
+
+        XCTAssertEqual(try Data(contentsOf: podfileURL), podfileBefore)
+        XCTAssertEqual(try Data(contentsOf: lockfileURL), lockfileBefore)
+        XCTAssertEqual(try Data(contentsOf: projectFileURL), projectBefore)
+        XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
+        XCTAssertEqual(try Data(contentsOf: planURL), planBefore)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.root.appendingPathComponent(".pkglift/migration-in-progress").path
+            )
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.root.appendingPathComponent(".pkglift/backup").path
+            )
+        )
+    }
+
+    func testApplyRefusesWhenExistingPackageRequirementConflictsWithSavedAutoPlan() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+            targetNames: ["App"]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let sourceURL = fixture.root.appendingPathComponent("AppSource0")
+        try Data("import Foundation\nlet fixtureValue = 1\n".utf8).write(to: sourceURL)
+        let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+
+        var planCommand = try PlanCommand.parse(arguments)
+        try await planCommand.run()
+        let planURL = fixture.root.appendingPathComponent(".pkglift/plan.json")
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let savedPlan = try decoder.decode(MigrationPlan.self, from: Data(contentsOf: planURL))
+        XCTAssertEqual(savedPlan.autoEntries.map(\.podName), ["Alamofire"])
+
+        let editor = XcodeProjectEditor()
+        try editor.addSwiftPMPackage(
+            repositoryURL: "https://github.com/Alamofire/Alamofire.git/",
+            requirement: .from("5.0.0"),
+            to: fixture.project.path
+        )
+        try editor.linkSwiftPMProduct(
+            productName: "Alamofire",
+            toTarget: "App",
+            repositoryURL: "https://github.com/Alamofire/Alamofire",
+            in: fixture.project.path
+        )
+
+        let currentOptions = try CommonOptions.parse(arguments)
+        let currentContext = try await CommandContext.load(from: currentOptions)
+        let currentEntry = try XCTUnwrap(currentContext.buildMigrationPlan().entries.first)
+        XCTAssertEqual(currentEntry.classification, .review)
+        XCTAssertTrue(try XCTUnwrap(currentEntry.reasonDetails).contains {
+            $0.code == .existingPackageRequirementConflict
+        })
+
+        let podfileURL = fixture.root.appendingPathComponent("Podfile")
+        let lockfileURL = fixture.root.appendingPathComponent("Podfile.lock")
+        let projectFileURL = fixture.project.appendingPathComponent("project.pbxproj")
+        let podfileBefore = try Data(contentsOf: podfileURL)
+        let lockfileBefore = try Data(contentsOf: lockfileURL)
+        let projectBefore = try Data(contentsOf: projectFileURL)
+        let sourceBefore = try Data(contentsOf: sourceURL)
+        let planBefore = try Data(contentsOf: planURL)
+
+        var apply = try MigrateCommand.parse(arguments + ["--apply"])
+        do {
+            try await apply.run()
+            XCTFail("Expected stale AUTO plan refusal")
+        } catch let error as MigrationPlanPreflightError {
+            XCTAssertEqual(error, .staleAutoEntry(dependency: "Alamofire"))
+        } catch {
+            XCTFail("Unexpected stale AUTO plan error: \(error)")
+        }
+
+        XCTAssertEqual(try Data(contentsOf: podfileURL), podfileBefore)
+        XCTAssertEqual(try Data(contentsOf: lockfileURL), lockfileBefore)
+        XCTAssertEqual(try Data(contentsOf: projectFileURL), projectBefore)
+        XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
+        XCTAssertEqual(try Data(contentsOf: planURL), planBefore)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.root.appendingPathComponent(".pkglift/migration-in-progress").path
+            )
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.root.appendingPathComponent(".pkglift/backup").path
+            )
+        )
+    }
+
+    func testApplyRefusesConflictingDuplicateExistingPackageRequirementsInEitherOrder() async throws {
+        let requirementOrders: [[XCRemoteSwiftPackageReference.VersionRequirement?]] = [
+            [.exact("5.0.0"), .branch("develop")],
+            [.branch("develop"), .exact("5.0.0")],
+        ]
+
+        for requirements in requirementOrders {
+            let fixture = try makeFixture(
+                podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+                lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+                targetNames: ["App"]
+            )
+            defer { try? FileManager.default.removeItem(at: fixture.root) }
+            let sourceURL = fixture.root.appendingPathComponent("AppSource0")
+            try Data("import Foundation\nlet fixtureValue = 1\n".utf8).write(to: sourceURL)
+            let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+
+            var planCommand = try PlanCommand.parse(arguments)
+            try await planCommand.run()
+            let planURL = fixture.root.appendingPathComponent(".pkglift/plan.json")
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let savedPlan = try decoder.decode(MigrationPlan.self, from: Data(contentsOf: planURL))
+            XCTAssertEqual(savedPlan.autoEntries.map(\.podName), ["Alamofire"])
+
+            try addExistingSwiftPMPackages(
+                repositoryURL: "https://github.com/Alamofire/Alamofire.git/",
+                requirements: requirements,
+                to: fixture.project
+            )
+
+            let currentOptions = try CommonOptions.parse(arguments)
+            let currentContext = try await CommandContext.load(from: currentOptions)
+            let currentEntry = try XCTUnwrap(currentContext.buildMigrationPlan().entries.first)
+            XCTAssertEqual(currentEntry.classification, .review)
+            XCTAssertTrue(try XCTUnwrap(currentEntry.reasonDetails).contains {
+                $0.code == .existingPackageRequirementConflict
+            })
+
+            let podfileURL = fixture.root.appendingPathComponent("Podfile")
+            let lockfileURL = fixture.root.appendingPathComponent("Podfile.lock")
+            let projectFileURL = fixture.project.appendingPathComponent("project.pbxproj")
+            let podfileBefore = try Data(contentsOf: podfileURL)
+            let lockfileBefore = try Data(contentsOf: lockfileURL)
+            let projectBefore = try Data(contentsOf: projectFileURL)
+            let sourceBefore = try Data(contentsOf: sourceURL)
+            let planBefore = try Data(contentsOf: planURL)
+
+            var apply = try MigrateCommand.parse(arguments + ["--apply"])
+            do {
+                try await apply.run()
+                XCTFail("Expected stale AUTO plan refusal")
+            } catch let error as MigrationPlanPreflightError {
+                XCTAssertEqual(error, .staleAutoEntry(dependency: "Alamofire"))
+            } catch {
+                XCTFail("Unexpected stale AUTO plan error: \(error)")
+            }
+
+            XCTAssertEqual(try Data(contentsOf: podfileURL), podfileBefore)
+            XCTAssertEqual(try Data(contentsOf: lockfileURL), lockfileBefore)
+            XCTAssertEqual(try Data(contentsOf: projectFileURL), projectBefore)
+            XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBefore)
+            XCTAssertEqual(try Data(contentsOf: planURL), planBefore)
+            XCTAssertFalse(
+                FileManager.default.fileExists(
+                    atPath: fixture.root.appendingPathComponent(".pkglift/migration-in-progress").path
+                )
+            )
+            XCTAssertFalse(
+                FileManager.default.fileExists(
+                    atPath: fixture.root.appendingPathComponent(".pkglift/backup").path
+                )
+            )
+        }
+    }
+
     func testApplyRefusesUnsupportedSchemaAndDifferentPkgLiftVersionBeforeMutation() async throws {
         for mutation in PlanContractMutation.allCases {
             let fixture = try makeFixture(
@@ -828,6 +1050,24 @@ final class CommandContextMigrationTests: XCTestCase {
         try XcodeProj(workspace: XCWorkspace(), pbxproj: pbxproj)
             .write(path: Path(projectURL.path))
         return (root, projectURL)
+    }
+
+    private func addExistingSwiftPMPackages(
+        repositoryURL: String,
+        requirements: [XCRemoteSwiftPackageReference.VersionRequirement?],
+        to projectURL: URL
+    ) throws {
+        let xcodeproj = try XcodeProj(pathString: projectURL.path)
+        let rootProject = try XCTUnwrap(try xcodeproj.pbxproj.rootProject())
+        for requirement in requirements {
+            let package = XCRemoteSwiftPackageReference(
+                repositoryURL: repositoryURL,
+                versionRequirement: requirement
+            )
+            xcodeproj.pbxproj.add(object: package)
+            rootProject.remotePackages.append(package)
+        }
+        try xcodeproj.write(pathString: projectURL.path, override: true)
     }
 
     private func runGit(_ arguments: [String], in directory: URL) throws {

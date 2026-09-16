@@ -1,6 +1,9 @@
 # PkgLift 1.0 environment qualification
 
-G2 work in progress, 2026-09-16. This evidence inventory implements the
+G2 work in progress, 2026-09-16. PR [#119](https://github.com/Alexsvensson99/PkgLift/pull/119)
+merged to main as [`9d2951fb8e2d8bc2326cc4cb7c9e41f0ba9d78cf`](https://github.com/Alexsvensson99/PkgLift/commit/9d2951fb8e2d8bc2326cc4cb7c9e41f0ba9d78cf).
+Its main qualification recorded 24 completed, successful checks, including the
+two retained-CocoaPods pilots below. This evidence inventory implements the
 [1.0 plan](Plan-1.0.md) environment work package; it is not a 1.0 release
 or a promise of universal support. Running a distributed executable, compiling
 PkgLift and migrating/building a consumer project are separate qualifications.
@@ -16,7 +19,7 @@ PkgLift and migrating/building a consumer project are separate qualifications.
 | Source, local macOS 27 arm64 | macOS 27.0 (26A428), Xcode 27.0 (27A266a), Swift 6.4 (`swiftlang-6.4.0.34.1`), macOS SDK 27.0 (26A425) | Current G2 checks are recorded below. This is a development observation, pending protected integration and an explicit 1.0 source-support decision. |
 | Swift/iOS consumers, baseline | Xcode 16.4 (16F6), CocoaPods 1.17.0, iPhoneSimulator SDK 18.5 (22F76), Debug/generic iOS Simulator, deployment 15.0 | KeychainAccess, DeviceKit and CryptoSwift baseline/SwiftPM/migrated builds passed on source `cbb0eb1c…` in run 35056724222. Their artifacts record these versions but omit host OS/CPU/Swift. Both simulator architecture slices are not Intel-host evidence. |
 | Swift + Objective-C consumer | SDWebImage job passed in run 35056724222 | The job result is recorded; a complete environment artifact is missing from the retained local evidence. Qualify the combined cell before expanding claims. |
-| Retained CocoaPods + migrated SwiftPM | Pending | A successful partial consumer build with exact environment evidence remains required across G2/G3. Read-only pilots and single-pod fixtures do not close this cell. |
+| Retained CocoaPods + migrated SwiftPM | macOS 15.7.9 (24G830), arm64; Xcode 16.4 (16F6); Swift 6.1.2 (`swiftlang-6.1.2.1.2`); CocoaPods 1.17.0; iPhoneSimulator SDK 18.5 (22F76); Debug/arm64 iOS Simulator, deployment 15.0 | On main `9d2951…`, [PartialSwift](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753608) and [PartialMixed](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753582) passed baseline and post-migration builds, retained-pod refresh/lock checks and structural verification. This qualifies these two repository-owned partial-fixture cells only; existing SwiftPM coexistence, conflicting-requirement refusal, multi-target/workspace and real-upstream cells remain open. |
 
 The public artifact in all released-CLI rows is version **0.10.0**, archive
 SHA-256 `ad0747b3c10794ca93f23dc51953b3d234ddcfdabf4af1b5d4de5cd14876bd12`,
@@ -106,8 +109,9 @@ macOS 14/arm64 family matched, not that the 14.0 patch was exercised.
   evidence remains unavailable; keep that distinction visible.
 - Choose exact lower/upper source-toolchain cells after evidence review. The
   current local Xcode 27 result must not silently become “all newer Xcode”.
-- Record a complete environment alongside each promised consumer build,
-  including the retained-CocoaPods partial case shared with G3.
+- The two retained-CocoaPods fixture rows now have complete hosted environment
+  records. Record the same level of detail for every further promised consumer
+  build; this does not fill the other G3 project-shape cells.
 - Preserve the advertised macOS 14 boundary unless a separate support decision
   changes it. A hosted later 14.x observation alone does not establish 14.0.
 - Review/integrate changes through protected checks and repeat exact release

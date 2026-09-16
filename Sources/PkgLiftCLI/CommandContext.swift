@@ -194,11 +194,10 @@ struct CommandContext: Sendable {
             }
 
             if let mappedPackage,
-               let existingPackage = existingPackage(
+               existingPackages(
                     matching: mappedPackage.repositoryURL,
                     in: xcodeAnalysis?.swiftPMState.packages ?? []
-               ),
-               existingPackage.requirement != mappedPackage.versionRequirement {
+               ).contains(where: { $0.requirement != mappedPackage.versionRequirement }) {
                 if coreClassification == .auto {
                     coreClassification = .review
                 }
@@ -608,12 +607,12 @@ struct CommandContext: Sendable {
     }
 }
 
-private func existingPackage(
+private func existingPackages(
     matching repositoryURL: String,
     in packages: [SwiftPMDependency]
-) -> SwiftPMDependency? {
+) -> [SwiftPMDependency] {
     let identity = RepositoryIdentity.normalized(repositoryURL)
-    return packages.first { RepositoryIdentity.normalized($0.repositoryURL) == identity }
+    return packages.filter { RepositoryIdentity.normalized($0.repositoryURL) == identity }
 }
 
 private func hasCompatibleLanguageEvidence(
