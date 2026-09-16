@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.10.0] - 2026-09-16
 
-PkgLift 0.10.0 is an unreleased release candidate.
+PkgLift 0.10.0 is the current public release.
 
 ### Added
 - Add the exact CryptoSwift 1.10.0 registry mapping for complete Swift iOS
@@ -21,7 +21,7 @@ PkgLift 0.10.0 is an unreleased release candidate.
 - Keep the existing `swiftpm.minimumVersion` threshold policy for CryptoSwift:
   later stable lockfile versions at or above 1.10.0 remain subject to every
   existing `AUTO` gate; the concrete build evidence is limited to 1.10.0.
-- Set the 0.10.0 candidate plan version. Regenerate saved 0.9.0 plans before
+- Set the 0.10.0 plan version. Regenerate saved 0.9.0 plans before
   applying them with the final 0.10.0 build.
 
 ## [0.9.0] - 2026-09-15

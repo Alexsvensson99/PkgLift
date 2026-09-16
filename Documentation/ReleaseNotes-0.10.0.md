@@ -1,13 +1,12 @@
 # PkgLift 0.10.0 — CryptoSwift Swift/iOS mapping
 
-PkgLift 0.10.0 is an unreleased release candidate. [PkgLift
-0.9.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.9.0) remains
-the public release and is available through the
+[PkgLift 0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0)
+is the current public release at `7d976d70e66a584e2e25db9852ac0e53bb6201b9` and is available through the
 [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
 
-## Candidate scope
+## Released scope
 
-The candidate adds one exact registry mapping: CocoaPods `CryptoSwift` to the
+The release adds one exact registry mapping: CocoaPods `CryptoSwift` to the
 `CryptoSwift` product from `https://github.com/krzyzanowskim/CryptoSwift`.
 It uses schema 2 and is limited to complete Swift-only iOS consumer targets
 with a deployment target of iOS 15 or later.
@@ -29,7 +28,7 @@ other platforms.
 
 ## Boundaries
 
-This candidate does not add runtime cryptographic validation or runtime privacy
+This release does not add runtime cryptographic validation or runtime privacy
 testing. The privacy checks prove the presence and parsed semantics of the
 reviewed manifest in the built consumers only.
 
@@ -42,13 +41,14 @@ model.
 
 ## Upgrade compatibility
 
-The 0.10.0 candidate changes the PkgLift plan version. Regenerate plans created
-by 0.9.0 before applying them with the final 0.10.0 build; saved plans remain
+PkgLift 0.10.0 changes the plan version. Regenerate plans created by 0.9.0
+before applying them with 0.10.0; saved plans remain
 bound to the PkgLift version that created them.
 
-## Candidate status
+## Distribution
 
-This document prepares the candidate scope only; public distribution remains at
-0.9.0. Main-branch candidate checks, private signing and notarization acceptance,
-and the separate publication and Homebrew approval gates are required under the
+The public Apple Silicon archive targets macOS 14 or later, is Developer
+ID-signed and Apple-notarized, and includes the adjacent registry bundle. The
+same verified release is available through Homebrew. The protected publication
+and distribution requirements are documented in the
 [distribution contract](Distribution.md).

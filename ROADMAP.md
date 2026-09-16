@@ -176,8 +176,7 @@ safety evidence, implementation review and release approval.
 ## v0.9.0 — Verified Swift Consumer Mappings
 
 [PkgLift 0.9.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.9.0)
-is the current public release at
-`eaecabf570d06ccff905ef45723c5e49d126c0ba`. It adds exact mappings that
+was published at `eaecabf570d06ccff905ef45723c5e49d126c0ba`. It added exact mappings that
 produce verified migration value for supported Swift consumers, rather than
 infer migration eligibility from local source inspection. It was prepared by
 [PR #111](https://github.com/Alexsvensson99/PkgLift/pull/111) and its reviewed
@@ -216,11 +215,7 @@ project-graph, version, product and consumer-language evidence. Additional
 mappings remain independently reviewable candidates until they meet the same
 build and migration proof.
 
----
-
-# Release preparation
-
-## v0.10.0 — Verified CryptoSwift Migration (unpublished)
+## v0.10.0 — Verified CryptoSwift Migration
 
 [PR #114](https://github.com/Alexsvensson99/PkgLift/pull/114) completed and merged
 the CryptoSwift implementation. The accepted evidence binds CryptoSwift 1.10.0
@@ -232,13 +227,13 @@ migration and final build then passed in
 The existing minimumVersion threshold policy remains unchanged; the concrete
 build evidence is limited to 1.10.0.
 
-The remaining work is release-candidate validation, private signing and
-notarization acceptance, followed by the separate approval gate for public
-release and Homebrew distribution. Public distribution remains at 0.9.0.
+[PkgLift 0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0)
+is the current public release at `7d976d70e66a584e2e25db9852ac0e53bb6201b9`. Its Developer
+ID-signed, Apple-notarized archive is also available through the
+[Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
 The [0.10 plan](Documentation/Plan-0.10.md),
-[candidate release notes](Documentation/ReleaseNotes-0.10.0.md), and
-[distribution contract](Documentation/Distribution.md) record these boundaries
-for [issue #59](https://github.com/Alexsvensson99/PkgLift/issues/59).
+[release notes](Documentation/ReleaseNotes-0.10.0.md), and [distribution contract](Documentation/Distribution.md)
+record the shipped boundaries for [issue #59](https://github.com/Alexsvensson99/PkgLift/issues/59).
 
 SwiftSoup and DGCharts remain independent research candidates. No additional
 platform, language, package generation or automatic-migration shortcut is

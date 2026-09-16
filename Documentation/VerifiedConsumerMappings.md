@@ -96,7 +96,7 @@ These are admission records for the pre-mapping integrations. They do not
 replace the separate migration and verification evidence required by the
 Registry Gate.
 
-## CryptoSwift admission for 0.10 (unreleased)
+## CryptoSwift admission for 0.10
 
 CryptoSwift 1.10.0 passed its pre-mapping admission in
 [run 35050169615](https://github.com/Alexsvensson99/PkgLift/actions/runs/35050169615)
@@ -130,8 +130,12 @@ or missing deployment evidence, and `use_frameworks!` remain non-automatic.
 See the [fixture](../Fixtures/SwiftCryptoSwift/), [issue #59](https://github.com/Alexsvensson99/PkgLift/issues/59)
 and [0.10 plan](Plan-0.10.md).
 
-The required Registry Gate now runs the complete CryptoSwift migration phase,
+The required Registry Gate runs the complete CryptoSwift migration phase,
 including fresh dual builds, reviewed plan, dry run, apply, final build, exact
-resolved package and resource checks. Current migration acceptance is recorded
+resolved package and resource checks. Migration acceptance was recorded
 in [PR #114 checks](https://github.com/Alexsvensson99/PkgLift/pull/114/checks);
 pre-mapping admission alone does not prove a successful migration or release.
+
+[PkgLift 0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0)
+was subsequently published at `7d976d70e66a584e2e25db9852ac0e53bb6201b9` and is available
+through the [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
