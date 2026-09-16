@@ -134,11 +134,11 @@ final class RegistryLoaderTests: XCTestCase {
             .standardizedFileURL
 
         try FileManager.default.createDirectory(at: flatRegistry, withIntermediateDirectories: true)
-        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates), flatRegistry)
+        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates)?.path, flatRegistry.path)
 
         try FileManager.default.removeItem(at: flatRegistry)
         try FileManager.default.createDirectory(at: modernRegistry, withIntermediateDirectories: true)
-        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates), modernRegistry)
+        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates)?.path, modernRegistry.path)
 
         try FileManager.default.removeItem(at: modernRegistry)
         XCTAssertNil(BundledRegistryLocator.locate(in: candidates))
@@ -176,11 +176,11 @@ final class RegistryLoaderTests: XCTestCase {
         try FileManager.default.createDirectory(at: mainModern, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: executableFlat, withIntermediateDirectories: true)
 
-        XCTAssertEqual(Array(candidates.prefix(3)), [mainFlat, mainModern, executableFlat])
-        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates), mainFlat)
+        XCTAssertEqual(candidates.prefix(3).map(\.path), [mainFlat.path, mainModern.path, executableFlat.path])
+        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates)?.path, mainFlat.path)
 
         try FileManager.default.removeItem(at: mainFlat)
-        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates), mainModern)
+        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates)?.path, mainModern.path)
     }
 
     func testInvalidLocalOverrideIsRejectedDuringNormalLoad() async throws {
