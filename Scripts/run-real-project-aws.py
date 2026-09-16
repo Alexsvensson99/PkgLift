@@ -82,6 +82,11 @@ OUTCOMES = {
     "failed-safety",
     "failed-migration",
 }
+POD_INSTALL_DIAGNOSTIC_LABELS = {
+    "baseline-pod-install",
+    "migration-pod-install",
+    "post-migration-pod-install",
+}
 
 
 class QualificationError(RuntimeError):
@@ -526,6 +531,16 @@ def validate_lock_metadata_normalization(before: str, after: str) -> None:
     require(after_version in {"1.16.2", COCOAPODS_VERSION}, "unexpected CocoaPods metadata version", "blocked-input")
 
 
+def normalize_lock_tool_version(text: str) -> str:
+    validate_lock(text, set(POD_VERSIONS))
+    versions = re.findall(r"(?m)^COCOAPODS: (.+)$", text)
+    require(len(versions) == 1 and versions[0] in {"1.16.2", COCOAPODS_VERSION},
+            "unexpected or ambiguous CocoaPods lock metadata", "blocked-input")
+    normalized = re.sub(r"(?m)^COCOAPODS: .+$", "COCOAPODS: " + COCOAPODS_VERSION, text)
+    validate_lock_metadata_normalization(text, normalized)
+    return normalized
+
+
 def _version_requirement_is_exact(value: Any, expected: str) -> bool:
     return value == {"exact": {"_0": expected}}
 
@@ -911,6 +926,12 @@ class Runner:
             # and therefore remains private even when a build fails.
             tail = stderr_bytes[-4096:].decode("utf-8", errors="replace")
             record["redactedStderrTail"] = redact(tail, self.redaction_roots)
+        if code and stdout_bytes and label in POD_INSTALL_DIAGNOSTIC_LABELS:
+            # CocoaPods reports many actionable failures on stdout. Restrict
+            # this exception to install commands; compiler stdout can contain
+            # source excerpts and always remains private.
+            tail = stdout_bytes[-4096:].decode("utf-8", errors="replace")
+            record["redactedStdoutTail"] = redact(tail, self.redaction_roots)
         self.commands.append(record)
         if code == 124:
             raise QualificationError(outcome, f"{label} timed out after {timeout}s")
@@ -976,6 +997,9 @@ class Runner:
 
     def pod_setup(self, root: Path, label: str) -> tuple[str, dict[str, Any], dict[str, Any]]:
         original_lock = (root / "Podfile.lock").read_text()
+        # Deployment mode compares the tool version too. Normalize only the
+        # reviewed metadata before invoking it; dependency locks stay identical.
+        (root / "Podfile.lock").write_text(normalize_lock_tool_version(original_lock))
         self.execute(label, ["pod", "install", "--deployment"], cwd=root, timeout=900,
                      outcome="inconclusive-baseline" if label.startswith("baseline") else "blocked-input")
         lock_text = (root / "Podfile.lock").read_text()

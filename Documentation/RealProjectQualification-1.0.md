@@ -63,7 +63,7 @@ migration occurred, and G3 remains open.
 Both runners now create the local Git exclusion directory before recording the
 generated plan path. A regression initializes actual template-free repositories,
 checks both runners, and verifies that only the generated plan is ignored. All
-187 release/harness tests pass locally. Hosted verification of this fix is pending.
+189 release/harness tests pass locally. Hosted verification of this fix is pending.
 
 [The second attempt](https://github.com/Alexsvensson99/PkgLift/actions/runs/35143324501),
 on correction commit `b2a1acb`, passed both refusal controls and reached AWS intake.
@@ -72,6 +72,20 @@ privacy-resource symlink across the entire SDWebImage repository; the pinned tre
 contains one for SDWebImage and another for SDWebImageMapKit. The validator now
 binds both exact paths and their reviewed target/hash while retaining SDWebImage
 as the selected product. Hosted verification of that correction remains pending.
+
+[The third attempt](https://github.com/Alexsvensson99/PkgLift/actions/runs/35144120729)
+passed both refusal controls and the corrected source/archive intake, then stopped
+at the baseline `pod install --deployment`. Its report records `inconclusive-baseline`:
+no baseline build or migration ran. CocoaPods emitted its diagnostic on stdout;
+the runner now retains a bounded redacted stdout tail only for failed pod installs,
+while compiler stdout remains private.
+
+A separate metadata-only reproduction with CocoaPods 1.17.0 confirms deployment
+mode rejects the original 1.16.2 tool-version field even when all dependencies and
+checksums match. The permitted tool-version normalization now happens before
+locked installation, with exact dependency checks before and after. This is a
+proven preparation issue; the next hosted diagnostic will establish whether any
+additional installation problem exists.
 
 ## Selected cases
 

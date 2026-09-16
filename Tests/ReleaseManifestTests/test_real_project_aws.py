@@ -153,6 +153,37 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertFalse(output.exists())
         runner.assert_not_called()
 
+    def test_pod_failure_keeps_bounded_stdout_diagnostic_but_build_stdout_stays_private(self):
+        contract = {"binary": self.binary, "output": self.root / "runner-output", "runnerTemp": self.root}
+        runner = aws.Runner(contract, jobs=2)
+        pod_prefix = f"[!] CocoaPods locked install failed in {self.root}/source: missing reviewed spec. "
+        pod_output = (pod_prefix + "x" * 223).encode()[:223]
+        compiler_output = ("private compiler source excerpt " + "y" * 223).encode()[:223]
+        outputs = iter([pod_output, compiler_output])
+
+        def failed_command(wrapper, **_kwargs):
+            stdout = Path(wrapper[wrapper.index("--stdout") + 1])
+            stderr = Path(wrapper[wrapper.index("--stderr") + 1])
+            stdout.write_bytes(next(outputs))
+            stderr.write_bytes(b"")
+            return aws.subprocess.CompletedProcess(wrapper, 1)
+
+        with mock.patch.object(aws.subprocess, "run", side_effect=failed_command):
+            with self.assertRaises(aws.QualificationError):
+                runner.execute("baseline-pod-install", ["pod", "install", "--deployment"])
+            pod_record = runner.commands[-1]
+            self.assertEqual(pod_record["stdoutBytes"], 223)
+            self.assertIn("CocoaPods locked install failed", pod_record["redactedStdoutTail"])
+            self.assertNotIn(str(self.root), pod_record["redactedStdoutTail"])
+            self.assertNotIn("redactedStderrTail", pod_record)
+
+            with self.assertRaises(aws.QualificationError):
+                runner.execute("baseline-build", ["xcodebuild", "build"])
+            build_record = runner.commands[-1]
+            self.assertEqual(build_record["stdoutBytes"], 223)
+            self.assertNotIn("redactedStdoutTail", build_record)
+            self.assertNotIn("private compiler source excerpt", json.dumps(build_record))
+
 
 class SnapshotAndDeltaTests(unittest.TestCase):
     def test_snapshot_covers_ignored_style_files_symlinks_and_mode(self):
@@ -322,6 +353,17 @@ COCOAPODS: 1.16.2
         result = aws.validate_lock(self.LOCK, {"AmazonIVSPlayer", "SDWebImage"})
         self.assertEqual(result["versions"]["SDWebImage/Core"], "5.18.1")
         aws.validate_lock_metadata_normalization(self.LOCK, self.LOCK.replace("1.16.2", "1.17.0"))
+
+    def test_preinstall_normalization_changes_only_reviewed_tool_metadata(self):
+        expected = self.LOCK.replace("COCOAPODS: 1.16.2", "COCOAPODS: 1.17.0")
+        self.assertEqual(aws.normalize_lock_tool_version(self.LOCK), expected)
+        self.assertEqual(aws.normalize_lock_tool_version(expected), expected)
+        for invalid in [self.LOCK.replace("1.16.2", "9.0.0"),
+                        self.LOCK + "COCOAPODS: 1.16.2\n",
+                        self.LOCK.replace("COCOAPODS: 1.16.2\n", ""),
+                        self.LOCK.replace("SDWebImage (5.18.1)", "SDWebImage (5.19.0)")]:
+            with self.subTest(lock=invalid), self.assertRaises(aws.QualificationError):
+                aws.normalize_lock_tool_version(invalid)
 
     def test_rejects_dependency_change_disguised_as_tool_normalization(self):
         with self.assertRaises(aws.QualificationError):
