@@ -88,9 +88,9 @@ plan execution or newly automatic dependency is introduced.
 **Priority: second; depends on G1. Status: in progress.** The
 [environment matrix and reproducible records](Environments-1.0.md) document
 baseline evidence and the local Xcode 27 source/runtime checks. The registry
-resource-layout compatibility fix passes both build engines. Hosted macOS 14
-runtime qualification, support-boundary decisions and complete consumer cells
-remain separate requirements below.
+resource-layout compatibility fix passes both build engines. Hosted macOS
+14.8.9/arm64 runtime smoke also passed. Exact 14.0 runtime evidence,
+support-boundary decisions and complete consumer cells remain requirements below.
 
 - Distinguish three promises: running the distributed CLI, building PkgLift from
   source, and migrating/building a consumer project. Record exact macOS, CPU,

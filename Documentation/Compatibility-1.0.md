@@ -176,7 +176,7 @@ different dimensions. Keep pending rows visible until G2/G3 close them.
 
 | Dimension | Candidate 1.0 boundary | Evidence/status and owner |
 |---|---|---|
-| Distributed host/CPU | Apple Silicon arm64, macOS 14 minimum retained | Signed 0.10 artifact and Homebrew verified. Execution on minimum macOS 14 is pending G2; minimum deployment metadata alone is insufficient. Intel distribution is outside scope. |
+| Distributed host/CPU | Apple Silicon arm64, macOS 14 minimum retained | Signed 0.10 artifact and Homebrew verified. G2 [runtime smoke on macOS 14.8.9](Environments-1.0.md) passed; exact 14.0 remains untested. Minimum deployment metadata alone is insufficient. Intel distribution is outside scope. |
 | Source build toolchain | Exact supported Xcode/Swift combinations, not “all later versions” | Baseline signing run [35066758613](https://github.com/Alexsvensson99/PkgLift/actions/runs/35066758613) records macOS 15.7.9 arm64 and Swift 6.1.2; workflow selects Xcode 16.4. Capture exact Xcode build and qualify supported lower/upper cells in G2. Swift tools version 6.0 in Package.swift is a syntax minimum, not proof of every Swift 6 toolchain. |
 | Consumer build environment | Explicit scheme/configuration/destination/SDK; recorded CocoaPods version | Existing consumer CI selects Xcode 16.4. Complete the exact environment matrix, including CocoaPods and SDK versions, in G2. Do not infer them from the runner label. |
 | Swift consumer | Mapping-dependent AUTO with complete graph evidence | Three repository-owned KeychainAccess/DeviceKit/CryptoSwift consumers have concrete Swift/iOS 15 evidence. Broader real-project and partial-migration claims are pending G3. |

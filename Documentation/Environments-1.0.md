@@ -9,7 +9,7 @@ PkgLift and migrating/building a consumer project are separate qualifications.
 
 | Cell | Exact observations | Evidence and qualification boundary |
 |---|---|---|
-| Released CLI, macOS 14 arm64 | Pending exact runner observation | The artifact has minimum deployment metadata 14.0. The bounded GitHub runtime job must pass on an actual 14.x/arm64 host. A passing 14.x patch does not prove every earlier 14.x patch. |
+| Released CLI, macOS 14 arm64 | macOS 14.8.9 (23J631), arm64, runner image 20260831.0302.1 | [Run 35079049127](https://github.com/Alexsvensson99/PkgLift/actions/runs/35079049127) passed exact artifact/binary hashes, strict signature, quarantine execution, version, bundled registry and fixture analysis with unchanged bytes. This proves the observed 14.8.9 cell; 14.0 remains untested. |
 | Released CLI, macOS 15 arm64 | macOS 15.7.9 (24G830), arm64; Swift 6.1.2 (`swiftlang-6.1.2.1.2`) used to build | [Signing run 35066758613](https://github.com/Alexsvensson99/PkgLift/actions/runs/35066758613), release commit `7d976d70e66a584e2e25db9852ac0e53bb6201b9`. Signature/notarization and quarantine CLI checks passed. Xcode 16.4 is selected by workflow; its build number was not printed in this job. |
 | Released CLI, local macOS 27 arm64 | macOS 27.0 (26A428), arm64 | Fresh G2 checksum/signature/quarantine execution, version, 25 bundled mappings and read-only mixed-language fixture analysis passed. Fixture bytes were unchanged. This is CLI smoke evidence; no Gatekeeper `spctl` assessment or consumer build is claimed. |
 | Source, baseline macOS 15 arm64 | macOS 15.7.9 (24G830), arm64 runner image 20260907.0337.1 | [Run 35056724222](https://github.com/Alexsvensson99/PkgLift/actions/runs/35056724222), source `cbb0eb1c2d385cbfce72bdc2b1e0f5e039fc0f1c`: 570 tests, builds and 25 mappings passed. Exact Xcode/Swift versions were not recorded in that source job. Do not fill its missing fields using another job's environment. |
@@ -91,9 +91,19 @@ already published archive. It neither builds/signs a new release nor requires
 signing secrets. Its result is evidence for its observed host patch version,
 not a consumer-migration test or a complete G2 pass.
 
+The first run [35079049127](https://github.com/Alexsvensson99/PkgLift/actions/runs/35079049127)
+passed on workflow commit `d7b962c76abf2dc2018576918462aa0129421ea9`.
+The downloaded [summary](Evidence/Environments-1.0/macos14-runtime-summary.json)
+and [run/digest provenance](Evidence/Environments-1.0/macos14-runtime-provenance.json)
+are retained here so artifact expiry does not erase the observation. Only the
+runtime workflow ran; this is not protected source-build, consumer or CodeQL
+acceptance of the branch. Its `qualifiesMinimumHost` field means the required
+macOS 14/arm64 family matched, not that the 14.0 patch was exercised.
+
 ## Remaining decisions and gates
 
-- Complete the macOS 14 hosted runtime observation and retain its result.
+- The hosted macOS 14.8.9 runtime observation is complete. Exact 14.0 runtime
+  evidence remains unavailable; keep that distinction visible.
 - Choose exact lower/upper source-toolchain cells after evidence review. The
   current local Xcode 27 result must not silently become “all newer Xcode”.
 - Record a complete environment alongside each promised consumer build,
