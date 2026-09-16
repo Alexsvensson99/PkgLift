@@ -96,17 +96,42 @@ These are admission records for the pre-mapping integrations. They do not
 replace the separate migration and verification evidence required by the
 Registry Gate.
 
-## Pending 0.10 admission
+## CryptoSwift admission for 0.10 (unreleased)
 
-CryptoSwift 1.10.0 is a separate, currently unmapped candidate in
-[issue #59](https://github.com/Alexsvensson99/PkgLift/issues/59), with the
-[SwiftCryptoSwift fixture](../Fixtures/SwiftCryptoSwift/) and
-[0.10 acceptance plan](Plan-0.10.md). Its equivalence pilot requires both
-registry copies to be absent. No passing build or migration is claimed yet.
+CryptoSwift 1.10.0 passed its pre-mapping admission in
+[run 35050169615](https://github.com/Alexsvensson99/PkgLift/actions/runs/35050169615)
+at reviewed head `44a76770e12a1a4db4ab158e02d24d857291a699` and CI merge
+`d55bb2c8d71f7bf42576e5092de89e1b2fa82a47`. Both registry copies were absent.
+The [consumer job](https://github.com/Alexsvensson99/PkgLift/actions/runs/35050169615/job/104649455779)
+and [artifact 10429390145](https://github.com/Alexsvensson99/PkgLift/actions/runs/35050169615/artifacts/10429390145)
+record successful CocoaPods and SwiftPM builds of identical Swift iOS 15
+consumer bytes. The fixture was unchanged.
 
-Unlike the earlier sentinel-only source checks, the CryptoSwift pilot binds
-all 113 core Swift source files to Git blob identities from the reviewed
-revision, rejecting changed, missing or additional compiled files. CocoaPods
-must match this complete compiled-source inventory plus the privacy source;
-SwiftPM must also match the manifest and resource-target source. This binds the
-relevant source contents even when CocoaPods does not retain a Git checkout.
+- Reviewed upstream revision: `f2a627b84c1ff96f21ac2fcb623ab36142dd5512`.
+- Consumer SHA-256: `fe353216f0cddb4b61a28d43c6e3bc4ca689fda676c8b32fe3b2308a49032932`.
+- Canonical public podspec SHA-256: `c99dec222ebbc0c4f6e0df424278e9c49b9c2ce43e89de784aff8b9f4a2d4d5f`.
+- Source inventory SHA-256: `10c2d15bc4b07f919095ceabf2c2de246264a367ef8fb2c1b1d01171e0166dba`.
+- Observed CocoaPods privacy output: `CryptoSwift.bundle/PrivacyInfo.xcprivacy`.
+- Observed SwiftPM privacy output: `CryptoSwift_CryptoSwiftResources.bundle/PrivacyInfo.xcprivacy`.
+
+Unlike the earlier sentinel-only source checks, this pilot binds all 113 core
+Swift source files to Git blob identities from the reviewed revision, rejecting
+changed, missing or additional compiled files. CocoaPods must match this complete
+compiled-source inventory plus privacy bytes; SwiftPM must also match the
+manifest and resource-target source. This binds relevant source contents even
+when CocoaPods does not retain a Git checkout. The built resources must contain
+the reviewed privacy semantics; missing or unrelated resources cannot satisfy
+the guard. This is build evidence, not runtime cryptographic or privacy testing.
+
+The schema-2 mapping preserves the existing minimum-version policy with a
+`1.10.0` boundary and is limited to Swift iOS consumers targeting iOS 15 or later.
+Earlier versions, unknown subspecs, unproven languages/platforms, insufficient
+or missing deployment evidence, and `use_frameworks!` remain non-automatic.
+See the [fixture](../Fixtures/SwiftCryptoSwift/), [issue #59](https://github.com/Alexsvensson99/PkgLift/issues/59)
+and [0.10 plan](Plan-0.10.md).
+
+The required Registry Gate now runs the complete CryptoSwift migration phase,
+including fresh dual builds, reviewed plan, dry run, apply, final build, exact
+resolved package and resource checks. Current migration acceptance is recorded
+in [PR #114 checks](https://github.com/Alexsvensson99/PkgLift/pull/114/checks);
+pre-mapping admission alone does not prove a successful migration or release.

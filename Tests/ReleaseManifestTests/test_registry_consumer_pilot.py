@@ -161,7 +161,7 @@ class MigratedPodfileTests(unittest.TestCase):
         return pilot.verify_migrated_podfile(original, migrated, name, version)
 
     def test_accepts_each_reviewed_target_when_only_its_pod_declaration_is_removed(self):
-        for name, version in (("KeychainAccess", "4.2.2"), ("DeviceKit", "5.8.0")):
+        for name, version in (("KeychainAccess", "4.2.2"), ("DeviceKit", "5.8.0"), ("CryptoSwift", "1.10.0")):
             with self.subTest(name=name):
                 original = self.original_podfile(name, version)
                 expected = original.replace(self.declaration(name, version), b"")

@@ -16,10 +16,11 @@ verify the expected privacy manifest in both built distributions: CocoaPods
 uses a `CryptoSwift` resource bundle; SwiftPM declares a separate resources
 target. A passing source build alone is insufficient for admission.
 
-See [the 0.10 plan](../../Documentation/Plan-0.10.md). This fixture initially
-runs with `--phase equivalence`, which requires both registry entries to be
-absent. Registry admission requires accepted build/resource evidence, followed
-by a separate `--phase migration` run on the mapped source tree.
+See [the 0.10 plan](../../Documentation/Plan-0.10.md). The pre-mapping
+`--phase equivalence` run passed with both registry entries absent; see
+[the admission record](../../Documentation/VerifiedConsumerMappings.md#cryptoswift-admission-for-010-unreleased).
+The fixture now runs `--phase migration` on the mapped source tree, requiring
+fresh dual builds and complete migration verification.
 
 ## Pinned admission inputs
 
