@@ -18,6 +18,12 @@ The `Pinned Pilots` workflow performs these phases:
 
 The read-only matrix does **not** run `pod install`, execute upstream scripts, apply a migration, push to the upstream repository, or receive repository secrets.
 
+The separately prepared [1.0 real-project qualification protocol](RealProjectQualification-1.0.md)
+selects AWS Grid Feed as a future positive partial-migration candidate, with
+FirebaseUI and Hammerspoon as read-only refusal controls. It records source
+intake and acceptance criteria only; it does not expand this workflow's execution
+boundary or supply new upstream build/migration evidence.
+
 | Case | Repository and pinned commit | Verified outcome | Tracking |
 |---|---|---|---|
 | Positive | `aws-samples/amazon-ivs-grid-feed-for-ios-demo` at `5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d` | `SDWebImage` is `AUTO`; `AmazonIVSPlayer` remains non-automatic | #23 |

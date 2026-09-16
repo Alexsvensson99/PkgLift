@@ -65,12 +65,12 @@ satisfy the pilot.
 
 ## Remaining scope
 
-The first two fixtures cover policy-retained dependencies in a single target.
-The third fixture and conflict-refusal tests have local qualification below;
-their exact-PR CI and protected integration remain separate requirements.
-Multi-target/workspace selection, real upstream migrations, exact lower
-host/toolchain boundaries and signed release acceptance remain separate G2/G3/G6
-gates in [the 1.0 plan](Plan-1.0.md).
+The three fixtures cover policy-retained dependencies in a single target,
+including one existing-SwiftPM coexistence case. Multi-target/workspace selection,
+the planned [pinned real-project cases](RealProjectQualification-1.0.md), exact
+lower host/toolchain boundaries and signed release acceptance remain separate
+G2/G3/G6 gates in [the 1.0 plan](Plan-1.0.md). The real-project protocol does
+not authorize or record upstream execution.
 
 ## Local qualification on 2026-09-16
 
@@ -117,28 +117,33 @@ evidence above does not substitute for the hosted Xcode 16.4 runs.
 
 ## Main qualification on 2026-09-16
 
-PR [#119](https://github.com/Alexsvensson99/PkgLift/pull/119) merged as
-[`9d2951fb8e2d8bc2326cc4cb7c9e41f0ba9d78cf`](https://github.com/Alexsvensson99/PkgLift/commit/9d2951fb8e2d8bc2326cc4cb7c9e41f0ba9d78cf).
-Its reviewed PR tree and main tree matched. The main check collection contains
-24 completed, successful checks, including [PartialSwift](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753608),
-[PartialMixed](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753582),
-the [ordinary quality workflow](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617040)
-and [CodeQL](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617119).
+PR [#120](https://github.com/Alexsvensson99/PkgLift/pull/120) merged as
+[`72f19b3e3163d401b57950d02bd5fc191328ce2a`](https://github.com/Alexsvensson99/PkgLift/commit/72f19b3e3163d401b57950d02bd5fc191328ce2a).
+The reviewed PR head [`9008bda24c702f3113f6a6d67b2b31f42a7d8dfd`](https://github.com/Alexsvensson99/PkgLift/commit/9008bda24c702f3113f6a6d67b2b31f42a7d8dfd)
+and merged main tree matched. Main has 25 completed, successful checks across
+[build/pilots](https://github.com/Alexsvensson99/PkgLift/actions/runs/35128107267),
+[Quality](https://github.com/Alexsvensson99/PkgLift/actions/runs/35128107306) and
+[CodeQL](https://github.com/Alexsvensson99/PkgLift/actions/runs/35128107438), including
+all three partial-migration pilots.
 
-The retained main artifacts bind both pilots to that commit with `trackedChanges:
-false` and complete metadata: macOS 15.7.9 (24G830), arm64, Xcode 16.4 (16F6),
-Swift 6.1.2, CocoaPods 1.17.0 and iPhoneSimulator SDK 18.5 (22F76). Their
-`summary.json` status is `passed`; each structural report verifies the expected
-SwiftPM package/product/target link and removal of only the migrated pod.
+The retained main artifacts bind all three pilots to that commit with
+`trackedChanges: false` and complete metadata: macOS 15.7.9 (24G830), arm64,
+Xcode 16.4 (16F6), Swift 6.1.2, CocoaPods 1.17.0 and iPhoneSimulator SDK 18.5
+(22F76). Their `summary.json` status is `passed`; each structural report verifies
+the expected SwiftPM package/product/target link and removal of only the migrated
+pod. The coexistence report additionally verifies that the original DeviceKit
+objects and pins remain unchanged. The integration record also retains 583 Swift
+tests and successful validation of all 25 mappings.
 
-This main result qualifies the two original repository-owned fixture cells described here.
-It does not qualify the subsequently added existing SwiftPM coexistence fixture,
-conflicting-requirement refusal,
-multi-target/workspace selection, arbitrary upstream projects, an exact macOS 14.0
-runtime, or a signed 1.0 release candidate. Those remain the separate G2/G3/G6
-gates listed in [the 1.0 plan](Plan-1.0.md).
+This main result qualifies all three repository-owned fixture cells described here
+and the associated conflict-refusal coverage. It does not qualify
+multi-target/workspace selection, the planned [pinned real-project cases](RealProjectQualification-1.0.md),
+an exact macOS 14.0 runtime, or a signed 1.0 release candidate. Those remain the
+separate G2/G3/G6 gates listed in [the 1.0 plan](Plan-1.0.md). The retained local
+qualification records below are historical local evidence; they are distinct from
+this clean, merged-main evidence.
 
-## Coexistence and conflicting-requirement qualification on 2026-09-16
+## Historical local coexistence and conflicting-requirement qualification on 2026-09-16
 
 The new `PartialSwiftCoexistence` pilot passed locally with the corrected CLI on
 macOS 27.0 (26A428), arm64, Xcode 27.0 (27A266a), Swift 6.4 and CocoaPods
@@ -154,7 +159,8 @@ and [validation/source/log hashes](Evidence/PartialMigration-1.0/PartialSwiftCoe
 These describe an uncommitted working tree based on main `9d2951f`, with the
 fixture, runner and binary identified by hashes. The environment aggregate is
 `incomplete` because of tracked changes; every environment probe passed. This
-is local qualification, separate from exact-PR CI and future release acceptance.
+is historical local qualification, separate from the later exact-PR/main result
+above and future release acceptance.
 
 Conflict regression tests cover initial REVIEW/no-op apply, rejection of a
 saved AUTO plan after a conflict appears, and duplicate references to the same
