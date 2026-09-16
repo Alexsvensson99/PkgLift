@@ -17,6 +17,17 @@ INTAKE = ROOT / 'Documentation/Evidence/RealProjectQualification-1.0/intake.json
 CASES = {'firebaseui-project': 'firebaseui', 'hammerspoon-workspace': 'hammerspoon'}
 
 
+class CommandFailure(RuntimeError):
+    def __init__(self, label, outcome):
+        super().__init__('Command failed: ' + label)
+        self.outcome = outcome
+
+
+def record_failure(summary, error, substitutions):
+    summary['error'] = redact(str(error), substitutions)
+    summary['status'] = error.outcome if isinstance(error, CommandFailure) else 'failed-safety'
+
+
 def require(condition, message):
     if not condition:
         raise RuntimeError(message)
@@ -151,7 +162,7 @@ def main():
                'commands': []}
     substitutions = [output, ROOT, Path.home(), Path(os.environ['RUNNER_TEMP']), binary.parent]
 
-    def run(label, command, cwd=ROOT, seconds=180):
+    def run(label, command, cwd=ROOT, seconds=180, failure_outcome='blocked-input'):
         command = [str(v) for v in command]
         stdout, stderr = raw / (label + '.out'), raw / (label + '.err')
         wrapper = [sys.executable, str(ROOT / 'Scripts/run-with-timeout.py'), '--seconds', str(seconds),
@@ -163,7 +174,8 @@ def main():
         if result.returncode != 0 and stderr.is_file():
             summary['lastCommandFailure'] = {'label': label, 'stderrSHA256': digest(stderr),
                                             'stderrTail': redact(stderr.read_text(errors='replace')[-2048:], substitutions)}
-        require(result.returncode == 0, 'Command failed: ' + label)
+        if result.returncode != 0:
+            raise CommandFailure(label, failure_outcome)
         return stdout
 
     def git_clean():
@@ -233,14 +245,13 @@ def main():
         os.environ['PILOT_WORKSPACE'] = case['workspace'] or '-'
         os.environ['PILOT_LICENSE'] = case['licenseAtPin']['spdx']
         run('validate-refusal', ['ruby', ROOT / 'Scripts/validate-pinned-pilot.rb', CASES[args.case], analysis_path,
-                               plan_path, dry, selected, report, portable_analysis, portable_plan])
+                               plan_path, dry, selected, report, portable_analysis, portable_plan],
+            failure_outcome='failed-safety')
         summary.update(status='passed-refusal', sourceUnchanged=True, indexUnchanged=True,
                        originalTreeSHA256=tree_digest(original), dryRunTreeSHA256=tree_digest(before_dry),
                        project=case['project'], workspace=case['workspace'], exactAutoSet=[])
     except Exception as error:
-        summary['error'] = redact(str(error), substitutions)
-        if isinstance(error, RuntimeError) and not str(error).startswith('Command failed:'):
-            summary['status'] = 'failed-safety'
+        record_failure(summary, error, substitutions)
         raise
     finally:
         # Only structured/portable reports reach the upload directory. Raw command

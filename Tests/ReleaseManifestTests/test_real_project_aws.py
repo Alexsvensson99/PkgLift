@@ -422,6 +422,55 @@ class PackageAndReportTests(unittest.TestCase):
         with self.assertRaises(aws.QualificationError):
             aws.validate_project_linkage(document)
 
+    @staticmethod
+    def protected_project_fixture():
+        return {
+            "archiveVersion": "1",
+            "classes": {},
+            "objectVersion": "56",
+            "rootObject": "PROJECT",
+            "objects": {
+                "PROJECT": {
+                    "isa": "PBXProject",
+                    "attributes": {"LastSwiftUpdateCheck": "1500", "TargetAttributes": {"TARGET": {}}},
+                    "developmentRegion": "en",
+                    "knownRegions": ["en", "Base"],
+                    "mainGroup": "GROUP",
+                    "targets": ["TARGET"],
+                },
+                "TARGET": {"isa": "PBXNativeTarget", "name": aws.TARGET,
+                           "buildPhases": ["FRAMEWORKS"]},
+                "GROUP": {"isa": "PBXGroup", "children": []},
+                "FRAMEWORKS": {"isa": "PBXFrameworksBuildPhase", "files": []},
+            },
+        }
+
+    def test_protected_state_allows_only_reviewed_package_linkage_fields(self):
+        baseline = self.protected_project_fixture()
+        migrated = json.loads(json.dumps(baseline))
+        migrated["objects"]["PROJECT"]["packageReferences"] = ["REF"]
+        migrated["objects"]["TARGET"]["packageProductDependencies"] = ["PRODUCT"]
+        migrated["objects"]["REF"] = {"isa": "XCRemoteSwiftPackageReference"}
+        migrated["objects"]["PRODUCT"] = {"isa": "XCSwiftPackageProductDependency"}
+        migrated["objects"]["BUILD"] = {"isa": "PBXBuildFile", "productRef": "PRODUCT"}
+        migrated["objects"]["FRAMEWORKS"]["files"] = ["BUILD"]
+        self.assertEqual(aws.protected_project_state(baseline), aws.protected_project_state(migrated))
+
+    def test_protected_state_rejects_project_metadata_or_target_ownership_changes(self):
+        baseline = self.protected_project_fixture()
+        mutations = [
+            lambda project: project["objects"]["PROJECT"]["attributes"].update(LastSwiftUpdateCheck="9999"),
+            lambda project: project["objects"]["PROJECT"].update(developmentRegion="sv"),
+            lambda project: project["objects"]["PROJECT"].update(knownRegions=["sv"]),
+            lambda project: project["objects"]["PROJECT"].update(targets=[]),
+            lambda project: project.update(rootObject="OTHER"),
+        ]
+        for mutation in mutations:
+            changed = json.loads(json.dumps(baseline))
+            mutation(changed)
+            with self.subTest(mutation=mutation):
+                self.assertNotEqual(aws.protected_project_state(baseline), aws.protected_project_state(changed))
+
     def test_resolved_pin_requires_exact_version_and_revision(self):
         document = {"pins": [{"location": aws.PACKAGE_URL,
                                "state": {"version": "5.18.1", "revision": aws.PACKAGE_REVISION}}]}

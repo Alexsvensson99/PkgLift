@@ -43,7 +43,7 @@ authenticate the binary signatures or establish buildability.
 
 Offline regression tests are under `Tests/ReleaseManifestTests/test_real_project*.py`.
 They exercise acceptance guards and the workflow boundary, not upstream buildability.
-On 2026-09-16, all 182 release/harness Python tests passed; repository YAML
+On 2026-09-16, all 185 release/harness Python tests passed; repository YAML
 validation passed for 12 files, eight pinned workflows and two issue forms.
 Ruby syntax and reconstruction using real framework metadata also passed.
 The harness must first be reviewed and integrated, then explicitly dispatched at

@@ -30,6 +30,18 @@ class RefusalTests(unittest.TestCase):
     def check(self):
         pilot.check_selection(self.analysis, self.plan, self.case, self.source)
 
+    def test_safety_validator_failure_is_not_reported_as_input_failure(self):
+        summary = {'status': 'blocked-input'}
+        pilot.record_failure(summary, pilot.CommandFailure('validate-refusal', 'failed-safety'), [])
+        self.assertEqual(summary['status'], 'failed-safety')
+        self.assertEqual(summary['error'], 'Command failed: validate-refusal')
+        pilot.record_failure(summary, pilot.CommandFailure('fetch', 'blocked-input'), [])
+        self.assertEqual(summary['status'], 'blocked-input')
+        # Error text cannot impersonate a typed input failure.
+        pilot.record_failure(summary, RuntimeError('Command failed: /private/source'), [Path('/private/source')])
+        self.assertEqual(summary['status'], 'failed-safety')
+        self.assertNotIn('/private/source', summary['error'])
+
     def test_manual_refusal_actions_are_accepted(self):
         self.check()
 

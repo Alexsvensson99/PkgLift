@@ -641,6 +641,13 @@ def _objects(project: Mapping[str, Any], isa: str) -> dict[str, Mapping[str, Any
 
 def protected_project_state(project: Mapping[str, Any]) -> dict[str, Any]:
     objects = project.get("objects", {})
+    document_metadata = copy.deepcopy({key: value for key, value in project.items() if key != "objects"})
+    projects = {key: copy.deepcopy(value) for key, value in _objects(project, "PBXProject").items()}
+    for project_object in projects.values():
+        # Adding the reviewed XCRemoteSwiftPackageReference to this field is
+        # the only authorized PBXProject mutation. All project metadata and
+        # target ownership remains byte-for-byte represented below.
+        project_object.pop("packageReferences", None)
     targets = {k: copy.deepcopy(v) for k, v in _objects(project, "PBXNativeTarget").items()}
     sources = copy.deepcopy(_objects(project, "PBXSourcesBuildPhase"))
     resources = copy.deepcopy(_objects(project, "PBXResourcesBuildPhase"))
@@ -666,7 +673,8 @@ def protected_project_state(project: Mapping[str, Any]) -> dict[str, Any]:
         target.pop("packageProductDependencies", None)
         target["buildPhases"] = [phase for phase in target.get("buildPhases", [])
                                  if objects.get(phase, {}).get("isa") not in {"PBXFrameworksBuildPhase", "PBXShellScriptBuildPhase"}]
-    return {"targets": targets, "membership": membership, "configurations": configs,
+    return {"documentMetadata": document_metadata, "projects": projects,
+            "targets": targets, "membership": membership, "configurations": configs,
             "fileReferences": file_references, "groups": groups,
             "nonpackageBuildFiles": nonpackage_build_files, "frameworkMembership": framework_membership}
 
