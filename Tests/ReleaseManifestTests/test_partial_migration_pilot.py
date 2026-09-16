@@ -1,6 +1,7 @@
 """Offline negative tests for the partial-migration pilot acceptance guards."""
 import copy
 import importlib.util
+import json
 import os
 from pathlib import Path
 import shutil
@@ -265,7 +266,8 @@ class LinkageGuardsTests(unittest.TestCase):
         }
 
     def test_accepts_reviewed_partial_linkage(self):
-        self.assertIsNone(pilot.check_linkage(self.document, self.case))
+        state = pilot.check_linkage(self.document, self.case)
+        self.assertEqual(set(state), {self.case["migrate"], *self.case.get("existing", [])})
 
     def test_protected_project_state_accepts_unchanged_document(self):
         self.assertEqual(
@@ -307,6 +309,160 @@ class LinkageGuardsTests(unittest.TestCase):
                 pilot.protected_project_state(changed) == baseline,
                 "Consumer source/resource membership or target settings changed",
             )
+
+
+class CoexistenceGuardsTests(LinkageGuardsTests):
+    def setUp(self):
+        super().setUp()
+        self.case = pilot.CASES["PartialSwiftCoexistence"]
+        self.add_package("DeviceKit", "EXISTING")
+
+    def add_package(self, name, prefix):
+        objects = self.document["objects"]
+        product_id = f"{prefix}_PRODUCT"
+        reference_id = f"{prefix}_PACKAGE"
+        build_file_id = f"{prefix}_BUILD_FILE"
+        objects[product_id] = {
+            "isa": "XCSwiftPackageProductDependency",
+            "productName": name,
+            "package": reference_id,
+        }
+        objects[reference_id] = {
+            "isa": "XCRemoteSwiftPackageReference",
+            "repositoryURL": pilot.REPOSITORIES[name],
+            "requirement": {
+                "kind": "exactVersion",
+                "version": pilot.VERSIONS[name],
+            },
+        }
+        objects[build_file_id] = {"isa": "PBXBuildFile", "productRef": product_id}
+        objects["PROJECT"]["packageReferences"].append(reference_id)
+        objects["TARGET"]["packageProductDependencies"].append(product_id)
+        objects["FRAMEWORKS"]["files"].append(build_file_id)
+        return product_id, reference_id, build_file_id
+
+    def existing_document(self):
+        document = copy.deepcopy(self.document)
+        objects = document["objects"]
+        for key in ("PRODUCT", "PACKAGE", "PRODUCT_BUILD_FILE"):
+            del objects[key]
+        objects["PROJECT"]["packageReferences"].remove("PACKAGE")
+        objects["TARGET"]["packageProductDependencies"].remove("PRODUCT")
+        objects["FRAMEWORKS"]["files"].remove("PRODUCT_BUILD_FILE")
+        return document
+
+    def existing_state(self):
+        return pilot.check_packages(self.existing_document(), self.case, ["DeviceKit"])
+
+    def test_accepts_reviewed_existing_and_migrated_package_graph(self):
+        state = pilot.check_linkage(self.document, self.case)
+        self.assertEqual(set(state), {"DeviceKit", "KeychainAccess"})
+
+    def test_rejects_lost_existing_package_product(self):
+        del self.document["objects"]["EXISTING_PRODUCT"]
+        with self.assertRaisesRegex(RuntimeError, "Duplicate/wrong package product"):
+            self.existing_state()
+
+    def test_rejects_duplicate_existing_package_product(self):
+        self.document["objects"]["EXISTING_PRODUCT_DUPLICATE"] = copy.deepcopy(
+            self.document["objects"]["EXISTING_PRODUCT"]
+        )
+        with self.assertRaisesRegex(RuntimeError, "Duplicate/wrong package product"):
+            self.existing_state()
+
+    def test_rejects_lost_or_duplicate_existing_package_reference(self):
+        del self.document["objects"]["EXISTING_PACKAGE"]
+        with self.assertRaisesRegex(RuntimeError, "Duplicate/wrong package reference"):
+            self.existing_state()
+
+        self.setUp()
+        self.document["objects"]["EXISTING_PACKAGE_DUPLICATE"] = copy.deepcopy(
+            self.document["objects"]["EXISTING_PACKAGE"]
+        )
+        with self.assertRaisesRegex(RuntimeError, "Duplicate/wrong package reference"):
+            self.existing_state()
+
+    def test_rejects_unowned_existing_package_reference(self):
+        self.document["objects"]["PROJECT"]["packageReferences"] = ["PACKAGE"]
+        with self.assertRaisesRegex(RuntimeError, "Package not owned by project"):
+            self.existing_state()
+
+    def test_rejects_lost_or_duplicate_existing_package_link(self):
+        self.document["objects"]["FRAMEWORKS"]["files"].remove("EXISTING_BUILD_FILE")
+        with self.assertRaisesRegex(RuntimeError, "SwiftPM product must link exactly once"):
+            self.existing_state()
+
+        self.setUp()
+        self.document["objects"]["EXISTING_BUILD_FILE_DUPLICATE"] = copy.deepcopy(
+            self.document["objects"]["EXISTING_BUILD_FILE"]
+        )
+        self.document["objects"]["FRAMEWORKS"]["files"].append("EXISTING_BUILD_FILE_DUPLICATE")
+        with self.assertRaisesRegex(RuntimeError, "SwiftPM product must link exactly once"):
+            self.existing_state()
+
+    def test_rejects_changed_existing_requirement(self):
+        self.document["objects"]["EXISTING_PACKAGE"]["requirement"]["version"] = "5.8.1"
+        with self.assertRaisesRegex(RuntimeError, "Migration changed the pinned requirement"):
+            self.existing_state()
+
+    def test_rejects_changed_existing_project_objects(self):
+        baseline = pilot.check_packages(self.existing_document(), self.case, ["DeviceKit"])
+        migrated = pilot.check_linkage(self.document, self.case)
+        migrated["DeviceKit"]["EXISTING_PRODUCT"]["productName"] = "ChangedDeviceKit"
+        with self.assertRaisesRegex(RuntimeError, "Existing SwiftPM project objects changed"):
+            pilot.check_existing_packages(baseline, migrated)
+
+    @unittest.skipUnless(sys.platform == "darwin", "plutil fixture parsing requires macOS")
+    def test_actual_coexistence_fixture_has_the_reviewed_existing_graph(self):
+        project = ROOT / "Fixtures/PartialSwiftCoexistence/SwiftKeychainAccess.xcodeproj/project.pbxproj"
+        document = json.loads(subprocess.check_output(
+            ["plutil", "-convert", "json", "-o", "-", str(project)], text=True
+        ))
+        state = pilot.check_packages(document, self.case, ["DeviceKit"])
+        self.assertEqual(set(state), {"DeviceKit"})
+
+
+class ResolvedCoexistenceGuardsTests(unittest.TestCase):
+    def write_resolved(self, directory, pins):
+        path = Path(directory) / "Package.resolved"
+        path.write_text(json.dumps({"pins": pins}))
+        return path
+
+    @staticmethod
+    def pin(name):
+        return {
+            "identity": name.lower(),
+            "kind": "remoteSourceControl",
+            "location": pilot.REPOSITORIES[name],
+            "state": {"revision": pilot.REVISIONS[name], "version": pilot.VERSIONS[name]},
+        }
+
+    def test_accepts_existing_and_migrated_pins_and_returns_them_by_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_resolved(directory, [self.pin("DeviceKit"), self.pin("KeychainAccess")])
+            found, pins = pilot.check_resolved(Path(directory), ["DeviceKit", "KeychainAccess"])
+        self.assertEqual(found, path)
+        self.assertEqual(set(pins), {"devicekit", "keychainaccess"})
+
+    def test_rejects_missing_extra_or_duplicate_pinned_dependencies(self):
+        cases = {
+            "missing": [self.pin("DeviceKit")],
+            "extra": [self.pin("DeviceKit"), self.pin("KeychainAccess"), self.pin("SDWebImage")],
+            "duplicate": [self.pin("DeviceKit"), self.pin("KeychainAccess"), self.pin("DeviceKit")],
+        }
+        for name, pins in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                self.write_resolved(directory, pins)
+                with self.assertRaisesRegex(RuntimeError, "Unexpected resolved SwiftPM dependency set"):
+                    pilot.check_resolved(Path(directory), ["DeviceKit", "KeychainAccess"])
+
+    def test_rejects_changed_existing_pin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pin = self.pin("DeviceKit")
+            pin["state"]["revision"] = "0" * 40
+            self.write_resolved(directory, [pin, self.pin("KeychainAccess")])
+            with self.assertRaisesRegex(RuntimeError, "Unexpected resolved SwiftPM dependency"):
+                pilot.check_resolved(Path(directory), ["DeviceKit", "KeychainAccess"])
 
 
 if __name__ == "__main__":

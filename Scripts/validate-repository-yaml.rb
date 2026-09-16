@@ -207,13 +207,13 @@ if pilot_jobs.is_a?(Hash)
 
   partial_migrations = pilot_jobs["partial_migrations"]
   if partial_migrations.is_a?(Hash)
-    expected_cases = [{ "case" => "PartialSwift" }, { "case" => "PartialMixed" }]
+    expected_cases = [{ "case" => "PartialSwift" }, { "case" => "PartialMixed" }, { "case" => "PartialSwiftCoexistence" }]
     strategy = partial_migrations["strategy"]
     unless strategy.is_a?(Hash) && strategy["fail-fast"] == false && strategy["max-parallel"] == 1
       errors << "#{pilot_workflow_path}: partial migration matrix must be fail-fast false with max-parallel 1"
     end
     unless strategy.is_a?(Hash) && strategy["matrix"] == { "include" => expected_cases }
-      errors << "#{pilot_workflow_path}: partial migration matrix must contain exactly PartialSwift and PartialMixed"
+      errors << "#{pilot_workflow_path}: partial migration matrix must contain exactly PartialSwift, PartialMixed and PartialSwiftCoexistence"
     end
     unless partial_migrations["runs-on"] == "macos-15" &&
         partial_migrations.dig("env", "DEVELOPER_DIR") == "/Applications/Xcode_16.4.app/Contents/Developer"

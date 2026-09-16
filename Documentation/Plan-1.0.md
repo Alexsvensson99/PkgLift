@@ -1,8 +1,11 @@
 # PkgLift 1.0 plan: a verified support and compatibility contract
 
-Status: planning complete; G1 compatibility contract is implemented and locally verified.
-G2 environment qualification is in progress; G3–G6 and public 1.0 release qualification remain open.
-Reviewed on 2026-09-16 against main `51d90970cebbd4612881fc101e5570145783e500`.
+Status: planning complete; G1 compatibility contract and repository-owned partial
+migration pilots are merged and qualified on main. G2 environment qualification
+is in progress; G3 remains open for its other shapes, and G4–G6 and public 1.0
+release qualification remain open. Reviewed on 2026-09-16 against main
+[`9d2951fb8e2d8bc2326cc4cb7c9e41f0ba9d78cf`](https://github.com/Alexsvensson99/PkgLift/commit/9d2951fb8e2d8bc2326cc4cb7c9e41f0ba9d78cf),
+the merge commit for [PR #119](https://github.com/Alexsvensson99/PkgLift/pull/119).
 The public baseline is [0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0),
 release commit `7d976d70e66a584e2e25db9852ac0e53bb6201b9`.
 This document proposes acceptance criteria; it does not declare 1.0 ready or change current support.
@@ -42,13 +45,13 @@ support promise, not a demonstrated implementation defect.
 
 | Roadmap requirement | Established evidence | Remaining 1.0 gate |
 |---|---|---|
-| Stable plan schema or explicit compatibility policy | [JSON contracts](JSONSchema.md), schema 1, additive inspection compatibility and exact `pkgLiftVersion` equality in [preflight](../Sources/PkgLiftMigration/MigrationPlanPreflight.swift). Older incomplete AUTO entries are refused. | G1: [versioned compatibility policy](Compatibility-1.0.md) and focused examples/tests are locally verified. Protected integration remains; G6 must freeze the exact release API baseline. |
+| Stable plan schema or explicit compatibility policy | [JSON contracts](JSONSchema.md), schema 1, additive inspection compatibility and exact `pkgLiftVersion` equality in [preflight](../Sources/PkgLiftMigration/MigrationPlanPreflight.swift). Older incomplete AUTO entries are refused. The [versioned compatibility policy](Compatibility-1.0.md) and focused examples/tests were integrated by PR #119 and qualified on main `9d2951…`. | G6 must freeze the exact release API baseline. |
 | Supported host/toolchain matrix | [Ordinary CI](../.github/workflows/positive-e2e.yml), [CodeQL](../.github/workflows/codeql.yml) and [release CI](../.github/workflows/release.yml) use macOS 15 with Xcode 16.4. [Distribution](Distribution.md) advertises arm64 macOS 14+. | G2: validate the lower host boundary and every advertised toolchain cell; distinguish binary execution from source compilation and project migration. |
 | Broad real-project coverage | [Ten pinned upstream pilots](Pilots.md) exercise analysis, planning, inert dry run and conservative outcomes. Amazon IVS full migration is historical v0.2.0 evidence. Current recurring full apply/build runs use repository-owned fixtures. | G3: current repeatable full-workflow evidence across real project shapes; historical success and read-only results do not close this gap. |
 | Recovery guidance for the complete workflow | [Migration safety](MigrationSafety.md#rollback-boundary), [interruption evidence](InterruptedMigrationValidation.md), [atomic tests](../Tests/PkgLiftMigrationTests/AtomicMigrationTests.swift) and [subprocess tests](../Tests/PkgLiftCLITests/MigrateInterruptionTests.swift) cover errors, handled signals, SIGKILL markers and refusal to reapply. | G4: a tested user recovery drill including the separate `pod install` and final-build boundary. Manual recovery may satisfy the gate. |
 | Mature registry and contribution validation | 25 mappings in the verified 0.10.0 distribution; [contribution rules](ContributingMappings.md), duplicate registry copies, schema validation and [three Swift consumer pilots](VerifiedConsumerMappings.md). | G5: audit the evidence and published claims for the mappings included in the support contract; do not present a minimum version as proof of every later version. |
 | Clear language boundaries | [Compatibility table](../README.md#compatibility), PBX source profiles and mapping-specific language refusal tests. Repository-owned SDWebImage fixture builds Swift and Objective-C consumers together. | G1/G3: publish a tested language/project-shape table with explicit detection-only and unsupported rows. |
-| Partial and mixed-manager migrations | [Real-project procedure](RealWorldTesting.md), planner/preflight preservation checks and read-only mixed classifications. The current [mixed-language fixture](../Fixtures/MixedLanguageSDWebImage/Podfile) has only one pod; its [E2E runner](../Scripts/run-positive-e2e-pilot.sh) refreshes an empty Podfile after apply. | G3: build a migrated SwiftPM product alongside a retained non-AUTO CocoaPods dependency, with correct target linkage and dependency state. |
+| Partial and mixed-manager migrations | On main `9d2951…`, [PartialSwift](PartialMigration-1.0.md) and PartialMixed passed their baseline/post-migration builds, retained-pod refresh/lock checks and structural verification under macOS 15.7.9/arm64, Xcode 16.4, Swift 6.1.2 and CocoaPods 1.17.0. The [main partial-pilot jobs](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046) are among 24 completed, successful checks for that commit. | G3: qualify existing SwiftPM coexistence, conflicting-requirement refusal, multi-target/workspace selection and real-project cases. The two repository fixtures do not cover those shapes. |
 | No known critical migration-integrity defects | Protected CI and CodeQL passed for the baseline. Only [SwiftSoup #57](https://github.com/Alexsvensson99/PkgLift/issues/57) and [DGCharts #56](https://github.com/Alexsvensson99/PkgLift/issues/56) were open in the live issue inventory on 2026-09-16. | G5/G6: targeted safety review, triaged findings and exact-candidate checks. An empty defect tracker is not proof that no defects exist. |
 
 The completed [0.10 publication](https://github.com/Alexsvensson99/PkgLift/actions/runs/35066745671)
@@ -60,9 +63,10 @@ establish a working distribution process. They cannot substitute for a future
 
 ### G1 — Define the 1.0 compatibility contract
 
-**Priority: first. Status: implemented and locally verified on 2026-09-16.** The
+**Priority: first. Status: implemented and main-qualified on 2026-09-16.** The
 [compatibility contract](Compatibility-1.0.md) and focused contract examples/tests
-are implemented. Public integration and the remaining qualification gates are separate.
+were integrated by PR #119 and qualified on main `9d2951…`. The remaining
+release qualification gates are separate.
 
 - Inventory public CLI commands/options/exit codes, JSON fields/reason codes,
   configuration and registry schemas, and the six exported library products
@@ -112,9 +116,12 @@ compilation. Do not trigger full workflows merely to estimate runtime.
 ### G3 — Prove real and partial migrations
 
 **Priority: third; test design can proceed alongside G2 after G1. Status: in progress.**
-The two [repository-owned partial-migration cases](PartialMigration-1.0.md#local-qualification-on-2026-09-16)
-passed locally on Xcode 27 with fresh post-migration builds. Real-project, existing
-SwiftPM coexistence and additional toolchain/shape evidence remain open.
+The two [repository-owned partial-migration cases](PartialMigration-1.0.md#main-qualification-on-2026-09-16)
+passed on main `9d2951…` with fresh hosted post-migration builds and complete
+environment records. The new existing-SwiftPM fixture and conflicting-requirement
+refusal tests have [local qualification](PartialMigration-1.0.md#coexistence-and-conflicting-requirement-qualification-on-2026-09-16),
+pending exact-PR CI and protected integration. Real-project and additional
+toolchain/shape evidence remain open.
 Deliver an evidence matrix separating read-only, repository-fixture and real-project results.
 
 - Preserve the ten upstream read-only pilots and their current prohibition on
@@ -205,8 +212,9 @@ is publicly verified. Prior approval of 0.10.0 publication is not 1.0 publicatio
 
 ## Prioritization and version decision
 
-With **G1 locally verified**, the next work package is G2's environment matrix;
-G1 also determines G3's project selection. Perform G2–G4, integrate their fixes through G5 and
+With **G1 merged and main-qualified**, the next work package is G2's environment matrix;
+the repository-owned G3 partial pilots are also main-qualified, while their remaining
+project shapes determine the rest of G3. Perform G2–G4, integrate their fixes through G5 and
 prepare G6. Use one reviewed tracking item and bounded issues for these work
 packages when implementation is started; this local plan creates no GitHub issues
 or milestone and triggers no CI or release workflow.
@@ -239,4 +247,6 @@ independent source review checked the contract against implementation. The local
 Xcode 27 build required the native build engine after a Swift Build signing
 failure involving Finder metadata; this is not a qualified G2 support cell.
 No public integration, consumer migration qualification or 1.0 publication is
-claimed by this local result. G2–G6 remain open.
+claimed by this local result. PR #119 subsequently supplied main qualification
+for G1 and the two repository-owned G3 partial pilots; the remaining G2/G3
+coverage and G4–G6 remain open.

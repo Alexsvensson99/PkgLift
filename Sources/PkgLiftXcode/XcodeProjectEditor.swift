@@ -61,8 +61,13 @@ public struct XcodeProjectEditor: Sendable {
 
         let targetRepositoryURL = normalizeRepositoryURL(repositoryURL)
 
-        if let existing = project.remotePackages.first(where: { hasSameRepository($0.repositoryURL, as: targetRepositoryURL) }) {
-            guard swiftPMRequirement(from: existing.versionRequirement) == requirement else {
+        let existingPackages = project.remotePackages.filter {
+            hasSameRepository($0.repositoryURL, as: targetRepositoryURL)
+        }
+        if !existingPackages.isEmpty {
+            guard existingPackages.allSatisfy({
+                swiftPMRequirement(from: $0.versionRequirement) == requirement
+            }) else {
                 throw XcodeProjectEditorError.packageRequirementConflict(repositoryURL)
             }
             return

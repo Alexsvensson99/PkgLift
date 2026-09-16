@@ -95,6 +95,58 @@ final class XcodeProjectEditorTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: projectFile), before)
     }
 
+    func testDuplicateExistingPackagesWithAnyDifferentOrUnknownRequirementAreRefusedWithoutMutation() throws {
+        let requirementOrders: [[XCRemoteSwiftPackageReference.VersionRequirement?]] = [
+            [.exact("5.0.0"), .branch("develop")],
+            [.branch("develop"), .exact("5.0.0")],
+            [.exact("5.0.0"), nil],
+            [nil, .exact("5.0.0")],
+        ]
+
+        for requirements in requirementOrders {
+            let fixture = try makeProjectFixture()
+            defer { try? FileManager.default.removeItem(at: fixture.root) }
+            try addRawPackages(
+                repositoryURL: "https://github.com/Alamofire/Alamofire.git/",
+                requirements: requirements,
+                to: fixture.project
+            )
+            let projectFile = fixture.project.appendingPathComponent("project.pbxproj")
+            let before = try Data(contentsOf: projectFile)
+
+            XCTAssertThrowsError(try XcodeProjectEditor().addSwiftPMPackage(
+                repositoryURL: "https://github.com/Alamofire/Alamofire",
+                requirement: .exact("5.0.0"),
+                to: fixture.project.path
+            )) { error in
+                guard let editorError = error as? XcodeProjectEditorError,
+                      case .packageRequirementConflict = editorError else {
+                    return XCTFail("Expected packageRequirementConflict, got \(error)")
+                }
+            }
+            XCTAssertEqual(try Data(contentsOf: projectFile), before)
+        }
+    }
+
+    func testDuplicateExistingPackagesWithEqualRequirementsRemainAcceptedWithoutMutation() throws {
+        let fixture = try makeProjectFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        try addRawPackages(
+            repositoryURL: "https://github.com/Alamofire/Alamofire.git/",
+            requirements: [.exact("5.0.0"), .exact("5.0.0")],
+            to: fixture.project
+        )
+        let projectFile = fixture.project.appendingPathComponent("project.pbxproj")
+        let before = try Data(contentsOf: projectFile)
+
+        XCTAssertNoThrow(try XcodeProjectEditor().addSwiftPMPackage(
+            repositoryURL: "https://github.com/Alamofire/Alamofire",
+            requirement: .exact("5.0.0"),
+            to: fixture.project.path
+        ))
+        XCTAssertEqual(try Data(contentsOf: projectFile), before)
+    }
+
     func testCaseSensitiveRepositoryPathsAreNotCollapsed() throws {
         let fixture = try makeProjectFixture()
         defer { try? FileManager.default.removeItem(at: fixture.root) }
@@ -176,5 +228,23 @@ final class XcodeProjectEditorTests: XCTestCase {
         let xcodeproj = XcodeProj(workspace: XCWorkspace(), pbxproj: pbxproj)
         try xcodeproj.write(path: Path(projectURL.path))
         return (root, projectURL)
+    }
+
+    private func addRawPackages(
+        repositoryURL: String,
+        requirements: [XCRemoteSwiftPackageReference.VersionRequirement?],
+        to projectURL: URL
+    ) throws {
+        let xcodeproj = try XcodeProj(pathString: projectURL.path)
+        let rootProject = try XCTUnwrap(try xcodeproj.pbxproj.rootProject())
+        for requirement in requirements {
+            let package = XCRemoteSwiftPackageReference(
+                repositoryURL: repositoryURL,
+                versionRequirement: requirement
+            )
+            xcodeproj.pbxproj.add(object: package)
+            rootProject.remotePackages.append(package)
+        }
+        try xcodeproj.write(pathString: projectURL.path, override: true)
     }
 }

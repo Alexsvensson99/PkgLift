@@ -24,12 +24,16 @@ CASES = {
                      'languages': ['swift']},
     'PartialMixed': {'target': 'PkgLiftMixedFixture', 'migrate': 'SDWebImage', 'retain': 'KeychainAccess',
                      'languages': ['objectiveC', 'swift']},
+    'PartialSwiftCoexistence': {'target': 'SwiftKeychainAccess', 'migrate': 'KeychainAccess',
+                                'retain': 'SDWebImage', 'languages': ['swift'], 'existing': ['DeviceKit']},
 }
-VERSIONS = {'KeychainAccess': '4.2.2', 'SDWebImage': '5.18.1'}
+VERSIONS = {'KeychainAccess': '4.2.2', 'SDWebImage': '5.18.1', 'DeviceKit': '5.8.0'}
 REVISIONS = {'KeychainAccess': '84e546727d66f1adc5439debad16270d0fdd04e7',
-             'SDWebImage': '6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7'}
+             'SDWebImage': '6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7',
+             'DeviceKit': '56b997e8a61707218f9af09f32b2a1d1806fd792'}
 REPOSITORIES = {'KeychainAccess': 'https://github.com/kishikawakatsumi/KeychainAccess',
-                'SDWebImage': 'https://github.com/SDWebImage/SDWebImage.git'}
+                'SDWebImage': 'https://github.com/SDWebImage/SDWebImage.git',
+                'DeviceKit': 'https://github.com/devicekit/DeviceKit'}
 
 
 def check_plan(analysis, plan, case):
@@ -69,30 +73,46 @@ def check_lock(text, names):
     require(set(re.findall(r'^  - (.+)$', declarations, re.MULTILINE))
             == {f'{name} (= {VERSIONS[name]})' for name in names}, 'Unexpected locked direct declarations')
 
-def check_linkage(document, case):
+def check_packages(document, case, names):
     objects = document['objects']
     targets = [o for o in objects.values() if o.get('isa') == 'PBXNativeTarget']
     require(len(targets) == 1 and targets[0]['name'] == case['target'], 'Unexpected target set')
     target = targets[0]
     products = [(k, o) for k, o in objects.items() if o.get('isa') == 'XCSwiftPackageProductDependency']
-    require(len(products) == 1 and products[0][1]['productName'] == case['migrate'], 'Duplicate/wrong package product')
-    product_id, product = products[0]
-    require(target.get('packageProductDependencies') == [product_id], 'Product attached to wrong target')
+    require(len(products) == len(names) and {p['productName'] for _, p in products} == set(names),
+            'Duplicate/wrong package product')
+    product_ids = [key for key, _ in products]
+    require(sorted(target.get('packageProductDependencies', [])) == sorted(product_ids), 'Product attached to wrong target')
     references = [(k, o) for k, o in objects.items() if o.get('isa') == 'XCRemoteSwiftPackageReference']
-    require(len(references) == 1 and product['package'] == references[0][0], 'Duplicate/wrong package reference')
-    reference_id, reference = references[0]
-    require(reference['repositoryURL'].removesuffix('.git') == REPOSITORIES[case['migrate']].removesuffix('.git'),
-            'Wrong package repository')
-    require(reference['requirement'] == {'kind': 'exactVersion', 'version': VERSIONS[case['migrate']]},
-            'Migration changed the pinned requirement')
-    require(objects[document['rootObject']].get('packageReferences') == [reference_id], 'Package not owned by project')
+    require(len(references) == len(names) and {p['package'] for _, p in products} == {key for key, _ in references},
+            'Duplicate/wrong package reference')
+    require(sorted(objects[document['rootObject']].get('packageReferences', [])) == sorted(key for key, _ in references),
+            'Package not owned by project')
     phases = [objects[key] for key in target['buildPhases']]
     frameworks = [p for p in phases if p['isa'] == 'PBXFrameworksBuildPhase']
     require(len(frameworks) == 1, 'Ambiguous framework linkage')
     linked = [objects[key].get('productRef') for key in frameworks[0]['files']]
-    require(linked.count(product_id) == 1, 'SwiftPM product must link exactly once')
-    all_links = [o for o in objects.values() if o.get('isa') == 'PBXBuildFile' and o.get('productRef') == product_id]
-    require(len(all_links) == 1, 'Duplicate SwiftPM build file')
+    require(sorted(p for p in linked if p is not None) == sorted(product_ids), 'SwiftPM product must link exactly once')
+    state = {}
+    for product_id, product in products:
+        name = product['productName']
+        reference_id = product['package']
+        reference = objects[reference_id]
+        require(reference['repositoryURL'].removesuffix('.git') == REPOSITORIES[name].removesuffix('.git'),
+                'Wrong package repository')
+        require(reference['requirement'] == {'kind': 'exactVersion', 'version': VERSIONS[name]},
+                'Migration changed the pinned requirement')
+        links = [(k, o) for k, o in objects.items() if o.get('isa') == 'PBXBuildFile' and o.get('productRef') == product_id]
+        require(len(links) == 1, 'Duplicate SwiftPM build file')
+        state[name] = {reference_id: reference, product_id: product, links[0][0]: links[0][1]}
+    return state
+
+
+def check_linkage(document, case):
+    state = check_packages(document, case, [case['migrate'], *case.get('existing', [])])
+    objects = document['objects']
+    target = next(o for o in objects.values() if o.get('isa') == 'PBXNativeTarget')
+    phases = [objects[key] for key in target['buildPhases']]
     require(any(p.get('isa') == 'PBXShellScriptBuildPhase' and p.get('name') == '[CP] Check Pods Manifest.lock'
                 and 'Manifest.lock' in p.get('shellScript', '') for p in phases), 'CocoaPods check phase lost')
     configs = objects[target['buildConfigurationList']]['buildConfigurations']
@@ -102,6 +122,26 @@ def check_linkage(document, case):
         expected = f"Target Support Files/Pods-{case['target']}/Pods-{case['target']}.{configuration['name'].lower()}.xcconfig"
         require(ref['path'] == expected,
                 'CocoaPods base configuration lost')
+    return state
+
+
+def check_existing_packages(baseline, migrated):
+    require(all(migrated.get(name) == state for name, state in baseline.items()),
+            'Existing SwiftPM project objects changed')
+
+
+def check_resolved(migration, names):
+    pins = list(migration.rglob('Package.resolved'))
+    require(len(pins) == 1, 'Missing/ambiguous SwiftPM lockfile')
+    resolved = json.loads(pins[0].read_text())['pins']
+    require(len(resolved) == len(names) and {p['identity'].lower() for p in resolved} == {n.lower() for n in names},
+            'Unexpected resolved SwiftPM dependency set')
+    for name in names:
+        pin = next(p for p in resolved if p['identity'].lower() == name.lower())
+        require(pin['state']['version'] == VERSIONS[name] and pin['state']['revision'] == REVISIONS[name]
+                and pin['location'].removesuffix('.git') == REPOSITORIES[name].removesuffix('.git'),
+                'Unexpected resolved SwiftPM dependency')
+    return pins[0], {p['identity']: p for p in resolved}
 
 
 def protected_project_state(document):
@@ -180,17 +220,23 @@ def main():
         config = (migration / '.pkglift.yml').read_bytes()
         podfile = (migration / 'Podfile').read_bytes()
         run('baseline-install', ['pod', 'install', '--deployment'], migration)
-        check_lock((migration / 'Podfile.lock').read_text(), VERSIONS)
+        check_lock((migration / 'Podfile.lock').read_text(), [case['migrate'], case['retain']])
         shutil.copyfile(migration / 'Podfile.lock', reports / 'baseline-Podfile.lock')
         target = case['target']
         project = migration / (target + '.xcodeproj/project.pbxproj')
         baseline_project = json.loads(subprocess.check_output(['plutil', '-convert', 'json', '-o', '-', str(project)]))
+        existing_names = case.get('existing', [])
+        existing_packages = check_packages(baseline_project, case, existing_names)
         (reports / 'baseline-project.json').write_text(json.dumps(baseline_project, indent=2) + '\n')
         derived = output / 'derived'
         workspace = migration / (target + '.xcworkspace')
         run('baseline-build', ['xcodebuild', '-workspace', workspace, '-scheme', target, '-configuration', 'Debug',
                               '-sdk', 'iphonesimulator', '-destination', 'generic/platform=iOS Simulator',
                               '-derivedDataPath', derived, '-jobs', args.jobs, 'CODE_SIGNING_ALLOWED=NO', 'IPHONEOS_DEPLOYMENT_TARGET=15.0', 'ARCHS=arm64', 'build'], seconds=1200)
+        existing_pins = {}
+        if existing_names:
+            pin_path, existing_pins = check_resolved(migration, existing_names)
+            shutil.copyfile(pin_path, reports / 'baseline-Package.resolved')
         common = ['--path', migration, '--project', target + '.xcodeproj', '--no-color']
         analysis = json.loads(run('analysis', [binary, 'analyze', *common, '--json'], json_output=True).read_text())
         run('plan-command', [binary, 'plan', *common, '--json'], json_output=True)
@@ -208,7 +254,8 @@ def main():
         shutil.copyfile(migration / 'Podfile.lock', reports / 'retained-Podfile.lock')
         project = migration / (target + '.xcodeproj/project.pbxproj')
         doc = json.loads(subprocess.check_output(['plutil', '-convert', 'json', '-o', '-', str(project)]))
-        check_linkage(doc, case)
+        migrated_packages = check_linkage(doc, case)
+        check_existing_packages(existing_packages, migrated_packages)
         require(protected_project_state(doc) == protected_project_state(baseline_project),
                 'Consumer source/resource membership or target settings changed')
         # Use fresh post-migration objects, with identical configuration/settings.
@@ -218,13 +265,9 @@ def main():
                               '-sdk', 'iphonesimulator', '-destination', 'generic/platform=iOS Simulator',
                               '-derivedDataPath', derived, '-jobs', args.jobs, 'CODE_SIGNING_ALLOWED=NO', 'IPHONEOS_DEPLOYMENT_TARGET=15.0', 'ARCHS=arm64', 'build'], seconds=1200)
         run('verification', [binary, 'verify', *common, '--workspace', target + '.xcworkspace', '--json'], json_output=True)
-        pins = list(migration.rglob('Package.resolved'))
-        require(len(pins) == 1, 'Missing/ambiguous SwiftPM lockfile')
-        resolved = json.loads(pins[0].read_text())['pins']
-        require(len(resolved) == 1 and resolved[0]['identity'].lower() == case['migrate'].lower()
-                and resolved[0]['state']['version'] == VERSIONS[case['migrate']]
-                and resolved[0]['state']['revision'] == REVISIONS[case['migrate']], 'Unexpected resolved SwiftPM dependency')
-        shutil.copyfile(pins[0], reports / 'Package.resolved')
+        pin_path, resolved = check_resolved(migration, [case['migrate'], *existing_names])
+        require(all(resolved.get(key) == value for key, value in existing_pins.items()), 'Existing SwiftPM pin changed')
+        shutil.copyfile(pin_path, reports / 'Package.resolved')
         require(protected == shared.tree_state(migration / 'App'), 'Source or resources changed')
         require(config == (migration / '.pkglift.yml').read_bytes(), 'Retention policy changed')
         require(original == shared.tree_state(fixture), 'Original fixture changed')
@@ -233,7 +276,11 @@ def main():
                        swiftPMLinkedExactlyOnce=True, consumerBytesUnchanged=True,
                        sourceResourceMembershipUnchanged=True, freshMigratedBuild=True,
                        configurationUnchanged=True, repositoryFixtureUnchanged=True,
-                       resolvedRevision=resolved[0]['state']['revision'])
+                       resolvedRevision=REVISIONS[case['migrate']])
+        if existing_names:
+            summary.update(existingSwiftPM=existing_names, existingSwiftPMObjectsUnchanged=True,
+                           existingSwiftPMPinsUnchanged=True,
+                           existingSwiftPMRevisions={name: REVISIONS[name] for name in existing_names})
     finally:
         (reports / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
         print(json.dumps(summary, indent=2), flush=True)

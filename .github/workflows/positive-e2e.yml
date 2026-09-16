@@ -424,6 +424,7 @@ jobs:
         include:
           - case: PartialSwift
           - case: PartialMixed
+          - case: PartialSwiftCoexistence
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:
