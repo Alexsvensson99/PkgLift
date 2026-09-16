@@ -191,7 +191,7 @@ if pilot_jobs.is_a?(Hash)
   registry_consumer = pilot_jobs["registry_consumers"]
   if registry_consumer.is_a?(Hash)
     entries = registry_consumer.dig("strategy", "matrix", "include")
-    expected_entries = ["KeychainAccess", "DeviceKit"].map do |library|
+    expected_entries = ["KeychainAccess", "DeviceKit", "CryptoSwift"].map do |library|
       mapping = "Registry/#{library[0]}/#{library}.yml"
       { "library" => library, "phase" => File.file?(mapping) ? "migration" : "equivalence" }
     end

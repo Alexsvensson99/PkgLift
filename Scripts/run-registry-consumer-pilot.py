@@ -30,6 +30,14 @@ CASES = {
         "specURL": "https://raw.githubusercontent.com/CocoaPods/Specs/d9713efb46e5742f0817e67905d465f429c579c2/Specs/d/e/6/DeviceKit/5.8.0/DeviceKit.podspec.json",
         "specSHA256": "87970b1f51a445b9d1e22b4cca1f8c2a7b70bafbb4ed8cd46d2c98691cfa43a8",
     },
+    "CryptoSwift": {
+        "version": "1.10.0", "repository": "https://github.com/krzyzanowskim/CryptoSwift",
+        "revision": "f2a627b84c1ff96f21ac2fcb623ab36142dd5512",
+        "source": "Sources/CryptoSwift/SHA2.swift",
+        "sourceSHA256": "b68697b758f4b6f4378d40df9e759e27e73ab62587299918ce68f15fd017b976",
+        "specURL": "https://raw.githubusercontent.com/CocoaPods/Specs/2aec7cbaad29fecb20f77859b261ef5af3de17af/Specs/3/e/b/CryptoSwift/1.10.0/CryptoSwift.podspec.json",
+        "specSHA256": "c99dec222ebbc0c4f6e0df424278e9c49b9c2ce43e89de784aff8b9f4a2d4d5f",
+    },
 }
 PRIVACY = {
     "NSPrivacyTrackingDomains": [], "NSPrivacyCollectedDataTypes": [],
@@ -38,6 +46,13 @@ PRIVACY = {
         "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryDiskSpace",
         "NSPrivacyAccessedAPITypeReasons": ["85F4.1", "E174.1"],
     }],
+}
+
+CRYPTOSWIFT_PRIVACY = {
+    "NSPrivacyTracking": False,
+    "NSPrivacyTrackingDomains": [],
+    "NSPrivacyCollectedDataTypes": [],
+    "NSPrivacyAccessedAPITypes": [],
 }
 
 
@@ -52,6 +67,21 @@ def canonical(value):
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def verify_required_privacy_manifest(directory, relative_path, expected):
+    """Require the named resource output; an unrelated manifest cannot satisfy it."""
+    relative = Path(relative_path)
+    require(not relative.is_absolute() and ".." not in relative.parts,
+            "Privacy resource path must remain inside the inspected directory")
+    path = directory
+    require(path.is_dir() and not path.is_symlink(), "Unsafe privacy resource directory")
+    for component in relative.parts:
+        path = path / component
+        require(not path.is_symlink(), "Symlink in required privacy resource path")
+    require(path.is_file(), f"Missing required privacy resource: {relative_path}")
+    require(plistlib.loads(path.read_bytes()) == expected, "Required privacy manifest semantics changed")
+    return str(relative)
 
 
 def verify_migrated_podfile(original: bytes, migrated: bytes, name: str, version: str):
@@ -108,11 +138,18 @@ def main():
 
     def source_check(directory):
         require(digest(directory / case["source"]) == case["sourceSHA256"], "Resolved source bytes changed")
+        if args.case == "CryptoSwift":
+            verify_required_privacy_manifest(directory, "Sources/CryptoSwiftResources/PrivacyInfo.xcprivacy",
+                                             CRYPTOSWIFT_PRIVACY)
         if args.case == "DeviceKit":
             require(plistlib.loads((directory / "Source/PrivacyInfo.xcprivacy").read_bytes()) == PRIVACY,
                     "Resolved privacy manifest changed")
 
-    def privacy_check(directory):
+    def privacy_check(directory, integration):
+        if args.case == "CryptoSwift":
+            bundle = "CryptoSwift.bundle" if integration == "cocoapods" else "CryptoSwift_CryptoSwiftResources.bundle"
+            return [verify_required_privacy_manifest(directory, bundle + "/PrivacyInfo.xcprivacy",
+                                                      CRYPTOSWIFT_PRIVACY)]
         if args.case != "DeviceKit":
             return []
         paths = sorted(directory.rglob("PrivacyInfo.xcprivacy"))
@@ -188,7 +225,7 @@ def main():
             "CODE_SIGNING_ALLOWED=NO", "build"])
         source_check(baseline / "Pods" / args.case)
         summary["cocoaPodsBuild"] = "passed"
-        summary["cocoaPodsPrivacy"] = privacy_check(baseline_data / "Build/Products/Debug-iphonesimulator" / (target + ".app"))
+        summary["cocoaPodsPrivacy"] = privacy_check(baseline_data / "Build/Products/Debug-iphonesimulator" / (target + ".app"), "cocoapods")
 
         spm = root / "swiftpm"
         (spm / "Sources/RegistryConsumer").mkdir(parents=True)
@@ -213,7 +250,7 @@ def main():
         require(len(checkouts) == 1, "Missing or ambiguous package source checkout")
         source_check(checkouts[0])
         summary["swiftPMBuild"] = "passed"
-        summary["swiftPMPrivacy"] = privacy_check(spm_data / "Build/Products/Debug-iphonesimulator")
+        summary["swiftPMPrivacy"] = privacy_check(spm_data / "Build/Products/Debug-iphonesimulator", "swiftpm")
         require(digest(baseline / "App/Consumer.swift") == digest(spm / "Sources/RegistryConsumer/Consumer.swift")
                 == probe_hash, "The two integrations did not compile identical consumer source")
 
@@ -263,7 +300,7 @@ def main():
             require(len(migrated_checkouts) == 1, "Missing or ambiguous migrated package source checkout")
             source_check(migrated_checkouts[0])
             require(tree_state(migration / "App") == app_before, "Migration changed consumer sources")
-            summary["migratedPrivacy"] = privacy_check(migrated_data / "Build/Products/Debug-iphonesimulator" / (target + ".app"))
+            summary["migratedPrivacy"] = privacy_check(migrated_data / "Build/Products/Debug-iphonesimulator" / (target + ".app"), "swiftpm")
             summary["migration"] = "passed"
 
         require(tree_state(fixture) == fixture_hash, "Repository-owned fixture changed")

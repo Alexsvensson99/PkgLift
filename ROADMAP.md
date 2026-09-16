@@ -217,6 +217,23 @@ build and migration proof.
 
 ---
 
+# Next
+
+## v0.10.0 — Verified CryptoSwift Migration
+
+Prove the exact CryptoSwift identity and 1.10.0 version boundary with the same
+Swift iOS 15 consumer built through CocoaPods and SwiftPM, including privacy
+resources. Admit a schema-2 mapping only after that evidence passes, then prove
+the complete migration and final build. The [0.10 plan](Documentation/Plan-0.10.md)
+defines scope, acceptance and the fail-closed boundary for
+[issue #59](https://github.com/Alexsvensson99/PkgLift/issues/59).
+
+SwiftSoup and DGCharts remain independent research candidates. No additional
+platform, language, package generation or automatic-migration shortcut is
+included in this release target.
+
+---
+
 # Research
 
 Research items are not release commitments. Each requires a written compatibility model, threat/safety review, fixtures, and real-project evidence before entering the planned roadmap.

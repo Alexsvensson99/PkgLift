@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import os
+import plistlib
 from pathlib import Path
 import sys
 import tempfile
@@ -204,6 +205,72 @@ class MigratedPodfileTests(unittest.TestCase):
             with self.subTest(label=label):
                 with self.assertRaises(RuntimeError):
                     self.verify(original, original.replace(declaration, b""), name, version)
+
+
+class RequiredPrivacyManifestTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="pkglift-privacy-guard-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.relative = "CryptoSwift_CryptoSwiftResources.bundle/PrivacyInfo.xcprivacy"
+        self.expected = {"NSPrivacyTracking": False, "NSPrivacyCollectedDataTypes": []}
+
+    def write(self, relative, value):
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(plistlib.dumps(value))
+        return path
+
+    def verify(self):
+        return pilot.verify_required_privacy_manifest(self.root, self.relative, self.expected)
+
+    def test_accepts_expected_named_bundle_with_equal_plist_semantics(self):
+        self.write(self.relative, self.expected)
+        self.assertEqual(self.verify(), self.relative)
+
+    def test_rejects_missing_resource(self):
+        with self.assertRaisesRegex(RuntimeError, "Missing required privacy resource"):
+            self.verify()
+
+    def test_unrelated_manifest_does_not_satisfy_required_resource(self):
+        self.write("Unrelated.bundle/PrivacyInfo.xcprivacy", self.expected)
+        with self.assertRaisesRegex(RuntimeError, "Missing required privacy resource"):
+            self.verify()
+
+    def test_rejects_changed_privacy_semantics(self):
+        self.write(self.relative, {**self.expected, "NSPrivacyTracking": True})
+        with self.assertRaisesRegex(RuntimeError, "semantics changed"):
+            self.verify()
+
+    def test_rejects_resource_symlink(self):
+        other = self.write("elsewhere/PrivacyInfo.xcprivacy", self.expected)
+        target = self.root / self.relative
+        target.parent.mkdir()
+        target.symlink_to(other)
+        with self.assertRaisesRegex(RuntimeError, "Symlink"):
+            self.verify()
+
+    def test_rejects_bundle_symlink(self):
+        self.write("elsewhere/PrivacyInfo.xcprivacy", self.expected)
+        (self.root / Path(self.relative).parent).symlink_to(self.root / "elsewhere", target_is_directory=True)
+        with self.assertRaisesRegex(RuntimeError, "Symlink"):
+            self.verify()
+
+    def test_rejects_invalid_plist(self):
+        path = self.write(self.relative, self.expected)
+        path.write_bytes(b"not a plist")
+        with self.assertRaises(plistlib.InvalidFileException):
+            self.verify()
+
+    def test_rejects_resource_directory(self):
+        (self.root / self.relative).mkdir(parents=True)
+        with self.assertRaisesRegex(RuntimeError, "Missing required privacy resource"):
+            self.verify()
+
+    def test_rejects_absolute_and_escaping_paths(self):
+        for relative in ("/PrivacyInfo.xcprivacy", "../PrivacyInfo.xcprivacy"):
+            with self.subTest(relative=relative), self.assertRaisesRegex(RuntimeError, "remain inside"):
+                pilot.verify_required_privacy_manifest(self.root, relative, self.expected)
 
 
 if __name__ == "__main__":
