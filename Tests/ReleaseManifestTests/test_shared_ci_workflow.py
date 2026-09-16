@@ -104,7 +104,8 @@ class SharedCIWorkflowTests(unittest.TestCase):
                     'without path filters')
 
     def test_each_consumer_requires_current_run_artifact(self):
-        for job in ('analyze', 'migrate-and-build', 'registry_consumers'):
+        for job in ('analyze', 'migrate-and-build', 'registry_consumers',
+                    'partial_migrations'):
             with self.subTest(job=job):
                 def mutate(w):
                     step = next(s for s in w['jobs'][job]['steps']
@@ -115,7 +116,8 @@ class SharedCIWorkflowTests(unittest.TestCase):
     def test_each_consumer_must_verify_every_evidence_field(self):
         fields = ('ARCHIVE_SHA256', 'BINARY_SHA256', 'PRODUCER_ATTEMPT',
                   'REPOSITORY', 'RUN_ID', 'SOURCE_SHA')
-        for job in ('analyze', 'migrate-and-build', 'registry_consumers'):
+        for job in ('analyze', 'migrate-and-build', 'registry_consumers',
+                    'partial_migrations'):
             for field in fields:
                 with self.subTest(job=job, field=field):
                     def mutate(w):
@@ -137,6 +139,63 @@ class SharedCIWorkflowTests(unittest.TestCase):
             steps.append(verifier)
         self.reject(reordered, 'must verify the downloaded artifact before running pilots')
 
+    def test_partial_migration_job_is_bounded_to_reviewed_cases_and_toolchain(self):
+        mutations = (
+            (lambda w: w['jobs']['partial_migrations']['strategy'].update({'fail-fast': True}),
+             'partial migration matrix must be fail-fast false'),
+            (lambda w: w['jobs']['partial_migrations']['strategy'].update({'max-parallel': 2}),
+             'partial migration matrix must be fail-fast false'),
+            (lambda w: w['jobs']['partial_migrations']['strategy']['matrix']['include'].pop(),
+             'partial migration matrix must contain exactly'),
+            (lambda w: w['jobs']['partial_migrations']['strategy']['matrix'].update(
+                {'exclude': [{'case': 'PartialMixed'}]}),
+             'partial migration matrix must contain exactly'),
+            (lambda w: w['jobs']['partial_migrations'].update({'runs-on': 'ubuntu-24.04'}),
+             'partial migrations must use macos-15 with Xcode 16.4'),
+            (lambda w: w['jobs']['partial_migrations']['env'].update({'DEVELOPER_DIR': '/Applications/Xcode.app'}),
+             'partial migrations must use macos-15 with Xcode 16.4'),
+            (lambda w: w['jobs']['partial_migrations'].update({'needs': ['other-job']}),
+             'partial migrations must depend only on the shared pilot producer'),
+        )
+        for mutation, diagnostic in mutations:
+            with self.subTest(diagnostic=diagnostic):
+                self.reject(mutation, diagnostic)
+
+    def test_partial_migration_job_cannot_be_missing_or_conditionally_skipped(self):
+        self.reject(lambda w: w['jobs'].pop('partial_migrations'),
+                    'missing heavy job "partial_migrations"')
+        self.reject(lambda w: w['jobs']['partial_migrations'].update({'if': 'false'}),
+                    'heavy job "partial_migrations" must run unconditionally and fail closed')
+
+    def test_partial_migration_uses_exact_artifact_contract_and_command(self):
+        def alter_download(w):
+            step = next(s for s in w['jobs']['partial_migrations']['steps']
+                        if s.get('name') == 'Download Shared PkgLift')
+            step['with']['path'] = '${{ runner.temp }}/unverified-artifact'
+        self.reject(alter_download, 'exact shared artifact download and verifier')
+
+        def weaken_verifier(w):
+            step = next(s for s in w['jobs']['partial_migrations']['steps']
+                        if s.get('name') == 'Verify Shared PkgLift')
+            step['run'] += ' || true\n'
+        self.reject(weaken_verifier, 'exact shared artifact download and verifier')
+
+        def alter_runner(w):
+            step = next(s for s in w['jobs']['partial_migrations']['steps']
+                        if s.get('name') == 'Verify Partial Migration')
+            step['run'] = step['run'].replace('--jobs 2', '--jobs 1')
+        self.reject(alter_runner, 'exact bounded pilot command')
+
+    def test_partial_migration_gate_dependency_and_result_cannot_be_removed(self):
+        self.reject(
+            lambda w: w['jobs']['gate']['needs'].remove('partial_migrations'),
+            'must require heavy job "partial_migrations"')
+
+        def misbind_result(w):
+            step = w['jobs']['gate']['steps'][0]
+            step['env']['PARTIAL_RESULT'] = '${{ needs.migrate-and-build.result }}'
+        self.reject(misbind_result, 'must require successful partial_migrations result')
+
     def test_registry_candidate_cannot_skip_equivalence_or_required_migration(self):
         self.reject(lambda w: w['jobs']['registry_consumers']['strategy']['matrix']['include'].pop(),
                     'registry consumer matrix')
@@ -156,11 +215,13 @@ class SharedCIWorkflowTests(unittest.TestCase):
                 self.reject(lambda w: w['jobs'][job].update({'name': 'wrong-name'}), diagnostic)
 
     def test_pilot_or_verifier_failure_cannot_be_ignored(self):
-        for job in ('analyze', 'migrate-and-build', 'registry_consumers'):
+        for job in ('analyze', 'migrate-and-build', 'registry_consumers',
+                    'partial_migrations'):
             for marker in ('Scripts/verify-pilot-artifact.py',
                            {'analyze': 'Scripts/run-pinned-pilot.sh',
                             'migrate-and-build': 'Scripts/run-positive-e2e-pilot.sh',
-                            'registry_consumers': 'Scripts/run-registry-consumer-pilot.py'}[job]):
+                            'registry_consumers': 'Scripts/run-registry-consumer-pilot.py',
+                            'partial_migrations': 'Scripts/run-partial-migration-pilot.py'}[job]):
                 with self.subTest(job=job, marker=marker):
                     def mutate(w):
                         step = next(s for s in w['jobs'][job]['steps']

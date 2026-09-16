@@ -1,11 +1,14 @@
 // PkgLiftCore/ExitCode.swift
-// Defines predictable, documented exit codes for PkgLift CLI.
+// Legacy numeric exit-code catalogue exposed by the Core library.
 
 import Foundation
 
-/// Documented exit codes for the PkgLift CLI.
+/// Legacy numeric codes retained for library source compatibility.
 ///
-/// These codes are stable across versions and suitable for scripting.
+/// The CLI does not map its errors through this enum. In particular, cases
+/// 2...6 are not a promise of emitted process statuses. Consult
+/// Documentation/Compatibility-1.0.md for the actual CLI exit contract.
+/// Preserve these case names and raw values for existing library clients.
 ///
 /// | Code | Meaning |
 /// |------|---------|

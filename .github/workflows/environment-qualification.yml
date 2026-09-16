@@ -1,0 +1,52 @@
+name: Runtime Environment Qualification
+
+on:
+  push:
+    branches:
+      - codex/v1.0-environments
+    paths:
+      - .github/workflows/environment-qualification.yml
+      - Scripts/verify-runtime-environment.py
+      - Tests/ReleaseManifestTests/test_runtime_environment.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  published_cli_runtime:
+    name: macOS 14 arm64 published CLI runtime
+    runs-on: macos-14
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download fixed public v0.10.0 archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pkglift-runtime-input"
+          curl --fail --location --retry 2 --connect-timeout 15 --max-time 120 \
+            --output "$RUNNER_TEMP/pkglift-runtime-input/pkglift-macos-arm64.tar.gz" \
+            https://github.com/Alexsvensson99/PkgLift/releases/download/v0.10.0/pkglift-macos-arm64.tar.gz
+
+      - name: Qualify quarantined published CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 Scripts/verify-runtime-environment.py \
+            --archive "$RUNNER_TEMP/pkglift-runtime-input/pkglift-macos-arm64.tar.gz" \
+            --output-dir "$RUNNER_TEMP/pkglift-runtime-result" \
+            --fixture "$GITHUB_WORKSPACE/Fixtures/MixedLanguageSDWebImage"
+
+      - name: Upload bounded runtime evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pkglift-runtime-environment-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/pkglift-runtime-result/summary.json
+          if-no-files-found: warn
+          retention-days: 7

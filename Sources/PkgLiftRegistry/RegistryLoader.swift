@@ -139,13 +139,22 @@ enum BundledRegistryLocator {
         directories.append(containingBundleURL.deletingLastPathComponent())
 
         var seenPaths: Set<String> = []
-        return directories.compactMap { directory in
-            let candidate = directory
+        return directories.flatMap { directory -> [URL] in
+            let bundle = directory
                 .appendingPathComponent(bundleName, isDirectory: true)
-                .appendingPathComponent(registryName, isDirectory: true)
-                .standardizedFileURL
-            guard seenPaths.insert(candidate.path).inserted else { return nil }
-            return candidate
+            return [
+                // SwiftPM's historical command-line resource layout.
+                bundle.appendingPathComponent(registryName, isDirectory: true),
+                // Modern macOS bundles place copied resources below Contents/Resources.
+                bundle
+                    .appendingPathComponent("Contents", isDirectory: true)
+                    .appendingPathComponent("Resources", isDirectory: true)
+                    .appendingPathComponent(registryName, isDirectory: true),
+            ]
+        }
+        .map(\.standardizedFileURL)
+        .filter { candidate in
+            seenPaths.insert(candidate.path).inserted
         }
     }
 

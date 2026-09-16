@@ -1,0 +1,54 @@
+{
+  "archiveSHA256": "ad0747b3c10794ca93f23dc51953b3d234ddcfdabf4af1b5d4de5cd14876bd12",
+  "binarySHA256": "9b3160a9853324a49a67f3022e8492326cf90b56fba4dfa01f31e2623d26fd00",
+  "commands": {
+    "analyzePortableJSON": {
+      "exitCode": 0,
+      "status": "passed"
+    },
+    "codesignVerify": {
+      "exitCode": 0,
+      "status": "passed"
+    },
+    "macOSBuildVersion": {
+      "exitCode": 0,
+      "status": "passed"
+    },
+    "readQuarantine": {
+      "exitCode": 0,
+      "status": "passed"
+    },
+    "registryValidate": {
+      "exitCode": 0,
+      "status": "passed"
+    },
+    "setQuarantine": {
+      "exitCode": 0,
+      "status": "passed"
+    },
+    "version": {
+      "exitCode": 0,
+      "status": "passed"
+    }
+  },
+  "fixtureUnchanged": true,
+  "host": {
+    "cpu": "arm64",
+    "macOSBuild": "23J631",
+    "macOSVersion": "14.8.9",
+    "qualifiesMinimumHost": true,
+    "system": "Darwin"
+  },
+  "metadataOnly": false,
+  "quarantinePresent": true,
+  "recordedAt": "2026-09-16T09:22:44.776010Z",
+  "releaseAcceptance": false,
+  "releaseCommit": "7d976d70e66a584e2e25db9852ac0e53bb6201b9",
+  "runner": {
+    "imageOS": "macos14",
+    "imageVersion": "20260831.0302.1"
+  },
+  "schemaVersion": 1,
+  "signaturePassed": true,
+  "status": "passed"
+}

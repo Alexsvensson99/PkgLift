@@ -112,6 +112,77 @@ final class RegistryLoaderTests: XCTestCase {
         )
     }
 
+    func testBundledRegistryLocatorFindsFlatAndModernBundleLayouts() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftRegistryLayouts-\(UUID().uuidString)")
+        let mainBundleDirectory = root.appendingPathComponent("main")
+        let containingBundle = root.appendingPathComponent("framework/PkgLiftRegistry.framework")
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let candidates = BundledRegistryLocator.candidateURLs(
+            mainBundleURL: mainBundleDirectory,
+            executableURL: nil,
+            containingBundleURL: containingBundle
+        )
+        let flatRegistry = mainBundleDirectory
+            .appendingPathComponent("PkgLift_PkgLiftRegistry.bundle")
+            .appendingPathComponent("BundledRegistry")
+            .standardizedFileURL
+        let modernRegistry = mainBundleDirectory
+            .appendingPathComponent("PkgLift_PkgLiftRegistry.bundle")
+            .appendingPathComponent("Contents/Resources/BundledRegistry")
+            .standardizedFileURL
+
+        try FileManager.default.createDirectory(at: flatRegistry, withIntermediateDirectories: true)
+        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates)?.path, flatRegistry.path)
+
+        try FileManager.default.removeItem(at: flatRegistry)
+        try FileManager.default.createDirectory(at: modernRegistry, withIntermediateDirectories: true)
+        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates)?.path, modernRegistry.path)
+
+        try FileManager.default.removeItem(at: modernRegistry)
+        XCTAssertNil(BundledRegistryLocator.locate(in: candidates))
+        XCTAssertTrue(candidates.allSatisfy { $0.path.hasPrefix(root.path + "/") })
+    }
+
+    func testBundledRegistryLocatorUsesRootThenLayoutPrecedence() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PkgLiftRegistryPrecedence-\(UUID().uuidString)")
+        let mainBundleDirectory = root.appendingPathComponent("main")
+        let executableDirectory = root.appendingPathComponent("executable")
+        let executable = executableDirectory.appendingPathComponent("pkglift")
+        let containingBundle = root.appendingPathComponent("framework/PkgLiftRegistry.framework")
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try FileManager.default.createDirectory(at: executableDirectory, withIntermediateDirectories: true)
+        try Data().write(to: executable)
+
+        let candidates = BundledRegistryLocator.candidateURLs(
+            mainBundleURL: mainBundleDirectory,
+            executableURL: executable,
+            containingBundleURL: containingBundle
+        )
+        let mainFlat = mainBundleDirectory
+            .appendingPathComponent("PkgLift_PkgLiftRegistry.bundle/BundledRegistry")
+            .standardizedFileURL
+        let mainModern = mainBundleDirectory
+            .appendingPathComponent("PkgLift_PkgLiftRegistry.bundle/Contents/Resources/BundledRegistry")
+            .standardizedFileURL
+        let executableFlat = executableDirectory
+            .appendingPathComponent("PkgLift_PkgLiftRegistry.bundle/BundledRegistry")
+            .standardizedFileURL
+
+        try FileManager.default.createDirectory(at: mainFlat, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: mainModern, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: executableFlat, withIntermediateDirectories: true)
+
+        XCTAssertEqual(candidates.prefix(3).map(\.path), [mainFlat.path, mainModern.path, executableFlat.path])
+        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates)?.path, mainFlat.path)
+
+        try FileManager.default.removeItem(at: mainFlat)
+        XCTAssertEqual(BundledRegistryLocator.locate(in: candidates)?.path, mainModern.path)
+    }
+
     func testInvalidLocalOverrideIsRejectedDuringNormalLoad() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("PkgLiftRegistry-\(UUID().uuidString)")

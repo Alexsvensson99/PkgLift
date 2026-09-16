@@ -1,0 +1,22 @@
+PODS:
+  - KeychainAccess (4.2.2)
+  - SDWebImage (5.18.1):
+    - SDWebImage/Core (= 5.18.1)
+  - SDWebImage/Core (5.18.1)
+
+DEPENDENCIES:
+  - KeychainAccess (= 4.2.2)
+  - SDWebImage (= 5.18.1)
+
+SPEC REPOS:
+  trunk:
+    - KeychainAccess
+    - SDWebImage
+
+SPEC CHECKSUMS:
+  KeychainAccess: c0c4f7f38f6fc7bbe58f5702e25f7bd2f65abf51
+  SDWebImage: ebdbcebc7933a45226d9313bd0118bc052ad458b
+
+PODFILE CHECKSUM: 0bc1a358f8027ea03bef2e1e236c841c09436c5f
+
+COCOAPODS: 1.17.0

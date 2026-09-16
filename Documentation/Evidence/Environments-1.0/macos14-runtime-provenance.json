@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "workflowRun": 35079049127,
+  "runURL": "https://github.com/Alexsvensson99/PkgLift/actions/runs/35079049127",
+  "workflowCommit": "d7b962c76abf2dc2018576918462aa0129421ea9",
+  "conclusion": "success",
+  "summarySHA256": "d767902a71a9620b9eb116d54973cabdd9ec7ef30cd107519e6ebd1075454287",
+  "testedVersion": "14.8.9",
+  "testedBuild": "23J631",
+  "testedCPU": "arm64",
+  "scope": "Released 0.10.0 CLI smoke on observed macOS 14.8.9 arm64; not 14.0 runtime or 1.0 release acceptance"
+}

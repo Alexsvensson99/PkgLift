@@ -5,6 +5,7 @@ import PathKit
 import XCTest
 import XcodeProj
 import PkgLiftCore
+import PkgLiftMigration
 import PkgLiftXcode
 @testable import PkgLiftCLI
 
@@ -177,6 +178,66 @@ final class CommandContextMigrationTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: podfile), changedPodfile)
         let analysis = try XcodeProjectAnalyzer().analyzeProject(at: fixture.project.path)
         XCTAssertTrue(analysis.swiftPMState.packages.isEmpty)
+    }
+
+    func testApplyRefusesUnsupportedSchemaAndDifferentPkgLiftVersionBeforeMutation() async throws {
+        for mutation in PlanContractMutation.allCases {
+            let fixture = try makeFixture(
+                podfile: "target 'App' do\n  pod 'Alamofire'\nend\n",
+                lockfile: "PODS:\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - Alamofire\n",
+                targetNames: ["App"]
+            )
+            defer { try? FileManager.default.removeItem(at: fixture.root) }
+            let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+
+            var planCommand = try PlanCommand.parse(arguments)
+            try await planCommand.run()
+
+            let planURL = fixture.root.appendingPathComponent(".pkglift/plan.json")
+            var planObject = try XCTUnwrap(
+                JSONSerialization.jsonObject(with: Data(contentsOf: planURL)) as? [String: Any]
+            )
+            let entries = try XCTUnwrap(planObject["entries"] as? [[String: Any]])
+            XCTAssertEqual(entries.count, 1)
+            let entry = try XCTUnwrap(entries.first)
+            XCTAssertEqual(entry["classification"] as? String, "AUTO")
+            mutation.apply(to: &planObject)
+            let mutatedPlan = try JSONSerialization.data(
+                withJSONObject: planObject,
+                options: [.prettyPrinted, .sortedKeys]
+            )
+            try mutatedPlan.write(to: planURL, options: .atomic)
+
+            let podfileURL = fixture.root.appendingPathComponent("Podfile")
+            let projectFileURL = fixture.project.appendingPathComponent("project.pbxproj")
+            let podfileBefore = try Data(contentsOf: podfileURL)
+            let projectBefore = try Data(contentsOf: projectFileURL)
+            let planBefore = try Data(contentsOf: planURL)
+
+            var apply = try MigrateCommand.parse(arguments + ["--apply"])
+            do {
+                try await apply.run()
+                XCTFail("Expected \(mutation.description) preflight refusal")
+            } catch let error as MigrationPlanPreflightError {
+                XCTAssertEqual(error, mutation.expected)
+            } catch {
+                XCTFail("Unexpected \(mutation.description) error: \(error)")
+            }
+
+            XCTAssertEqual(try Data(contentsOf: podfileURL), podfileBefore)
+            XCTAssertEqual(try Data(contentsOf: projectFileURL), projectBefore)
+            XCTAssertEqual(try Data(contentsOf: planURL), planBefore)
+            XCTAssertFalse(
+                FileManager.default.fileExists(
+                    atPath: fixture.root.appendingPathComponent(".pkglift/migration-in-progress").path
+                )
+            )
+            XCTAssertFalse(
+                FileManager.default.fileExists(
+                    atPath: fixture.root.appendingPathComponent(".pkglift/backup").path
+                )
+            )
+        }
     }
 
     func testApplyRefusesWhenSavedAutoTargetAttributionHasChanged() async throws {
@@ -870,6 +931,35 @@ final class CommandContextMigrationTests: XCTestCase {
             withJSONObject: object,
             options: [.sortedKeys]
         )
+    }
+
+    private enum PlanContractMutation: CaseIterable {
+        case unsupportedSchema
+        case incompatiblePkgLiftVersion
+
+        var description: String {
+            switch self {
+            case .unsupportedSchema: "schemaVersion"
+            case .incompatiblePkgLiftVersion: "pkgLiftVersion"
+            }
+        }
+
+        var expected: MigrationPlanPreflightError {
+            switch self {
+            case .unsupportedSchema: .unsupportedSchemaVersion(99)
+            case .incompatiblePkgLiftVersion:
+                .incompatiblePkgLiftVersion("0.0.0-contract-test")
+            }
+        }
+
+        func apply(to object: inout [String: Any]) {
+            switch self {
+            case .unsupportedSchema:
+                object["schemaVersion"] = 99
+            case .incompatiblePkgLiftVersion:
+                object["pkgLiftVersion"] = "0.0.0-contract-test"
+            }
+        }
     }
 
     private static let barkLikePodfile = """

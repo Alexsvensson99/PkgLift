@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "status": "local-validation-passed",
+  "sourceCommit": "bc40947617b7632ff95a5aad4c561f0a1d906863",
+  "exportMatchesTrackedSource": true,
+  "environmentRecord": "local-environment.json",
+  "publicSupportQualified": false,
+  "sourceValidation": [
+    {
+      "engine": "swiftbuild",
+      "buildExitCode": 0,
+      "testExitCode": 0,
+      "registryExitCode": 0,
+      "xctestCount": 354,
+      "swiftTestingCount": 224,
+      "mappingCount": 25,
+      "logsSHA256": {
+        "default-engine-full.log": "59866c9d07a971dc3ec6c1dcc0b8139e941b5e04ac3a68ea851dd39ed2430d7e",
+        "default-engine-build.log": "abda0aac19dc28c1917cce7fc91c6644ed6369570c6852a02d696a41100da774",
+        "default-engine-registry.log": "8e20708c93cecf83abe678d5d81138606825b7ce2db40a6639a90f998abed680"
+      }
+    },
+    {
+      "engine": "native",
+      "buildExitCode": 0,
+      "testExitCode": 0,
+      "registryExitCode": 0,
+      "xctestCount": 354,
+      "swiftTestingCount": 224,
+      "mappingCount": 25,
+      "logsSHA256": {
+        "native-full.log": "4f29f7288a8cee997c4da6a48eacf78551015777372367227945907836cf8273",
+        "native-build.log": "7d49653b05a5c4cebccb4df3fc49cdf94e9de8fd59a99cb443875480343922a2",
+        "native-registry.log": "8e20708c93cecf83abe678d5d81138606825b7ce2db40a6639a90f998abed680"
+      }
+    }
+  ]
+}
