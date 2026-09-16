@@ -315,6 +315,11 @@ The graph solver must prefer a safe partial migration over forcing an all-or-not
 
 v1.0 should represent maturity, not simply a feature count.
 
+The [1.0 readiness plan](Documentation/Plan-1.0.md) maps the released 0.10.0
+baseline to the quality bar below, with ordered compatibility, environment,
+real-project, recovery, safety and release gates. It is a planning document;
+the gates are not yet completed and it does not expand current support.
+
 The target is a production-grade tool that can be given a broad range of native CocoaPods-based Xcode projects and:
 
 1. build a deterministic dependency and target model;
