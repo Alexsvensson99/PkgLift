@@ -197,6 +197,13 @@ def tree_snapshot(root: Path, exclude: Iterable[str] = (".git",)) -> dict[str, d
     return result
 
 
+def exclude_generated_plan(source: Path, relative: str) -> None:
+    exclude_file = source / ".git/info/exclude"
+    exclude_file.parent.mkdir(parents=True, exist_ok=True)
+    with exclude_file.open("a") as handle:
+        handle.write("\n/" + relative + "\n")
+
+
 def tree_digest(snapshot: Mapping[str, Any]) -> str:
     return canonical_json_sha256(snapshot)
 
@@ -1116,9 +1123,7 @@ class Runner:
                                                         "-m", "Record reviewed CocoaPods setup metadata"])
             setup_commit = self.git(migration, ["rev-parse", "HEAD"]).strip()
             require(not self.git(migration, ["status", "--porcelain", "--untracked-files=all"]), "migration setup is dirty")
-            exclude_file = migration / ".git/info/exclude"
-            with exclude_file.open("a") as handle:
-                handle.write("\n/.pkglift/plan.json\n")
+            exclude_generated_plan(migration, ".pkglift/plan.json")
             common = ["--path", migration, "--project", PROJECT, "--workspace", WORKSPACE, "--no-color"]
             analysis = self.execute("analysis-executable", [self.binary, "analyze", *common, "--json"], expect_json=True)
             portable_analysis = self.execute("analysis-portable", [self.binary, "analyze", *common, "--portable-json"], expect_json=True)

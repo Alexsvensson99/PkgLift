@@ -33,6 +33,13 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def exclude_generated_plan(source, relative):
+    exclude_file = source / '.git/info/exclude'
+    exclude_file.parent.mkdir(parents=True, exist_ok=True)
+    with exclude_file.open('a') as handle:
+        handle.write('\n/' + relative + '\n')
+
+
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -216,8 +223,7 @@ def main():
         require(not (selected / '.pkglift').exists(), 'Pre-existing plan state')
         run('validate-write-root', ['bash', ROOT / 'Scripts/validate-pinned-pilot-write-root.sh', selected])
         plan_relative = (Path(case['root']) / '.pkglift/plan.json').as_posix()
-        with (source / '.git/info/exclude').open('a') as handle:
-            handle.write('\n/' + plan_relative + '\n')
+        exclude_generated_plan(source, plan_relative)
         before_index = git_clean()
         original = snapshot(source)
         common = ['--path', selected, '--project', case['project'], '--no-color']

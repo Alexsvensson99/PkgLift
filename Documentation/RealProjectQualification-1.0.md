@@ -1,6 +1,6 @@
 # Real-project qualification protocol for 1.0
 
-Status: **selection, protocol and manual harness prepared; upstream execution not started**. Reviewed on
+Status: **manual harness integrated; first hosted attempt failed before AWS execution**. Protocol reviewed on
 2026-09-16 against PkgLift main
 [`72f19b3e3163d401b57950d02bd5fc191328ce2a`](https://github.com/Alexsvensson99/PkgLift/commit/72f19b3e3163d401b57950d02bd5fc191328ce2a).
 This is the next G3 work package in [the 1.0 plan](Plan-1.0.md#g3--prove-real-and-partial-migrations).
@@ -49,6 +49,21 @@ Ruby syntax and reconstruction using real framework metadata also passed.
 The harness must first be reviewed and integrated, then explicitly dispatched at
 the reviewed ref. No hosted run, successful AWS migration, new G3 qualification
 result or public release is claimed by its implementation.
+
+## First hosted attempt
+
+[PR #121](https://github.com/Alexsvensson99/PkgLift/pull/121) integrated the
+harness as `c736332c3b2c9a1720cadbd41d059d7a122ab185` after successful PR checks.
+[Run 35141250484](https://github.com/Alexsvensson99/PkgLift/actions/runs/35141250484)
+verified its CLI artifact and passed the FirebaseUI refusal control. Hammerspoon
+stopped before analysis because template-free `git init` does not create
+`.git/info`; AWS was correctly skipped. No AWS installation, baseline build or
+migration occurred, and G3 remains open.
+
+Both runners now create the local Git exclusion directory before recording the
+generated plan path. A regression initializes actual template-free repositories,
+checks both runners, and verifies that only the generated plan is ignored. All
+186 release/harness tests pass locally. Hosted verification of this fix is pending.
 
 ## Selected cases
 
