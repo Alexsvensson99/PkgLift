@@ -1,7 +1,7 @@
 # PkgLift 1.0 plan: a verified support and compatibility contract
 
 Status: planning complete; G1 compatibility contract is implemented and locally verified.
-G2–G6 and public 1.0 release qualification remain open.
+G2 environment qualification is in progress; G3–G6 and public 1.0 release qualification remain open.
 Reviewed on 2026-09-16 against main `51d90970cebbd4612881fc101e5570145783e500`.
 The public baseline is [0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0),
 release commit `7d976d70e66a584e2e25db9852ac0e53bb6201b9`.
@@ -85,8 +85,12 @@ plan execution or newly automatic dependency is introduced.
 
 ### G2 — Qualify the declared environments
 
-**Priority: second; depends on G1. Status: open.** Deliver a support matrix and
-reproducible environment records.
+**Priority: second; depends on G1. Status: in progress.** The
+[environment matrix and reproducible records](Environments-1.0.md) document
+baseline evidence and the local Xcode 27 source/runtime checks. The registry
+resource-layout compatibility fix passes both build engines. Hosted macOS 14
+runtime qualification, support-boundary decisions and complete consumer cells
+remain separate requirements below.
 
 - Distinguish three promises: running the distributed CLI, building PkgLift from
   source, and migrating/building a consumer project. Record exact macOS, CPU,

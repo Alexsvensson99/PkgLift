@@ -238,3 +238,8 @@ in this toolchain. These results establish G1 local contract coverage only;
 they do not qualify the default engine or this environment for the G2 support
 matrix. Resolve/reproduce that build-environment limitation during G2 before
 advertising such support. Protected CI has not run for this local change.
+
+The subsequent [G2 environment investigation](Environments-1.0.md) isolates the
+sync-folder signing failure and fixes modern registry-bundle resource lookup.
+It records successful local verification of both build engines without widening
+the published support promise.
