@@ -97,6 +97,16 @@ reviewed CocoaPods CLI, checks their immutable identities and lock checksums, an
 still verifies every selected installed payload. Baseline build and migration
 remain unverified until the next hosted attempt.
 
+[The fifth attempt](https://github.com/Alexsvensson99/PkgLift/actions/runs/35146027696)
+passed both refusal controls, the independent AWS baseline build, the partial
+migration, generated-script/structural checks, exact SwiftPM resolution and the
+fresh final build. Its last full-tree check rejected the newly created
+`Grid Feed.xcworkspace/xcshareddata/swiftpm` directory itself, although the
+reviewed policy already allowed the dependency files beneath it. The runner now
+allows that exact directory node (and the corresponding project workspace node),
+rejecting files or symlinks in its place and unrelated siblings. The hosted result
+remains failed until the corrected final gate has run successfully.
+
 ## Selected cases
 
 These are three distinct projects from three independent repositories. One is a

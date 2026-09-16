@@ -226,7 +226,9 @@ def changed_paths(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[s
 def _allowed_dependency_path(path: str) -> bool:
     allowed_exact = {"Podfile", "Podfile.lock", f"{PROJECT}/project.pbxproj", f"{WORKSPACE}/contents.xcworkspacedata"}
     allowed_exact.update({"Pods", ".pkglift", f"{PROJECT}/project.xcworkspace",
-                          f"{PROJECT}/project.xcworkspace/xcshareddata", f"{WORKSPACE}/xcshareddata"})
+                          f"{PROJECT}/project.xcworkspace/xcshareddata", f"{WORKSPACE}/xcshareddata",
+                          f"{PROJECT}/project.xcworkspace/xcshareddata/swiftpm",
+                          f"{WORKSPACE}/xcshareddata/swiftpm"})
     allowed_prefixes = ("Pods/", ".pkglift/", f"{PROJECT}/project.xcworkspace/xcshareddata/swiftpm/",
                         f"{WORKSPACE}/xcshareddata/swiftpm/")
     return path in allowed_exact or path.startswith(allowed_prefixes)
@@ -234,7 +236,10 @@ def _allowed_dependency_path(path: str) -> bool:
 
 def validate_dependency_only_delta(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[str]:
     changes = changed_paths(before, after)
-    bad = [path for path in changes if not _allowed_dependency_path(path)]
+    swiftpm_directories = {f"{PROJECT}/project.xcworkspace/xcshareddata/swiftpm",
+                           f"{WORKSPACE}/xcshareddata/swiftpm"}
+    bad = [path for path in changes if not _allowed_dependency_path(path)
+           or (path in swiftpm_directories and after.get(path, {}).get("kind") != "directory")]
     require(not bad, "non-dependency files changed: " + ", ".join(bad[:10]))
     return changes
 

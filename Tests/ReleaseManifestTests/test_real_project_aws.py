@@ -209,6 +209,19 @@ class SnapshotAndDeltaTests(unittest.TestCase):
         with self.assertRaises(aws.QualificationError):
             aws.validate_dry_run_output(expected + "- AmazonIVSPlayer\n")
 
+    def test_new_swiftpm_parent_directory_is_allowed_but_file_or_sibling_is_not(self):
+        for directory in (f"{aws.WORKSPACE}/xcshareddata/swiftpm",
+                          f"{aws.PROJECT}/project.xcworkspace/xcshareddata/swiftpm"):
+            with self.subTest(directory=directory):
+                generated = {directory: {"kind": "directory", "mode": 0o755},
+                             directory + "/Package.resolved": {"kind": "file", "sha256": "pin"}}
+                self.assertEqual(aws.validate_dependency_only_delta({}, generated), sorted(generated))
+                for entry in [{"kind": "file", "sha256": "wrong"}, {"kind": "symlink", "target": "outside"}]:
+                    with self.assertRaises(aws.QualificationError):
+                        aws.validate_dependency_only_delta({}, {directory: entry})
+        with self.assertRaises(aws.QualificationError):
+            aws.validate_dependency_only_delta({}, {f"{aws.WORKSPACE}/xcshareddata/unreviewed": {"kind": "file"}})
+
     def test_dependency_delta_allows_reviewed_paths_only(self):
         before = {"Podfile": {"sha256": "a"}, "App/View.swift": {"sha256": "a"}}
         after = {"Podfile": {"sha256": "b"}, "App/View.swift": {"sha256": "a"},
