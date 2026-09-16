@@ -1,0 +1,515 @@
+{
+  "schemaVersion": 1,
+  "reviewedAtUTC": "2026-09-16T18:18:00Z",
+  "caseId": "aws-grid-feed",
+  "status": "static-intake-complete-runtime-gates-pending",
+  "scope": "Read-only inspection of pinned source-control/dependency metadata and the digest-verified Amazon archive as data. No dependency installation, upstream build, app launch, PkgLift command, migration, upstream script, or generated CocoaPods script was executed.",
+  "safetyClaim": "This record identifies observed inputs and pre-execution review gates. It is not a safety clearance, build result, migration result, binary audit, or license opinion.",
+  "cocoaPodsTooling": {
+    "versionRecordedInLockfile": "1.16.2",
+    "locallyInstalledVersionObserved": "1.17.0",
+    "versionDifferenceAcceptedByThisRecord": false,
+    "templatesStaticallyInspected": [
+      {
+        "path": "lib/cocoapods/generator/embed_frameworks_script.rb",
+        "sha256": "e90b10b5f9f0b90b1331b22c853bfbca1b5f09ec9efff7d719b7883d84a75e3e"
+      },
+      {
+        "path": "lib/cocoapods/generator/copy_xcframework_script.rb",
+        "sha256": "db32ea8fe1ebafe9c680288914af646d88311dab0c381470c1768e874be6294c"
+      },
+      {
+        "path": "lib/cocoapods/generator/script_phase_constants.rb",
+        "sha256": "5e7965c3e90964ff316e9efaf3a4c0893f7b349350ac1bf60f02e60c8489a7cb"
+      }
+    ],
+    "templateReviewObservation": "The reviewed 1.17.0 templates legitimately contain URL comments and rsync --delete; the embed template also contains eval for its generated codesign command. A broad token blacklist is not a valid generated-script review.",
+    "exactGeneratedScriptHashesAvailable": false,
+    "reasonExactHashesAreUnavailable": "Actual installed aggregate scripts have not been observed. Reconstruction was verified against the downloaded XCFramework metadata using the pinned generator, but exact comparison with future generated scripts remains a hosted runtime gate.",
+    "preInstallGate": "Implementation pins CocoaPods 1.17.0 and the recorded generator bytes. The original lock records 1.16.2; the runner permits only a COCOAPODS tool-version metadata change during locked setup and rejects dependency/checksum changes. Actual installation compatibility is pending the hosted attempt.",
+    "postInstallGate": "Before xcodebuild, require exact generated script bytes from the reviewed generator reconstruction policy in implementationReview, exact app/Pods shell-phase bodies and owners, and bounded file-list paths. Record their hashes. A template digest or blacklist by itself is insufficient."
+  },
+  "applicationSource": {
+    "repository": "https://github.com/aws-samples/amazon-ivs-grid-feed-for-ios-demo",
+    "commit": "5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d",
+    "commitTree": "e6cbbcbea38b3e95a529e09bdd16210ed39fa280",
+    "commitSignature": {
+      "verified": true,
+      "reason": "valid"
+    },
+    "commitParents": [
+      "2999e9170dbd24eb9b54503cf1b417f925aa04c4",
+      "9bea9f63c43c8f5a1d7974f8897d3de80e838c3b"
+    ],
+    "treeInventory": {
+      "recursiveListingTruncated": false,
+      "entryCount": 63,
+      "blobCount": 49,
+      "treeCount": 14,
+      "gitlinkCount": 0,
+      "symlinkCount": 0,
+      "executableBlobCount": 0,
+      "gitmodulesPresent": false,
+      "gitAttributesPresent": false,
+      "lfsConfigPresent": false,
+      "lfsPointerAudit": "No Git attributes or LFS configuration was present. Blob bodies other than the listed reviewed inputs were not scanned for pointer-shaped content.",
+      "swiftSourceCount": 12,
+      "storyboardCount": 2
+    },
+    "selection": {
+      "root": ".",
+      "project": "Grid Feed.xcodeproj",
+      "workspace": "Grid Feed.xcworkspace",
+      "target": "Grid Feed",
+      "scheme": {
+        "expectedName": "Grid Feed",
+        "committedSharedScheme": false,
+        "schemeActionsReviewed": false,
+        "executionGate": "Discover with xcodebuild -list -json after dependency setup. Require exactly the expected buildable scheme; do not create or modify a scheme."
+      }
+    },
+    "workspaceReferences": [
+      {
+        "location": "group:Grid Feed.xcodeproj",
+        "trackedAtPin": true
+      },
+      {
+        "location": "group:Pods/Pods.xcodeproj",
+        "trackedAtPin": false,
+        "ignoredByGit": true,
+        "executionGate": "The generated Pods project and every generated build phase must be inventoried and reviewed before the first build."
+      }
+    ],
+    "buildSettingsObserved": {
+      "podfileIOSPlatform": "14.0",
+      "projectIOSDeploymentTarget": "15.0",
+      "swiftVersion": "5.0",
+      "xcodeCompatibilityVersion": "Xcode 14.0",
+      "codeSignStyle": "Automatic",
+      "developmentTeamPresent": true,
+      "executionRequirement": "Use the reviewed generic iOS Simulator destination with CODE_SIGNING_ALLOWED=NO and verify that no signing identity or provisioning operation is requested."
+    },
+    "networkAndCredentials": {
+      "credentialsRequiredForBuild": false,
+      "credentialPatternFoundInReviewedMetadata": false,
+      "constantsFileContainsPublicPlaybackURLs": true,
+      "appLaunchAllowed": false,
+      "networkPlaybackAllowed": false,
+      "note": "The inspected Constants.swift contains public CloudFront image URLs and Amazon IVS playback URLs. A build does not authorize launching the app or contacting those endpoints."
+    },
+    "podfile": {
+      "dynamicRubyObserved": false,
+      "useFrameworksObserved": false,
+      "preInstallHookObserved": false,
+      "postInstallHookObserved": false,
+      "postIntegrateHookObserved": false,
+      "targets": [
+        {
+          "name": "Grid Feed",
+          "dependencies": [
+            {
+              "name": "AmazonIVSPlayer",
+              "constraint": "~> 1.40.0",
+              "lockedVersion": "1.40.0"
+            },
+            {
+              "name": "SDWebImage",
+              "constraint": "~> 5.0",
+              "lockedVersion": "5.18.1",
+              "declarationOptions": {
+                "modular_headers": true
+              }
+            }
+          ]
+        }
+      ],
+      "cocoaPodsVersionInLockfile": "1.16.2"
+    },
+    "xcodeShellPhases": [
+      {
+        "name": "[CP] Check Pods Manifest.lock",
+        "shellPath": "/bin/sh",
+        "definitionSource": "Grid Feed.xcodeproj/project.pbxproj",
+        "definitionCoveredByProjectSha256": true,
+        "behaviorObserved": "diff Podfile.lock against Pods/Manifest.lock, fail on mismatch, and write SUCCESS to the declared derived output",
+        "reviewStatus": "reviewed-static-inline",
+        "executionGate": "Require exact Podfile.lock and Manifest.lock equality before allowing the phase."
+      },
+      {
+        "name": "[CP] Embed Pods Frameworks",
+        "shellPath": "/bin/sh",
+        "definitionSource": "Grid Feed.xcodeproj/project.pbxproj",
+        "invokedPath": "${PODS_ROOT}/Target Support Files/Pods-Grid Feed/Pods-Grid Feed-frameworks.sh",
+        "generatedScriptTrackedAtPin": false,
+        "inputFileListTrackedAtPin": false,
+        "outputFileListTrackedAtPin": false,
+        "reviewStatus": "unreviewed-generated-input",
+        "executionGate": "After the locked pod installation, capture SHA-256 and review the generated script plus both file lists and every referenced input before any xcodebuild invocation."
+      }
+    ],
+    "nonShellBuildPhases": [
+      "Sources",
+      "Frameworks",
+      "Resources"
+    ],
+    "committedSwiftPM": {
+      "packageManifestPresent": false,
+      "packageResolvedPresent": false,
+      "pluginsPresent": false,
+      "packageReferencesInProject": false
+    }
+  },
+  "dependencySpecifications": {
+    "amazonIVSPlayer": {
+      "identity": "AmazonIVSPlayer",
+      "version": "1.40.0",
+      "specRepository": "https://github.com/CocoaPods/Specs",
+      "specRepositoryCommit": "95fb77b21fd1363f579fbaf5684fab0ea796c31d",
+      "specPath": "Specs/4/3/2/AmazonIVSPlayer/1.40.0/AmazonIVSPlayer.podspec.json",
+      "specUrl": "https://raw.githubusercontent.com/CocoaPods/Specs/95fb77b21fd1363f579fbaf5684fab0ea796c31d/Specs/4/3/2/AmazonIVSPlayer/1.40.0/AmazonIVSPlayer.podspec.json",
+      "specSha1": "b1dbf89d0067d016ab734dc6e7ae799ea52101cd",
+      "lockfileSpecChecksumMatches": true,
+      "specSha256": "3fdb29a9f3b1440b5cfbd51e34af247be44dd376aeaf6424074ab6d07e099770",
+      "preInstallExecutionGate": "Fetch this immutable spec before pod install, require both hashes and the reviewed absence of prepare_command, script phases and pod dependencies, then require the selected installed spec to match it.",
+      "minimumIOS": "13.0",
+      "prepareCommandPresent": false,
+      "scriptPhasesPresent": false,
+      "podDependencies": [],
+      "transitiveClosure": {
+        "kind": "vendored-binary-leaf",
+        "declaredPodDependencyCount": 0,
+        "vendoredFramework": "AmazonIVSPlayer.xcframework"
+      },
+      "binaryArchive": {
+        "url": "https://player.live-video.net/1.40.0/AmazonIVSPlayer.tgz",
+        "type": "tgz",
+        "declaredSha256": "e7cacfbcaead184d0efca1c53d656d64ee2a46721b9097198848156a5476c5d6",
+        "headObservedAtUTC": "2026-09-16T18:09:29Z",
+        "headContentLength": 24070782,
+        "headETag": "cebe1faa75da6c599d34d44f4fc2d019-3",
+        "headS3VersionId": "UeC6c5sixMb.QGencHxbHseaSRsHAAIF",
+        "bodyDownloaded": true,
+        "bodySha256Verified": true,
+        "archiveContentsReviewed": true,
+        "executionGate": "Download only in a disposable no-credential step, require the declared SHA-256 before extraction, reject unsafe archive paths or special files, and inventory every framework slice, signature, executable, symlink, resource, privacy manifest, script-shaped file and license before build.",
+        "offlineDataInspection": {
+          "date": "2026-09-16",
+          "archiveBytes": 24070782,
+          "entryCount": 138,
+          "wrapperDirectory": "AmazonIVSPlayer",
+          "inspection": {
+            "sha256": "e7cacfbcaead184d0efca1c53d656d64ee2a46721b9097198848156a5476c5d6",
+            "regularFiles": 95,
+            "directories": 43,
+            "symlinks": 0,
+            "frameworkExecutables": 2,
+            "signatureFiles": 2,
+            "expandedBytes": 105710054,
+            "sliceIdentifiers": [
+              "ios-arm64",
+              "ios-arm64_x86_64-simulator"
+            ]
+          },
+          "claimBoundary": "Archive paths, file hashes and declared Mach-O metadata inspected as data. Signature files counted only; signatures and binary behavior are not authenticated or audited. No binary was executed."
+        }
+      },
+      "license": {
+        "typeDeclaredByPodspec": "Custom",
+        "urlDeclaredByPodspec": "https://player.live-video.net/LICENSE.txt",
+        "urlIsVersionBound": false,
+        "observedSha256": "177afaa4a305169ccd9e6200243ccde30e0ca649fbe1b3cf2046171440c35636",
+        "observedLastModified": "2025-07-31T21:22:51Z",
+        "observedETag": "47c18951e946d8363b161ab1ecc7d1f2",
+        "observedS3VersionId": "Vbo9XSTbcPUn7FUTtvyFUhhGNKvN3jDo",
+        "licenseOpinionMade": false,
+        "executionGate": "Require the observed bytes or stop for review. The mutable license URL and its third-party notices are not cryptographically bound to version 1.40.0 by the podspec."
+      }
+    },
+    "sdWebImage": {
+      "identity": "SDWebImage",
+      "version": "5.18.1",
+      "specRepository": "https://github.com/CocoaPods/Specs",
+      "specRepositoryCommit": "836af618f46996d9e8883146851b811a63c76d8e",
+      "specPath": "Specs/1/1/7/SDWebImage/5.18.1/SDWebImage.podspec.json",
+      "specUrl": "https://raw.githubusercontent.com/CocoaPods/Specs/836af618f46996d9e8883146851b811a63c76d8e/Specs/1/1/7/SDWebImage/5.18.1/SDWebImage.podspec.json",
+      "specSha1": "ebdbcebc7933a45226d9313bd0118bc052ad458b",
+      "lockfileSpecChecksumMatches": true,
+      "specSha256": "21f5f15b959199ab1eab0c01ab484a1a16e7760b6e4e292622fa32fc5702861c",
+      "preInstallExecutionGate": "Fetch this immutable spec before pod install, require both hashes and the reviewed absence of prepare_command, script phases and external pod dependencies, then require the selected installed spec to match it.",
+      "upstreamRepository": "https://github.com/SDWebImage/SDWebImage",
+      "tag": "5.18.1",
+      "tagType": "lightweight",
+      "tagCommit": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+      "tagMatchesReviewedCommit": true,
+      "upstreamCommitSignature": {
+        "verified": false,
+        "reason": "unsigned"
+      },
+      "upstreamCommitTree": "ef9e6b47bbc4ef4c7766f5d91ddfe2e37a011483",
+      "prepareCommandPresent": false,
+      "scriptPhasesPresent": false,
+      "cocoaPods": {
+        "defaultSubspec": "Core",
+        "externalPodDependencies": [],
+        "sourceSelection": [
+          "SDWebImage/Core/*.{h,m}",
+          "WebImage/SDWebImage.h",
+          "SDWebImage/Private/*.{h,m}"
+        ],
+        "selectedRegularSourceCountFromPinnedTree": 148,
+        "resourceDeclarations": [],
+        "frameworks": [
+          "ImageIO"
+        ]
+      },
+      "swiftPM": {
+        "toolsVersion": "5.3",
+        "manifestUrl": "https://raw.githubusercontent.com/SDWebImage/SDWebImage/6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7/Package.swift",
+        "manifestSha256": "351f64c27724e6c1093403281257aed7118bf3456cf2f0b39bef64b9cfd8ae6e",
+        "externalPackageDependencies": [],
+        "plugins": [],
+        "binaryTargets": [],
+        "packageResolvedPresent": false,
+        "preResolutionExecutionGate": "Before any Swift package resolution or manifest evaluation, require the reviewed Package.swift SHA-256 and the exact tag-to-commit binding recorded here.",
+        "selectedProduct": "SDWebImage",
+        "selectedTargets": [
+          "SDWebImage"
+        ],
+        "targetPath": "SDWebImage",
+        "sourceDirectories": [
+          "Core",
+          "Private"
+        ],
+        "selectedRegularSourceCountFromPinnedTree": 147,
+        "resourceDeclaration": {
+          "rule": "copy",
+          "path": "Resources/PrivacyInfo.xcprivacy",
+          "pathMode": "120000",
+          "symlinkTarget": "../../WebImage/PrivacyInfo.xcprivacy",
+          "symlinkSha256": "bc1f3592548b2319ca87acff5bfdbbcf5684b42d92a194f8e051d4bbe97aeabd",
+          "resolvedPath": "WebImage/PrivacyInfo.xcprivacy",
+          "resolvedSha256": "03b2c70833a331a2b1efd11ff168ed02a8eadfd5e7d1fbf30eecc7509a4aea47",
+          "expectedBuiltProductRelativePath": "SDWebImage_SDWebImage.bundle/PrivacyInfo.xcprivacy",
+          "expectedBuiltPathStatus": "inferred-not-run",
+          "builtProductGate": "Discover the actual build products and require exactly one semantically and byte-matching privacy manifest in the SDWebImage target resource bundle; do not trust the inferred path without readback."
+        }
+      },
+      "sourceControl": {
+        "recursiveTreeTruncated": false,
+        "entryCount": 471,
+        "gitlinkCount": 0,
+        "gitAttributesSha256": "b62554e1d546ab406ba2ec7cefb25b4b4094fb8073f4b810b17e2f7d54ce776d",
+        "gitAttributesContent": "*.mdj binary",
+        "lfsFilterDeclared": false,
+        "selectedSourceTreeObjects": {
+          "SDWebImage/Core": "bd52aea9f17b525503cf66bf2b36e8bcad30859c",
+          "SDWebImage/Private": "dfc8f6c511f8981a60fe169661cf486bcd8cb6f1",
+          "SDWebImage/Resources": "9b5e15e08d9b6cc881a14a15768f9dd56f834a4c",
+          "WebImage": "59f330b45fba2a0c9fd43ddd31bb5f41810abcd2"
+        },
+        "repositoryExecutableFiles": [
+          {
+            "path": "SDWebImage_logo.png",
+            "gitBlob": "ee2d81f34ce7299b384b26533426c6c3bb9d02d3",
+            "referencedBySelectedManifest": false,
+            "executionAllowed": false
+          },
+          {
+            "path": "Scripts/build-frameworks.sh",
+            "gitBlob": "82a7dd321c399b046548013b0dd48a9fcec86897",
+            "sha256": "bef6701a528ff71d4be9f761b4234d419353f732c116b51668260cb0dc10614e",
+            "referencedBySelectedManifest": false,
+            "executionAllowed": false
+          },
+          {
+            "path": "Scripts/create-xcframework.sh",
+            "gitBlob": "660b6d64dcc264975afb9d5bd3a1d30e31beaa8c",
+            "sha256": "064662c792e8505c4938e706c64bcc7cea600db280a7951112be1386673b27fc",
+            "referencedBySelectedManifest": false,
+            "executionAllowed": false
+          }
+        ]
+      },
+      "license": {
+        "spdx": "MIT",
+        "path": "LICENSE",
+        "sha256": "db5ae21958ad3871339a53acfabc7e9c20553a35761878dfd304573de1e88740",
+        "licenseOpinionMade": false
+      },
+      "integrationDifference": {
+        "observed": true,
+        "cocoaPodsDefaultCoreDeclaresPrivacyResource": false,
+        "swiftPMProductDeclaresPrivacyResource": true,
+        "executionGate": "Inspect the resolved package and final built products. Record the resource delta and do not claim byte-for-byte CocoaPods/SwiftPM equivalence from this intake."
+      }
+    }
+  },
+  "allowedMetadataInputs": [
+    {
+      "owner": "aws-grid-feed",
+      "path": ".gitignore",
+      "sha256": "ca3cbaf2a1d3205f21e4b07355ad4e03d5e4f0df12d90fa15d2977a839f51f4f"
+    },
+    {
+      "owner": "aws-grid-feed",
+      "path": "LICENSE",
+      "sha256": "7cb750713252efd1d578837ba8785b61319109906f0c10b87adab7cf4badfc42"
+    },
+    {
+      "owner": "aws-grid-feed",
+      "path": "README.md",
+      "sha256": "bbf93b8ea52ca75bd2423d1d81e68f7048528ce105f6303f7f90415fd28217ff"
+    },
+    {
+      "owner": "aws-grid-feed",
+      "path": "Podfile",
+      "sha256": "35067ca46eea7cbb342159876eef4f161a1c4cfd3f049e116a14750db10e406c"
+    },
+    {
+      "owner": "aws-grid-feed",
+      "path": "Podfile.lock",
+      "sha256": "1f7616891fb05db30a51ce628146f73b4b94ee177c20c358f2e6416e262aec8c"
+    },
+    {
+      "owner": "aws-grid-feed",
+      "path": "Grid Feed.xcodeproj/project.pbxproj",
+      "sha256": "64335e159b0d5aa2d6fe1bce3cd52ef3ef55bf6c9b6436eda3e7a98fedcde23c"
+    },
+    {
+      "owner": "aws-grid-feed",
+      "path": "Grid Feed.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+      "sha256": "7f3b00b5c3fdb45242d7b87e1e5c4e25d1fa8129a16c94295ecc4e8ea2235c5f"
+    },
+    {
+      "owner": "aws-grid-feed",
+      "path": "Grid Feed.xcworkspace/contents.xcworkspacedata",
+      "sha256": "59cd30dad60c7cc8c5a30bf3f4c72bcb78ebfeb346ce9999b1d34b62139d04ec"
+    },
+    {
+      "owner": "aws-grid-feed",
+      "path": "Grid Feed/Constants.swift",
+      "sha256": "cda167dcfd05497b114d5f810e64ba38e1c8476ec8c5f90ed0e58e275058799e"
+    },
+    {
+      "owner": "cocoapods-specs",
+      "path": "Specs/4/3/2/AmazonIVSPlayer/1.40.0/AmazonIVSPlayer.podspec.json",
+      "repositoryCommit": "95fb77b21fd1363f579fbaf5684fab0ea796c31d",
+      "sha256": "3fdb29a9f3b1440b5cfbd51e34af247be44dd376aeaf6424074ab6d07e099770"
+    },
+    {
+      "owner": "cocoapods-specs",
+      "path": "Specs/1/1/7/SDWebImage/5.18.1/SDWebImage.podspec.json",
+      "repositoryCommit": "836af618f46996d9e8883146851b811a63c76d8e",
+      "sha256": "21f5f15b959199ab1eab0c01ab484a1a16e7760b6e4e292622fa32fc5702861c"
+    },
+    {
+      "owner": "sdwebimage",
+      "path": "Package.swift",
+      "repositoryCommit": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+      "sha256": "351f64c27724e6c1093403281257aed7118bf3456cf2f0b39bef64b9cfd8ae6e"
+    },
+    {
+      "owner": "sdwebimage",
+      "path": "SDWebImage.podspec",
+      "repositoryCommit": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+      "sha256": "33225e69aeacb876374f95bb4c22f96c647a907cdc94ac838af15115188568e3"
+    },
+    {
+      "owner": "sdwebimage",
+      "path": "LICENSE",
+      "repositoryCommit": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+      "sha256": "db5ae21958ad3871339a53acfabc7e9c20553a35761878dfd304573de1e88740"
+    },
+    {
+      "owner": "sdwebimage",
+      "path": ".gitattributes",
+      "repositoryCommit": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+      "sha256": "b62554e1d546ab406ba2ec7cefb25b4b4094fb8073f4b810b17e2f7d54ce776d"
+    },
+    {
+      "owner": "sdwebimage",
+      "path": "WebImage/SDWebImage.h",
+      "repositoryCommit": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+      "sha256": "4735b77dac9c58a9c5a22f1ad36486d8e15a512dc0d5b632e163d745da6b08a0"
+    },
+    {
+      "owner": "sdwebimage",
+      "path": "WebImage/PrivacyInfo.xcprivacy",
+      "repositoryCommit": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+      "sha256": "03b2c70833a331a2b1efd11ff168ed02a8eadfd5e7d1fbf30eecc7509a4aea47"
+    },
+    {
+      "owner": "amazon-ivs-player-license",
+      "url": "https://player.live-video.net/LICENSE.txt",
+      "s3VersionId": "Vbo9XSTbcPUn7FUTtvyFUhhGNKvN3jDo",
+      "sha256": "177afaa4a305169ccd9e6200243ccde30e0ca649fbe1b3cf2046171440c35636"
+    }
+  ],
+  "unresolvedExecutionGates": [
+    {
+      "id": "amazon-binary-body",
+      "severity": "blocking",
+      "requirement": "Local archive digest and data inventory passed. Repeat these checks on the hosted download and require installed XCFramework file hashes to match the digest-verified payload before any build."
+    },
+    {
+      "id": "amazon-license-binding",
+      "severity": "blocking-on-change",
+      "requirement": "Require the observed license bytes/S3 version or stop for review because the podspec URL is not version-bound."
+    },
+    {
+      "id": "generated-cocoapods-project-and-scripts",
+      "severity": "blocking",
+      "requirement": "Implementation pins CocoaPods 1.17.0 and the recorded generator bytes. The original lock records 1.16.2; the runner permits only a COCOAPODS tool-version metadata change during locked setup and rejects dependency/checksum changes. Actual installation compatibility is pending the hosted attempt. Before xcodebuild, require exact generated script bytes from the reviewed generator reconstruction policy in implementationReview, exact app/Pods shell-phase bodies and owners, and bounded file-list paths. Record their hashes. A template digest or blacklist by itself is insufficient."
+    },
+    {
+      "id": "scheme-discovery",
+      "severity": "blocking",
+      "requirement": "Discover the implicit Grid Feed scheme without modifying source; reject missing or ambiguous discovery. No scheme actions were available for static review."
+    },
+    {
+      "id": "resolved-source-identities",
+      "severity": "blocking",
+      "requirement": "Verify the immutable spec and Package.swift hashes before pod install or SwiftPM manifest evaluation. Then bind installed CocoaPods sources and the resolved SwiftPM checkout to the reviewed specs, SDWebImage commit and complete content inventories; tags alone are insufficient."
+    },
+    {
+      "id": "sdwebimage-resource-difference",
+      "severity": "blocking-for-equivalence-claim",
+      "requirement": "Inspect built resource products and record that SwiftPM adds the reviewed privacy manifest while the CocoaPods Core spec declares no resource."
+    },
+    {
+      "id": "source-and-generated-tree-baselines",
+      "severity": "blocking",
+      "requirement": "Create SHA-256 inventories for the complete fetched source tree and every generated dependency input before execution, then prove the allowed deltas phase by phase."
+    },
+    {
+      "id": "no-app-launch-or-service-use",
+      "severity": "blocking-policy",
+      "requirement": "The harness may compile only. It must not launch the app, access embedded playback/image URLs, use credentials, sign, or contact live streaming services."
+    }
+  ],
+  "decision": {
+    "staticMetadataSuitableForHarnessPreparation": true,
+    "dependencyExecutionAuthorizedByThisRecord": false,
+    "baselineBuildAuthorizedByThisRecord": false,
+    "migrationAuthorizedByThisRecord": false,
+    "reason": "Inputs are sufficiently pinned to construct fail-closed checks. Local archive data inspection passed; generated CocoaPods scripts, installation compatibility, scheme discovery and resolved source inventories remain runtime gates."
+  },
+  "implementationReview": {
+    "helper": "Scripts/validate-real-project-cocoapods.rb",
+    "generatedScriptPolicy": "Before building, compare full generated script bytes with output reconstructed using the SHA-256-pinned CocoaPods 1.17.0 generator templates, fixed framework identity/configurations, and validated XCFramework metadata. Require exact app and Pods shell-phase bodies and owners; constrain and hash generated file lists. No generated script is executed by this validator.",
+    "validationStatus": "offline-guards-tested; actual installed AWS outputs not yet observed",
+    "staticAuditStillNotExecutionEvidence": true,
+    "realArchiveGeneratorSmoke": {
+      "date": "2026-09-16",
+      "status": "passed-data-parsing-only",
+      "dynamicFramework": true,
+      "sliceIdentifiers": [
+        "ios-arm64",
+        "ios-arm64_x86_64-simulator"
+      ],
+      "embedScriptBytes": 8539,
+      "copyScriptBytes": 3580,
+      "upstreamCodeExecuted": false
+    }
+  }
+}

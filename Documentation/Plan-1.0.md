@@ -120,7 +120,7 @@ All three [repository-owned partial-migration cases](PartialMigration-1.0.md#mai
 including existing-SwiftPM coexistence, passed on main `72f19b3…` with fresh
 hosted post-migration builds and complete environment records. Conflicting-requirement
 refusal coverage is also integrated. The selected [pinned real-project protocol](RealProjectQualification-1.0.md)
-is planned only; no upstream migration or execution is claimed. Real-project and
+now includes a separate manual harness; no upstream migration or execution is claimed. Real-project and
 additional toolchain/shape evidence remain open.
 Deliver an evidence matrix separating read-only, repository-fixture and real-project results.
 

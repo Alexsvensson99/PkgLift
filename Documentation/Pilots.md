@@ -20,9 +20,9 @@ The read-only matrix does **not** run `pod install`, execute upstream scripts, a
 
 The separately prepared [1.0 real-project qualification protocol](RealProjectQualification-1.0.md)
 selects AWS Grid Feed as a future positive partial-migration candidate, with
-FirebaseUI and Hammerspoon as read-only refusal controls. It records source
-intake and acceptance criteria only; it does not expand this workflow's execution
-boundary or supply new upstream build/migration evidence.
+FirebaseUI and Hammerspoon as read-only refusal controls. Its separate manual harness is prepared with source intake and acceptance criteria;
+it does not expand this workflow's execution boundary or supply new upstream
+build/migration evidence.
 
 | Case | Repository and pinned commit | Verified outcome | Tracking |
 |---|---|---|---|

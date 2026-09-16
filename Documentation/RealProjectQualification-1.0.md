@@ -1,6 +1,6 @@
 # Real-project qualification protocol for 1.0
 
-Status: **selection and protocol prepared; execution not started**. Reviewed on
+Status: **selection, protocol and manual harness prepared; upstream execution not started**. Reviewed on
 2026-09-16 against PkgLift main
 [`72f19b3e3163d401b57950d02bd5fc191328ce2a`](https://github.com/Alexsvensson99/PkgLift/commit/72f19b3e3163d401b57950d02bd5fc191328ce2a).
 This is the next G3 work package in [the 1.0 plan](Plan-1.0.md#g3--prove-real-and-partial-migrations).
@@ -10,6 +10,45 @@ inspected for this selection. No upstream installation, build or migration was r
 The [intake manifest](Evidence/RealProjectQualification-1.0/intake.json) records
 exact source URLs and SHA-256 digests of the inspected files, with every execution
 status set to `not-run`.
+
+## Manual harness
+
+The separate [G3 workflow](../.github/workflows/real-project-qualification.yml)
+has only `workflow_dispatch`; ordinary PR, main and scheduled pilots remain
+unchanged. It builds and verifies one same-run PkgLift/registry artifact, runs both
+[refusal controls](../Scripts/run-real-project-refusal.py), and permits the
+[AWS runner](../Scripts/run-real-project-aws.py) only after both controls succeed.
+An always-running final gate requires all three jobs to succeed. Failed or skipped
+phases cannot satisfy it.
+
+All consumer jobs use disposable hosted macOS 15/arm64 with Xcode 16.4. The AWS
+runner requires CocoaPods 1.17.0 and rejects toolchain drift rather than installing
+an unreviewed replacement. Git checkout disables inherited configuration, hooks
+and attribute filters. Every external command has a timeout. Only selected,
+portable reports are uploaded; source copies, raw project/lock data and build
+directories remain outside the upload paths.
+
+The [execution intake](Evidence/RealProjectQualification-1.0/execution-intake.json)
+records immutable dependency specifications, archive and manifest hashes, and the
+remaining runtime checks. The [CocoaPods validator](../Scripts/validate-real-project-cocoapods.rb)
+compares both generated scripts with exact output from hash-pinned generator
+templates and validated framework metadata. It also binds the app/Pods phase
+bodies, owners and complete input/output file lists. These checks must pass before
+either build; offline tests do not claim that future generated inputs already pass.
+
+The Amazon 1.40.0 archive was downloaded and inspected as data: its declared
+SHA-256, 138-entry inventory and two declared Mach-O slices passed. Generator
+reconstruction also passed against its real framework metadata. This does not
+authenticate the binary signatures or establish buildability.
+
+Offline regression tests are under `Tests/ReleaseManifestTests/test_real_project*.py`.
+They exercise acceptance guards and the workflow boundary, not upstream buildability.
+On 2026-09-16, all 182 release/harness Python tests passed; repository YAML
+validation passed for 12 files, eight pinned workflows and two issue forms.
+Ruby syntax and reconstruction using real framework metadata also passed.
+The harness must first be reviewed and integrated, then explicitly dispatched at
+the reviewed ref. No hosted run, successful AWS migration, new G3 qualification
+result or public release is claimed by its implementation.
 
 ## Selected cases
 
@@ -90,8 +129,9 @@ coverage, not macOS build or migration support.
 The next execution proposal is bounded to **one AWS baseline/partial migration
 and two read-only controls**, in disposable hosted GitHub macOS runners. Preserve
 the existing ten-case workflow and its upstream apply prohibition; implement a
-separate opt-in harness only when that work is authorized. No such harness,
-workflow dispatch, GitHub write or release action is part of this preparation.
+separate opt-in harness. Its implementation is now prepared under the subsequent
+implementation approval. Workflow dispatch, upstream execution, GitHub writes and
+release actions have not been performed by this preparation.
 
 Use the already qualified macOS 15/arm64, Xcode 16.4 lane as the first proposed
 cell. Record actual OS build, architecture, Xcode/Swift/SDK, Ruby and CocoaPods
