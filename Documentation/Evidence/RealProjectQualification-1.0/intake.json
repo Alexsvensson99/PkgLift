@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "reviewedAtUTC": "2026-09-16T17:56:21Z",
+  "status": "prepared-not-executed",
+  "pkgLiftSourceCommit": "72f19b3e3163d401b57950d02bd5fc191328ce2a",
+  "scope": "Static source intake only. Expected classifications come from existing read-only pilot contracts; no new migration or build outcome is claimed.",
+  "cases": [
+    {
+      "id": "aws-grid-feed",
+      "role": "positive-candidate",
+      "executionStatus": "not-run",
+      "repository": "aws-samples/amazon-ivs-grid-feed-for-ios-demo",
+      "commit": "5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d",
+      "root": ".",
+      "project": "Grid Feed.xcodeproj",
+      "workspace": "Grid Feed.xcworkspace",
+      "licenseAtPin": {
+        "spdx": "MIT-0",
+        "url": "https://raw.githubusercontent.com/aws-samples/amazon-ivs-grid-feed-for-ios-demo/5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d/LICENSE",
+        "sha256": "7cb750713252efd1d578837ba8785b61319109906f0c10b87adab7cf4badfc42"
+      },
+      "expectedClassification": {
+        "exactAutoSet": [
+          "SDWebImage"
+        ],
+        "requiredNonAuto": [
+          "AmazonIVSPlayer"
+        ]
+      },
+      "sourceEvidence": [
+        {
+          "path": "Podfile",
+          "url": "https://raw.githubusercontent.com/aws-samples/amazon-ivs-grid-feed-for-ios-demo/5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d/Podfile",
+          "sha256": "35067ca46eea7cbb342159876eef4f161a1c4cfd3f049e116a14750db10e406c"
+        },
+        {
+          "path": "Podfile.lock",
+          "url": "https://raw.githubusercontent.com/aws-samples/amazon-ivs-grid-feed-for-ios-demo/5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d/Podfile.lock",
+          "sha256": "1f7616891fb05db30a51ce628146f73b4b94ee177c20c358f2e6416e262aec8c"
+        },
+        {
+          "path": "Grid Feed.xcworkspace/contents.xcworkspacedata",
+          "url": "https://raw.githubusercontent.com/aws-samples/amazon-ivs-grid-feed-for-ios-demo/5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d/Grid%20Feed.xcworkspace/contents.xcworkspacedata",
+          "sha256": "59cd30dad60c7cc8c5a30bf3f4c72bcb78ebfeb346ce9999b1d34b62139d04ec"
+        },
+        {
+          "path": "Grid Feed.xcodeproj/project.pbxproj",
+          "url": "https://raw.githubusercontent.com/aws-samples/amazon-ivs-grid-feed-for-ios-demo/5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d/Grid%20Feed.xcodeproj/project.pbxproj",
+          "sha256": "64335e159b0d5aa2d6fe1bce3cd52ef3ef55bf6c9b6436eda3e7a98fedcde23c"
+        }
+      ],
+      "binaryDependencySpecification": {
+        "name": "AmazonIVSPlayer",
+        "version": "1.40.0",
+        "podspecUrl": "https://raw.githubusercontent.com/CocoaPods/Specs/master/Specs/4/3/2/AmazonIVSPlayer/1.40.0/AmazonIVSPlayer.podspec.json",
+        "podspecSha256": "3fdb29a9f3b1440b5cfbd51e34af247be44dd376aeaf6424074ab6d07e099770",
+        "archiveUrl": "https://player.live-video.net/1.40.0/AmazonIVSPlayer.tgz",
+        "declaredArchiveSha256": "e7cacfbcaead184d0efca1c53d656d64ee2a46721b9097198848156a5476c5d6",
+        "vendoredFramework": "AmazonIVSPlayer.xcframework",
+        "minimumIOS": "13.0"
+      }
+    },
+    {
+      "id": "firebaseui-project",
+      "role": "read-only-refusal",
+      "executionStatus": "not-run",
+      "repository": "firebase/FirebaseUI-iOS",
+      "commit": "c30af73fee50724dcd9a3acf70548d3e58c86dc7",
+      "root": "samples/swift",
+      "project": "FirebaseUI-demo-swift.xcodeproj",
+      "workspace": null,
+      "licenseAtPin": {
+        "spdx": "Apache-2.0",
+        "url": "https://raw.githubusercontent.com/firebase/FirebaseUI-iOS/c30af73fee50724dcd9a3acf70548d3e58c86dc7/LICENSE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      "expectedClassification": {
+        "exactAutoSet": [],
+        "required": {
+          "Firebase/Auth": "REVIEW"
+        },
+        "localPathPods": "BLOCKED/non-automatic"
+      },
+      "sourceEvidence": [
+        {
+          "path": "samples/swift/Podfile",
+          "url": "https://raw.githubusercontent.com/firebase/FirebaseUI-iOS/c30af73fee50724dcd9a3acf70548d3e58c86dc7/samples/swift/Podfile",
+          "sha256": "4f9975a6d294259e8eebc4a2568762c9bc8ca6ee0ae781a970534c665eaad1ba"
+        },
+        {
+          "path": "samples/swift/FirebaseUI-demo-swift.xcodeproj/project.pbxproj",
+          "url": "https://raw.githubusercontent.com/firebase/FirebaseUI-iOS/c30af73fee50724dcd9a3acf70548d3e58c86dc7/samples/swift/FirebaseUI-demo-swift.xcodeproj/project.pbxproj",
+          "sha256": "d3229cb62b64597b0969d71036bd984f5e07c282d82373e068e60594fed99935"
+        },
+        {
+          "path": "samples/swift/README.md",
+          "url": "https://raw.githubusercontent.com/firebase/FirebaseUI-iOS/c30af73fee50724dcd9a3acf70548d3e58c86dc7/samples/swift/README.md",
+          "sha256": "acbf113a959a334484ad260b49f6cc1a08abd94807f0b4fcc5d28e54979ba294"
+        }
+      ]
+    },
+    {
+      "id": "hammerspoon-workspace",
+      "role": "read-only-refusal",
+      "executionStatus": "not-run",
+      "repository": "Hammerspoon/hammerspoon",
+      "commit": "23e387e2805a9890066366e0ac96c71b27f0cfd5",
+      "root": ".",
+      "project": "Hammerspoon.xcodeproj",
+      "workspace": "Hammerspoon.xcworkspace",
+      "licenseAtPin": {
+        "spdx": "MIT",
+        "url": "https://raw.githubusercontent.com/Hammerspoon/hammerspoon/23e387e2805a9890066366e0ac96c71b27f0cfd5/LICENSE",
+        "sha256": "cf8cf5747cdd0d5a31607b1fdbd85da2e70d2a6bd7623430f15bcd9eb6c60e70"
+      },
+      "expectedClassification": {
+        "directEntryCount": 10,
+        "exactAutoSet": [],
+        "requiredFeatures": [
+          "dynamic Ruby",
+          "post_install"
+        ],
+        "requiredReasonCodes": {
+          "CocoaHTTPServer": "external_git_unpinned",
+          "Sentry": "external_git_evidence_incomplete"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "Podfile",
+          "url": "https://raw.githubusercontent.com/Hammerspoon/hammerspoon/23e387e2805a9890066366e0ac96c71b27f0cfd5/Podfile",
+          "sha256": "f6678e65a15af69831597f5a653182644b96479a85c442699178fe2e92091a68"
+        },
+        {
+          "path": "Podfile.lock",
+          "url": "https://raw.githubusercontent.com/Hammerspoon/hammerspoon/23e387e2805a9890066366e0ac96c71b27f0cfd5/Podfile.lock",
+          "sha256": "f6f05083a9e1c48917fc2be33a227c55a95b63754b3c01c8c06eff23349b34d0"
+        },
+        {
+          "path": "Hammerspoon.xcworkspace/contents.xcworkspacedata",
+          "url": "https://raw.githubusercontent.com/Hammerspoon/hammerspoon/23e387e2805a9890066366e0ac96c71b27f0cfd5/Hammerspoon.xcworkspace/contents.xcworkspacedata",
+          "sha256": "19046a425fe6476d73e7c55accd01845d3168501a851f48b60db11101dc413fe"
+        },
+        {
+          "path": "Hammerspoon.xcworkspace/xcshareddata/xcschemes/Hammerspoon.xcscheme",
+          "url": "https://raw.githubusercontent.com/Hammerspoon/hammerspoon/23e387e2805a9890066366e0ac96c71b27f0cfd5/Hammerspoon.xcworkspace/xcshareddata/xcschemes/Hammerspoon.xcscheme",
+          "sha256": "de18387a4e1b1b95a22473b537d518a342f2eb0b8ef7718d1c9f66da80a2f776"
+        },
+        {
+          "path": "Hammerspoon.xcodeproj/project.pbxproj",
+          "url": "https://raw.githubusercontent.com/Hammerspoon/hammerspoon/23e387e2805a9890066366e0ac96c71b27f0cfd5/Hammerspoon.xcodeproj/project.pbxproj",
+          "sha256": "cc3e384960e6fee339162c2b118a670cda0abba374e57d301bb5b4cb7f71986e"
+        }
+      ]
+    }
+  ]
+}
