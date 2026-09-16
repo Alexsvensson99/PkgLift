@@ -4,18 +4,17 @@ PkgLift v0.1.1 and later is distributed for Apple Silicon on macOS 14 or later.
 The public archive must contain a Developer ID-signed, Apple-notarized executable
 and the adjacent `PkgLift_PkgLiftRegistry.bundle` resource directory.
 
-[PkgLift v0.9.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.9.0)
-is published for source commit
-`eaecabf570d06ccff905ef45723c5e49d126c0ba` and is available through the
+[PkgLift v0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0)
+is the current public release at `7d976d70e66a584e2e25db9852ac0e53bb6201b9` and is available through the
 [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
-See the [0.9.0 release notes](ReleaseNotes-0.9.0.md) for the shipped scope.
+See the [0.10.0 release notes](ReleaseNotes-0.10.0.md) for its bounded CryptoSwift scope.
+
+[PkgLift v0.9.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.9.0)
+was published at `eaecabf570d06ccff905ef45723c5e49d126c0ba`.
+Its [release notes](ReleaseNotes-0.9.0.md) remain the historical record for the
+KeychainAccess and DeviceKit release scope.
 The [v0.6 release evidence](GeneratedPackageV06ReleaseEvidence.md) remains a
 historical record of that release's checks.
-
-The source now prepares **0.10.0**, an unpublished release candidate. See the
-[0.10.0 release notes](ReleaseNotes-0.10.0.md) for its bounded CryptoSwift scope.
-The public release and Homebrew remain at 0.9.0 until the protected publication
-workflow completes.
 
 ## Release credentials
 

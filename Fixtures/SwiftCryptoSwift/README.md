@@ -18,7 +18,7 @@ target. A passing source build alone is insufficient for admission.
 
 See [the 0.10 plan](../../Documentation/Plan-0.10.md). The pre-mapping
 `--phase equivalence` run passed with both registry entries absent; see
-[the admission record](../../Documentation/VerifiedConsumerMappings.md#cryptoswift-admission-for-010-unreleased).
+[the admission record](../../Documentation/VerifiedConsumerMappings.md#cryptoswift-admission-for-010).
 The fixture now runs `--phase migration` on the mapped source tree, requiring
 fresh dual builds and complete migration verification.
 
