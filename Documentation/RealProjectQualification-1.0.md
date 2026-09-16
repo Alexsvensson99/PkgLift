@@ -63,7 +63,15 @@ migration occurred, and G3 remains open.
 Both runners now create the local Git exclusion directory before recording the
 generated plan path. A regression initializes actual template-free repositories,
 checks both runners, and verifies that only the generated plan is ignored. All
-186 release/harness tests pass locally. Hosted verification of this fix is pending.
+187 release/harness tests pass locally. Hosted verification of this fix is pending.
+
+[The second attempt](https://github.com/Alexsvensson99/PkgLift/actions/runs/35143324501),
+on correction commit `b2a1acb`, passed both refusal controls and reached AWS intake.
+AWS then stopped before installation because the checkout validator expected one
+privacy-resource symlink across the entire SDWebImage repository; the pinned tree
+contains one for SDWebImage and another for SDWebImageMapKit. The validator now
+binds both exact paths and their reviewed target/hash while retaining SDWebImage
+as the selected product. Hosted verification of that correction remains pending.
 
 ## Selected cases
 

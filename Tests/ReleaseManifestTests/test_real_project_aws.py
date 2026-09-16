@@ -486,6 +486,32 @@ class PackageAndReportTests(unittest.TestCase):
             with self.assertRaises(aws.QualificationError):
                 aws.validate_swiftpm_checkout(root, lambda _root, args: aws.PACKAGE_REVISION if args[0] == "rev-parse" else "")
 
+    def test_privacy_resource_inventory_requires_both_reviewed_target_symlinks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "WebImage/PrivacyInfo.xcprivacy"
+            source.parent.mkdir(parents=True)
+            source.write_bytes(b"reviewed privacy manifest")
+            for relative in aws.PRIVACY_RESOURCE_SYMLINKS:
+                link = root / relative
+                link.parent.mkdir(parents=True)
+                link.symlink_to("../../WebImage/PrivacyInfo.xcprivacy")
+            with mock.patch.object(aws, "PRIVACY_RESOURCE_SHA256", hashlib.sha256(source.read_bytes()).hexdigest()):
+                evidence = aws.validate_privacy_resource_symlinks(root)
+                self.assertEqual(evidence["privacyResourcePath"], "SDWebImage/Resources/PrivacyInfo.xcprivacy")
+                self.assertEqual(evidence["reviewedPrivacyResourceSymlinks"], list(aws.PRIVACY_RESOURCE_SYMLINKS))
+
+                mapkit = root / "SDWebImageMapKit/Resources/PrivacyInfo.xcprivacy"
+                mapkit.unlink()
+                with self.assertRaises(aws.QualificationError):
+                    aws.validate_privacy_resource_symlinks(root)
+                mapkit.symlink_to("../../WebImage/PrivacyInfo.xcprivacy")
+                extra = root / "OtherTarget/Resources/PrivacyInfo.xcprivacy"
+                extra.parent.mkdir(parents=True)
+                extra.symlink_to("../../WebImage/PrivacyInfo.xcprivacy")
+                with self.assertRaises(aws.QualificationError):
+                    aws.validate_privacy_resource_symlinks(root)
+
     def test_built_privacy_resource_requires_reviewed_hash(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "PrivacyInfo.xcprivacy"

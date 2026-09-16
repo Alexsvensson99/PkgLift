@@ -42,6 +42,10 @@ PACKAGE_MANIFEST_URL = f"https://raw.githubusercontent.com/SDWebImage/SDWebImage
 PACKAGE_MANIFEST_SHA256 = "351f64c27724e6c1093403281257aed7118bf3456cf2f0b39bef64b9cfd8ae6e"
 PRIVACY_RESOURCE_SHA256 = "03b2c70833a331a2b1efd11ff168ed02a8eadfd5e7d1fbf30eecc7509a4aea47"
 PRIVACY_SYMLINK_SHA256 = "bc1f3592548b2319ca87acff5bfdbbcf5684b42d92a194f8e051d4bbe97aeabd"
+PRIVACY_RESOURCE_SYMLINKS = (
+    "SDWebImage/Resources/PrivacyInfo.xcprivacy",
+    "SDWebImageMapKit/Resources/PrivacyInfo.xcprivacy",
+)
 COCOAPODS_VERSION = "1.17.0"
 AMAZON_ARCHIVE_URL = "https://player.live-video.net/1.40.0/AmazonIVSPlayer.tgz"
 AMAZON_ARCHIVE_SHA256 = "e7cacfbcaead184d0efca1c53d656d64ee2a46721b9097198848156a5476c5d6"
@@ -772,6 +776,29 @@ def validate_package_resolved(document: Mapping[str, Any]) -> dict[str, Any]:
     return {"version": "5.18.1", "revision": PACKAGE_REVISION}
 
 
+def validate_privacy_resource_symlinks(checkout: Path) -> dict[str, Any]:
+    links = {path.relative_to(checkout).as_posix(): path
+             for path in checkout.rglob("PrivacyInfo.xcprivacy") if path.is_symlink()}
+    require(set(links) == set(PRIVACY_RESOURCE_SYMLINKS),
+            "reviewed SDWebImage privacy resource symlink inventory changed", "blocked-input")
+    for relative in PRIVACY_RESOURCE_SYMLINKS:
+        link = links[relative]
+        target_bytes = os.readlink(link).encode()
+        require(target_bytes == b"../../WebImage/PrivacyInfo.xcprivacy"
+                and sha256_bytes(target_bytes) == PRIVACY_SYMLINK_SHA256,
+                f"SDWebImage privacy resource symlink bytes changed: {relative}", "blocked-input")
+        target = link.resolve(strict=True)
+        require(_under(target, checkout.resolve())
+                and target.relative_to(checkout.resolve()).as_posix() == "WebImage/PrivacyInfo.xcprivacy"
+                and file_sha256(target) == PRIVACY_RESOURCE_SHA256,
+                f"SDWebImage privacy resource target/hash changed: {relative}", "blocked-input")
+    return {
+        "privacyResourceSHA256": PRIVACY_RESOURCE_SHA256,
+        "privacyResourcePath": PRIVACY_RESOURCE_SYMLINKS[0],
+        "reviewedPrivacyResourceSymlinks": list(PRIVACY_RESOURCE_SYMLINKS),
+    }
+
+
 def validate_swiftpm_checkout(checkout: Path, run_git) -> dict[str, Any]:
     require(checkout.is_dir() and not checkout.is_symlink(), "SDWebImage checkout is missing")
     head = run_git(checkout, ["rev-parse", "HEAD"]).strip()
@@ -786,14 +813,7 @@ def validate_swiftpm_checkout(checkout: Path, run_git) -> dict[str, Any]:
     require(not any(path.name in {"Plugins", "Plugin"} for path in checkout.rglob("*")),
             "SDWebImage checkout contains a plugin directory", "blocked-input")
     require(not (checkout / ".gitmodules").exists(), "SDWebImage checkout declares submodules", "blocked-input")
-    privacy_links = [path for path in checkout.rglob("PrivacyInfo.xcprivacy") if path.is_symlink()]
-    require(len(privacy_links) == 1, "reviewed SDWebImage privacy resource symlink is missing or ambiguous", "blocked-input")
-    privacy_target = privacy_links[0].resolve(strict=True)
-    require(os.readlink(privacy_links[0]) == "../../WebImage/PrivacyInfo.xcprivacy"
-            and sha256_bytes(os.readlink(privacy_links[0]).encode()) == PRIVACY_SYMLINK_SHA256,
-            "SDWebImage privacy resource symlink bytes changed", "blocked-input")
-    require(_under(privacy_target, checkout.resolve()) and file_sha256(privacy_target) == PRIVACY_RESOURCE_SHA256,
-            "SDWebImage privacy resource symlink target/hash changed", "blocked-input")
+    privacy_evidence = validate_privacy_resource_symlinks(checkout)
     require("PrivacyInfo.xcprivacy" in text, "SDWebImage manifest no longer declares reviewed privacy resource", "blocked-input")
     indexed = run_git(checkout, ["ls-files", "-s"]).splitlines()
     executable_entries = []
@@ -814,8 +834,7 @@ def validate_swiftpm_checkout(checkout: Path, run_git) -> dict[str, Any]:
             == "064662c792e8505c4938e706c64bcc7cea600db280a7951112be1386673b27fc",
             "unreferenced SDWebImage executable script bytes changed", "blocked-input")
     return {"revision": head, "manifestSHA256": file_sha256(manifest),
-            "privacyResourceSHA256": PRIVACY_RESOURCE_SHA256,
-            "privacyResourcePath": privacy_links[0].relative_to(checkout).as_posix(),
+            **privacy_evidence,
             "unreferencedExecutables": sorted(expected_executables)}
 
 

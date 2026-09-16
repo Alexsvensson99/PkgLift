@@ -510,6 +510,17 @@
       "embedScriptBytes": 8539,
       "copyScriptBytes": 3580,
       "upstreamCodeExecuted": false
+    },
+    "privacyLinkInventory": {
+      "repositoryCommit": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+      "paths": [
+        "SDWebImage/Resources/PrivacyInfo.xcprivacy",
+        "SDWebImageMapKit/Resources/PrivacyInfo.xcprivacy"
+      ],
+      "target": "../../WebImage/PrivacyInfo.xcprivacy",
+      "linkBlobSHA1": "44bc9be3b2201ae92b6758d703e5a616f7263f37",
+      "selectedProduct": "SDWebImage",
+      "observation": "Both module resource links occur in the complete pinned checkout; only SDWebImage is selected for migration."
     }
   }
 }
