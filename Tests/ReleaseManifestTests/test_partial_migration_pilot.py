@@ -1,8 +1,12 @@
 """Offline negative tests for the partial-migration pilot acceptance guards."""
 import copy
 import importlib.util
+import os
 from pathlib import Path
+import shutil
+import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 import uuid
@@ -17,6 +21,36 @@ SPEC.loader.exec_module(pilot)
 
 
 class OutputGuardTests(unittest.TestCase):
+    def test_helper_imports_preserve_a_clean_checkout_without_bytecode_override(self):
+        with tempfile.TemporaryDirectory(prefix="pkglift-partial-import-") as directory:
+            root = Path(directory)
+            scripts = root / "Scripts"
+            scripts.mkdir()
+            for name in ("run-partial-migration-pilot.py", "run-registry-consumer-pilot.py",
+                         "capture-environment.py"):
+                shutil.copyfile(ROOT / "Scripts" / name, scripts / name)
+            before = {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+            environment = dict(os.environ)
+            environment.pop("PYTHONDONTWRITEBYTECODE", None)
+            environment.pop("PYTHONPYCACHEPREFIX", None)
+            subprocess.run(
+                [sys.executable, "-c", """
+import importlib.util
+from pathlib import Path
+import runpy
+import sys
+root = Path(sys.argv[1])
+assert not sys.dont_write_bytecode
+runpy.run_path(str(root / 'Scripts/run-partial-migration-pilot.py'))
+spec = importlib.util.spec_from_file_location('capture_environment', root / 'Scripts/capture-environment.py')
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+""", str(root)], env=environment, check=True, capture_output=True, text=True,
+            )
+            after = {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+            self.assertEqual(after, before)
+            self.assertFalse(list(root.rglob("__pycache__")))
+
     def test_rejects_output_inside_checkout_before_creation_or_subprocess(self):
         output = ROOT / f".partial-migration-output-{uuid.uuid4()}"
         self.assertFalse(output.exists())

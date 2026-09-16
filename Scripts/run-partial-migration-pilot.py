@@ -11,6 +11,9 @@ import shutil
 import subprocess
 import sys
 
+# Helper imports must not dirty the checkout or its qualification metadata.
+sys.dont_write_bytecode = True
+
 ROOT = Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location('registry_pilot', ROOT / 'Scripts/run-registry-consumer-pilot.py')
 shared = importlib.util.module_from_spec(spec)
