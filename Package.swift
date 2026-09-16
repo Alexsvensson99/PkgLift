@@ -102,6 +102,14 @@ let package = Package(
         // MARK: - Test Targets
 
         .testTarget(
+            name: "PkgLiftPublicContractTests",
+            dependencies: [
+                "PkgLiftCore", "PkgLiftCocoaPods", "PkgLiftXcode",
+                "PkgLiftRegistry", "PkgLiftMigration", "PkgLiftVerification",
+            ]
+        ),
+
+        .testTarget(
             name: "PkgLiftInspectionTests",
             dependencies: ["PkgLiftInspection", "PkgLiftCocoaPods"]
         ),

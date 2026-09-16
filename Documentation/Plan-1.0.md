@@ -1,6 +1,7 @@
 # PkgLift 1.0 plan: a verified support and compatibility contract
 
-Status: planning complete; implementation and 1.0 release qualification have not started.
+Status: planning complete; G1 compatibility contract is implemented and locally verified.
+G2–G6 and public 1.0 release qualification remain open.
 Reviewed on 2026-09-16 against main `51d90970cebbd4612881fc101e5570145783e500`.
 The public baseline is [0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0),
 release commit `7d976d70e66a584e2e25db9852ac0e53bb6201b9`.
@@ -41,7 +42,7 @@ support promise, not a demonstrated implementation defect.
 
 | Roadmap requirement | Established evidence | Remaining 1.0 gate |
 |---|---|---|
-| Stable plan schema or explicit compatibility policy | [JSON contracts](JSONSchema.md), schema 1, additive inspection compatibility and exact `pkgLiftVersion` equality in [preflight](../Sources/PkgLiftMigration/MigrationPlanPreflight.swift). Older incomplete AUTO entries are refused. | G1: one versioned policy for CLI/JSON, executable plans and public Swift APIs, backed by compatibility examples/tests. |
+| Stable plan schema or explicit compatibility policy | [JSON contracts](JSONSchema.md), schema 1, additive inspection compatibility and exact `pkgLiftVersion` equality in [preflight](../Sources/PkgLiftMigration/MigrationPlanPreflight.swift). Older incomplete AUTO entries are refused. | G1: [versioned compatibility policy](Compatibility-1.0.md) and focused examples/tests are locally verified. Protected integration remains; G6 must freeze the exact release API baseline. |
 | Supported host/toolchain matrix | [Ordinary CI](../.github/workflows/positive-e2e.yml), [CodeQL](../.github/workflows/codeql.yml) and [release CI](../.github/workflows/release.yml) use macOS 15 with Xcode 16.4. [Distribution](Distribution.md) advertises arm64 macOS 14+. | G2: validate the lower host boundary and every advertised toolchain cell; distinguish binary execution from source compilation and project migration. |
 | Broad real-project coverage | [Ten pinned upstream pilots](Pilots.md) exercise analysis, planning, inert dry run and conservative outcomes. Amazon IVS full migration is historical v0.2.0 evidence. Current recurring full apply/build runs use repository-owned fixtures. | G3: current repeatable full-workflow evidence across real project shapes; historical success and read-only results do not close this gap. |
 | Recovery guidance for the complete workflow | [Migration safety](MigrationSafety.md#rollback-boundary), [interruption evidence](InterruptedMigrationValidation.md), [atomic tests](../Tests/PkgLiftMigrationTests/AtomicMigrationTests.swift) and [subprocess tests](../Tests/PkgLiftCLITests/MigrateInterruptionTests.swift) cover errors, handled signals, SIGKILL markers and refusal to reapply. | G4: a tested user recovery drill including the separate `pod install` and final-build boundary. Manual recovery may satisfy the gate. |
@@ -59,8 +60,9 @@ establish a working distribution process. They cannot substitute for a future
 
 ### G1 — Define the 1.0 compatibility contract
 
-**Priority: first. Status: open.** Deliver `Compatibility-1.0.md` and focused
-contract examples/tests in a subsequent implementation task.
+**Priority: first. Status: implemented and locally verified on 2026-09-16.** The
+[compatibility contract](Compatibility-1.0.md) and focused contract examples/tests
+are implemented. Public integration and the remaining qualification gates are separate.
 
 - Inventory public CLI commands/options/exit codes, JSON fields/reason codes,
   configuration and registry schemas, and the six exported library products
@@ -196,8 +198,8 @@ is publicly verified. Prior approval of 0.10.0 publication is not 1.0 publicatio
 
 ## Prioritization and version decision
 
-Start with **G1**, because its support promise determines G2's test matrix and
-G3's project selection. Then perform G2–G4, integrate their fixes through G5 and
+With **G1 locally verified**, the next work package is G2's environment matrix;
+G1 also determines G3's project selection. Perform G2–G4, integrate their fixes through G5 and
 prepare G6. Use one reviewed tracking item and bounded issues for these work
 packages when implementation is started; this local plan creates no GitHub issues
 or milestone and triggers no CI or release workflow.
@@ -212,7 +214,7 @@ be closed within the declared scope. Ship an intermediate 0.x only when a specif
 fix or contract change warrants separate user validation. No date or 1.0-readiness
 claim is made by completing this plan.
 
-## Validation of this planning change
+## Validation of the original planning change
 
 The review inspected current source, tests, workflows, documented evidence and
 live main/release/open-issue state. An independent read-only review covered pilot,
@@ -220,3 +222,14 @@ toolchain and recovery gaps. No new Swift build, pilot, consumer build, security
 scan or artifact qualification was performed: these are future work packages.
 Validate this documentation change by reviewing evidence claims, local links,
 anchors and whitespace. Existing protected CI remains mandatory if submitted for merge.
+
+## G1 implementation validation
+
+The [compatibility contract](Compatibility-1.0.md#local-g1-validation) records
+the CLI/JSON/library rules, six new regression/client tests, all 576 passing
+Swift tests, successful build and validation of 25 registry mappings. An
+independent source review checked the contract against implementation. The local
+Xcode 27 build required the native build engine after a Swift Build signing
+failure involving Finder metadata; this is not a qualified G2 support cell.
+No public integration, consumer migration qualification or 1.0 publication is
+claimed by this local result. G2–G6 remain open.

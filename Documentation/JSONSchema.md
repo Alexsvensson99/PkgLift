@@ -44,7 +44,7 @@ Each candidate continues to contain its source-ordered `reasons` string array. N
 
 `code` is the stable machine-readable value, `message` is the legacy human-readable reason, and `remediation` is optional guidance. For output produced by the current classifier, `reasonDetails[*].message` exactly equals `reasons[*]`. Older schema-1 documents without `reasonDetails` remain decodable. The details are reporting metadata and are never sufficient executable migration evidence.
 
-Current reason codes are grouped below. New codes may be added compatibly, so consumers must not treat an unknown code as permission to migrate.
+Current reason codes are grouped below. Generic JSON consumers should handle unknown reporting codes defensively and must never treat them as permission to migrate. Current Swift Codable enums reject unknown raw values; adding a case is not automatically compatible with older typed readers or exhaustive client switches. See the [1.0 compatibility policy](Compatibility-1.0.md) for unknown fields, closed enum values and versioning rules.
 
 | Evidence group | Stable codes |
 |---|---|
@@ -104,7 +104,7 @@ An executable AUTO entry contains typed actions like:
 ]
 ```
 
-`migrate --apply` rejects unsupported schema or PkgLift versions and rejects entries whose action list does not exactly agree with their package, version, products, pod, target, declaration, target-attribution, and consumer-language metadata. Present consumer-platform constraints must agree with the regenerated package candidate and the live target environment before mutation.
+For plans containing non-empty AUTO entries, both dry run and `migrate --apply` reject unsupported schemas or a `pkgLiftVersion` different from the running version, including patch-version differences. They reject entries whose action list does not exactly agree with their package, version, products, pod, target, declaration, target-attribution, and consumer-language metadata. Present consumer-platform constraints must agree with the regenerated package candidate and the live target environment before mutation. A decodable plan with no non-empty AUTO entry returns a mutation-free no-op before this executable-plan preflight; apply still checks for an incomplete migration first. Decoding alone is never execution authorization.
 
 The new evidence fields are additive, so older schema-1 JSON remains decodable for inspection with absent source provenance. Compatibility is deliberately fail-closed: an older AUTO entry without explicit declaration provenance, exact target attribution, mapping languages, or a complete target profile is not executable and its plan must be regenerated.
 
