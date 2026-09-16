@@ -42,6 +42,10 @@ PACKAGE_MANIFEST_URL = f"https://raw.githubusercontent.com/SDWebImage/SDWebImage
 PACKAGE_MANIFEST_SHA256 = "351f64c27724e6c1093403281257aed7118bf3456cf2f0b39bef64b9cfd8ae6e"
 PRIVACY_RESOURCE_SHA256 = "03b2c70833a331a2b1efd11ff168ed02a8eadfd5e7d1fbf30eecc7509a4aea47"
 PRIVACY_SYMLINK_SHA256 = "bc1f3592548b2319ca87acff5bfdbbcf5684b42d92a194f8e051d4bbe97aeabd"
+PRIVACY_RESOURCE_SYMLINKS = (
+    "SDWebImage/Resources/PrivacyInfo.xcprivacy",
+    "SDWebImageMapKit/Resources/PrivacyInfo.xcprivacy",
+)
 COCOAPODS_VERSION = "1.17.0"
 AMAZON_ARCHIVE_URL = "https://player.live-video.net/1.40.0/AmazonIVSPlayer.tgz"
 AMAZON_ARCHIVE_SHA256 = "e7cacfbcaead184d0efca1c53d656d64ee2a46721b9097198848156a5476c5d6"
@@ -54,12 +58,14 @@ PODSPEC_INPUTS = {
         "rawSHA256": "3fdb29a9f3b1440b5cfbd51e34af247be44dd376aeaf6424074ab6d07e099770",
         "rawSHA1": "b1dbf89d0067d016ab734dc6e7ae799ea52101cd",
         "canonicalSHA256": "6d633b11d9d36794d1cd9388bda1e142f0cd528d75617d305bc3282f11ed52d9",
+        "cachePath": "Specs/4/3/2/AmazonIVSPlayer/1.40.0/AmazonIVSPlayer.podspec.json",
     },
     "SDWebImage": {
         "url": "https://raw.githubusercontent.com/CocoaPods/Specs/836af618f46996d9e8883146851b811a63c76d8e/Specs/1/1/7/SDWebImage/5.18.1/SDWebImage.podspec.json",
         "rawSHA256": "21f5f15b959199ab1eab0c01ab484a1a16e7760b6e4e292622fa32fc5702861c",
         "rawSHA1": "ebdbcebc7933a45226d9313bd0118bc052ad458b",
         "canonicalSHA256": "c3b6e8f1777a8043a4d4ef1381889d2968b7d35e1ef24d8966b0bae1357f4452",
+        "cachePath": "Specs/1/1/7/SDWebImage/5.18.1/SDWebImage.podspec.json",
     },
 }
 
@@ -77,6 +83,11 @@ OUTCOMES = {
     "blocked-input",
     "failed-safety",
     "failed-migration",
+}
+POD_INSTALL_DIAGNOSTIC_LABELS = {
+    "baseline-pod-install",
+    "migration-pod-install",
+    "post-migration-pod-install",
 }
 
 
@@ -197,6 +208,13 @@ def tree_snapshot(root: Path, exclude: Iterable[str] = (".git",)) -> dict[str, d
     return result
 
 
+def exclude_generated_plan(source: Path, relative: str) -> None:
+    exclude_file = source / ".git/info/exclude"
+    exclude_file.parent.mkdir(parents=True, exist_ok=True)
+    with exclude_file.open("a") as handle:
+        handle.write("\n/" + relative + "\n")
+
+
 def tree_digest(snapshot: Mapping[str, Any]) -> str:
     return canonical_json_sha256(snapshot)
 
@@ -208,7 +226,9 @@ def changed_paths(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[s
 def _allowed_dependency_path(path: str) -> bool:
     allowed_exact = {"Podfile", "Podfile.lock", f"{PROJECT}/project.pbxproj", f"{WORKSPACE}/contents.xcworkspacedata"}
     allowed_exact.update({"Pods", ".pkglift", f"{PROJECT}/project.xcworkspace",
-                          f"{PROJECT}/project.xcworkspace/xcshareddata", f"{WORKSPACE}/xcshareddata"})
+                          f"{PROJECT}/project.xcworkspace/xcshareddata", f"{WORKSPACE}/xcshareddata",
+                          f"{PROJECT}/project.xcworkspace/xcshareddata/swiftpm",
+                          f"{WORKSPACE}/xcshareddata/swiftpm"})
     allowed_prefixes = ("Pods/", ".pkglift/", f"{PROJECT}/project.xcworkspace/xcshareddata/swiftpm/",
                         f"{WORKSPACE}/xcshareddata/swiftpm/")
     return path in allowed_exact or path.startswith(allowed_prefixes)
@@ -216,7 +236,10 @@ def _allowed_dependency_path(path: str) -> bool:
 
 def validate_dependency_only_delta(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[str]:
     changes = changed_paths(before, after)
-    bad = [path for path in changes if not _allowed_dependency_path(path)]
+    swiftpm_directories = {f"{PROJECT}/project.xcworkspace/xcshareddata/swiftpm",
+                           f"{WORKSPACE}/xcshareddata/swiftpm"}
+    bad = [path for path in changes if not _allowed_dependency_path(path)
+           or (path in swiftpm_directories and after.get(path, {}).get("kind") != "directory")]
     require(not bad, "non-dependency files changed: " + ", ".join(bad[:10]))
     return changes
 
@@ -515,6 +538,16 @@ def validate_lock_metadata_normalization(before: str, after: str) -> None:
     require(after_version in {"1.16.2", COCOAPODS_VERSION}, "unexpected CocoaPods metadata version", "blocked-input")
 
 
+def normalize_lock_tool_version(text: str) -> str:
+    validate_lock(text, set(POD_VERSIONS))
+    versions = re.findall(r"(?m)^COCOAPODS: (.+)$", text)
+    require(len(versions) == 1 and versions[0] in {"1.16.2", COCOAPODS_VERSION},
+            "unexpected or ambiguous CocoaPods lock metadata", "blocked-input")
+    normalized = re.sub(r"(?m)^COCOAPODS: .+$", "COCOAPODS: " + COCOAPODS_VERSION, text)
+    validate_lock_metadata_normalization(text, normalized)
+    return normalized
+
+
 def _version_requirement_is_exact(value: Any, expected: str) -> bool:
     return value == {"exact": {"_0": expected}}
 
@@ -726,22 +759,34 @@ def validate_scheme_listing(document: Mapping[str, Any]) -> None:
     require(sum(1 for value in schemes if value == TARGET) == 1, "Grid Feed scheme is missing or ambiguous", "blocked-input")
 
 
-def validate_installed_podspecs(root: Path, expected_names: set[str] | None = None) -> list[dict[str, Any]]:
-    expected_names = expected_names or set(POD_VERSIONS)
+def validate_no_local_podspecs(root: Path) -> None:
     directory = root / "Pods/Local Podspecs"
-    paths = sorted(directory.glob("*.podspec.json"))
-    require({path.name for path in paths} == {f"{name}.podspec.json" for name in expected_names},
-            "installed local podspec set differs from reviewed direct closure", "blocked-input")
-    result = []
-    for name in expected_names:
-        path = directory / f"{name}.podspec.json"
-        require(path.is_file() and not path.is_symlink(), f"installed {name} podspec is missing", "blocked-input")
-        document = json.loads(path.read_text())
-        item = validate_podspec(document, name)
-        require(item["canonicalSHA256"] == PODSPEC_INPUTS[name]["canonicalSHA256"],
-                f"installed {name} podspec differs from immutable reviewed spec", "blocked-input")
-        result.append(item)
-    return result
+    entries = list(directory.iterdir()) if directory.exists() else []
+    require(not entries, "unexpected external/local podspec material appeared in Pods/Local Podspecs", "blocked-input")
+
+
+def parse_pod_spec_which_output(output: str, name: str) -> Path:
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    require(len(lines) == 1 and not re.search(r"\x1b\[", lines[0]),
+            f"pod spec which returned ambiguous output for {name}", "blocked-input")
+    path = Path(lines[0])
+    require(path.is_absolute(), f"pod spec which returned a relative path for {name}", "blocked-input")
+    return path
+
+
+def validate_cached_public_podspec(path: Path, name: str, repos_root: Path | None = None) -> dict[str, Any]:
+    repos_root = (repos_root or (Path.home() / ".cocoapods/repos")).resolve(strict=True)
+    require(path.is_file() and not path.is_symlink(), f"cached public {name} podspec is missing or symlinked", "blocked-input")
+    resolved = path.resolve(strict=True)
+    require(_under(resolved, repos_root), f"cached public {name} podspec is outside CocoaPods repos", "blocked-input")
+    relative = resolved.relative_to(repos_root)
+    expected_suffix = Path(PODSPEC_INPUTS[name]["cachePath"]).parts
+    require(relative.parts[-len(expected_suffix):] == expected_suffix,
+            f"cached public {name} podspec path/version differs from reviewed input", "blocked-input")
+    raw = resolved.read_bytes()
+    _document, evidence = validate_public_podspec_bytes(name, raw)
+    return {**evidence, "rawSHA1": PODSPEC_INPUTS[name]["rawSHA1"],
+            "rawSHA256": PODSPEC_INPUTS[name]["rawSHA256"]}
 
 
 def find_package_resolved(root: Path) -> Path:
@@ -765,6 +810,29 @@ def validate_package_resolved(document: Mapping[str, Any]) -> dict[str, Any]:
     return {"version": "5.18.1", "revision": PACKAGE_REVISION}
 
 
+def validate_privacy_resource_symlinks(checkout: Path) -> dict[str, Any]:
+    links = {path.relative_to(checkout).as_posix(): path
+             for path in checkout.rglob("PrivacyInfo.xcprivacy") if path.is_symlink()}
+    require(set(links) == set(PRIVACY_RESOURCE_SYMLINKS),
+            "reviewed SDWebImage privacy resource symlink inventory changed", "blocked-input")
+    for relative in PRIVACY_RESOURCE_SYMLINKS:
+        link = links[relative]
+        target_bytes = os.readlink(link).encode()
+        require(target_bytes == b"../../WebImage/PrivacyInfo.xcprivacy"
+                and sha256_bytes(target_bytes) == PRIVACY_SYMLINK_SHA256,
+                f"SDWebImage privacy resource symlink bytes changed: {relative}", "blocked-input")
+        target = link.resolve(strict=True)
+        require(_under(target, checkout.resolve())
+                and target.relative_to(checkout.resolve()).as_posix() == "WebImage/PrivacyInfo.xcprivacy"
+                and file_sha256(target) == PRIVACY_RESOURCE_SHA256,
+                f"SDWebImage privacy resource target/hash changed: {relative}", "blocked-input")
+    return {
+        "privacyResourceSHA256": PRIVACY_RESOURCE_SHA256,
+        "privacyResourcePath": PRIVACY_RESOURCE_SYMLINKS[0],
+        "reviewedPrivacyResourceSymlinks": list(PRIVACY_RESOURCE_SYMLINKS),
+    }
+
+
 def validate_swiftpm_checkout(checkout: Path, run_git) -> dict[str, Any]:
     require(checkout.is_dir() and not checkout.is_symlink(), "SDWebImage checkout is missing")
     head = run_git(checkout, ["rev-parse", "HEAD"]).strip()
@@ -779,14 +847,7 @@ def validate_swiftpm_checkout(checkout: Path, run_git) -> dict[str, Any]:
     require(not any(path.name in {"Plugins", "Plugin"} for path in checkout.rglob("*")),
             "SDWebImage checkout contains a plugin directory", "blocked-input")
     require(not (checkout / ".gitmodules").exists(), "SDWebImage checkout declares submodules", "blocked-input")
-    privacy_links = [path for path in checkout.rglob("PrivacyInfo.xcprivacy") if path.is_symlink()]
-    require(len(privacy_links) == 1, "reviewed SDWebImage privacy resource symlink is missing or ambiguous", "blocked-input")
-    privacy_target = privacy_links[0].resolve(strict=True)
-    require(os.readlink(privacy_links[0]) == "../../WebImage/PrivacyInfo.xcprivacy"
-            and sha256_bytes(os.readlink(privacy_links[0]).encode()) == PRIVACY_SYMLINK_SHA256,
-            "SDWebImage privacy resource symlink bytes changed", "blocked-input")
-    require(_under(privacy_target, checkout.resolve()) and file_sha256(privacy_target) == PRIVACY_RESOURCE_SHA256,
-            "SDWebImage privacy resource symlink target/hash changed", "blocked-input")
+    privacy_evidence = validate_privacy_resource_symlinks(checkout)
     require("PrivacyInfo.xcprivacy" in text, "SDWebImage manifest no longer declares reviewed privacy resource", "blocked-input")
     indexed = run_git(checkout, ["ls-files", "-s"]).splitlines()
     executable_entries = []
@@ -807,8 +868,7 @@ def validate_swiftpm_checkout(checkout: Path, run_git) -> dict[str, Any]:
             == "064662c792e8505c4938e706c64bcc7cea600db280a7951112be1386673b27fc",
             "unreferenced SDWebImage executable script bytes changed", "blocked-input")
     return {"revision": head, "manifestSHA256": file_sha256(manifest),
-            "privacyResourceSHA256": PRIVACY_RESOURCE_SHA256,
-            "privacyResourcePath": privacy_links[0].relative_to(checkout).as_posix(),
+            **privacy_evidence,
             "unreferencedExecutables": sorted(expected_executables)}
 
 
@@ -885,6 +945,12 @@ class Runner:
             # and therefore remains private even when a build fails.
             tail = stderr_bytes[-4096:].decode("utf-8", errors="replace")
             record["redactedStderrTail"] = redact(tail, self.redaction_roots)
+        if code and stdout_bytes and label in POD_INSTALL_DIAGNOSTIC_LABELS:
+            # CocoaPods reports many actionable failures on stdout. Restrict
+            # this exception to install commands; compiler stdout can contain
+            # source excerpts and always remains private.
+            tail = stdout_bytes[-4096:].decode("utf-8", errors="replace")
+            record["redactedStdoutTail"] = redact(tail, self.redaction_roots)
         self.commands.append(record)
         if code == 124:
             raise QualificationError(outcome, f"{label} timed out after {timeout}s")
@@ -948,8 +1014,26 @@ class Runner:
         require(evidence.get("status") == "passed", "generated CocoaPods execution inputs were not approved", "blocked-input")
         return evidence
 
+    def resolve_public_podspecs(self, root: Path, names: set[str], label: str) -> list[dict[str, Any]]:
+        validate_no_local_podspecs(root)
+        evidence = []
+        for name in sorted(names):
+            output = self.execute(
+                f"{label}-{name.lower()}-public-podspec",
+                ["pod", "spec", "which", name, f"--version={POD_VERSIONS[name]}", "--no-ansi"],
+                cwd=root,
+                timeout=60,
+                outcome="blocked-input",
+            )
+            path = parse_pod_spec_which_output(output, name)
+            evidence.append(validate_cached_public_podspec(path, name))
+        return evidence
+
     def pod_setup(self, root: Path, label: str) -> tuple[str, dict[str, Any], dict[str, Any]]:
         original_lock = (root / "Podfile.lock").read_text()
+        # Deployment mode compares the tool version too. Normalize only the
+        # reviewed metadata before invoking it; dependency locks stay identical.
+        (root / "Podfile.lock").write_text(normalize_lock_tool_version(original_lock))
         self.execute(label, ["pod", "install", "--deployment"], cwd=root, timeout=900,
                      outcome="inconclusive-baseline" if label.startswith("baseline") else "blocked-input")
         lock_text = (root / "Podfile.lock").read_text()
@@ -961,7 +1045,7 @@ class Runner:
         lock = validate_lock(lock_text, set(POD_VERSIONS))
         require((root / "Pods/Manifest.lock").read_bytes() == (root / "Podfile.lock").read_bytes(),
                 "Pods Manifest.lock differs from Podfile.lock", "blocked-input")
-        installed = validate_installed_podspecs(root)
+        installed = self.resolve_public_podspecs(root, set(POD_VERSIONS), label)
         payloads = validate_installed_dependency_payloads(root, self.sd_source_reference,
                                                           self.amazon_payload_tree, include_sd=True)
         project = self.pbx_json(root, label + "-project")
@@ -1116,9 +1200,7 @@ class Runner:
                                                         "-m", "Record reviewed CocoaPods setup metadata"])
             setup_commit = self.git(migration, ["rev-parse", "HEAD"]).strip()
             require(not self.git(migration, ["status", "--porcelain", "--untracked-files=all"]), "migration setup is dirty")
-            exclude_file = migration / ".git/info/exclude"
-            with exclude_file.open("a") as handle:
-                handle.write("\n/.pkglift/plan.json\n")
+            exclude_generated_plan(migration, ".pkglift/plan.json")
             common = ["--path", migration, "--project", PROJECT, "--workspace", WORKSPACE, "--no-color"]
             analysis = self.execute("analysis-executable", [self.binary, "analyze", *common, "--json"], expect_json=True)
             portable_analysis = self.execute("analysis-portable", [self.binary, "analyze", *common, "--portable-json"], expect_json=True)
@@ -1163,9 +1245,9 @@ class Runner:
             final_lock = validate_lock(final_lock_text, {"AmazonIVSPlayer"})
             require((migration / "Pods/Manifest.lock").read_bytes() == (migration / "Podfile.lock").read_bytes(),
                     "final Pods manifest differs from lock")
-            amazon_spec = migration / "Pods/Local Podspecs/AmazonIVSPlayer.podspec.json"
-            require(amazon_spec.is_file(), "retained Amazon podspec missing")
-            retained_podspec = validate_installed_podspecs(migration, {"AmazonIVSPlayer"})[0]
+            retained_podspec = self.resolve_public_podspecs(
+                migration, {"AmazonIVSPlayer"}, "post-migration-pod-install"
+            )[0]
             retained_payload = validate_installed_dependency_payloads(
                 migration, self.sd_source_reference, self.amazon_payload_tree, include_sd=False
             )

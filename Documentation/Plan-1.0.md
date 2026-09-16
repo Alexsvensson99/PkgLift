@@ -120,8 +120,9 @@ All three [repository-owned partial-migration cases](PartialMigration-1.0.md#mai
 including existing-SwiftPM coexistence, passed on main `72f19b3…` with fresh
 hosted post-migration builds and complete environment records. Conflicting-requirement
 refusal coverage is also integrated. The selected [pinned real-project protocol](RealProjectQualification-1.0.md)
-now includes a separate manual harness; no upstream migration or execution is claimed. Real-project and
-additional toolchain/shape evidence remain open.
+passed one real AWS partial migration and two intentional refusal controls on
+reviewed branch `ffb629f` in [run 35147037039](https://github.com/Alexsvensson99/PkgLift/actions/runs/35147037039).
+This is branch qualification; additional toolchain/shape evidence remains open.
 Deliver an evidence matrix separating read-only, repository-fixture and real-project results.
 
 - Preserve the ten upstream read-only pilots and their current prohibition on

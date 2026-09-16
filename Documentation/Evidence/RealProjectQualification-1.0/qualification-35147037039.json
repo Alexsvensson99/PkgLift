@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "runURL": "https://github.com/Alexsvensson99/PkgLift/actions/runs/35147037039",
+  "sourceCommit": "ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92",
+  "ref": "codex/g3-git-info-fix",
+  "conclusion": "success",
+  "scope": "One positive partial migration and two intentional refusal controls; the full G3 gate remains open.",
+  "artifact": {
+    "manifestSHA256": "fa9aa95146f2d91618dc3cf930cc76f32fc281641446e117c062b901f01b2a89",
+    "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "runAttempt": "1",
+    "runID": "35147037039",
+    "sha256": "329b51549add7e42cb3f7cfbb2f5404760a5c22088d53223e74f217f5e5a4e00",
+    "sourceSHA": "ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92"
+  },
+  "environment": {
+    "captureStatus": "complete",
+    "capturedAt": "2026-09-16T20:35:34.334227Z",
+    "commands": {
+      "cocoaPodsVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "1.17.0"
+        ]
+      },
+      "iOSSimulatorSDKBuildVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "22F76"
+        ]
+      },
+      "iOSSimulatorSDKVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "18.5"
+        ]
+      },
+      "macOSSDKBuildVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "24F74"
+        ]
+      },
+      "macOSSDKVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "15.5"
+        ]
+      },
+      "swiftVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)",
+          "Target: arm64-apple-macosx15.0"
+        ]
+      },
+      "xcodebuildVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "Xcode 16.4",
+          "Build version 16F6"
+        ]
+      }
+    },
+    "metadataOnly": true,
+    "pkgLiftVersion": "0.10.0",
+    "repository": {
+      "commit": "ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92",
+      "status": "passed",
+      "trackedChanges": false
+    },
+    "rubyVersion": "ruby 3.3.12 (2026-07-16 revision 0581089df9) [arm64-darwin24]",
+    "schemaVersion": 1,
+    "system": {
+      "macOS": {
+        "build": "24G830",
+        "status": "passed",
+        "version": "15.7.9"
+      },
+      "machine": "arm64"
+    }
+  },
+  "aws": {
+    "status": "passed-migration",
+    "source": {
+      "commit": "5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d",
+      "license": "MIT-0",
+      "repository": "https://github.com/aws-samples/amazon-ivs-grid-feed-for-ios-demo.git",
+      "reviewedFileSHA256": {
+        "Grid Feed.xcodeproj/project.pbxproj": "64335e159b0d5aa2d6fe1bce3cd52ef3ef55bf6c9b6436eda3e7a98fedcde23c",
+        "Grid Feed.xcworkspace/contents.xcworkspacedata": "59cd30dad60c7cc8c5a30bf3f4c72bcb78ebfeb346ce9999b1d34b62139d04ec",
+        "LICENSE": "7cb750713252efd1d578837ba8785b61319109906f0c10b87adab7cf4badfc42",
+        "Podfile": "35067ca46eea7cbb342159876eef4f161a1c4cfd3f049e116a14750db10e406c",
+        "Podfile.lock": "1f7616891fb05db30a51ce628146f73b4b94ee177c20c358f2e6416e262aec8c"
+      },
+      "treeSHA256": "8800771afb7dfba3be6727dbc3a1ec9f0b0ba39c10f7257e0157c810d7c07764"
+    },
+    "selection": {
+      "project": "Grid Feed.xcodeproj",
+      "scheme": "Grid Feed",
+      "workspace": "Grid Feed.xcworkspace"
+    },
+    "baselineStatus": "passed",
+    "implementation": {
+      "cocoaPodsValidatorSHA256": "55a05dabc784bc68fb6fd074212618156600ce883a60307fe246b51c4a64a73c",
+      "executionIntakeSHA256": "ca511e763ece6515e1e73add5bda786f9c136cc24aae4c3eb38fb528325b06c6",
+      "runnerSHA256": "911376e6a06d08689976e2104d6eb8b7aba152d5a6eee703ce458e95337ef970"
+    },
+    "migration": {
+      "builtPrivacyResource": {
+        "matchingCopiesInApp": 1,
+        "resourceBundle": "SDWebImage_SDWebImage.bundle",
+        "sha256": "03b2c70833a331a2b1efd11ff168ed02a8eadfd5e7d1fbf30eecc7509a4aea47"
+      },
+      "dryRunUnchanged": true,
+      "finalTreeSHA256": "e225ad258e3303f77d7408f7c4bd72eae9b69b97cd8f683fd588797068c7b587",
+      "freshFinalBuild": true,
+      "linkage": {
+        "linkedCount": 1,
+        "product": "SDWebImage",
+        "repositoryURL": "https://github.com/SDWebImage/SDWebImage"
+      },
+      "originalTreeSHA256": "8800771afb7dfba3be6727dbc3a1ec9f0b0ba39c10f7257e0157c810d7c07764",
+      "plan": {
+        "auto": [
+          "SDWebImage"
+        ],
+        "retained": [
+          "AmazonIVSPlayer"
+        ],
+        "target": "Grid Feed",
+        "version": "5.18.1"
+      },
+      "preApplyIndexSHA256": "bd0d95d54ac4128700cd6aee1daccfcc47ef4a4aeedd8e6cb09b86d18baa2b1a",
+      "protectedProjectStateUnchanged": true,
+      "resolved": {
+        "revision": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+        "version": "5.18.1"
+      },
+      "retainedLock": {
+        "roots": [
+          "AmazonIVSPlayer"
+        ],
+        "versions": {
+          "AmazonIVSPlayer": "1.40.0"
+        }
+      },
+      "retainedPayload": {
+        "amazonPayloadTreeSHA256": "efa4509843b95e2333b0bd7da1b6e426e6b71e3cd10c0229720b7ca24ba2473b"
+      },
+      "retainedPodspec": {
+        "canonicalSHA256": "6d633b11d9d36794d1cd9388bda1e142f0cd528d75617d305bc3282f11ed52d9",
+        "hooks": [],
+        "name": "AmazonIVSPlayer",
+        "rawSHA1": "b1dbf89d0067d016ab734dc6e7ae799ea52101cd",
+        "rawSHA256": "3fdb29a9f3b1440b5cfbd51e34af247be44dd376aeaf6424074ab6d07e099770",
+        "version": "1.40.0"
+      },
+      "setupCommit": "b32d791db2890b715081123660c00536824d6bfd",
+      "setupTreeSHA256": "b5db741bab30042cd7e5a1863369849cf2b8bbb8296cf5971db3281e64e5659f"
+    },
+    "builds": [
+      {
+        "label": "baseline-build",
+        "exitCode": 0,
+        "durationSeconds": 59.217
+      },
+      {
+        "label": "final-build",
+        "exitCode": 0,
+        "durationSeconds": 46.996
+      }
+    ]
+  },
+  "refusals": [
+    {
+      "schemaVersion": 1,
+      "case": "firebaseui-project",
+      "status": "passed-refusal",
+      "upstreamCommit": "c30af73fee50724dcd9a3acf70548d3e58c86dc7",
+      "repository": "firebase/FirebaseUI-iOS",
+      "license": "Apache-2.0",
+      "pkgLiftSourceCommit": "ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92",
+      "artifactRunID": "35147037039",
+      "artifactProducerAttempt": "1",
+      "binarySHA256": "329b51549add7e42cb3f7cfbb2f5404760a5c22088d53223e74f217f5e5a4e00",
+      "runnerSHA256": "f5fc13d1f658f3f2315e40c5f383514a54bfea4f71033da98535b76620d9e51e",
+      "intakeSHA256": "e045b9c5dc2acf3a676d660723ba92e98cc94f4f763d551f6f018670dd014d00",
+      "sourceRedistributed": false,
+      "apply": "not-run",
+      "dependencyInstall": "not-run",
+      "build": "not-run",
+      "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+      "pkgLiftVersion": "0.10.0",
+      "rubyVersion": "ruby 3.3.12 (2026-07-16 revision 0581089df9) [arm64-darwin24]",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "originalTreeSHA256": "78fcf7a381d2ecf42c4e35b2428b74c79b69911d931e31dd139f9e2246c85fd1",
+      "dryRunTreeSHA256": "e2fe7bacadf450be814163d8d0f833ea5ceac40211ab77f241b8d40ceecb1697",
+      "project": "FirebaseUI-demo-swift.xcodeproj",
+      "workspace": null,
+      "exactAutoSet": []
+    },
+    {
+      "schemaVersion": 1,
+      "case": "hammerspoon-workspace",
+      "status": "passed-refusal",
+      "upstreamCommit": "23e387e2805a9890066366e0ac96c71b27f0cfd5",
+      "repository": "Hammerspoon/hammerspoon",
+      "license": "MIT",
+      "pkgLiftSourceCommit": "ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92",
+      "artifactRunID": "35147037039",
+      "artifactProducerAttempt": "1",
+      "binarySHA256": "329b51549add7e42cb3f7cfbb2f5404760a5c22088d53223e74f217f5e5a4e00",
+      "runnerSHA256": "f5fc13d1f658f3f2315e40c5f383514a54bfea4f71033da98535b76620d9e51e",
+      "intakeSHA256": "e045b9c5dc2acf3a676d660723ba92e98cc94f4f763d551f6f018670dd014d00",
+      "sourceRedistributed": false,
+      "apply": "not-run",
+      "dependencyInstall": "not-run",
+      "build": "not-run",
+      "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+      "pkgLiftVersion": "0.10.0",
+      "rubyVersion": "ruby 3.3.12 (2026-07-16 revision 0581089df9) [arm64-darwin24]",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "originalTreeSHA256": "3ae3dc3d3d260bf06404068a93ac80d68bfb656161e2b2e68179ea1ba895e9bd",
+      "dryRunTreeSHA256": "3702ca20a5986784ef535e9ce7faca71e67a41f1e50ff5ce1f1c0e082a056447",
+      "project": "Hammerspoon.xcodeproj",
+      "workspace": "Hammerspoon.xcworkspace",
+      "exactAutoSet": []
+    }
+  ],
+  "reportSHA256": {
+    "pkglift-g3-aws-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/environment.json": "26c4fb14da7b38ce33127d4d01e82cd00e535df79da98aa602f1f86e6dedf22b",
+    "pkglift-g3-aws-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/portable-analysis.json": "7ae553cb5bbfc62eb4ea5ea22f8561b25819429ba91d5cca77bee8f779731bfc",
+    "pkglift-g3-aws-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/portable-plan.json": "c198aab38bf86e0f75eaea2fb57ba09d6bd7e07ff681e57e001700e7e8aef9db",
+    "pkglift-g3-aws-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/structural-verification.json": "7d448ae1a9e83593966610ec72139637ab2ae9cfa51b83b8fcb24ec6758c4409",
+    "pkglift-g3-aws-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/summary.json": "8906db3cc75280ed2866c8082834e98a9344b9efd26c17f7be3c183ee65170f6",
+    "pkglift-g3-firebaseui-project-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/analysis.json": "238e517b61243995d0aac2f8f852bdf52b6ce2ddbf28606a481f393aa8b73662",
+    "pkglift-g3-firebaseui-project-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/environment.json": "7dff5c9483c13f0f76bf0678dc954eedceea6ec921168b2599f640503dc90e9a",
+    "pkglift-g3-firebaseui-project-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/plan.json": "0d3d6184a74abebc2d506347911a918d38757f3407c8a7e830b314386786dbbf",
+    "pkglift-g3-firebaseui-project-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/result.json": "d51e21f1480dce605e267887b2135787c64378cb6af71da07fd22eb7bb49b505",
+    "pkglift-g3-hammerspoon-workspace-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/analysis.json": "b55597bba1ae309cd65111ef331b5356ed5d7d18c308f36563303e88086bc97c",
+    "pkglift-g3-hammerspoon-workspace-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/environment.json": "5f6a7800b4266b0f854ecd8fbf111ba89595840fd34b02d0782c4f0a23dad20c",
+    "pkglift-g3-hammerspoon-workspace-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/plan.json": "d4a9714be241034c7ddb706d47a9c4229d7de44eef0401d71a5978f909604842",
+    "pkglift-g3-hammerspoon-workspace-ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92-1/result.json": "489d0a77ba1773ae7cd681e5c934466a49917d7ee5789cd87e9a830f8bee0eec"
+  }
+}

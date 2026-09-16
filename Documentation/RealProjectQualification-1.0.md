@@ -1,15 +1,34 @@
 # Real-project qualification protocol for 1.0
 
-Status: **selection, protocol and manual harness prepared; upstream execution not started**. Reviewed on
-2026-09-16 against PkgLift main
-[`72f19b3e3163d401b57950d02bd5fc191328ce2a`](https://github.com/Alexsvensson99/PkgLift/commit/72f19b3e3163d401b57950d02bd5fc191328ce2a).
-This is the next G3 work package in [the 1.0 plan](Plan-1.0.md#g3--prove-real-and-partial-migrations).
-It does not change the ten [read-only pilots](Pilots.md), authorize upstream
-execution, or declare G3 complete. Only source files and repository metadata were
-inspected for this selection. No upstream installation, build or migration was run.
-The [intake manifest](Evidence/RealProjectQualification-1.0/intake.json) records
-exact source URLs and SHA-256 digests of the inspected files, with every execution
-status set to `not-run`.
+Status: **selected cases passed on reviewed branch commit `ffb629f`** on 2026-09-16.
+[Run 35147037039](https://github.com/Alexsvensson99/PkgLift/actions/runs/35147037039)
+passed all five jobs. The [portable qualification record](Evidence/RealProjectQualification-1.0/qualification-35147037039.json)
+binds the full source commit, binary/registry hashes, environment, source pins and
+original report hashes. This is one positive partial migration and two intentional
+refusal controls, not three successful migrations or completion of the full G3 gate.
+
+The [original source-only intake](Evidence/RealProjectQualification-1.0/intake.json)
+remains a historical pre-execution record. Execution was separately approved for
+this manual protocol; the ten [read-only pilots](Pilots.md) retain their existing
+boundary. No public release is created by this qualification.
+
+## Successful hosted qualification
+
+The run used macOS 15.7.9 (24G830), arm64, Xcode 16.4 (16F6), Swift 6.1.2,
+CocoaPods 1.17.0 and the iOS Simulator 18.5 SDK. The exact PkgLift source was
+`ffb629f57acf6c7af5ebd6c4fc5e5cf4cb8d4a92`; this is branch evidence, not a claim
+that a subsequent merge commit has already been executed.
+
+| Case | Result | Verified boundary |
+|---|---|---|
+| AWS Grid Feed | `passed-migration` | Independent baseline build; inert dry run; SDWebImage 5.18.1 moved to SwiftPM; AmazonIVSPlayer 1.40.0 retained under CocoaPods; structural checks, exact resolution, packaged privacy resource and fresh final build passed; protected project state preserved. |
+| FirebaseUI Swift sample | `passed-refusal` | No AUTO dependencies; source and index unchanged; no apply, dependency installation or build. |
+| Hammerspoon workspace | `passed-refusal` | Explicit workspace selection; no AUTO dependencies; source and index unchanged; no apply, dependency installation or build. |
+
+The [1.0 plan](Plan-1.0.md#g3--prove-real-and-partial-migrations) still requires
+coverage for every promised project/language shape and toolchain. This run does
+not establish successful multi-target migration, app runtime behavior, signing,
+network playback or macOS 14 support.
 
 ## Manual harness
 
@@ -43,19 +62,35 @@ authenticate the binary signatures or establish buildability.
 
 Offline regression tests are under `Tests/ReleaseManifestTests/test_real_project*.py`.
 They exercise acceptance guards and the workflow boundary, not upstream buildability.
-On 2026-09-16, all 185 release/harness Python tests passed; repository YAML
+On 2026-09-16, all 192 release/harness Python tests passed; repository YAML
 validation passed for 12 files, eight pinned workflows and two issue forms.
 Ruby syntax and reconstruction using real framework metadata also passed.
-The harness must first be reviewed and integrated, then explicitly dispatched at
-the reviewed ref. No hosted run, successful AWS migration, new G3 qualification
-result or public release is claimed by its implementation.
+
+## Earlier hosted attempts and corrections
+
+[PR #121](https://github.com/Alexsvensson99/PkgLift/pull/121) integrated the
+initial harness as `c736332c3b2c9a1720cadbd41d059d7a122ab185`.
+[PR #122](https://github.com/Alexsvensson99/PkgLift/pull/122) contains the
+preparation corrections qualified by the successful run above. Every earlier
+attempt retained its failed or inconclusive result; none was counted as a pass.
+
+| Attempt | Observed result | Correction |
+|---|---|---|
+| [35141250484](https://github.com/Alexsvensson99/PkgLift/actions/runs/35141250484) | FirebaseUI passed; Hammerspoon stopped before analysis; AWS skipped. | Create `.git/info` for template-free clones before excluding the generated plan. |
+| [35143324501](https://github.com/Alexsvensson99/PkgLift/actions/runs/35143324501) | Both refusals passed; AWS stopped before installation. | Bind both exact privacy-resource symlinks in the pinned SDWebImage repository, retaining SDWebImage as the selected product. |
+| [35144120729](https://github.com/Alexsvensson99/PkgLift/actions/runs/35144120729) | Baseline pod installation failed; no build or migration ran. | Capture bounded redacted pod-failure stdout; a separate metadata-only reproduction proved the need to normalize the CocoaPods tool-version field before deployment-mode installation. |
+| [35145061473](https://github.com/Alexsvensson99/PkgLift/actions/runs/35145061473) | Locked baseline pod installation passed; public-spec lookup failed before build. | Resolve exact public specifications from the CocoaPods spec cache and verify immutable identities and lock checksums. |
+| [35146027696](https://github.com/Alexsvensson99/PkgLift/actions/runs/35146027696) | Baseline, partial migration and final build passed; the last tree check rejected the new SwiftPM parent directory. | Permit only the exact workspace SwiftPM directory nodes, requiring directory kind and rejecting file/symlink replacements or unrelated siblings. |
+
+These changes preserve exact dependency versions, payload checks, generated-script
+review, classification and source-preservation requirements.
 
 ## Selected cases
 
 These are three distinct projects from three independent repositories. One is a
 positive migration candidate; two are intentional refusal controls. They are not
 three successful migrations. Existing read-only classifications inform the
-expectations below; the future qualification run must establish its own results
+expectations below; the hosted qualification records its own results
 against an identified PkgLift executable and registry.
 
 | ID | Pinned source and license | Selection | Role and required outcome |
@@ -72,20 +107,20 @@ uses literal declarations in the app target, without `use_frameworks!` or a
 records AmazonIVSPlayer 1.40.0 and SDWebImage/Core 5.18.1, with CocoaPods 1.16.2.
 The Podfile declares iOS 14; the app project declares iOS 15 and Swift 5. Keep
 these values unchanged. Two shell phases in the app project are CocoaPods' lock
-check and framework embedding. Their generated implementations still require
-inspection after installation.
+check and framework embedding. Their generated implementations require
+inspection after each installation.
 
 No shared scheme is committed. `Grid Feed` is the expected implicit scheme,
 supported by the historical [v0.2.0 run](https://github.com/Alexsvensson99/PkgLift/actions/runs/31860034938),
-but a new authorized baseline must confirm it with `xcodebuild -list -json`.
+and each authorized baseline must confirm it with `xcodebuild -list -json`.
 Missing or ambiguous discovery is a blocker; do not silently synthesize a scheme.
 That old run is historical evidence, not acceptance for the current executable.
 
 AmazonIVSPlayer remains a vendored binary dependency. Its 1.40.0 podspec declares
 `https://player.live-video.net/1.40.0/AmazonIVSPlayer.tgz` with SHA-256
 `e7cacfbcaead184d0efca1c53d656d64ee2a46721b9097198848156a5476c5d6`.
-This is the expected archive digest from the specification, not proof that an
-archive was downloaded or verified in this planning step. The sample's MIT-0
+The qualification record above confirms the downloaded archive matched this
+digest; subsequent executions must verify it again. The sample's MIT-0
 license does not replace the player's separate license. Record and inspect both
 dependency specifications and applicable licenses before execution. Do not launch
 the app or use a live video service, credentials, signing identity or paid resource.
@@ -126,14 +161,13 @@ coverage, not macOS build or migration support.
 
 ## Execution boundary and environment
 
-The next execution proposal is bounded to **one AWS baseline/partial migration
-and two read-only controls**, in disposable hosted GitHub macOS runners. Preserve
-the existing ten-case workflow and its upstream apply prohibition; implement a
-separate opt-in harness. Its implementation is now prepared under the subsequent
-implementation approval. Workflow dispatch, upstream execution, GitHub writes and
-release actions have not been performed by this preparation.
+The approved execution scope is bounded to **one AWS baseline/partial migration
+and two read-only controls**, in disposable hosted GitHub macOS runners. The
+separate opt-in harness preserves the existing ten-case workflow and its upstream
+apply prohibition. The successful run above records the authorized execution;
+release actions remain outside this scope.
 
-Use the already qualified macOS 15/arm64, Xcode 16.4 lane as the first proposed
+Use the already qualified macOS 15/arm64, Xcode 16.4 lane as the first qualification
 cell. Record actual OS build, architecture, Xcode/Swift/SDK, Ruby and CocoaPods
 versions; runner labels alone do not prove an environment. Pin tooling for the
 attempt and reject unintended toolchain substitution. This does not close the
@@ -158,7 +192,7 @@ scripts or floating source references require review, not silent execution.
 ## Positive-case procedure
 
 Follow [the real-project testing guide](RealWorldTesting.md), with these additional
-evidence requirements. The future runner must log exact argument arrays, exit
+evidence requirements. The runner logs exact argument arrays, exit
 codes and durations. Commands below describe phases; they are not an executable
 script or evidence of a completed run.
 

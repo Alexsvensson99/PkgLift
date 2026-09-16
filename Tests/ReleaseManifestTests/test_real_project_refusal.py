@@ -42,6 +42,27 @@ class RefusalTests(unittest.TestCase):
         self.assertEqual(summary['status'], 'failed-safety')
         self.assertNotIn('/private/source', summary['error'])
 
+    def test_plan_exclusion_works_without_git_templates_in_both_runners(self):
+        aws_spec = importlib.util.spec_from_file_location('g3_aws_exclusion', ROOT / 'Scripts/run-real-project-aws.py')
+        aws_runner = importlib.util.module_from_spec(aws_spec)
+        aws_spec.loader.exec_module(aws_runner)
+        for runner in (pilot, aws_runner):
+            with self.subTest(runner=runner.__name__), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / 'source'
+                environment = pilot.command_environment(os.environ)
+                subprocess.run(['git', '-c', 'init.templateDir=', 'init', '-q', str(root)],
+                               env=environment, check=True, capture_output=True)
+                self.assertFalse((root / '.git/info').exists())
+                runner.exclude_generated_plan(root, '.pkglift/plan.json')
+                runner.exclude_generated_plan(root, 'other-generated')
+                (root / '.pkglift').mkdir()
+                (root / '.pkglift/plan.json').write_text('{}')
+                result = subprocess.run(['git', '-C', str(root), 'status', '--porcelain', '--untracked-files=all'],
+                                        env=environment, check=True, capture_output=True, text=True)
+                self.assertEqual(result.stdout, '')
+                self.assertEqual((root / '.git/info/exclude').read_text(),
+                                 '\n/.pkglift/plan.json\n\n/other-generated\n')
+
     def test_manual_refusal_actions_are_accepted(self):
         self.check()
 

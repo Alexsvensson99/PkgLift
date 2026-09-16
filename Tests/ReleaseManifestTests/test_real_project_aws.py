@@ -153,6 +153,37 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertFalse(output.exists())
         runner.assert_not_called()
 
+    def test_pod_failure_keeps_bounded_stdout_diagnostic_but_build_stdout_stays_private(self):
+        contract = {"binary": self.binary, "output": self.root / "runner-output", "runnerTemp": self.root}
+        runner = aws.Runner(contract, jobs=2)
+        pod_prefix = f"[!] CocoaPods locked install failed in {self.root}/source: missing reviewed spec. "
+        pod_output = (pod_prefix + "x" * 223).encode()[:223]
+        compiler_output = ("private compiler source excerpt " + "y" * 223).encode()[:223]
+        outputs = iter([pod_output, compiler_output])
+
+        def failed_command(wrapper, **_kwargs):
+            stdout = Path(wrapper[wrapper.index("--stdout") + 1])
+            stderr = Path(wrapper[wrapper.index("--stderr") + 1])
+            stdout.write_bytes(next(outputs))
+            stderr.write_bytes(b"")
+            return aws.subprocess.CompletedProcess(wrapper, 1)
+
+        with mock.patch.object(aws.subprocess, "run", side_effect=failed_command):
+            with self.assertRaises(aws.QualificationError):
+                runner.execute("baseline-pod-install", ["pod", "install", "--deployment"])
+            pod_record = runner.commands[-1]
+            self.assertEqual(pod_record["stdoutBytes"], 223)
+            self.assertIn("CocoaPods locked install failed", pod_record["redactedStdoutTail"])
+            self.assertNotIn(str(self.root), pod_record["redactedStdoutTail"])
+            self.assertNotIn("redactedStderrTail", pod_record)
+
+            with self.assertRaises(aws.QualificationError):
+                runner.execute("baseline-build", ["xcodebuild", "build"])
+            build_record = runner.commands[-1]
+            self.assertEqual(build_record["stdoutBytes"], 223)
+            self.assertNotIn("redactedStdoutTail", build_record)
+            self.assertNotIn("private compiler source excerpt", json.dumps(build_record))
+
 
 class SnapshotAndDeltaTests(unittest.TestCase):
     def test_snapshot_covers_ignored_style_files_symlinks_and_mode(self):
@@ -177,6 +208,19 @@ class SnapshotAndDeltaTests(unittest.TestCase):
         aws.validate_dry_run_output(expected)
         with self.assertRaises(aws.QualificationError):
             aws.validate_dry_run_output(expected + "- AmazonIVSPlayer\n")
+
+    def test_new_swiftpm_parent_directory_is_allowed_but_file_or_sibling_is_not(self):
+        for directory in (f"{aws.WORKSPACE}/xcshareddata/swiftpm",
+                          f"{aws.PROJECT}/project.xcworkspace/xcshareddata/swiftpm"):
+            with self.subTest(directory=directory):
+                generated = {directory: {"kind": "directory", "mode": 0o755},
+                             directory + "/Package.resolved": {"kind": "file", "sha256": "pin"}}
+                self.assertEqual(aws.validate_dependency_only_delta({}, generated), sorted(generated))
+                for entry in [{"kind": "file", "sha256": "wrong"}, {"kind": "symlink", "target": "outside"}]:
+                    with self.assertRaises(aws.QualificationError):
+                        aws.validate_dependency_only_delta({}, {directory: entry})
+        with self.assertRaises(aws.QualificationError):
+            aws.validate_dependency_only_delta({}, {f"{aws.WORKSPACE}/xcshareddata/unreviewed": {"kind": "file"}})
 
     def test_dependency_delta_allows_reviewed_paths_only(self):
         before = {"Podfile": {"sha256": "a"}, "App/View.swift": {"sha256": "a"}}
@@ -273,20 +317,66 @@ class IntakeTests(unittest.TestCase):
                     self.assertRaises(aws.QualificationError):
                 aws.inspect_amazon_archive(archive_path)
 
-    def test_installed_podspecs_must_be_exact_and_complete(self):
+    def test_public_cached_podspecs_allow_empty_local_podspecs_and_require_exact_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
-            directory = Path(temporary) / "Pods/Local Podspecs"
-            directory.mkdir(parents=True)
+            root = Path(temporary)
+            local = root / "project/Pods/Local Podspecs"
+            local.mkdir(parents=True)
+            repos = root / ".cocoapods/repos"
+            (repos / "trunk").mkdir(parents=True)
             documents = {name: podspec(name) for name in aws.POD_VERSIONS}
-            for name, document in documents.items():
-                (directory / f"{name}.podspec.json").write_text(json.dumps(document))
-            patched = {name: {**value, "canonicalSHA256": aws.canonical_json_sha256(documents[name])}
+            raw = {name: json.dumps(document, sort_keys=True).encode() for name, document in documents.items()}
+            patched = {name: {**value,
+                              "rawSHA1": hashlib.sha1(raw[name]).hexdigest(),
+                              "rawSHA256": hashlib.sha256(raw[name]).hexdigest(),
+                              "canonicalSHA256": aws.canonical_json_sha256(documents[name])}
                        for name, value in aws.PODSPEC_INPUTS.items()}
             with mock.patch.object(aws, "PODSPEC_INPUTS", patched):
-                self.assertEqual(len(aws.validate_installed_podspecs(Path(temporary))), 2)
-                (directory / "Unexpected.podspec.json").write_text("{}")
-                with self.assertRaises(aws.QualificationError):
-                    aws.validate_installed_podspecs(Path(temporary))
+                aws.validate_no_local_podspecs(root / "project")
+                for name in aws.POD_VERSIONS:
+                    path = repos / "trunk" / patched[name]["cachePath"]
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(raw[name])
+                    evidence = aws.validate_cached_public_podspec(path, name, repos)
+                    self.assertEqual(evidence["name"], name)
+
+    def test_public_podspec_resolution_rejects_local_entries_malformed_output_and_outside_path(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            local = root / "project/Pods/Local Podspecs"
+            local.mkdir(parents=True)
+            (local / "Injected.podspec.json").write_text("{}")
+            with self.assertRaises(aws.QualificationError):
+                aws.validate_no_local_podspecs(root / "project")
+            for output in ("relative/spec.json\n", "/one/spec.json\n/two/spec.json\n", "\x1b[31m/spec.json\x1b[0m\n"):
+                with self.subTest(output=output), self.assertRaises(aws.QualificationError):
+                    aws.parse_pod_spec_which_output(output, "SDWebImage")
+
+            repos = root / ".cocoapods/repos"
+            repos.mkdir(parents=True)
+            outside = root / "outside/SDWebImage.podspec.json"
+            outside.parent.mkdir()
+            outside.write_text("{}")
+            with self.assertRaises(aws.QualificationError):
+                aws.validate_cached_public_podspec(outside, "SDWebImage", repos)
+
+    def test_public_cached_podspec_rejects_unexpected_identity_even_with_matching_file_hashes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repos = root / ".cocoapods/repos"
+            bad = podspec("AmazonIVSPlayer")
+            bad["name"] = "UnexpectedPlayer"
+            raw = json.dumps(bad, sort_keys=True).encode()
+            patched = {**aws.PODSPEC_INPUTS["AmazonIVSPlayer"],
+                       "rawSHA1": hashlib.sha1(raw).hexdigest(),
+                       "rawSHA256": hashlib.sha256(raw).hexdigest(),
+                       "canonicalSHA256": aws.canonical_json_sha256(bad)}
+            path = repos / "trunk" / patched["cachePath"]
+            path.parent.mkdir(parents=True)
+            path.write_bytes(raw)
+            with mock.patch.dict(aws.PODSPEC_INPUTS, {"AmazonIVSPlayer": patched}), \
+                    self.assertRaises(aws.QualificationError):
+                aws.validate_cached_public_podspec(path, "AmazonIVSPlayer", repos)
 
     def test_installed_amazon_payload_must_match_reviewed_archive_tree(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -322,6 +412,17 @@ COCOAPODS: 1.16.2
         result = aws.validate_lock(self.LOCK, {"AmazonIVSPlayer", "SDWebImage"})
         self.assertEqual(result["versions"]["SDWebImage/Core"], "5.18.1")
         aws.validate_lock_metadata_normalization(self.LOCK, self.LOCK.replace("1.16.2", "1.17.0"))
+
+    def test_preinstall_normalization_changes_only_reviewed_tool_metadata(self):
+        expected = self.LOCK.replace("COCOAPODS: 1.16.2", "COCOAPODS: 1.17.0")
+        self.assertEqual(aws.normalize_lock_tool_version(self.LOCK), expected)
+        self.assertEqual(aws.normalize_lock_tool_version(expected), expected)
+        for invalid in [self.LOCK.replace("1.16.2", "9.0.0"),
+                        self.LOCK + "COCOAPODS: 1.16.2\n",
+                        self.LOCK.replace("COCOAPODS: 1.16.2\n", ""),
+                        self.LOCK.replace("SDWebImage (5.18.1)", "SDWebImage (5.19.0)")]:
+            with self.subTest(lock=invalid), self.assertRaises(aws.QualificationError):
+                aws.normalize_lock_tool_version(invalid)
 
     def test_rejects_dependency_change_disguised_as_tool_normalization(self):
         with self.assertRaises(aws.QualificationError):
@@ -485,6 +586,32 @@ class PackageAndReportTests(unittest.TestCase):
             (root / "Package.swift").write_text(".plugin(name: \"bad\")")
             with self.assertRaises(aws.QualificationError):
                 aws.validate_swiftpm_checkout(root, lambda _root, args: aws.PACKAGE_REVISION if args[0] == "rev-parse" else "")
+
+    def test_privacy_resource_inventory_requires_both_reviewed_target_symlinks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "WebImage/PrivacyInfo.xcprivacy"
+            source.parent.mkdir(parents=True)
+            source.write_bytes(b"reviewed privacy manifest")
+            for relative in aws.PRIVACY_RESOURCE_SYMLINKS:
+                link = root / relative
+                link.parent.mkdir(parents=True)
+                link.symlink_to("../../WebImage/PrivacyInfo.xcprivacy")
+            with mock.patch.object(aws, "PRIVACY_RESOURCE_SHA256", hashlib.sha256(source.read_bytes()).hexdigest()):
+                evidence = aws.validate_privacy_resource_symlinks(root)
+                self.assertEqual(evidence["privacyResourcePath"], "SDWebImage/Resources/PrivacyInfo.xcprivacy")
+                self.assertEqual(evidence["reviewedPrivacyResourceSymlinks"], list(aws.PRIVACY_RESOURCE_SYMLINKS))
+
+                mapkit = root / "SDWebImageMapKit/Resources/PrivacyInfo.xcprivacy"
+                mapkit.unlink()
+                with self.assertRaises(aws.QualificationError):
+                    aws.validate_privacy_resource_symlinks(root)
+                mapkit.symlink_to("../../WebImage/PrivacyInfo.xcprivacy")
+                extra = root / "OtherTarget/Resources/PrivacyInfo.xcprivacy"
+                extra.parent.mkdir(parents=True)
+                extra.symlink_to("../../WebImage/PrivacyInfo.xcprivacy")
+                with self.assertRaises(aws.QualificationError):
+                    aws.validate_privacy_resource_symlinks(root)
 
     def test_built_privacy_resource_requires_reviewed_hash(self):
         with tempfile.TemporaryDirectory() as temporary:
