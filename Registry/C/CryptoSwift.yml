@@ -1,0 +1,18 @@
+schemaVersion: 2
+pod:
+  name: CryptoSwift
+swiftpm:
+  repository: https://github.com/krzyzanowskim/CryptoSwift
+  products:
+    - CryptoSwift
+  minimumVersion: 1.10.0
+  supportedConsumerLanguages:
+    - swift
+  supportedConsumerPlatforms:
+    - platform: iOS
+      minimumDeploymentTarget: "15.0"
+migration:
+  confidence: verified
+metadata:
+  notes: "Identical Swift iOS 15 consumer built with CocoaPods and SwiftPM at f2a627b84c1ff96f21ac2fcb623ab36142dd5512; all 113 core Swift source files and built privacy resources verified. See Documentation/VerifiedConsumerMappings.md."
+  lastVerified: "2026-09-16"

@@ -368,6 +368,8 @@ jobs:
             phase: migration
           - library: DeviceKit
             phase: migration
+          - library: CryptoSwift
+            phase: migration
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:

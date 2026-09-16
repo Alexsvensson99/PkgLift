@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import os
+import plistlib
 from pathlib import Path
 import sys
 import tempfile
@@ -160,7 +161,7 @@ class MigratedPodfileTests(unittest.TestCase):
         return pilot.verify_migrated_podfile(original, migrated, name, version)
 
     def test_accepts_each_reviewed_target_when_only_its_pod_declaration_is_removed(self):
-        for name, version in (("KeychainAccess", "4.2.2"), ("DeviceKit", "5.8.0")):
+        for name, version in (("KeychainAccess", "4.2.2"), ("DeviceKit", "5.8.0"), ("CryptoSwift", "1.10.0")):
             with self.subTest(name=name):
                 original = self.original_podfile(name, version)
                 expected = original.replace(self.declaration(name, version), b"")
@@ -204,6 +205,129 @@ class MigratedPodfileTests(unittest.TestCase):
             with self.subTest(label=label):
                 with self.assertRaises(RuntimeError):
                     self.verify(original, original.replace(declaration, b""), name, version)
+
+
+class SourceInventoryTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="pkglift-source-inventory-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.source = self.root / "Sources/CryptoSwift/SHA2.swift"
+        self.source.parent.mkdir(parents=True)
+        self.source.write_text("public struct SHA2 {}")
+        self.other = self.source.with_name("AES.swift")
+        self.other.write_text("public struct AES {}")
+        self.expected = {str(p.relative_to(self.root)): pilot.git_blob_digest(p)
+                         for p in (self.source, self.other)}
+
+    def verify(self):
+        return pilot.verify_source_inventory(self.root, self.expected)
+
+    def test_accepts_all_reviewed_sources(self):
+        self.assertIsNone(self.verify())
+
+    def test_rejects_changed_file_even_when_probe_source_is_unchanged(self):
+        self.other.write_text("public struct DifferentAES {}")
+        with self.assertRaisesRegex(RuntimeError, "differs from reviewed revision"):
+            self.verify()
+
+    def test_rejects_missing_source(self):
+        self.other.rename(self.other.with_suffix(".txt"))
+        with self.assertRaisesRegex(RuntimeError, "differs from reviewed revision"):
+            self.verify()
+
+    def test_rejects_extra_compiled_source(self):
+        self.source.with_name("Unexpected.swift").write_text("struct Extra {}")
+        with self.assertRaisesRegex(RuntimeError, "differs from reviewed revision"):
+            self.verify()
+
+    def test_rejects_symlinked_source_directory(self):
+        (self.source.parent / "linked").symlink_to(self.source.parent, target_is_directory=True)
+        with self.assertRaisesRegex(RuntimeError, "Symlink"):
+            self.verify()
+
+    def test_rejects_symlinked_source_root(self):
+        moved = self.root / "moved"
+        self.source.parent.rename(moved)
+        (self.root / "Sources/CryptoSwift").symlink_to(moved, target_is_directory=True)
+        with self.assertRaisesRegex(RuntimeError, "Unsafe"):
+            self.verify()
+
+    def test_git_blob_identity_uses_git_header(self):
+        path = self.root / "empty"
+        path.write_bytes(b"")
+        self.assertEqual(pilot.git_blob_digest(path), "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391")
+
+
+class RequiredPrivacyManifestTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="pkglift-privacy-guard-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.relative = "CryptoSwift_CryptoSwiftResources.bundle/PrivacyInfo.xcprivacy"
+        self.expected = {"NSPrivacyTracking": False, "NSPrivacyCollectedDataTypes": []}
+
+    def write(self, relative, value):
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(plistlib.dumps(value))
+        return path
+
+    def verify(self):
+        return pilot.verify_required_privacy_manifest(self.root, self.relative, self.expected)
+
+    def test_accepts_expected_named_bundle_with_equal_plist_semantics(self):
+        self.write(self.relative, self.expected)
+        self.assertEqual(self.verify(), self.relative)
+
+    def test_rejects_missing_resource(self):
+        with self.assertRaisesRegex(RuntimeError, "Missing required privacy resource"):
+            self.verify()
+
+    def test_unrelated_manifest_does_not_satisfy_required_resource(self):
+        self.write("Unrelated.bundle/PrivacyInfo.xcprivacy", self.expected)
+        with self.assertRaisesRegex(RuntimeError, "Missing required privacy resource"):
+            self.verify()
+
+    def test_rejects_changed_privacy_semantics(self):
+        self.write(self.relative, {**self.expected, "NSPrivacyTracking": True})
+        with self.assertRaisesRegex(RuntimeError, "semantics changed"):
+            self.verify()
+
+    def test_rejects_wrong_plist_value_type_even_when_python_compares_equal(self):
+        self.write(self.relative, {**self.expected, "NSPrivacyTracking": 0})
+        with self.assertRaisesRegex(RuntimeError, "semantics changed"):
+            self.verify()
+
+    def test_rejects_resource_symlink(self):
+        other = self.write("elsewhere/PrivacyInfo.xcprivacy", self.expected)
+        target = self.root / self.relative
+        target.parent.mkdir()
+        target.symlink_to(other)
+        with self.assertRaisesRegex(RuntimeError, "Symlink"):
+            self.verify()
+
+    def test_rejects_bundle_symlink(self):
+        self.write("elsewhere/PrivacyInfo.xcprivacy", self.expected)
+        (self.root / Path(self.relative).parent).symlink_to(self.root / "elsewhere", target_is_directory=True)
+        with self.assertRaisesRegex(RuntimeError, "Symlink"):
+            self.verify()
+
+    def test_rejects_invalid_plist(self):
+        path = self.write(self.relative, self.expected)
+        path.write_bytes(b"not a plist")
+        with self.assertRaises(plistlib.InvalidFileException):
+            self.verify()
+
+    def test_rejects_resource_directory(self):
+        (self.root / self.relative).mkdir(parents=True)
+        with self.assertRaisesRegex(RuntimeError, "Missing required privacy resource"):
+            self.verify()
+
+    def test_rejects_absolute_and_escaping_paths(self):
+        for relative in ("/PrivacyInfo.xcprivacy", "../PrivacyInfo.xcprivacy"):
+            with self.subTest(relative=relative), self.assertRaisesRegex(RuntimeError, "remain inside"):
+                pilot.verify_required_privacy_manifest(self.root, relative, self.expected)
 
 
 if __name__ == "__main__":

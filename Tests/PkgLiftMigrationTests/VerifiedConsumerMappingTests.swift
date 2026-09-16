@@ -24,6 +24,12 @@ final class VerifiedConsumerMappingTests: XCTestCase {
             lowerVersion: "5.7.9",
             repository: "https://github.com/devicekit/DeviceKit"
         ),
+        ExpectedMapping(
+            name: "CryptoSwift",
+            version: "1.10.0",
+            lowerVersion: "1.9.9",
+            repository: "https://github.com/krzyzanowskim/CryptoSwift"
+        ),
     ]
 
     func testVerifiedConsumerMappingsHaveExactRegistryContractAndAdmissionGates() async throws {
