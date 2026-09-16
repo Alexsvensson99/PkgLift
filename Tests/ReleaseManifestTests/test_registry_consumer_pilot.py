@@ -207,6 +207,58 @@ class MigratedPodfileTests(unittest.TestCase):
                     self.verify(original, original.replace(declaration, b""), name, version)
 
 
+class SourceInventoryTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="pkglift-source-inventory-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.source = self.root / "Sources/CryptoSwift/SHA2.swift"
+        self.source.parent.mkdir(parents=True)
+        self.source.write_text("public struct SHA2 {}")
+        self.other = self.source.with_name("AES.swift")
+        self.other.write_text("public struct AES {}")
+        self.expected = {str(p.relative_to(self.root)): pilot.git_blob_digest(p)
+                         for p in (self.source, self.other)}
+
+    def verify(self):
+        return pilot.verify_source_inventory(self.root, self.expected)
+
+    def test_accepts_all_reviewed_sources(self):
+        self.assertIsNone(self.verify())
+
+    def test_rejects_changed_file_even_when_probe_source_is_unchanged(self):
+        self.other.write_text("public struct DifferentAES {}")
+        with self.assertRaisesRegex(RuntimeError, "differs from reviewed revision"):
+            self.verify()
+
+    def test_rejects_missing_source(self):
+        self.other.rename(self.other.with_suffix(".txt"))
+        with self.assertRaisesRegex(RuntimeError, "differs from reviewed revision"):
+            self.verify()
+
+    def test_rejects_extra_compiled_source(self):
+        self.source.with_name("Unexpected.swift").write_text("struct Extra {}")
+        with self.assertRaisesRegex(RuntimeError, "differs from reviewed revision"):
+            self.verify()
+
+    def test_rejects_symlinked_source_directory(self):
+        (self.source.parent / "linked").symlink_to(self.source.parent, target_is_directory=True)
+        with self.assertRaisesRegex(RuntimeError, "Symlink"):
+            self.verify()
+
+    def test_rejects_symlinked_source_root(self):
+        moved = self.root / "moved"
+        self.source.parent.rename(moved)
+        (self.root / "Sources/CryptoSwift").symlink_to(moved, target_is_directory=True)
+        with self.assertRaisesRegex(RuntimeError, "Unsafe"):
+            self.verify()
+
+    def test_git_blob_identity_uses_git_header(self):
+        path = self.root / "empty"
+        path.write_bytes(b"")
+        self.assertEqual(pilot.git_blob_digest(path), "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391")
+
+
 class RequiredPrivacyManifestTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="pkglift-privacy-guard-")
@@ -239,6 +291,11 @@ class RequiredPrivacyManifestTests(unittest.TestCase):
 
     def test_rejects_changed_privacy_semantics(self):
         self.write(self.relative, {**self.expected, "NSPrivacyTracking": True})
+        with self.assertRaisesRegex(RuntimeError, "semantics changed"):
+            self.verify()
+
+    def test_rejects_wrong_plist_value_type_even_when_python_compares_equal(self):
+        self.write(self.relative, {**self.expected, "NSPrivacyTracking": 0})
         with self.assertRaisesRegex(RuntimeError, "semantics changed"):
             self.verify()
 

@@ -1,8 +1,8 @@
 # Verified consumer mapping admission
 
 A registry mapping is admitted only after a repository-owned consumer compiles
-through both CocoaPods and Swift Package Manager (SwiftPM). The two current
-candidates are intentionally small Swift-only iOS 15 apps:
+through both CocoaPods and Swift Package Manager (SwiftPM). The two admitted
+0.9.0 mappings below use deliberately small Swift-only iOS 15 apps:
 
 | CocoaPods pod / SwiftPM product | CocoaPods version | SwiftPM repository | reviewed revision | canonical public podspec SHA-256 | reviewed source SHA-256 |
 | --- | --- | --- | --- | --- | --- |
@@ -95,3 +95,18 @@ fixture stayed unchanged.
 These are admission records for the pre-mapping integrations. They do not
 replace the separate migration and verification evidence required by the
 Registry Gate.
+
+## Pending 0.10 admission
+
+CryptoSwift 1.10.0 is a separate, currently unmapped candidate in
+[issue #59](https://github.com/Alexsvensson99/PkgLift/issues/59), with the
+[SwiftCryptoSwift fixture](../Fixtures/SwiftCryptoSwift/) and
+[0.10 acceptance plan](Plan-0.10.md). Its equivalence pilot requires both
+registry copies to be absent. No passing build or migration is claimed yet.
+
+Unlike the earlier sentinel-only source checks, the CryptoSwift pilot binds
+all 113 core Swift source files to Git blob identities from the reviewed
+revision, rejecting changed, missing or additional compiled files. CocoaPods
+must match this complete compiled-source inventory plus the privacy source;
+SwiftPM must also match the manifest and resource-target source. This binds the
+relevant source contents even when CocoaPods does not retain a Git checkout.

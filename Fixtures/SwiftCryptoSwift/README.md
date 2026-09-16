@@ -10,7 +10,8 @@ The Podfile uses modular headers, with no `use_frameworks!`. The app contains
 only Swift sources. Evidence is limited to this iOS 15 Swift consumer.
 
 The public CocoaPods specification and upstream package manifest must resolve
-to the reviewed version and source revision. In particular, the pilot must
+to the reviewed version. SwiftPM pins the exact revision; CocoaPods must match
+the complete core Swift source inventory and privacy bytes from that revision. In particular, the pilot must
 verify the expected privacy manifest in both built distributions: CocoaPods
 uses a `CryptoSwift` resource bundle; SwiftPM declares a separate resources
 target. A passing source build alone is insufficient for admission.
@@ -31,3 +32,9 @@ by a separate `--phase migration` run on the mapped source tree.
 The required SwiftPM output path is
 `CryptoSwift_CryptoSwiftResources.bundle/PrivacyInfo.xcprivacy`; its actual
 presence is an acceptance check, not a claim established by manifest inspection.
+
+`upstream-source-inventory.json` binds all 113 core Swift source files to Git
+blob identities from the pinned commit, plus the SwiftPM manifest/resource
+source and privacy manifest. Every integration rejects changed, missing or
+additional compiled core Swift files. This is content binding for the compiled
+CocoaPods sources, not a claim that CocoaPods retains `.git` commit metadata.
