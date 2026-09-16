@@ -27,6 +27,7 @@ Every planned release follows these rules:
 Roadmap items are grouped by confidence rather than by speculative release dates:
 
 - **Released** — shipped and supported.
+- **Release preparation** — accepted and merged product scope awaiting candidate validation, private distribution acceptance, and public release approval.
 - **Next** — the active release target with concrete acceptance criteria.
 - **Planned** — intended direction after the next release; scope may still change based on evidence.
 - **Research** — technically promising work that is not yet committed to a release.
