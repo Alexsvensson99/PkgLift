@@ -64,6 +64,24 @@ The release adds a narrow library API in `PkgLiftCocoaPods` for caller-supplied 
 
 The API does not read, expand, traverse, hash, or otherwise verify local files. It does not verify source provenance, resolve packages or products, generate `Package.swift`, load Podspecs through the CLI, change a migration plan, mutate an Xcode project, remove CocoaPods, or broaden `AUTO` eligibility. See the [v0.6.0 release notes](Documentation/ReleaseNotes-0.6.0.md), [generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), [Stage 1 validation record](Documentation/GeneratedPackageStage1Validation.md), and [v0.6 release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) for the pinned S1 boundary and verification results.
 
+## 0.10.0 candidate — CryptoSwift mapping (unpublished)
+
+The unreleased 0.10.0 candidate adds an exact CryptoSwift mapping for Swift-only
+iOS consumers targeting iOS 15 or later. The concrete evidence builds
+CryptoSwift 1.10.0 through CocoaPods and SwiftPM, binds all 113 compiled core
+Swift source files, and verifies the named built privacy resources. The mapping
+uses the existing `swiftpm.minimumVersion` threshold policy: later stable
+lockfile versions at or above 1.10.0 remain subject to every other `AUTO` gate;
+the concrete build does not establish broader version, language or platform
+support. It makes no runtime cryptographic or privacy claim.
+
+This is candidate documentation only. Public distribution remains at 0.9.0.
+Private signing and notarization acceptance, followed by the separate publication
+gate, are required before a 0.10.0 tag, GitHub Release, or Homebrew update.
+See the [candidate release notes](Documentation/ReleaseNotes-0.10.0.md),
+[verified mapping evidence](Documentation/VerifiedConsumerMappings.md), and
+[0.10 plan](Documentation/Plan-0.10.md).
+
 ## Verified Swift consumer mappings — 0.9.0 released
 
 [PkgLift 0.9.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.9.0)
@@ -291,7 +309,7 @@ PkgLift retains these safety boundaries:
 - Only CocoaPods-to-SwiftPM migration is supported.
 - Migration is partial: non-automatic pods and their CocoaPods integration are preserved.
 - A stable `major.minor.patch` lockfile version at or above the exact mapping's verified SwiftPM minimum, exactly one matching Xcode target, a complete non-empty target language profile, and mapping support for every detected language are required for `AUTO`.
-- Schema-2 mappings also require a matching, statically resolved consumer platform and a deployment target at or above their verified minimum. The 0.9.0 release's KeychainAccess and DeviceKit mappings are limited to Swift consumers targeting iOS 15 or later; see [consumer build evidence](Documentation/VerifiedConsumerMappings.md).
+- Schema-2 mappings also require a matching, statically resolved consumer platform and a deployment target at or above their verified minimum. The published 0.9.0 KeychainAccess and DeviceKit mappings, and the unpublished 0.10.0 CryptoSwift candidate, are limited to Swift consumers targeting iOS 15 or later; see [consumer build evidence](Documentation/VerifiedConsumerMappings.md).
 - Dynamic Ruby, install hooks, `script_phase`, `use_frameworks!`, `inherit! :search_paths`, `abstract_target`, external pod sources, and ambiguous target mappings are non-automatic. PkgLift analyzes only bounded literal `:git` provenance; every external dependency still resolves to `REVIEW`, `BLOCKED`, or `UNKNOWN`, never `AUTO`.
 - Local `:path` provenance, repository network resolution, Podspec generation, and automatic external-source migration are not implemented.
 - The pure Podspec assessment library accepts caller-supplied in-memory JSON. It does not read Podspec files, execute Ruby or CocoaPods, resolve effective inheritance, inspect filesystem paths or artifacts, generate package metadata, or change migration classification. The v0.6 S1 API validates supplied paths and digest bindings but does not verify source-file existence, source contents, source-content digest assertions, or provenance.

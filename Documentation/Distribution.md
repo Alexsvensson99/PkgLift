@@ -12,6 +12,11 @@ See the [0.9.0 release notes](ReleaseNotes-0.9.0.md) for the shipped scope.
 The [v0.6 release evidence](GeneratedPackageV06ReleaseEvidence.md) remains a
 historical record of that release's checks.
 
+The source now prepares **0.10.0**, an unpublished release candidate. See the
+[0.10.0 release notes](ReleaseNotes-0.10.0.md) for its bounded CryptoSwift scope.
+The public release and Homebrew remain at 0.9.0 until the protected publication
+workflow completes.
+
 ## Release credentials
 
 The release workflow requires a Developer ID Application certificate exported as

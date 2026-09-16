@@ -1,6 +1,6 @@
 # PkgLift 0.10 plan: verified CryptoSwift migration
 
-Status: implementation and pilot work approved; no 0.10 release is published.
+Status: implementation and full migration accepted in [PR #114](https://github.com/Alexsvensson99/PkgLift/pull/114); release preparation is underway. No 0.10 release is published.
 The baseline is public 0.9.0 plus its final documentation at
 `88a265fe4270fddf94e760c9aaf29f8630c71ba7`.
 
@@ -38,3 +38,12 @@ The 1.0 quality bar in the roadmap remains the long-term target.
 
 If identity, build or resource evidence conflicts, keep CryptoSwift unmapped
 and document the precise blocker. Never weaken a guard to make a pilot pass.
+
+## Accepted feature baseline
+
+PR #114 merged as `7cd328696e6eb15824e7ec9db40a9e1cebdf3bc3` after all 23
+checks passed on reviewed head `8d9a971616749a068d9d0012228c4540d0bf4c58`.
+The pre-mapping admission and full migration evidence are recorded in
+[verified consumer mappings](VerifiedConsumerMappings.md#cryptoswift-admission-for-010-unreleased).
+Release-candidate checks, private signed distribution acceptance and publication
+are separate from this completed feature evidence.
