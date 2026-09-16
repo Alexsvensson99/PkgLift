@@ -58,12 +58,14 @@ PODSPEC_INPUTS = {
         "rawSHA256": "3fdb29a9f3b1440b5cfbd51e34af247be44dd376aeaf6424074ab6d07e099770",
         "rawSHA1": "b1dbf89d0067d016ab734dc6e7ae799ea52101cd",
         "canonicalSHA256": "6d633b11d9d36794d1cd9388bda1e142f0cd528d75617d305bc3282f11ed52d9",
+        "cachePath": "Specs/4/3/2/AmazonIVSPlayer/1.40.0/AmazonIVSPlayer.podspec.json",
     },
     "SDWebImage": {
         "url": "https://raw.githubusercontent.com/CocoaPods/Specs/836af618f46996d9e8883146851b811a63c76d8e/Specs/1/1/7/SDWebImage/5.18.1/SDWebImage.podspec.json",
         "rawSHA256": "21f5f15b959199ab1eab0c01ab484a1a16e7760b6e4e292622fa32fc5702861c",
         "rawSHA1": "ebdbcebc7933a45226d9313bd0118bc052ad458b",
         "canonicalSHA256": "c3b6e8f1777a8043a4d4ef1381889d2968b7d35e1ef24d8966b0bae1357f4452",
+        "cachePath": "Specs/1/1/7/SDWebImage/5.18.1/SDWebImage.podspec.json",
     },
 }
 
@@ -752,22 +754,34 @@ def validate_scheme_listing(document: Mapping[str, Any]) -> None:
     require(sum(1 for value in schemes if value == TARGET) == 1, "Grid Feed scheme is missing or ambiguous", "blocked-input")
 
 
-def validate_installed_podspecs(root: Path, expected_names: set[str] | None = None) -> list[dict[str, Any]]:
-    expected_names = expected_names or set(POD_VERSIONS)
+def validate_no_local_podspecs(root: Path) -> None:
     directory = root / "Pods/Local Podspecs"
-    paths = sorted(directory.glob("*.podspec.json"))
-    require({path.name for path in paths} == {f"{name}.podspec.json" for name in expected_names},
-            "installed local podspec set differs from reviewed direct closure", "blocked-input")
-    result = []
-    for name in expected_names:
-        path = directory / f"{name}.podspec.json"
-        require(path.is_file() and not path.is_symlink(), f"installed {name} podspec is missing", "blocked-input")
-        document = json.loads(path.read_text())
-        item = validate_podspec(document, name)
-        require(item["canonicalSHA256"] == PODSPEC_INPUTS[name]["canonicalSHA256"],
-                f"installed {name} podspec differs from immutable reviewed spec", "blocked-input")
-        result.append(item)
-    return result
+    entries = list(directory.iterdir()) if directory.exists() else []
+    require(not entries, "unexpected external/local podspec material appeared in Pods/Local Podspecs", "blocked-input")
+
+
+def parse_pod_spec_which_output(output: str, name: str) -> Path:
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    require(len(lines) == 1 and not re.search(r"\x1b\[", lines[0]),
+            f"pod spec which returned ambiguous output for {name}", "blocked-input")
+    path = Path(lines[0])
+    require(path.is_absolute(), f"pod spec which returned a relative path for {name}", "blocked-input")
+    return path
+
+
+def validate_cached_public_podspec(path: Path, name: str, repos_root: Path | None = None) -> dict[str, Any]:
+    repos_root = (repos_root or (Path.home() / ".cocoapods/repos")).resolve(strict=True)
+    require(path.is_file() and not path.is_symlink(), f"cached public {name} podspec is missing or symlinked", "blocked-input")
+    resolved = path.resolve(strict=True)
+    require(_under(resolved, repos_root), f"cached public {name} podspec is outside CocoaPods repos", "blocked-input")
+    relative = resolved.relative_to(repos_root)
+    expected_suffix = Path(PODSPEC_INPUTS[name]["cachePath"]).parts
+    require(relative.parts[-len(expected_suffix):] == expected_suffix,
+            f"cached public {name} podspec path/version differs from reviewed input", "blocked-input")
+    raw = resolved.read_bytes()
+    _document, evidence = validate_public_podspec_bytes(name, raw)
+    return {**evidence, "rawSHA1": PODSPEC_INPUTS[name]["rawSHA1"],
+            "rawSHA256": PODSPEC_INPUTS[name]["rawSHA256"]}
 
 
 def find_package_resolved(root: Path) -> Path:
@@ -995,6 +1009,21 @@ class Runner:
         require(evidence.get("status") == "passed", "generated CocoaPods execution inputs were not approved", "blocked-input")
         return evidence
 
+    def resolve_public_podspecs(self, root: Path, names: set[str], label: str) -> list[dict[str, Any]]:
+        validate_no_local_podspecs(root)
+        evidence = []
+        for name in sorted(names):
+            output = self.execute(
+                f"{label}-{name.lower()}-public-podspec",
+                ["pod", "spec", "which", name, f"--version={POD_VERSIONS[name]}", "--no-ansi"],
+                cwd=root,
+                timeout=60,
+                outcome="blocked-input",
+            )
+            path = parse_pod_spec_which_output(output, name)
+            evidence.append(validate_cached_public_podspec(path, name))
+        return evidence
+
     def pod_setup(self, root: Path, label: str) -> tuple[str, dict[str, Any], dict[str, Any]]:
         original_lock = (root / "Podfile.lock").read_text()
         # Deployment mode compares the tool version too. Normalize only the
@@ -1011,7 +1040,7 @@ class Runner:
         lock = validate_lock(lock_text, set(POD_VERSIONS))
         require((root / "Pods/Manifest.lock").read_bytes() == (root / "Podfile.lock").read_bytes(),
                 "Pods Manifest.lock differs from Podfile.lock", "blocked-input")
-        installed = validate_installed_podspecs(root)
+        installed = self.resolve_public_podspecs(root, set(POD_VERSIONS), label)
         payloads = validate_installed_dependency_payloads(root, self.sd_source_reference,
                                                           self.amazon_payload_tree, include_sd=True)
         project = self.pbx_json(root, label + "-project")
@@ -1211,9 +1240,9 @@ class Runner:
             final_lock = validate_lock(final_lock_text, {"AmazonIVSPlayer"})
             require((migration / "Pods/Manifest.lock").read_bytes() == (migration / "Podfile.lock").read_bytes(),
                     "final Pods manifest differs from lock")
-            amazon_spec = migration / "Pods/Local Podspecs/AmazonIVSPlayer.podspec.json"
-            require(amazon_spec.is_file(), "retained Amazon podspec missing")
-            retained_podspec = validate_installed_podspecs(migration, {"AmazonIVSPlayer"})[0]
+            retained_podspec = self.resolve_public_podspecs(
+                migration, {"AmazonIVSPlayer"}, "post-migration-pod-install"
+            )[0]
             retained_payload = validate_installed_dependency_payloads(
                 migration, self.sd_source_reference, self.amazon_payload_tree, include_sd=False
             )

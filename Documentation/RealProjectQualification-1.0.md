@@ -63,7 +63,7 @@ migration occurred, and G3 remains open.
 Both runners now create the local Git exclusion directory before recording the
 generated plan path. A regression initializes actual template-free repositories,
 checks both runners, and verifies that only the generated plan is ignored. All
-189 release/harness tests pass locally. Hosted verification of this fix is pending.
+192 release/harness tests pass locally. Hosted verification of this fix is pending.
 
 [The second attempt](https://github.com/Alexsvensson99/PkgLift/actions/runs/35143324501),
 on correction commit `b2a1acb`, passed both refusal controls and reached AWS intake.
@@ -86,6 +86,16 @@ checksums match. The permitted tool-version normalization now happens before
 locked installation, with exact dependency checks before and after. This is a
 proven preparation issue; the next hosted diagnostic will establish whether any
 additional installation problem exists.
+
+[The fourth attempt](https://github.com/Alexsvensson99/PkgLift/actions/runs/35145061473)
+passed both refusal controls, dependency intake and the locked baseline pod
+installation. It then exposed an incorrect assumption that public trunk podspecs
+are copied into `Pods/Local Podspecs`. CocoaPods 1.17 stores that sandbox directory
+for external sources; public specifications remain in the spec repository cache.
+The installed-spec check now resolves exact-version public spec files using the
+reviewed CocoaPods CLI, checks their immutable identities and lock checksums, and
+still verifies every selected installed payload. Baseline build and migration
+remain unverified until the next hosted attempt.
 
 ## Selected cases
 

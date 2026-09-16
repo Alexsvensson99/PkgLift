@@ -304,20 +304,66 @@ class IntakeTests(unittest.TestCase):
                     self.assertRaises(aws.QualificationError):
                 aws.inspect_amazon_archive(archive_path)
 
-    def test_installed_podspecs_must_be_exact_and_complete(self):
+    def test_public_cached_podspecs_allow_empty_local_podspecs_and_require_exact_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
-            directory = Path(temporary) / "Pods/Local Podspecs"
-            directory.mkdir(parents=True)
+            root = Path(temporary)
+            local = root / "project/Pods/Local Podspecs"
+            local.mkdir(parents=True)
+            repos = root / ".cocoapods/repos"
+            (repos / "trunk").mkdir(parents=True)
             documents = {name: podspec(name) for name in aws.POD_VERSIONS}
-            for name, document in documents.items():
-                (directory / f"{name}.podspec.json").write_text(json.dumps(document))
-            patched = {name: {**value, "canonicalSHA256": aws.canonical_json_sha256(documents[name])}
+            raw = {name: json.dumps(document, sort_keys=True).encode() for name, document in documents.items()}
+            patched = {name: {**value,
+                              "rawSHA1": hashlib.sha1(raw[name]).hexdigest(),
+                              "rawSHA256": hashlib.sha256(raw[name]).hexdigest(),
+                              "canonicalSHA256": aws.canonical_json_sha256(documents[name])}
                        for name, value in aws.PODSPEC_INPUTS.items()}
             with mock.patch.object(aws, "PODSPEC_INPUTS", patched):
-                self.assertEqual(len(aws.validate_installed_podspecs(Path(temporary))), 2)
-                (directory / "Unexpected.podspec.json").write_text("{}")
-                with self.assertRaises(aws.QualificationError):
-                    aws.validate_installed_podspecs(Path(temporary))
+                aws.validate_no_local_podspecs(root / "project")
+                for name in aws.POD_VERSIONS:
+                    path = repos / "trunk" / patched[name]["cachePath"]
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(raw[name])
+                    evidence = aws.validate_cached_public_podspec(path, name, repos)
+                    self.assertEqual(evidence["name"], name)
+
+    def test_public_podspec_resolution_rejects_local_entries_malformed_output_and_outside_path(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            local = root / "project/Pods/Local Podspecs"
+            local.mkdir(parents=True)
+            (local / "Injected.podspec.json").write_text("{}")
+            with self.assertRaises(aws.QualificationError):
+                aws.validate_no_local_podspecs(root / "project")
+            for output in ("relative/spec.json\n", "/one/spec.json\n/two/spec.json\n", "\x1b[31m/spec.json\x1b[0m\n"):
+                with self.subTest(output=output), self.assertRaises(aws.QualificationError):
+                    aws.parse_pod_spec_which_output(output, "SDWebImage")
+
+            repos = root / ".cocoapods/repos"
+            repos.mkdir(parents=True)
+            outside = root / "outside/SDWebImage.podspec.json"
+            outside.parent.mkdir()
+            outside.write_text("{}")
+            with self.assertRaises(aws.QualificationError):
+                aws.validate_cached_public_podspec(outside, "SDWebImage", repos)
+
+    def test_public_cached_podspec_rejects_unexpected_identity_even_with_matching_file_hashes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repos = root / ".cocoapods/repos"
+            bad = podspec("AmazonIVSPlayer")
+            bad["name"] = "UnexpectedPlayer"
+            raw = json.dumps(bad, sort_keys=True).encode()
+            patched = {**aws.PODSPEC_INPUTS["AmazonIVSPlayer"],
+                       "rawSHA1": hashlib.sha1(raw).hexdigest(),
+                       "rawSHA256": hashlib.sha256(raw).hexdigest(),
+                       "canonicalSHA256": aws.canonical_json_sha256(bad)}
+            path = repos / "trunk" / patched["cachePath"]
+            path.parent.mkdir(parents=True)
+            path.write_bytes(raw)
+            with mock.patch.dict(aws.PODSPEC_INPUTS, {"AmazonIVSPlayer": patched}), \
+                    self.assertRaises(aws.QualificationError):
+                aws.validate_cached_public_podspec(path, "AmazonIVSPlayer", repos)
 
     def test_installed_amazon_payload_must_match_reviewed_archive_tree(self):
         with tempfile.TemporaryDirectory() as temporary:
