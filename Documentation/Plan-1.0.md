@@ -111,7 +111,10 @@ compilation. Do not trigger full workflows merely to estimate runtime.
 
 ### G3 — Prove real and partial migrations
 
-**Priority: third; test design can proceed alongside G2 after G1. Status: open.**
+**Priority: third; test design can proceed alongside G2 after G1. Status: in progress.**
+The two [repository-owned partial-migration cases](PartialMigration-1.0.md#local-qualification-on-2026-09-16)
+passed locally on Xcode 27 with fresh post-migration builds. Real-project, existing
+SwiftPM coexistence and additional toolchain/shape evidence remain open.
 Deliver an evidence matrix separating read-only, repository-fixture and real-project results.
 
 - Preserve the ten upstream read-only pilots and their current prohibition on
@@ -127,7 +130,7 @@ Deliver an evidence matrix separating read-only, repository-fixture and real-pro
   toolchain; pass the baseline build; review the exact AUTO set; prove dry run is
   inert; apply; refresh dependencies explicitly; verify structure and the final
   build; inspect the diff and preserve unrelated source/resources/settings.
-- Add repeatable repository-owned partial-migration cases for Swift-only and
+- Qualify the [repository-owned partial-migration pilots](PartialMigration-1.0.md) for Swift-only and
   mixed Swift/Objective-C targets. At least one AUTO dependency must migrate and
   at least one non-AUTO dependency must remain. Prove both consumers still compile,
   the retained pod and CocoaPods integration survive refresh, and SwiftPM is linked
