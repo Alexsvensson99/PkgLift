@@ -1,6 +1,6 @@
 # Multi-target real-project qualification for 1.0
 
-Status: **ZBNetworking selected for a fail-closed hosted qualification; no positive multi-target build result yet**.
+Status: **First hosted ZBNetworking attempt stopped on source mutation during scheme discovery; no positive multi-target build result yet**.
 Reviewed against main `6dcfc7bf5b2bcc0f8654e920c6ce7fd57767b986` on 2026-09-18.
 The existing [selected G3 cases](RealProjectQualification-1.0.md) passed on that
 main commit in [run 35149953474](https://github.com/Alexsvensson99/PkgLift/actions/runs/35149953474).
@@ -150,7 +150,7 @@ On a separate disposable local copy, the unedited plan and dry run passed; apply
 changed only Podfile, project.pbxproj and its backup. The new product links once
 to the app and zero times to either sibling. Sibling object closure, protected
 project state, user schemes and breakpoints are preserved. No upstream Ruby,
-CocoaPods refresh or Xcode build ran locally; hosted qualification remains pending.
+CocoaPods refresh or Xcode build ran locally. The first hosted attempt is recorded below.
 
 The [execution intake](Evidence/MultiTargetQualification-1.0/zb-execution-intake.json)
 binds the full upstream Git tree, target identifiers, existing schemes, executable
@@ -182,7 +182,7 @@ The two pinned public podspecs form a bounded local Specs-cache projection;
 CocoaPods refresh disables repository updates and network access.
 
 Only `report/` may be uploaded. Source, logs, caches and build products remain
-private job-local material. Hosted execution remains pending; this protocol does
+private job-local material. Positive hosted qualification remains pending; this protocol does
 not close G3 or authorize a release.
 
 Local verification of this preparation passed 378 XCTest cases and 233 Swift
@@ -196,3 +196,37 @@ Plans carrying registry-source provenance use schema 2 so released schema-1
 library preflights reject them before operations. The local real-project check
 was repeated with the full and portable schema-2 plans and the complete framework
 phase/dependency-proxy preservation checks.
+
+## First hosted attempt and diagnostic follow-up
+
+[PR #124](https://github.com/Alexsvensson99/PkgLift/pull/124) integrated the protocol
+at `45c26db3434f9dc7bba369859a0e313cff940748`. The single authorized
+[run 35396091852, attempt 1](https://github.com/Alexsvensson99/PkgLift/actions/runs/35396091852)
+finished with a failed G3 gate. Both refusal controls passed using the same
+verified executable; ZBNetworking stopped with `failed-safety: scheme discovery mutated source`.
+The [portable result record](Evidence/MultiTargetQualification-1.0/zb-first-hosted-run.json)
+binds the source commit, binary, runner, report hashes and observed stage.
+
+On macOS 15.7.9 arm64 with Xcode 16.4, both pinned copies passed source intake
+and identical byte-for-byte scheme promotion. Baseline `xcodebuild -list -json`
+exited 0 and its selected-scheme check passed, but the subsequent tree snapshot
+differed. No baseline build, PkgLift migration, CocoaPods refresh or final build
+ran. No app or tests launched. The original short-circuit guard did not collect
+the changed paths, post-list index or worktree status. The specific changed file
+and cause remain unknown; this is neither a successful migration nor evidence
+that PkgLift caused the change.
+
+The diagnostic follow-up collects all three postconditions before checking them
+and retains `schemeDiscovery` in the final report even when the guard raises.
+It records tree and Git-output hashes, change flags, total changed-path count,
+and up to 64 relative paths with kinds, modes, sizes and hashes. Path display is
+bounded to 1,024 characters with a full-path hash; Xcode user-directory names are
+redacted and symlink targets are represented only by hashes. File contents and
+raw Git output remain private. Acceptance still requires an unchanged complete
+tree, identical index and clean worktree; there is no new mutation allowlist,
+cleanup or automatic retry. Another hosted run is needed to identify the delta.
+
+Local follow-up verification passed all 217 Python harness/policy tests, including
+five new discovery-diagnostic tests, plus repository YAML/workflow and whitespace
+checks. Independent review found no actionable issues. This follow-up changes
+only the Python runner, its tests and evidence/docs; Swift sources are unchanged.
