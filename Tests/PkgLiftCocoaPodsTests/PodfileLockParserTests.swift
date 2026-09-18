@@ -320,6 +320,68 @@ struct PodfileLockParserTests {
 }
 
 extension PodfileLockParserTests {
+    @Test("Bind an exact public SPEC REPOS assignment to each base pod")
+    func publicSpecReposEvidence() throws {
+        let dependency = try #require(PodfileLockParser().parse(content: """
+        PODS:
+          - SDWebImage/Core (5.8.4)
+        DEPENDENCIES:
+          - SDWebImage/Core
+        SPEC REPOS:
+          https://github.com/CocoaPods/Specs.git:
+            - SDWebImage
+        """).first)
+        #expect(dependency.registrySourceProvenance?.status == .implicitPublic)
+        #expect(dependency.registrySourceProvenance?.lockfile?.repositories == [.cocoaPodsSpecsGit])
+    }
+
+    @Test("Custom SPEC REPOS values are privacy-bounded unsupported evidence")
+    func customSpecReposEvidence() throws {
+        let dependency = try #require(PodfileLockParser().parse(content: """
+        PODS:
+          - InternalKit (1.0.0)
+        DEPENDENCIES:
+          - InternalKit
+        SPEC REPOS:
+          https://private.example.invalid/specs:
+            - InternalKit
+        """).first)
+        #expect(dependency.registrySourceProvenance?.status == .unsupportedRepository)
+        let json = try #require(String(data: JSONEncoder().encode(dependency), encoding: .utf8))
+        #expect(json.contains("private.example.invalid") == false)
+    }
+
+    @Test("Duplicate SPEC REPOS nodes are malformed")
+    func duplicateSpecRepoNodesAreMalformed() {
+        let cases = [
+            "PODS:\n - A (1.0.0)\nSPEC REPOS:\n trunk:\n  - A\nSPEC REPOS:\n trunk:\n  - A\n",
+            "PODS:\n - A (1.0.0)\nSPEC REPOS:\n trunk:\n  - A\n  - A\n",
+            "PODS:\n - A/Core (1.0.0)\nSPEC REPOS:\n trunk:\n  - A/Core\n",
+            "PODS:\n - A (1.0.0)\nSPEC REPOS:\n trunk:\n  - 'A B'\n",
+        ]
+        for content in cases {
+            #expect(throws: PodfileLockParser.Error.self) {
+                try PodfileLockParser().parse(content: content)
+            }
+        }
+    }
+
+    @Test("Multiple repository assignments become conflicting bounded evidence")
+    func multipleSpecRepoAssignmentsConflict() throws {
+        let dependency = try #require(PodfileLockParser().parse(content: """
+        PODS:
+          - A (1.0.0)
+        DEPENDENCIES:
+          - A
+        SPEC REPOS:
+          trunk:
+            - A
+          https://github.com/CocoaPods/Specs.git:
+            - A
+        """).first)
+        #expect(dependency.registrySourceProvenance?.status == .conflicting)
+    }
+
     @Test
     func missingFileThrowsFileReadFailed() {
         let fileURL = FileManager.default.temporaryDirectory

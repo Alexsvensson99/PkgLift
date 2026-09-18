@@ -395,6 +395,150 @@ final class MigrationPlanPreflightTests: XCTestCase {
         XCTAssertEqual(prepared.podsToRemove, ["Alamofire"])
     }
 
+    func testMatchedRegistrySourceAllowsRegeneratedPreflight() throws {
+        let provenance = matchedRegistrySource()
+        let entry = makeEntry(registrySourceProvenance: provenance)
+        let plan = makePlan(entries: [entry])
+
+        let prepared = try MigrationPlanPreflight().prepare(
+            plan: plan,
+            currentPlan: plan,
+            availableTargetInfos: [targetInfo("App")]
+        )
+        XCTAssertEqual(prepared.podsToRemove, ["Alamofire"])
+    }
+
+    func testChangedRegistrySourceInvalidatesWholeSnapshot() {
+        let saved = makePlan(entries: [makeEntry(registrySourceProvenance: matchedRegistrySource())])
+        let current = makePlan(entries: [makeEntry()])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: saved,
+            currentPlan: current,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleRegistrySourceProvenance(dependency: "Alamofire")
+            )
+        }
+    }
+
+    func testChangedRetainedRegistrySourceInvalidatesUnrelatedAutoEntry() {
+        let auto = makeEntry(registrySourceProvenance: matchedRegistrySource())
+        let saved = makePlan(entries: [auto, makeRetainedRegistryEntry(
+            provenance: matchedRegistrySource()
+        )])
+        let current = makePlan(entries: [auto, makeRetainedRegistryEntry(
+            provenance: RegistrySourceProvenance(
+                declarations: [RegistrySourceDeclarationEvidence(
+                    line: 1,
+                    repository: .cocoaPodsSpecsGit
+                )],
+                lockfile: RegistrySourceLockfileEvidence(repositories: [.cocoaPodsTrunk])
+            )
+        )])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: saved,
+            currentPlan: current,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleRegistrySourceProvenance(dependency: "RetainedKit")
+            )
+        }
+    }
+
+    func testRegistrySourceRequiresCurrentSnapshotThroughPublicAPI() {
+        let plan = makePlan(entries: [
+            makeEntry(registrySourceProvenance: matchedRegistrySource()),
+        ])
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: plan,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .staleRegistrySourceProvenance(dependency: "Alamofire")
+            )
+        }
+    }
+
+    func testSchemaOneDowngradeCannotCarryRegistrySourceEvidence() throws {
+        let schemaTwo = makePlan(entries: [
+            makeEntry(registrySourceProvenance: matchedRegistrySource()),
+        ])
+        XCTAssertEqual(schemaTwo.schemaVersion, 2)
+        let downgraded = try replacingSchemaVersion(in: schemaTwo, with: 1)
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: downgraded,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .schemaEvidenceMismatch(schemaVersion: 1)
+            )
+        }
+    }
+
+    func testSchemaTwoWithoutRegistryEvidenceIsRefused() throws {
+        let upgraded = try replacingSchemaVersion(
+            in: makePlan(entries: [makeEntry()]),
+            with: 2
+        )
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: upgraded,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .schemaEvidenceMismatch(schemaVersion: 2)
+            )
+        }
+    }
+
+    func testUnknownFuturePlanSchemaIsRefusedBeforeOtherChecks() throws {
+        let future = try replacingSchemaVersion(
+            in: makePlan(entries: [makeEntry(registrySourceProvenance: matchedRegistrySource())]),
+            with: 99
+        )
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: future,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .unsupportedSchemaVersion(99)
+            )
+        }
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: future,
+            currentPlan: makePlan(entries: [makeEntry()]),
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .unsupportedSchemaVersion(99)
+            )
+        }
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: makePlan(entries: [makeEntry()]),
+            currentPlan: future,
+            availableTargets: ["App"]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .unsupportedSchemaVersion(99)
+            )
+        }
+    }
+
     func testExternalProvenanceRequiresCurrentSnapshotThroughPublicAPI() {
         let plan = makePlan(entries: [
             makeEntry(),
@@ -734,6 +878,7 @@ final class MigrationPlanPreflightTests: XCTestCase {
     private func makeEntry(
         targetName: String = "App",
         sourceProvenance: DependencySourceProvenance? = nil,
+        registrySourceProvenance: RegistrySourceProvenance? = nil,
         packageCandidate: PackageCandidate? = nil
     ) -> MigrationPlanEntry {
         let package = packageCandidate ?? makePackage()
@@ -741,6 +886,7 @@ final class MigrationPlanPreflightTests: XCTestCase {
             podName: "Alamofire",
             currentVersion: "5.0.0",
             sourceProvenance: sourceProvenance,
+            registrySourceProvenance: registrySourceProvenance,
             classification: .auto,
             actions: [
                 .removePod(name: "Alamofire"),
@@ -808,6 +954,28 @@ final class MigrationPlanPreflightTests: XCTestCase {
         )
     }
 
+    private func makeRetainedRegistryEntry(
+        provenance: RegistrySourceProvenance
+    ) -> MigrationPlanEntry {
+        MigrationPlanEntry(
+            podName: "RetainedKit",
+            currentVersion: "1.0.0",
+            registrySourceProvenance: provenance,
+            classification: .review,
+            actions: [.manual(description: "Keep on CocoaPods")],
+            declarations: [
+                PodfileDeclaration(
+                    line: 6,
+                    scope: .target,
+                    scopeName: "App",
+                    targetName: "App",
+                    source: .registry
+                ),
+            ],
+            targetAttribution: TargetAttribution(status: .exact, targets: ["App"])
+        )
+    }
+
     private func makeGitProvenance(
         branch: String,
         repositoryURL: String = "https://example.invalid/Owner/ExternalKit.git"
@@ -819,5 +987,29 @@ final class MigrationPlanPreflightTests: XCTestCase {
         return .git(GitSourceProvenance(declarations: [
             GitDeclarationEvidence(repository: repository, reference: reference),
         ]))
+    }
+
+    private func matchedRegistrySource() -> RegistrySourceProvenance {
+        RegistrySourceProvenance(
+            declarations: [
+                RegistrySourceDeclarationEvidence(line: 1, repository: .cocoaPodsSpecsGit),
+            ],
+            lockfile: RegistrySourceLockfileEvidence(repositories: [.cocoaPodsSpecsGit])
+        )
+    }
+
+    private func replacingSchemaVersion(
+        in plan: MigrationPlan,
+        with schemaVersion: Int
+    ) throws -> MigrationPlan {
+        let data = try JSONEncoder().encode(plan)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        object["schemaVersion"] = schemaVersion
+        return try JSONDecoder().decode(
+            MigrationPlan.self,
+            from: JSONSerialization.data(withJSONObject: object)
+        )
     }
 }

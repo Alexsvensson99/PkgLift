@@ -6,6 +6,34 @@ import PkgLiftCore
 @testable import PkgLiftXcode
 
 final class XcodeProjectEditorTests: XCTestCase {
+    func testAddingAndLinkingPackagePreservesUserSchemesAndBreakpointsByteForByte() throws {
+        let fixture = try makeProjectFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let artifacts = try installUserDataArtifacts(in: fixture.project)
+        let editor = XcodeProjectEditor()
+
+        try editor.addSwiftPMPackage(
+            repositoryURL: "https://github.com/Alamofire/Alamofire",
+            requirement: .exact("5.0.0"),
+            to: fixture.project.path
+        )
+        try editor.linkSwiftPMProduct(
+            productName: "Alamofire",
+            toTarget: "App",
+            repositoryURL: "https://github.com/Alamofire/Alamofire",
+            in: fixture.project.path
+        )
+
+        for (url, before) in artifacts {
+            XCTAssertEqual(try Data(contentsOf: url), before, url.path)
+        }
+        let project = try XcodeProj(pathString: fixture.project.path)
+        let root = try XCTUnwrap(try project.pbxproj.rootProject())
+        let target = try XCTUnwrap(project.pbxproj.nativeTargets.first { $0.name == "App" })
+        XCTAssertEqual(root.remotePackages.count, 1)
+        XCTAssertEqual(target.packageProductDependencies?.count, 1)
+    }
+
     func testEquivalentRepositoryURLsDoNotDuplicatePackageOrProduct() throws {
         let fixture = try makeProjectFixture()
         defer { try? FileManager.default.removeItem(at: fixture.root) }
@@ -281,6 +309,54 @@ final class XcodeProjectEditorTests: XCTestCase {
         let xcodeproj = XcodeProj(workspace: XCWorkspace(), pbxproj: pbxproj)
         try xcodeproj.write(path: Path(projectURL.path))
         return (root, projectURL)
+    }
+
+    private func installUserDataArtifacts(in project: URL) throws -> [(URL, Data)] {
+        let userData = project
+            .appendingPathComponent("xcuserdata", isDirectory: true)
+            .appendingPathComponent("tester.xcuserdatad", isDirectory: true)
+        let schemes = userData.appendingPathComponent("xcschemes", isDirectory: true)
+        let debugger = userData.appendingPathComponent("xcdebugger", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: schemes,
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(
+            at: debugger,
+            withIntermediateDirectories: true
+        )
+
+        let schemeOne = schemes.appendingPathComponent("Personal.xcscheme")
+        let schemeTwo = schemes.appendingPathComponent("Diagnostics.xcscheme")
+        let breakpoints = debugger.appendingPathComponent("Breakpoints_v2.xcbkptlist")
+        let contents: [(URL, Data)] = [
+            (schemeOne, Data("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <Scheme version="1.3">
+            </Scheme>
+
+            """.utf8)),
+            (schemeTwo, Data("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <Scheme
+               LastUpgradeVersion = "1600"
+               version = "1.3">
+            </Scheme>
+
+            """.utf8)),
+            (breakpoints, Data("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <Bucket type="1" version="2.0">
+               <Breakpoints>
+               </Breakpoints>
+            </Bucket>
+
+            """.utf8)),
+        ]
+        for (url, data) in contents {
+            try data.write(to: url)
+        }
+        return contents
     }
 
     private func makeMultiTargetProjectFixture() throws -> (root: URL, project: URL) {

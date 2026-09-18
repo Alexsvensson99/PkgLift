@@ -1,0 +1,1029 @@
+{
+  "candidates" : [
+    {
+      "classification" : "UNKNOWN",
+      "issues" : [
+        {
+          "dependency" : "AFNetworking",
+          "message" : "No registry mapping",
+          "severity" : "warning"
+        }
+      ],
+      "pod" : {
+        "declarations" : [
+          {
+            "line" : 6,
+            "scope" : "target",
+            "scopeName" : "ZBNetworkingDemo",
+            "source" : {
+              "registry" : {
+
+              }
+            },
+            "targetName" : "ZBNetworkingDemo"
+          }
+        ],
+        "isDirect" : true,
+        "name" : "AFNetworking",
+        "registrySourceProvenance" : {
+          "declarations" : [
+            {
+              "line" : 1,
+              "repository" : "cocoapods-specs-git"
+            }
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "matchedExplicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "status" : "exact",
+          "targets" : [
+            "ZBNetworkingDemo"
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+          "ZBNetworkingDemo"
+        ],
+        "version" : "4.0.1"
+      },
+      "reasonDetails" : [
+        {
+          "code" : "registry_mapping_missing",
+          "message" : "No registry mapping",
+          "remediation" : "Add an exact verified registry mapping, or keep this dependency on CocoaPods."
+        }
+      ],
+      "reasons" : [
+        "No registry mapping"
+      ]
+    },
+    {
+      "classification" : "UNKNOWN",
+      "issues" : [
+        {
+          "dependency" : "AFNetworking/NSURLSession",
+          "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+          "message" : "No registry mapping",
+          "severity" : "warning"
+        }
+      ],
+      "pod" : {
+        "isDirect" : false,
+        "name" : "AFNetworking/NSURLSession",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "4.0.1"
+      },
+      "reasonDetails" : [
+        {
+          "code" : "registry_mapping_missing",
+          "message" : "No registry mapping",
+          "remediation" : "Add an exact verified registry mapping, or keep this dependency on CocoaPods."
+        },
+        {
+          "code" : "transitive_dependency",
+          "message" : "Transitive dependency is not a removable Podfile declaration",
+          "remediation" : "Migrate only its owning direct CocoaPod declaration."
+        },
+        {
+          "code" : "registry_source_evidence_conflict",
+          "message" : "Podfile and lockfile registry source evidence conflicts",
+          "remediation" : "Resolve duplicate or mismatched specs repositories and regenerate the plan."
+        },
+        {
+          "code" : "target_attribution_unresolved",
+          "message" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "remediation" : "Use a statically provable literal target before regenerating the plan."
+        }
+      ],
+      "reasons" : [
+        "No registry mapping",
+        "Transitive dependency is not a removable Podfile declaration",
+        "Podfile and lockfile registry source evidence conflicts",
+        "Transitive lockfile dependency has no literal Podfile declaration."
+      ]
+    },
+    {
+      "classification" : "UNKNOWN",
+      "issues" : [
+        {
+          "dependency" : "AFNetworking/Reachability",
+          "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+          "message" : "No registry mapping",
+          "severity" : "warning"
+        }
+      ],
+      "pod" : {
+        "isDirect" : false,
+        "name" : "AFNetworking/Reachability",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "4.0.1"
+      },
+      "reasonDetails" : [
+        {
+          "code" : "registry_mapping_missing",
+          "message" : "No registry mapping",
+          "remediation" : "Add an exact verified registry mapping, or keep this dependency on CocoaPods."
+        },
+        {
+          "code" : "transitive_dependency",
+          "message" : "Transitive dependency is not a removable Podfile declaration",
+          "remediation" : "Migrate only its owning direct CocoaPod declaration."
+        },
+        {
+          "code" : "registry_source_evidence_conflict",
+          "message" : "Podfile and lockfile registry source evidence conflicts",
+          "remediation" : "Resolve duplicate or mismatched specs repositories and regenerate the plan."
+        },
+        {
+          "code" : "target_attribution_unresolved",
+          "message" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "remediation" : "Use a statically provable literal target before regenerating the plan."
+        }
+      ],
+      "reasons" : [
+        "No registry mapping",
+        "Transitive dependency is not a removable Podfile declaration",
+        "Podfile and lockfile registry source evidence conflicts",
+        "Transitive lockfile dependency has no literal Podfile declaration."
+      ]
+    },
+    {
+      "classification" : "UNKNOWN",
+      "issues" : [
+        {
+          "dependency" : "AFNetworking/Security",
+          "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+          "message" : "No registry mapping",
+          "severity" : "warning"
+        }
+      ],
+      "pod" : {
+        "isDirect" : false,
+        "name" : "AFNetworking/Security",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "4.0.1"
+      },
+      "reasonDetails" : [
+        {
+          "code" : "registry_mapping_missing",
+          "message" : "No registry mapping",
+          "remediation" : "Add an exact verified registry mapping, or keep this dependency on CocoaPods."
+        },
+        {
+          "code" : "transitive_dependency",
+          "message" : "Transitive dependency is not a removable Podfile declaration",
+          "remediation" : "Migrate only its owning direct CocoaPod declaration."
+        },
+        {
+          "code" : "registry_source_evidence_conflict",
+          "message" : "Podfile and lockfile registry source evidence conflicts",
+          "remediation" : "Resolve duplicate or mismatched specs repositories and regenerate the plan."
+        },
+        {
+          "code" : "target_attribution_unresolved",
+          "message" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "remediation" : "Use a statically provable literal target before regenerating the plan."
+        }
+      ],
+      "reasons" : [
+        "No registry mapping",
+        "Transitive dependency is not a removable Podfile declaration",
+        "Podfile and lockfile registry source evidence conflicts",
+        "Transitive lockfile dependency has no literal Podfile declaration."
+      ]
+    },
+    {
+      "classification" : "UNKNOWN",
+      "issues" : [
+        {
+          "dependency" : "AFNetworking/Serialization",
+          "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+          "message" : "No registry mapping",
+          "severity" : "warning"
+        }
+      ],
+      "pod" : {
+        "isDirect" : false,
+        "name" : "AFNetworking/Serialization",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "4.0.1"
+      },
+      "reasonDetails" : [
+        {
+          "code" : "registry_mapping_missing",
+          "message" : "No registry mapping",
+          "remediation" : "Add an exact verified registry mapping, or keep this dependency on CocoaPods."
+        },
+        {
+          "code" : "transitive_dependency",
+          "message" : "Transitive dependency is not a removable Podfile declaration",
+          "remediation" : "Migrate only its owning direct CocoaPod declaration."
+        },
+        {
+          "code" : "registry_source_evidence_conflict",
+          "message" : "Podfile and lockfile registry source evidence conflicts",
+          "remediation" : "Resolve duplicate or mismatched specs repositories and regenerate the plan."
+        },
+        {
+          "code" : "target_attribution_unresolved",
+          "message" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "remediation" : "Use a statically provable literal target before regenerating the plan."
+        }
+      ],
+      "reasons" : [
+        "No registry mapping",
+        "Transitive dependency is not a removable Podfile declaration",
+        "Podfile and lockfile registry source evidence conflicts",
+        "Transitive lockfile dependency has no literal Podfile declaration."
+      ]
+    },
+    {
+      "classification" : "UNKNOWN",
+      "issues" : [
+        {
+          "dependency" : "AFNetworking/UIKit",
+          "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+          "message" : "No registry mapping",
+          "severity" : "warning"
+        }
+      ],
+      "pod" : {
+        "isDirect" : false,
+        "name" : "AFNetworking/UIKit",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "4.0.1"
+      },
+      "reasonDetails" : [
+        {
+          "code" : "registry_mapping_missing",
+          "message" : "No registry mapping",
+          "remediation" : "Add an exact verified registry mapping, or keep this dependency on CocoaPods."
+        },
+        {
+          "code" : "transitive_dependency",
+          "message" : "Transitive dependency is not a removable Podfile declaration",
+          "remediation" : "Migrate only its owning direct CocoaPod declaration."
+        },
+        {
+          "code" : "registry_source_evidence_conflict",
+          "message" : "Podfile and lockfile registry source evidence conflicts",
+          "remediation" : "Resolve duplicate or mismatched specs repositories and regenerate the plan."
+        },
+        {
+          "code" : "target_attribution_unresolved",
+          "message" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "remediation" : "Use a statically provable literal target before regenerating the plan."
+        }
+      ],
+      "reasons" : [
+        "No registry mapping",
+        "Transitive dependency is not a removable Podfile declaration",
+        "Podfile and lockfile registry source evidence conflicts",
+        "Transitive lockfile dependency has no literal Podfile declaration."
+      ]
+    },
+    {
+      "classification" : "AUTO",
+      "issues" : [
+
+      ],
+      "packageCandidate" : {
+        "confidence" : "verified",
+        "products" : [
+          "SDWebImage"
+        ],
+        "repositoryURL" : "https://github.com/SDWebImage/SDWebImage",
+        "supportedConsumerLanguages" : [
+          "swift",
+          "objectiveC"
+        ],
+        "versionRequirement" : {
+          "exact" : {
+            "_0" : "5.8.4"
+          }
+        }
+      },
+      "pod" : {
+        "declarations" : [
+          {
+            "line" : 5,
+            "scope" : "target",
+            "scopeName" : "ZBNetworkingDemo",
+            "source" : {
+              "registry" : {
+
+              }
+            },
+            "targetName" : "ZBNetworkingDemo"
+          }
+        ],
+        "isDirect" : true,
+        "name" : "SDWebImage",
+        "registrySourceProvenance" : {
+          "declarations" : [
+            {
+              "line" : 1,
+              "repository" : "cocoapods-specs-git"
+            }
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "matchedExplicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "status" : "exact",
+          "targets" : [
+            "ZBNetworkingDemo"
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+          "ZBNetworkingDemo"
+        ],
+        "version" : "5.8.4"
+      },
+      "reasonDetails" : [
+        {
+          "code" : "verified_automatic_migration",
+          "message" : "Verified exact registry mapping and target language support; resolved version 5.8.4 meets minimum 5.1.0"
+        }
+      ],
+      "reasons" : [
+        "Verified exact registry mapping and target language support; resolved version 5.8.4 meets minimum 5.1.0"
+      ]
+    },
+    {
+      "classification" : "UNKNOWN",
+      "issues" : [
+        {
+          "dependency" : "SDWebImage/Core",
+          "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+          "message" : "No registry mapping",
+          "severity" : "warning"
+        }
+      ],
+      "pod" : {
+        "isDirect" : false,
+        "name" : "SDWebImage/Core",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "5.8.4"
+      },
+      "reasonDetails" : [
+        {
+          "code" : "registry_mapping_missing",
+          "message" : "No registry mapping",
+          "remediation" : "Add an exact verified registry mapping, or keep this dependency on CocoaPods."
+        },
+        {
+          "code" : "transitive_dependency",
+          "message" : "Transitive dependency is not a removable Podfile declaration",
+          "remediation" : "Migrate only its owning direct CocoaPod declaration."
+        },
+        {
+          "code" : "registry_source_evidence_conflict",
+          "message" : "Podfile and lockfile registry source evidence conflicts",
+          "remediation" : "Resolve duplicate or mismatched specs repositories and regenerate the plan."
+        },
+        {
+          "code" : "target_attribution_unresolved",
+          "message" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "remediation" : "Use a statically provable literal target before regenerating the plan."
+        }
+      ],
+      "reasons" : [
+        "No registry mapping",
+        "Transitive dependency is not a removable Podfile declaration",
+        "Podfile and lockfile registry source evidence conflicts",
+        "Transitive lockfile dependency has no literal Podfile declaration."
+      ]
+    }
+  ],
+  "cocoaPods" : {
+    "directDependencies" : [
+      {
+        "declarations" : [
+          {
+            "line" : 5,
+            "scope" : "target",
+            "scopeName" : "ZBNetworkingDemo",
+            "source" : {
+              "registry" : {
+
+              }
+            },
+            "targetName" : "ZBNetworkingDemo"
+          }
+        ],
+        "isDirect" : true,
+        "name" : "SDWebImage",
+        "registrySourceProvenance" : {
+          "declarations" : [
+            {
+              "line" : 1,
+              "repository" : "cocoapods-specs-git"
+            }
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "matchedExplicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "status" : "exact",
+          "targets" : [
+            "ZBNetworkingDemo"
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+          "ZBNetworkingDemo"
+        ],
+        "version" : "5.8.4"
+      },
+      {
+        "declarations" : [
+          {
+            "line" : 6,
+            "scope" : "target",
+            "scopeName" : "ZBNetworkingDemo",
+            "source" : {
+              "registry" : {
+
+              }
+            },
+            "targetName" : "ZBNetworkingDemo"
+          }
+        ],
+        "isDirect" : true,
+        "name" : "AFNetworking",
+        "registrySourceProvenance" : {
+          "declarations" : [
+            {
+              "line" : 1,
+              "repository" : "cocoapods-specs-git"
+            }
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "matchedExplicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "status" : "exact",
+          "targets" : [
+            "ZBNetworkingDemo"
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+          "ZBNetworkingDemo"
+        ],
+        "version" : "4.0.1"
+      }
+    ],
+    "hasManifestLock" : true,
+    "hasPodfile" : true,
+    "hasPodfileLock" : true,
+    "podfileFeatures" : {
+      "hasAbstractTargets" : false,
+      "hasDynamicRuby" : false,
+      "hasInheritSearchPaths" : false,
+      "hasPostInstallHook" : false,
+      "hasPreInstallHook" : false,
+      "hasScriptPhase" : false,
+      "integrationMarkers" : [
+
+      ],
+      "registrySourceDeclarations" : [
+        {
+          "line" : 1,
+          "repository" : "cocoapods-specs-git"
+        }
+      ],
+      "useFrameworks" : false,
+      "useModularHeaders" : false
+    },
+    "transitiveDependencies" : [
+      {
+        "isDirect" : false,
+        "name" : "AFNetworking/NSURLSession",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "4.0.1"
+      },
+      {
+        "isDirect" : false,
+        "name" : "AFNetworking/Reachability",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "4.0.1"
+      },
+      {
+        "isDirect" : false,
+        "name" : "AFNetworking/Security",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "4.0.1"
+      },
+      {
+        "isDirect" : false,
+        "name" : "AFNetworking/Serialization",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "4.0.1"
+      },
+      {
+        "isDirect" : false,
+        "name" : "AFNetworking/UIKit",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "4.0.1"
+      },
+      {
+        "isDirect" : false,
+        "name" : "SDWebImage/Core",
+        "registrySourceProvenance" : {
+          "declarations" : [
+
+          ],
+          "lockfile" : {
+            "hasConflictingEvidence" : false,
+            "hasUnsupportedRepository" : false,
+            "repositories" : [
+              "cocoapods-specs-git"
+            ]
+          },
+          "status" : "implicitPublic"
+        },
+        "source" : {
+          "registry" : {
+
+          }
+        },
+        "targetAttribution" : {
+          "reason" : "Transitive lockfile dependency has no literal Podfile declaration.",
+          "status" : "unresolved",
+          "targets" : [
+
+          ],
+          "unresolvedDeclarationCount" : 0
+        },
+        "targets" : [
+
+        ],
+        "version" : "5.8.4"
+      }
+    ]
+  },
+  "counts" : {
+    "analysisCandidateCount" : 8,
+    "literalPodfileDeclarationCount" : 2,
+    "planEntryCount" : 2,
+    "uniqueDirectDependencyCount" : 2,
+    "uniqueLockfileDependencyCount" : 8
+  },
+  "detectedIntegrations" : [
+
+  ],
+  "issues" : [
+    {
+      "dependency" : "AFNetworking",
+      "message" : "No registry mapping",
+      "severity" : "warning"
+    },
+    {
+      "dependency" : "AFNetworking/NSURLSession",
+      "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+      "message" : "No registry mapping",
+      "severity" : "warning"
+    },
+    {
+      "dependency" : "AFNetworking/Reachability",
+      "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+      "message" : "No registry mapping",
+      "severity" : "warning"
+    },
+    {
+      "dependency" : "AFNetworking/Security",
+      "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+      "message" : "No registry mapping",
+      "severity" : "warning"
+    },
+    {
+      "dependency" : "AFNetworking/Serialization",
+      "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+      "message" : "No registry mapping",
+      "severity" : "warning"
+    },
+    {
+      "dependency" : "AFNetworking/UIKit",
+      "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+      "message" : "No registry mapping",
+      "severity" : "warning"
+    },
+    {
+      "dependency" : "SDWebImage/Core",
+      "detail" : "Transitive dependency is not a removable Podfile declaration. Podfile and lockfile registry source evidence conflicts. Transitive lockfile dependency has no literal Podfile declaration.",
+      "message" : "No registry mapping",
+      "severity" : "warning"
+    }
+  ],
+  "pkgLiftVersion" : "0.10.0",
+  "portableOutput" : {
+    "version" : 1
+  },
+  "project" : {
+    "projectPath" : "<redacted-path>",
+    "targets" : [
+      {
+        "deploymentTarget" : "13.0",
+        "name" : "ZBNetworkingDemo",
+        "platform" : "iOS",
+        "sourceProfile" : {
+          "completeness" : "complete",
+          "languages" : [
+            "objectiveC"
+          ]
+        },
+        "type" : "com.apple.product-type.application"
+      },
+      {
+        "deploymentTarget" : "7.0",
+        "name" : "ZBNetworkingDemoTests",
+        "platform" : "iOS",
+        "sourceProfile" : {
+          "completeness" : "complete",
+          "languages" : [
+            "objectiveC"
+          ]
+        },
+        "type" : "com.apple.product-type.bundle.unit-test"
+      },
+      {
+        "deploymentTarget" : "7.0",
+        "name" : "ZBNetworkingDemoUITests",
+        "platform" : "iOS",
+        "sourceProfile" : {
+          "completeness" : "complete",
+          "languages" : [
+            "objectiveC"
+          ]
+        },
+        "type" : "com.apple.product-type.bundle.ui-testing"
+      }
+    ],
+    "workspacePath" : "<redacted-path>"
+  },
+  "readinessScore" : 45,
+  "schemaVersion" : 1,
+  "swiftPM" : {
+    "hasPackageResolved" : false,
+    "packages" : [
+
+    ]
+  },
+  "timestamp" : "2026-09-18T21:03:06Z"
+}

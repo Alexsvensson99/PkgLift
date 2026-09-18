@@ -79,7 +79,7 @@ final class ProjectAnalysisTests: XCTestCase {
 
         XCTAssertEqual(decoded.reasons, ["No registry mapping"])
         XCTAssertEqual(decoded.reasonDetails, [detail])
-        XCTAssertEqual(MigrationPlan.schemaVersion, 1)
+        XCTAssertEqual(MigrationPlan.schemaVersion, 2)
         XCTAssertEqual(ProjectAnalysis.schemaVersion, 1)
     }
 
@@ -102,5 +102,44 @@ final class ProjectAnalysisTests: XCTestCase {
         XCTAssertEqual(decoded.reasons, ["Legacy plan reason"])
         XCTAssertNil(decoded.reasonDetails)
         XCTAssertNil(decoded.sourceProvenance)
+    }
+
+    func testMigrationPlanUsesSchemaTwoOnlyForRegistrySourceEvidence() throws {
+        let legacy = MigrationPlan(
+            projectPath: "/tmp/Legacy.xcodeproj",
+            entries: [MigrationPlanEntry(
+                podName: "LegacyPod",
+                classification: .review
+            )],
+            issues: [],
+            readinessScore: 50
+        )
+        XCTAssertEqual(legacy.schemaVersion, 1)
+
+        let provenance = RegistrySourceProvenance(
+            declarations: [RegistrySourceDeclarationEvidence(
+                line: 1,
+                repository: .cocoaPodsSpecsGit
+            )],
+            lockfile: RegistrySourceLockfileEvidence(repositories: [.cocoaPodsSpecsGit])
+        )
+        let current = MigrationPlan(
+            projectPath: "/tmp/Current.xcodeproj",
+            entries: [MigrationPlanEntry(
+                podName: "PublicPod",
+                registrySourceProvenance: provenance,
+                classification: .review
+            )],
+            issues: [],
+            readinessScore: 50
+        )
+        XCTAssertEqual(current.schemaVersion, 2)
+
+        let decoded = try JSONDecoder().decode(
+            MigrationPlan.self,
+            from: JSONEncoder().encode(current)
+        )
+        XCTAssertEqual(decoded.schemaVersion, 2)
+        XCTAssertEqual(decoded.entries.first?.registrySourceProvenance, provenance)
     }
 }

@@ -86,9 +86,13 @@ public struct MigrationPlanner: Sendable {
             }
             
             var actions: [MigrationAction] = []
+            let hasExecutableRegistrySourceEvidence = dep.registrySourceProvenance.map {
+                $0.status == .matchedExplicitPublic || $0.status == .implicitPublic
+            } ?? true
             if classification.category == .auto,
                dep.source == .registry,
                dep.sourceProvenance == nil,
+               hasExecutableRegistrySourceEvidence,
                let packageCandidate,
                let requirement = packageCandidate.versionRequirement,
                let targetName {
@@ -125,6 +129,7 @@ public struct MigrationPlanner: Sendable {
                 podName: podName,
                 currentVersion: dep.version,
                 sourceProvenance: dep.sourceProvenance,
+                registrySourceProvenance: dep.registrySourceProvenance,
                 classification: classification.category,
                 actions: actions,
                 reasons: classification.reasons,

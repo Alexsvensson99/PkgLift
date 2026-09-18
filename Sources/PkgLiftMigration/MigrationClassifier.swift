@@ -68,6 +68,24 @@ public struct MigrationClassifier: Sendable {
             }
             return nil
         }()
+        let registrySourceEvidenceStatus: RegistrySourceEvidenceStatus? = {
+            guard dependency.source == .registry else { return nil }
+            let featureDeclarations = podfileFeatures.registrySourceDeclarations.sorted {
+                if $0.line == $1.line { return $0.repository.rawValue < $1.repository.rawValue }
+                return $0.line < $1.line
+            }
+            guard !featureDeclarations.isEmpty else {
+                guard let provenance = dependency.registrySourceProvenance else { return nil }
+                return provenance.declarations.isEmpty ? provenance.status : .conflicting
+            }
+            guard let provenance = dependency.registrySourceProvenance else {
+                return .missingLockEvidence
+            }
+            guard provenance.declarations == featureDeclarations else {
+                return .conflicting
+            }
+            return provenance.status
+        }()
         let dependencyInfo = DependencyInfo(
             identifier: dependency.name,
             isDirect: dependency.isDirect,
@@ -85,6 +103,7 @@ public struct MigrationClassifier: Sendable {
             hasUnrepresentableDeclaration: dependency.source == .unknown,
             hasLiteralDeclarationProvenance: dependency.hasLiteralMigrationProvenance,
             externalGitEvidenceStatus: externalGitEvidenceStatus,
+            registrySourceEvidenceStatus: registrySourceEvidenceStatus,
             hasPreInstallHooks: podfileFeatures.hasPreInstallHook,
             hasPostInstallHooks: podfileFeatures.hasPostInstallHook,
             hasScriptPhase: podfileFeatures.hasScriptPhase,
@@ -187,6 +206,30 @@ public struct MigrationClassifier: Sendable {
 
         if let externalGitEvidenceStatus = dependency.externalGitEvidenceStatus {
             reasons.append(externalGitEvidenceStatus.migrationReason)
+        }
+        if let registrySourceEvidenceStatus = dependency.registrySourceEvidenceStatus {
+            switch registrySourceEvidenceStatus {
+            case .matchedExplicitPublic, .implicitPublic:
+                break
+            case .missingLockEvidence:
+                reasons.append(MigrationReason(
+                    code: .registrySourceEvidenceMissing,
+                    message: "Explicit public CocoaPods source lacks matching lockfile origin evidence",
+                    remediation: "Regenerate the lockfile from the unchanged literal source before planning migration."
+                ))
+            case .unsupportedRepository:
+                reasons.append(MigrationReason(
+                    code: .registrySourceUnsupported,
+                    message: "Dependency resolved from an unsupported CocoaPods specs repository",
+                    remediation: "Keep the dependency on CocoaPods or verify it against the supported public source."
+                ))
+            case .conflicting:
+                reasons.append(MigrationReason(
+                    code: .registrySourceEvidenceConflict,
+                    message: "Podfile and lockfile registry source evidence conflicts",
+                    remediation: "Resolve duplicate or mismatched specs repositories and regenerate the plan."
+                ))
+            }
         }
 
         if mapping != nil, dependency.isDirect, !dependency.hasLiteralDeclarationProvenance {
@@ -648,6 +691,7 @@ private struct DependencyInfo: Sendable {
     let hasUnrepresentableDeclaration: Bool
     let hasLiteralDeclarationProvenance: Bool
     let externalGitEvidenceStatus: GitSourceEvidenceStatus?
+    let registrySourceEvidenceStatus: RegistrySourceEvidenceStatus?
     let hasPreInstallHooks: Bool
     let hasPostInstallHooks: Bool
     let hasScriptPhase: Bool
@@ -668,6 +712,7 @@ private struct DependencyInfo: Sendable {
         hasUnrepresentableDeclaration: Bool = false,
         hasLiteralDeclarationProvenance: Bool = false,
         externalGitEvidenceStatus: GitSourceEvidenceStatus? = nil,
+        registrySourceEvidenceStatus: RegistrySourceEvidenceStatus? = nil,
         hasPreInstallHooks: Bool = false,
         hasPostInstallHooks: Bool = false,
         hasScriptPhase: Bool = false,
@@ -687,6 +732,7 @@ private struct DependencyInfo: Sendable {
         self.hasUnrepresentableDeclaration = hasUnrepresentableDeclaration
         self.hasLiteralDeclarationProvenance = hasLiteralDeclarationProvenance
         self.externalGitEvidenceStatus = externalGitEvidenceStatus
+        self.registrySourceEvidenceStatus = registrySourceEvidenceStatus
         self.hasPreInstallHooks = hasPreInstallHooks
         self.hasPostInstallHooks = hasPostInstallHooks
         self.hasScriptPhase = hasScriptPhase

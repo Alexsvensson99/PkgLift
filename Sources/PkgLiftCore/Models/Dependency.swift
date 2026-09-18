@@ -42,6 +42,10 @@ public struct CocoaPodDependency: Sendable, Codable, Equatable {
     /// modeled. Missing provenance can never make an external source automatic.
     public let sourceProvenance: DependencySourceProvenance?
 
+    /// Typed public-registry origin evidence from a literal global Podfile
+    /// source and/or the lockfile's per-pod `SPEC REPOS` assignment.
+    public let registrySourceProvenance: RegistrySourceProvenance?
+
     /// Whether this is a direct dependency (declared in Podfile)
     /// or a transitive dependency.
     public let isDirect: Bool
@@ -65,6 +69,7 @@ public struct CocoaPodDependency: Sendable, Codable, Equatable {
         version: String? = nil,
         source: PodSource = .registry,
         sourceProvenance: DependencySourceProvenance? = nil,
+        registrySourceProvenance: RegistrySourceProvenance? = nil,
         isDirect: Bool = true,
         targets: [String] = [],
         declarations: [PodfileDeclaration]? = nil,
@@ -74,6 +79,7 @@ public struct CocoaPodDependency: Sendable, Codable, Equatable {
         self.version = version
         self.source = source
         self.sourceProvenance = sourceProvenance
+        self.registrySourceProvenance = registrySourceProvenance
         self.isDirect = isDirect
         self.targets = targets
         self.declarations = declarations

@@ -1073,6 +1073,65 @@ struct PodfileParserTests {
 }
 
 extension PodfileParserTests {
+    @Test("Accept one exact top-level public Specs source")
+    func testExactPublicSpecsSourceIsStatic() throws {
+        let parsed = PodfileParser().parse(content: """
+        source 'https://github.com/CocoaPods/Specs.git'
+        platform:ios,'9.0'
+        target 'App' do
+          pod 'SDWebImage'
+        end
+        """)
+
+        #expect(parsed.features.hasDynamicRuby == false)
+        #expect(parsed.features.registrySourceDeclarations == [
+            RegistrySourceDeclarationEvidence(line: 1, repository: .cocoaPodsSpecsGit),
+        ])
+        let dependency = try #require(parsed.directDependencies.first)
+        #expect(dependency.registrySourceProvenance?.status == .missingLockEvidence)
+
+        let macOSAlias = PodfileParser().parse(content: """
+        platform :macos, "10.15"
+        target 'App' do
+          pod 'SDWebImage'
+        end
+        """)
+        #expect(macOSAlias.features.hasDynamicRuby == false)
+    }
+
+    @Test("Reject unsupported, repeated, nested, interpolated, or shadowed source calls")
+    func testRegistrySourceBoundaryFailsClosed() {
+        let cases = [
+            "source 'https://cdn.cocoapods.org/'\ntarget 'App' do\n pod 'SDWebImage'\nend",
+            "source 'https://github.com/CocoaPods/Specs.git'\nsource 'https://cdn.cocoapods.org/'\ntarget 'App' do\n pod 'SDWebImage'\nend",
+            "source 'https://cdn.cocoapods.org/'\nsource 'https://github.com/CocoaPods/Specs.git'\ntarget 'App' do\n pod 'SDWebImage'\nend",
+            "source 'https://github.com/CocoaPods/Specs.git'\nsource 'https://github.com/CocoaPods/Specs.git'\ntarget 'App' do\n pod 'SDWebImage'\nend",
+            "target 'App' do\n source 'https://github.com/CocoaPods/Specs.git'\n pod 'SDWebImage'\nend",
+            "source \"https://github.com/CocoaPods/#{repo}.git\"\ntarget 'App' do\n pod 'SDWebImage'\nend",
+            "def source\nend\ntarget 'App' do\n pod 'SDWebImage'\nend",
+            "source 'https://github.com/CocoaPods/Specs.git'; raise 'stop'\ntarget 'App' do\n pod 'SDWebImage'\nend",
+        ]
+        for content in cases {
+            #expect(PodfileParser().parse(content: content).features.hasDynamicRuby)
+        }
+    }
+
+    @Test("Compact platform grammar remains bounded")
+    func testCompactPlatformGrammarRejectsExpressionsAndTails() {
+        for line in [
+            "platform:ios,version",
+            "platform:ios,'9.0', extra",
+            "platform:ios,'9.0\"",
+            "platform:android,'9.0'",
+            "platform:ios,'nine'",
+            "platform:ios,\"#{version}\"",
+            "platform:ios,'9.0'; raise 'stop'",
+        ] {
+            let parsed = PodfileParser().parse(content: "\(line)\ntarget 'App' do\n pod 'SDWebImage'\nend")
+            #expect(parsed.features.hasDynamicRuby)
+        }
+    }
+
     @Test("Report a typed error for a missing Podfile")
     func testMissingPodfileThrowsFileReadFailed() {
         let fileURL = FileManager.default.temporaryDirectory

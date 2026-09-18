@@ -443,4 +443,34 @@ struct PodfileTargetMapperTests {
         ).first)
         #expect(dependency.sourceProvenance == lockDependencies.first?.sourceProvenance)
     }
+
+    @Test("Merge an explicit public source with the exact lockfile repository")
+    func testRegistrySourceAgreement() throws {
+        let podfile = "source 'https://github.com/CocoaPods/Specs.git'\ntarget 'App' do\n pod 'SDWebImage'\nend\n"
+        let lockfile = "PODS:\n - SDWebImage (5.8.4)\nDEPENDENCIES:\n - SDWebImage\nSPEC REPOS:\n https://github.com/CocoaPods/Specs.git:\n  - SDWebImage\n"
+        let dependency = try #require(PodfileTargetMapper().map(
+            podfileContent: podfile,
+            lockfileDependencies: PodfileLockParser().parse(content: lockfile)
+        ).first)
+        #expect(dependency.registrySourceProvenance?.status == .matchedExplicitPublic)
+        #expect(dependency.registrySourceProvenance?.declarations.first?.line == 1)
+    }
+
+    @Test("Explicit public source requires exact per-pod lockfile agreement")
+    func testRegistrySourceMissingOrMismatched() throws {
+        let podfile = "source 'https://github.com/CocoaPods/Specs.git'\ntarget 'App' do\n pod 'SDWebImage'\nend\n"
+        let lockfiles = [
+            "PODS:\n - SDWebImage (5.8.4)\nDEPENDENCIES:\n - SDWebImage\n",
+            "PODS:\n - SDWebImage (5.8.4)\nDEPENDENCIES:\n - SDWebImage\nSPEC REPOS:\n trunk:\n  - SDWebImage\n",
+        ]
+        let expected: [RegistrySourceEvidenceStatus] = [.missingLockEvidence, .conflicting]
+
+        for (lockfile, status) in zip(lockfiles, expected) {
+            let dependency = try #require(PodfileTargetMapper().map(
+                podfileContent: podfile,
+                lockfileDependencies: PodfileLockParser().parse(content: lockfile)
+            ).first)
+            #expect(dependency.registrySourceProvenance?.status == status)
+        }
+    }
 }

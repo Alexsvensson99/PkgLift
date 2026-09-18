@@ -2,7 +2,7 @@
 
 PkgLift's machine-readable outputs are the Swift `Codable` representations of `ProjectAnalysis`, `MigrationPlan`, and `VerificationResult`. Each top-level document includes:
 
-- `schemaVersion` (currently `1`);
+- `schemaVersion` (`1` for analysis/verification; `1` or `2` for migration plans as described below);
 - `timestamp` in ISO-8601 format;
 - `pkgLiftVersion`.
 
@@ -17,6 +17,17 @@ The explicitly named count fields distinguish literal Podfile rows from unique d
 Target platform and deployment values apply project xcconfig, project settings, target xcconfig, and target settings in increasing precedence. Xcconfig resolution is confined to regular files beneath the selected project root after symlink resolution and uses bounded file-count and byte budgets. Values are emitted only when the relevant settings resolve statically and agree across every target build configuration; containment escapes, unsupported macros or conditions, unreadable include graphs, unsupported syntax, budget violations, or configuration mismatches leave both fields unset. Target, SwiftPM package, and linked-product arrays are deterministically ordered.
 
 Each `TargetInfo` may include a `sourceProfile` with sorted `languages` values and `completeness`. The values are derived only from PBX compiled-source metadata. A candidate's `packageCandidate.supportedConsumerLanguages` records the mapping's language evidence. Its optional `supportedConsumerPlatforms` array records explicit platform and minimum-deployment constraints copied from a schema-2 registry mapping; schema 2 requires the constraint, while schema-1 mappings must omit it for compatibility with older clients. When that array is present, AUTO requires the exact target's statically resolved platform to have one matching entry and its deployment target to meet or exceed the recorded minimum. `detectedIntegrations` contains only typed enum values such as `carthage`, `reactNative`, `flutter`, and `capacitor`; it never carries integration filenames or source contents.
+
+### Public registry source provenance
+
+Registry-backed dependencies may separately carry `registrySourceProvenance`.
+Its `declarations` identify supported global Podfile source lines and public
+repository identities; `lockfile` records bounded per-pod origin evidence from
+`SPEC REPOS`. The derived `status` is `matchedExplicitPublic`, `implicitPublic`,
+`missingLockEvidence`, `unsupportedRepository`, or `conflicting`. Decoding rejects
+a status that contradicts the evidence. Unknown repository URLs are not retained.
+An explicit source requires matching lock evidence for AUTO; missing fields do
+not prove that match. See the [bounded source contract](StaticPublicSpecSource.md).
 
 ### External Git source provenance
 
@@ -75,6 +86,13 @@ Plan entries use the same additive `reasonDetails` representation and preserve t
 
 External entries may carry the same additive `sourceProvenance` snapshot as analysis. Preflight compares saved and current external provenance together with version, declaration origins, and target attribution, and refuses added, removed, or changed evidence before mutation. Redacted, malformed, incomplete, conflicting, credential-bearing, or otherwise lossy provenance cannot prove equality and therefore also refuses an unrelated `AUTO` apply. An `AUTO` entry is invalid when `sourceProvenance` is present; provenance analysis does not authorize automatic external-source migration.
 
+Registry entries carry any `registrySourceProvenance` into the plan separately.
+Preflight compares this evidence with the regenerated current plan, including
+retained entries, and rejects changed, missing or non-comparable origin evidence
+before writing. Older readers cannot safely infer AUTO from this new field.
+The added reporting codes are `registry_source_evidence_missing`,
+`registry_source_unsupported`, and `registry_source_evidence_conflict`.
+
 An executable AUTO entry contains typed actions like:
 
 ```json
@@ -106,7 +124,9 @@ An executable AUTO entry contains typed actions like:
 
 For plans containing non-empty AUTO entries, both dry run and `migrate --apply` reject unsupported schemas or a `pkgLiftVersion` different from the running version, including patch-version differences. They reject entries whose action list does not exactly agree with their package, version, products, pod, target, declaration, target-attribution, and consumer-language metadata. Present consumer-platform constraints must agree with the regenerated package candidate and the live target environment before mutation. A decodable plan with no non-empty AUTO entry returns a mutation-free no-op before this executable-plan preflight; apply still checks for an incomplete migration first. Decoding alone is never execution authorization.
 
-The new evidence fields are additive, so older schema-1 JSON remains decodable for inspection with absent source provenance. Compatibility is deliberately fail-closed: an older AUTO entry without explicit declaration provenance, exact target attribution, mapping languages, or a complete target profile is not executable and its plan must be regenerated.
+Migration plans containing any `registrySourceProvenance` use schema **2**, including evidence on retained entries. Plans with no such evidence keep schema **1**. The current preflight enforces this pairing and rejects unknown schema versions; registry evidence must still match a regenerated current plan. Released schema-1 preflights reject schema-2 plans before producing operations, even when an older decoder ignores the unfamiliar provenance field. An additive optional field alone would not provide this execution boundary.
+
+Older schema-1 JSON remains decodable for inspection. An older AUTO entry without explicit declaration provenance, exact target attribution, mapping languages, or a complete target profile is not executable and its plan must be regenerated.
 
 ## Portable analyze and plan output
 

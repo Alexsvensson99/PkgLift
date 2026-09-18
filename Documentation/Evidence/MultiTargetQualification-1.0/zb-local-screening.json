@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "status": "local-analysis-plan-dry-run-apply-passed-hosted-execution-pending",
+  "sourceCommit": "fda54d347a0a8be11cf63e5eea76d0289e3a728d",
+  "sourceTreeSHA256Before": "e212398945faa24d36238939f2b81879237ecd107d573eae36f53ac75e57a033",
+  "sourceTreeSHA256After": "e212398945faa24d36238939f2b81879237ecd107d573eae36f53ac75e57a033",
+  "cliSHA256": "6b0cd881c46934a36bc4da84d129ccfb78e6993d5d99002179c2e35d4bf0a94c",
+  "cliBasis": "Local schema-boundary fix in PR 124 based on 475fd5d2b4edd595fc7c79d5806f4e8ffc6496b8; not a release binary.",
+  "portableAnalysisSHA256": "3f7ee266820c546b0487e65a9eb83770d5e2cc95209e2380a3b1cdebc90aeac9",
+  "directAUTO": [
+    "SDWebImage"
+  ],
+  "directRetained": [
+    "AFNetworking"
+  ],
+  "upstreamRubyExecuted": false,
+  "upstreamBuilt": false,
+  "migrationApplied": true,
+  "migrationScope": "Disposable local copy only; no upstream Ruby, CocoaPods refresh or Xcode build.",
+  "dryRunSourceAndIndexUnchanged": true,
+  "siblingClosureUnchanged": true,
+  "protectedProjectStateUnchanged": true,
+  "packageLinks": {
+    "ZBNetworkingDemo": 1,
+    "ZBNetworkingDemoTests": 0,
+    "ZBNetworkingDemoUITests": 0
+  },
+  "applyChangesOutsideBackup": [
+    "Podfile",
+    "ZBNetworkingDemo.xcodeproj/project.pbxproj"
+  ],
+  "sourceTreeSnapshotScope": "Read-only analysis on untouched pinned source; migration apply was verified separately on a disposable copy.",
+  "planSchemaVersion": 2,
+  "portablePlanSchemaVersion": 2,
+  "completeFrameworkPhaseAndDependencyProxyStateUnchanged": true
+}

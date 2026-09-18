@@ -321,6 +321,10 @@ public struct PodfileFeatures: Sendable, Codable {
     /// Typed generated-project or cross-platform integration markers.
     public var integrationMarkers: [ProjectIntegration] = []
 
+    /// Exact supported global registry source declarations. Unsupported source
+    /// syntax remains represented by `hasDynamicRuby` instead.
+    public var registrySourceDeclarations: [RegistrySourceDeclarationEvidence] = []
+
     public init() {}
 
     private enum CodingKeys: String, CodingKey {
@@ -333,6 +337,7 @@ public struct PodfileFeatures: Sendable, Codable {
         case hasInheritSearchPaths
         case hasAbstractTargets
         case integrationMarkers
+        case registrySourceDeclarations
     }
 
     public init(from decoder: Decoder) throws {
@@ -351,6 +356,10 @@ public struct PodfileFeatures: Sendable, Codable {
                 forKey: .integrationMarkers
             ) ?? []
         )).sorted()
+        registrySourceDeclarations = try container.decodeIfPresent(
+            [RegistrySourceDeclarationEvidence].self,
+            forKey: .registrySourceDeclarations
+        ) ?? []
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -364,6 +373,7 @@ public struct PodfileFeatures: Sendable, Codable {
         try container.encode(hasInheritSearchPaths, forKey: .hasInheritSearchPaths)
         try container.encode(hasAbstractTargets, forKey: .hasAbstractTargets)
         try container.encode(Array(Set(integrationMarkers)).sorted(), forKey: .integrationMarkers)
+        try container.encode(registrySourceDeclarations, forKey: .registrySourceDeclarations)
     }
 
     /// Whether any migration-affecting features were detected.

@@ -16,6 +16,15 @@ final class MigrationPlannerTests: XCTestCase {
                 name: "Alamofire",
                 version: "5.0.0",
                 source: .registry,
+                registrySourceProvenance: RegistrySourceProvenance(
+                    declarations: [RegistrySourceDeclarationEvidence(
+                        line: 1,
+                        repository: .cocoaPodsSpecsGit
+                    )],
+                    lockfile: RegistrySourceLockfileEvidence(
+                        repositories: [.cocoaPodsSpecsGit]
+                    )
+                ),
                 isDirect: true,
                 targets: ["App"],
                 declarations: [
@@ -42,9 +51,15 @@ final class MigrationPlannerTests: XCTestCase {
                 migration: MigrationInfo(confidence: .verified)
             )
         ]
+        var podfileFeatures = PodfileFeatures()
+        podfileFeatures.registrySourceDeclarations = [RegistrySourceDeclarationEvidence(
+            line: 1,
+            repository: .cocoaPodsSpecsGit
+        )]
         let plan = planner.generatePlan(
             dependencies: dependencies,
             mappings: mappings,
+            podfileFeatures: podfileFeatures,
             availableTargets: ["App"],
             availableTargetInfos: [swiftTarget("App")]
         )
@@ -66,6 +81,10 @@ final class MigrationPlannerTests: XCTestCase {
         ])
         XCTAssertEqual(plan.entries[0].packageCandidate?.supportedConsumerLanguages, [.swift])
         XCTAssertEqual(plan.entries[0].targetSourceProfile, swiftTarget("App").sourceProfile)
+        XCTAssertEqual(
+            plan.entries[0].registrySourceProvenance?.status,
+            .matchedExplicitPublic
+        )
         XCTAssertNil(plan.counts)
     }
 

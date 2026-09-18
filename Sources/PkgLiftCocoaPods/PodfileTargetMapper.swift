@@ -43,6 +43,10 @@ public struct PodfileTargetMapper: Sendable {
                 declaration.source,
                 resolved?.source
             ))
+            let registrySourceProvenance = mergedRegistrySourceProvenance([
+                declaration.registrySourceProvenance,
+                resolved?.registrySourceProvenance,
+            ], hasSourceConflict: sourcesConflict(declaration.source, resolved?.source))
             let origins = declaration.declarations?.map { origin in
                 PodfileDeclaration(
                     line: origin.line,
@@ -58,6 +62,7 @@ public struct PodfileTargetMapper: Sendable {
                 version: resolved?.version,
                 source: source,
                 sourceProvenance: sourceProvenance,
+                registrySourceProvenance: registrySourceProvenance,
                 isDirect: true,
                 targets: declaration.targets,
                 declarations: origins,
@@ -85,6 +90,7 @@ public struct PodfileTargetMapper: Sendable {
                     version: dependency.version,
                     source: dependency.source,
                     sourceProvenance: dependency.sourceProvenance,
+                    registrySourceProvenance: dependency.registrySourceProvenance,
                     isDirect: dependency.isDirect,
                     targets: [],
                     declarations: nil,
@@ -101,6 +107,7 @@ public struct PodfileTargetMapper: Sendable {
                     version: dependency.version,
                     source: dependency.source,
                     sourceProvenance: dependency.sourceProvenance,
+                    registrySourceProvenance: dependency.registrySourceProvenance,
                     isDirect: dependency.isDirect,
                     targets: [],
                     declarations: nil,
@@ -118,11 +125,16 @@ public struct PodfileTargetMapper: Sendable {
                 aggregate.source,
                 dependency.source
             ))
+            let registrySourceProvenance = mergedRegistrySourceProvenance([
+                aggregate.registrySourceProvenance,
+                dependency.registrySourceProvenance,
+            ], hasSourceConflict: sourcesConflict(aggregate.source, dependency.source))
             return CocoaPodDependency(
                 name: dependency.name,
                 version: dependency.version,
                 source: source,
                 sourceProvenance: sourceProvenance,
+                registrySourceProvenance: registrySourceProvenance,
                 isDirect: dependency.isDirect,
                 targets: aggregate.targets,
                 declarations: aggregate.declarations,
@@ -190,12 +202,17 @@ public struct PodfileTargetMapper: Sendable {
                 matching.map(\.sourceProvenance),
                 hasSourceConflict: hasSourceConflict
             )
+            let registrySourceProvenance = mergedRegistrySourceProvenance(
+                matching.map(\.registrySourceProvenance),
+                hasSourceConflict: hasSourceConflict
+            )
 
             return CocoaPodDependency(
                 name: name,
                 version: version,
                 source: source,
                 sourceProvenance: sourceProvenance,
+                registrySourceProvenance: registrySourceProvenance,
                 isDirect: true,
                 targets: targets,
                 declarations: origins.isEmpty ? nil : origins,
@@ -301,5 +318,43 @@ public struct PodfileTargetMapper: Sendable {
             declarations: declarations,
             lockfile: mergedLockfile
         ))
+    }
+
+    private func mergedRegistrySourceProvenance(
+        _ values: [RegistrySourceProvenance?],
+        hasSourceConflict: Bool = false
+    ) -> RegistrySourceProvenance? {
+        let values = values.compactMap { $0 }
+        guard !values.isEmpty else { return nil }
+
+        var seenDeclarations: Set<RegistrySourceDeclarationEvidence> = []
+        let declarations = values.flatMap(\.declarations).filter {
+            seenDeclarations.insert($0).inserted
+        }
+        let lockfiles = values.compactMap(\.lockfile)
+        let repositories = lockfiles.flatMap(\.repositories)
+        let lockfile: RegistrySourceLockfileEvidence?
+        if lockfiles.isEmpty {
+            lockfile = nil
+        } else {
+            lockfile = RegistrySourceLockfileEvidence(
+                repositories: repositories,
+                hasUnsupportedRepository: lockfiles.contains { $0.hasUnsupportedRepository },
+                hasConflictingEvidence: hasSourceConflict
+                    || lockfiles.contains { $0.hasConflictingEvidence }
+                    || Set(lockfiles.map { $0.repositories }).count > 1
+            )
+        }
+        let provenance = RegistrySourceProvenance(
+            declarations: declarations,
+            lockfile: lockfile
+        )
+        // A recognized public lockfile origin without an explicit Podfile source
+        // retains the established implicit-registry behavior. Unsupported or
+        // conflicting lock evidence is never discarded.
+        if declarations.isEmpty, provenance.status == .implicitPublic {
+            return nil
+        }
+        return provenance
     }
 }
