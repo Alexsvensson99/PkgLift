@@ -14,19 +14,89 @@ final class StaticPublicSourceTests: XCTestCase {
         let context = try await CommandContext.load(from: CommonOptions.parse(arguments))
         let plan = context.buildMigrationPlan()
         let entry = try XCTUnwrap(plan.autoEntries.first)
+        XCTAssertEqual(plan.schemaVersion, 2)
         XCTAssertEqual(plan.autoEntries.map(\.podName), ["SDWebImage"])
         XCTAssertEqual(entry.registrySourceProvenance?.status, .matchedExplicitPublic)
         XCTAssertEqual(entry.registrySourceProvenance?.declarations.count, 1)
         XCTAssertEqual(entry.registrySourceProvenance?.lockfile?.repositories, [.cocoaPodsSpecsGit])
-        let decoded = try JSONDecoder().decode(MigrationPlan.self, from: JSONEncoder().encode(plan))
+        let encoded = try JSONEncoder().encode(plan)
+        let decoded = try JSONDecoder().decode(MigrationPlan.self, from: encoded)
         XCTAssertEqual(decoded.entries.first?.registrySourceProvenance, entry.registrySourceProvenance)
+        let portable = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: PortableJSON().render(encoded)) as? [String: Any]
+        )
+        XCTAssertEqual(portable["schemaVersion"] as? Int, 2)
 
         var command = try PlanCommand.parse(arguments)
         try await command.run()
+        let savedDecoder = JSONDecoder()
+        savedDecoder.dateDecodingStrategy = .iso8601
+        let saved = try savedDecoder.decode(
+            MigrationPlan.self,
+            from: Data(contentsOf: context.planURL)
+        )
+        XCTAssertEqual(saved.schemaVersion, 2)
         let before = try snapshot(root)
         var dryRun = try MigrateCommand.parse(arguments)
         try await dryRun.run()
         XCTAssertEqual(try snapshot(root), before)
+    }
+
+    func testPlanWithoutExplicitSourceRemainsSchemaOne() async throws {
+        let root = try makeFixture(includeExplicitSource: false)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let context = try await CommandContext.load(
+            from: CommonOptions.parse(arguments(for: root))
+        )
+        let plan = context.buildMigrationPlan()
+
+        XCTAssertEqual(plan.schemaVersion, 1)
+        XCTAssertTrue(plan.entries.allSatisfy { $0.registrySourceProvenance == nil })
+        var command = try PlanCommand.parse(arguments(for: root))
+        try await command.run()
+        let savedDecoder = JSONDecoder()
+        savedDecoder.dateDecodingStrategy = .iso8601
+        let saved = try savedDecoder.decode(
+            MigrationPlan.self,
+            from: Data(contentsOf: context.planURL)
+        )
+        XCTAssertEqual(saved.schemaVersion, 1)
+    }
+
+    func testDowngradedExplicitSourcePlanIsRefusedBeforeAnyWrite() async throws {
+        let root = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let arguments = arguments(for: root)
+        var planCommand = try PlanCommand.parse(arguments)
+        try await planCommand.run()
+
+        let planURL = root.appendingPathComponent(".pkglift/plan.json")
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(contentsOf: planURL)) as? [String: Any]
+        )
+        XCTAssertEqual(object["schemaVersion"] as? Int, 2)
+        object["schemaVersion"] = 1
+        try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+            .write(to: planURL, options: .atomic)
+        let before = try snapshot(root)
+
+        var apply = try MigrateCommand.parse(arguments + ["--apply"])
+        do {
+            try await apply.run()
+            XCTFail("A schema-one plan must not carry registry-source evidence")
+        } catch {
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .schemaEvidenceMismatch(schemaVersion: 1)
+            )
+            XCTAssertEqual(try snapshot(root), before)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: root.appendingPathComponent(".pkglift/migration-in-progress").path
+        ))
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: root.appendingPathComponent(".pkglift/backup").path
+        ))
     }
 
     func testMissingOrDifferentLockOriginCannotAuthorizeAuto() async throws {
@@ -70,14 +140,17 @@ final class StaticPublicSourceTests: XCTestCase {
         ["--path", root.path, "--project", "PkgLiftMixedFixture.xcodeproj"]
     }
 
-    private func makeFixture(repository: String? = "https://github.com/CocoaPods/Specs.git") throws -> URL {
+    private func makeFixture(
+        repository: String? = "https://github.com/CocoaPods/Specs.git",
+        includeExplicitSource: Bool = true
+    ) throws -> URL {
         let package = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("PkgLiftPublicSource-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.copyItem(at: package.appendingPathComponent("Fixtures/MixedLanguageSDWebImage"), to: root)
-        let podfile = """
-        source '\(officialSource)'
+        let sourceDeclaration = includeExplicitSource ? "source '\(officialSource)'\n" : ""
+        let podfile = sourceDeclaration + """
         platform:ios,'15.0'
         target 'PkgLiftMixedFixture' do
           pod 'SDWebImage', '5.18.1'

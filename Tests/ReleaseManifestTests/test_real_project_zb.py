@@ -25,7 +25,7 @@ def analysis_plan(root=Path("/tmp/source")):
     actions = [{"removePod": {"name": "SDWebImage"}},
                {"addSwiftPackage": {"repositoryURL": zb.PACKAGE_URL, "requirement": {"exact": {"_0": "5.8.4"}}}},
                {"linkProduct": {"repositoryURL": zb.PACKAGE_URL, "productName": "SDWebImage", "targetName": zb.TARGET}}]
-    plan = {"projectPath": str(root / zb.PROJECT), "entries": [
+    plan = {"schemaVersion": 2, "projectPath": str(root / zb.PROJECT), "entries": [
         {"podName": "AFNetworking", "currentVersion": "4.0.1", "classification": "review", "actions": [{"manual": {"description": "retain"}}]},
         {"podName": "SDWebImage", "currentVersion": "5.8.4", "classification": "auto", "targetName": zb.TARGET,
          "packageCandidate": package(), "actions": actions}]}
@@ -104,6 +104,13 @@ class PlanTests(unittest.TestCase):
     def test_accepts_only_sd_auto_for_objc_app(self):
         analysis, plan = analysis_plan()
         self.assertEqual(zb.validate_analysis_and_plan(analysis, plan, Path("/tmp/source"))["auto"], ["SDWebImage"])
+
+    def test_rejects_registry_source_plan_without_schema_boundary(self):
+        for schema in (None, 1, 3):
+            analysis, plan = analysis_plan()
+            plan["schemaVersion"] = schema
+            with self.assertRaises(zb.QualificationError):
+                zb.validate_analysis_and_plan(analysis, plan, Path("/tmp/source"))
 
     def test_rejects_af_auto_or_sibling_link(self):
         analysis, plan = analysis_plan(); analysis["candidates"][0]["classification"] = "auto"

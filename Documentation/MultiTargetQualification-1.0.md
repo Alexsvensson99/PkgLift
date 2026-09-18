@@ -185,9 +185,14 @@ Only `report/` may be uploaded. Source, logs, caches and build products remain
 private job-local material. Hosted execution remains pending; this protocol does
 not close G3 or authorize a release.
 
-Local verification of this preparation passed 372 XCTest cases and 233 Swift
-Testing cases, 211 Python harness/policy tests, registry validation (25 mappings),
+Local verification of this preparation passed 378 XCTest cases and 233 Swift
+Testing cases, 212 Python harness/policy tests, registry validation (25 mappings),
 and repository YAML/workflow validation. An independent source-contract review
 found no actionable issues.
 The editor now writes only `project.pbxproj`, avoiding unrelated scheme and
 breakpoint reserialization discovered by the real-project apply check.
+
+Plans carrying registry-source provenance use schema 2 so released schema-1
+library preflights reject them before operations. The local real-project check
+was repeated with the full and portable schema-2 plans and the complete framework
+phase/dependency-proxy preservation checks.

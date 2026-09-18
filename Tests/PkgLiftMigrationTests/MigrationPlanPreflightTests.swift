@@ -467,6 +467,78 @@ final class MigrationPlanPreflightTests: XCTestCase {
         }
     }
 
+    func testSchemaOneDowngradeCannotCarryRegistrySourceEvidence() throws {
+        let schemaTwo = makePlan(entries: [
+            makeEntry(registrySourceProvenance: matchedRegistrySource()),
+        ])
+        XCTAssertEqual(schemaTwo.schemaVersion, 2)
+        let downgraded = try replacingSchemaVersion(in: schemaTwo, with: 1)
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: downgraded,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .schemaEvidenceMismatch(schemaVersion: 1)
+            )
+        }
+    }
+
+    func testSchemaTwoWithoutRegistryEvidenceIsRefused() throws {
+        let upgraded = try replacingSchemaVersion(
+            in: makePlan(entries: [makeEntry()]),
+            with: 2
+        )
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: upgraded,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .schemaEvidenceMismatch(schemaVersion: 2)
+            )
+        }
+    }
+
+    func testUnknownFuturePlanSchemaIsRefusedBeforeOtherChecks() throws {
+        let future = try replacingSchemaVersion(
+            in: makePlan(entries: [makeEntry(registrySourceProvenance: matchedRegistrySource())]),
+            with: 99
+        )
+
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: future,
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .unsupportedSchemaVersion(99)
+            )
+        }
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: future,
+            currentPlan: makePlan(entries: [makeEntry()]),
+            availableTargetInfos: [targetInfo("App")]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .unsupportedSchemaVersion(99)
+            )
+        }
+        XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+            plan: makePlan(entries: [makeEntry()]),
+            currentPlan: future,
+            availableTargets: ["App"]
+        )) { error in
+            XCTAssertEqual(
+                error as? MigrationPlanPreflightError,
+                .unsupportedSchemaVersion(99)
+            )
+        }
+    }
+
     func testExternalProvenanceRequiresCurrentSnapshotThroughPublicAPI() {
         let plan = makePlan(entries: [
             makeEntry(),
@@ -923,6 +995,21 @@ final class MigrationPlanPreflightTests: XCTestCase {
                 RegistrySourceDeclarationEvidence(line: 1, repository: .cocoaPodsSpecsGit),
             ],
             lockfile: RegistrySourceLockfileEvidence(repositories: [.cocoaPodsSpecsGit])
+        )
+    }
+
+    private func replacingSchemaVersion(
+        in plan: MigrationPlan,
+        with schemaVersion: Int
+    ) throws -> MigrationPlan {
+        let data = try JSONEncoder().encode(plan)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        object["schemaVersion"] = schemaVersion
+        return try JSONDecoder().decode(
+            MigrationPlan.self,
+            from: JSONSerialization.data(withJSONObject: object)
         )
     }
 }

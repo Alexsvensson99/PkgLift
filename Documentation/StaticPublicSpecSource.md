@@ -31,6 +31,12 @@ origin. The classifier checks their agreement, and migration compares the saved
 evidence with a freshly generated current plan before writing. Changes affecting
 retained dependencies must also invalidate the old source snapshot.
 
+A plan containing this evidence is emitted as schema 2. Released schema-1
+preflights refuse it before returning operations, including library callers that
+do not supply a current plan. Plans without this evidence retain schema 1. The
+current preflight rejects evidence/schema mismatches and unknown versions;
+ignoring an unfamiliar optional field must never grant execution authority.
+
 Projects without an explicit source retain legacy compatibility for lockfiles
 that have no `SPEC REPOS`. Present unsupported origin evidence must not be
 ignored. This is static consistency evidence, not attestation that installed

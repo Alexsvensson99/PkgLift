@@ -44,6 +44,7 @@ public struct PreparedMigration: Sendable, Equatable {
 
 public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
     case unsupportedSchemaVersion(Int)
+    case schemaEvidenceMismatch(schemaVersion: Int)
     case incompatiblePkgLiftVersion(String)
     case incompleteAutoEntry(dependency: String, detail: String)
     case actionMismatch(dependency: String)
@@ -64,6 +65,8 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
         switch self {
         case .unsupportedSchemaVersion(let version):
             return "Automatic migration refused: plan schema version \(version) is unsupported. Regenerate the plan with this PkgLift version."
+        case .schemaEvidenceMismatch(let schemaVersion):
+            return "Automatic migration refused: plan schema version \(schemaVersion) does not match its CocoaPods registry-source evidence. Regenerate the plan."
         case .incompatiblePkgLiftVersion(let version):
             return "Automatic migration refused: the plan was produced by PkgLift \(version), but this executable is \(PkgLiftCore.pkgLiftVersion). Regenerate the plan."
         case .incompleteAutoEntry(let dependency, let detail):
@@ -109,6 +112,8 @@ public struct MigrationPlanPreflight: Sendable {
         currentPlan: MigrationPlan,
         availableTargetInfos: [TargetInfo]
     ) throws -> PreparedMigration {
+        try validatePlanSchema(plan)
+        try validatePlanSchema(currentPlan)
         try validateSavedSourceProvenanceEntries(
             plan.entries,
             against: currentPlan.entries
@@ -150,6 +155,7 @@ public struct MigrationPlanPreflight: Sendable {
         plan: MigrationPlan,
         availableTargetInfos: [TargetInfo]
     ) throws -> PreparedMigration {
+        try validatePlanSchema(plan)
         if let external = plan.entries.first(where: { $0.sourceProvenance != nil }) {
             throw MigrationPlanPreflightError.staleSourceProvenance(
                 dependency: external.podName
@@ -170,9 +176,7 @@ public struct MigrationPlanPreflight: Sendable {
         plan: MigrationPlan,
         availableTargetInfos: [TargetInfo]
     ) throws -> PreparedMigration {
-        guard plan.schemaVersion == MigrationPlan.schemaVersion else {
-            throw MigrationPlanPreflightError.unsupportedSchemaVersion(plan.schemaVersion)
-        }
+        try validatePlanSchema(plan)
         guard plan.pkgLiftVersion == PkgLiftCore.pkgLiftVersion else {
             throw MigrationPlanPreflightError.incompatiblePkgLiftVersion(plan.pkgLiftVersion)
         }
@@ -403,6 +407,20 @@ public struct MigrationPlanPreflight: Sendable {
             packagesToAdd: packageOrder.compactMap { packagesByIdentity[$0] },
             productsToLink: productLinks
         )
+    }
+
+    private func validatePlanSchema(_ plan: MigrationPlan) throws {
+        guard plan.schemaVersion == 1 || plan.schemaVersion == MigrationPlan.schemaVersion else {
+            throw MigrationPlanPreflightError.unsupportedSchemaVersion(plan.schemaVersion)
+        }
+        let hasRegistrySourceEvidence = plan.entries.contains {
+            $0.registrySourceProvenance != nil
+        }
+        guard (plan.schemaVersion == MigrationPlan.schemaVersion) == hasRegistrySourceEvidence else {
+            throw MigrationPlanPreflightError.schemaEvidenceMismatch(
+                schemaVersion: plan.schemaVersion
+            )
+        }
     }
 
     /// Backward-compatible target-name API. It retains source compatibility

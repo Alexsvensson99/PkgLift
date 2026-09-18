@@ -100,8 +100,8 @@ public struct PackageCandidate: Sendable, Codable, Equatable {
 /// Plans are reproducible artifacts—given the same inputs, PkgLift
 /// produces the same plan.
 public struct MigrationPlan: Sendable, Codable {
-    /// Schema version for forward compatibility.
-    public static let schemaVersion = 1
+    /// Highest schema version understood by this executable.
+    public static let schemaVersion = 2
 
     /// The schema version of this plan.
     public let schemaVersion: Int
@@ -154,7 +154,12 @@ public struct MigrationPlan: Sendable, Codable {
         readinessScore: Int,
         counts: DependencyCounts? = nil
     ) {
-        self.schemaVersion = Self.schemaVersion
+        // Schema 2 is an execution boundary for registry-source evidence. A
+        // released schema-1 reader ignores the additive entry field, so plans
+        // carrying it must identify themselves as unsupported to that reader.
+        self.schemaVersion = entries.contains {
+            $0.registrySourceProvenance != nil
+        } ? Self.schemaVersion : 1
         self.timestamp = Date()
         self.pkgLiftVersion = PkgLiftCore.pkgLiftVersion
         self.projectPath = projectPath

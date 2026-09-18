@@ -274,6 +274,7 @@ def validate_analysis_and_plan(analysis: Mapping[str, Any], plan: Mapping[str, A
             "analysis selection changed")
     candidates = [x for x in analysis.get("candidates", []) if x.get("pod", {}).get("isDirect")]
     entries = plan.get("entries", [])
+    require(plan.get("schemaVersion") == 2, "registry-source plan must use schema 2")
     require({x.get("pod", {}).get("name") for x in candidates} == set(POD_VERSIONS)
             and {x.get("podName") for x in entries} == set(POD_VERSIONS), "direct identity set changed")
     auto_c = [x for x in candidates if str(x.get("classification", "")).upper() == "AUTO"]
@@ -835,6 +836,8 @@ class Runner(shared.Runner):
             portable_plan = self.execute("plan-portable", [self.binary, "plan", *common, "--portable-json"], expect_json=True)
             plan = json.loads(plan_path.read_text())
             summary["plan"] = validate_analysis_and_plan(analysis, plan, migration)
+            require(portable_plan.get("schemaVersion") == plan["schemaVersion"],
+                    "portable plan lost its execution schema boundary")
             validate_portable_parity(analysis, portable_analysis, "candidates")
             validate_portable_parity(plan, portable_plan, "entries")
             (self.report / "portable-analysis.json").write_text(json.dumps(shared.redact(portable_analysis, self.redaction_roots), indent=2, sort_keys=True) + "\n")

@@ -2,7 +2,7 @@
 
 PkgLift's machine-readable outputs are the Swift `Codable` representations of `ProjectAnalysis`, `MigrationPlan`, and `VerificationResult`. Each top-level document includes:
 
-- `schemaVersion` (currently `1`);
+- `schemaVersion` (`1` for analysis/verification; `1` or `2` for migration plans as described below);
 - `timestamp` in ISO-8601 format;
 - `pkgLiftVersion`.
 
@@ -124,7 +124,9 @@ An executable AUTO entry contains typed actions like:
 
 For plans containing non-empty AUTO entries, both dry run and `migrate --apply` reject unsupported schemas or a `pkgLiftVersion` different from the running version, including patch-version differences. They reject entries whose action list does not exactly agree with their package, version, products, pod, target, declaration, target-attribution, and consumer-language metadata. Present consumer-platform constraints must agree with the regenerated package candidate and the live target environment before mutation. A decodable plan with no non-empty AUTO entry returns a mutation-free no-op before this executable-plan preflight; apply still checks for an incomplete migration first. Decoding alone is never execution authorization.
 
-The new evidence fields are additive, so older schema-1 JSON remains decodable for inspection with absent source provenance. Compatibility is deliberately fail-closed: an older AUTO entry without explicit declaration provenance, exact target attribution, mapping languages, or a complete target profile is not executable and its plan must be regenerated.
+Migration plans containing any `registrySourceProvenance` use schema **2**, including evidence on retained entries. Plans with no such evidence keep schema **1**. The current preflight enforces this pairing and rejects unknown schema versions; registry evidence must still match a regenerated current plan. Released schema-1 preflights reject schema-2 plans before producing operations, even when an older decoder ignores the unfamiliar provenance field. An additive optional field alone would not provide this execution boundary.
+
+Older schema-1 JSON remains decodable for inspection. An older AUTO entry without explicit declaration provenance, exact target attribution, mapping languages, or a complete target profile is not executable and its plan must be regenerated.
 
 ## Portable analyze and plan output
 

@@ -4,9 +4,9 @@
   "sourceCommit": "fda54d347a0a8be11cf63e5eea76d0289e3a728d",
   "sourceTreeSHA256Before": "e212398945faa24d36238939f2b81879237ecd107d573eae36f53ac75e57a033",
   "sourceTreeSHA256After": "e212398945faa24d36238939f2b81879237ecd107d573eae36f53ac75e57a033",
-  "cliSHA256": "f2d86de6ef90f195981fb05dcf1c54326e0c674dc66ac693ac4b4f3c9470833d",
-  "cliBasis": "Local uncommitted static-public-spec-source implementation based on main 514ad31c1f4c2b2c5d5d00ed83e0cb735318dedb; not a release binary.",
-  "portableAnalysisSHA256": "0b052dc95f6dfa446388b26cc3dfbc1c9c74c68b693646390ee7a8e11dab04ea",
+  "cliSHA256": "6b0cd881c46934a36bc4da84d129ccfb78e6993d5d99002179c2e35d4bf0a94c",
+  "cliBasis": "Local schema-boundary fix in PR 124 based on 475fd5d2b4edd595fc7c79d5806f4e8ffc6496b8; not a release binary.",
+  "portableAnalysisSHA256": "3f7ee266820c546b0487e65a9eb83770d5e2cc95209e2380a3b1cdebc90aeac9",
   "directAUTO": [
     "SDWebImage"
   ],
@@ -29,5 +29,8 @@
     "Podfile",
     "ZBNetworkingDemo.xcodeproj/project.pbxproj"
   ],
-  "sourceTreeSnapshotScope": "Read-only analysis on untouched pinned source; migration apply was verified separately on a disposable copy."
+  "sourceTreeSnapshotScope": "Read-only analysis on untouched pinned source; migration apply was verified separately on a disposable copy.",
+  "planSchemaVersion": 2,
+  "portablePlanSchemaVersion": 2,
+  "completeFrameworkPhaseAndDependencyProxyStateUnchanged": true
 }
