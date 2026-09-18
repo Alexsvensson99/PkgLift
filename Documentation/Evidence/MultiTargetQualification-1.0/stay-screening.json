@@ -1,0 +1,69 @@
+{
+  "source": {
+    "repository": "https://github.com/shenruisi/Stay",
+    "commit": "f4e2fdbecc34a0c5250eabaa59b73096a7b7e674",
+    "license": "MPL-2.0",
+    "project": "Stay.xcodeproj",
+    "targets": [
+      "Stay",
+      "StayTests",
+      "StayUITests",
+      "Stay Extension"
+    ],
+    "upstreamLockfile": "absent"
+  },
+  "pkgLift": {
+    "version": "0.10.0",
+    "binarySHA256": "d3df8aeb863b22608231738e231a57669a5a77a83506aeb435592a8a678b4721",
+    "artifactSourceCommit": "cbb0eb1c2d385cbfce72bdc2b1e0f5e039fc0f1c",
+    "scope": "Read-only screening with previously accepted 0.10.0 binary; not a fresh-main qualification"
+  },
+  "command": [
+    "pkglift",
+    "analyze",
+    "--path",
+    "<source>",
+    "--project",
+    "Stay.xcodeproj",
+    "--portable-json"
+  ],
+  "exitCode": 0,
+  "sourceUnchanged": true,
+  "candidates": [
+    {
+      "pod": "InterAppCommunication",
+      "classification": "UNKNOWN",
+      "reasonCodes": [
+        "registry_mapping_missing",
+        "podfile_dynamic_ruby",
+        "resolved_version_invalid"
+      ]
+    },
+    {
+      "pod": "SDWebImage",
+      "classification": "REVIEW",
+      "reasonCodes": [
+        "podfile_dynamic_ruby",
+        "resolved_version_invalid"
+      ]
+    }
+  ],
+  "inputSHA256": {
+    "Podfile": "c464b6df40737f8e133df7f5ed23b0cf38f669eb248d2786b2709d7986e53217",
+    "LICENSE": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
+    "Stay.xcodeproj/project.pbxproj": "afe57fdcc744583e18c45b27e0922deb8fdc869b5a70aa723cb66ec6153b65ca",
+    "Stay.xcodeproj/xcshareddata/xcschemes/Stay.xcscheme": "21387199392f68f5c0a0cf98cc945ebfd0f9a0bd9768315dc7f45d675a2afb53"
+  },
+  "analysisSHA256": "90158bfe9409bb3086b1f34af3bff91a0ad10ca1a941233aeda582a5cad6285c",
+  "outcome": "rejected-positive-candidate",
+  "upstreamExecution": "not-run",
+  "sourceTreeVerifiedAgainstPinnedGitBlobs": true,
+  "verifiedSourceFiles": 470,
+  "comparisonMainCommit": "6dcfc7bf5b2bcc0f8654e920c6ce7fd57767b986",
+  "unchangedPathsComparedWithMain": [
+    "Sources/PkgLiftCocoaPods/PodfileParser.swift",
+    "Sources/PkgLiftMigration/MigrationClassifier.swift",
+    "Registry/"
+  ],
+  "registryLoaderDiffersFromAcceptedBinarySource": true
+}
