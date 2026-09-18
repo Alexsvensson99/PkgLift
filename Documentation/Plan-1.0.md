@@ -121,8 +121,10 @@ including existing-SwiftPM coexistence, passed on main `72f19b3…` with fresh
 hosted post-migration builds and complete environment records. Conflicting-requirement
 refusal coverage is also integrated. The selected [pinned real-project protocol](RealProjectQualification-1.0.md)
 passed one real AWS partial migration and two intentional refusal controls on
-reviewed branch `ffb629f` in [run 35147037039](https://github.com/Alexsvensson99/PkgLift/actions/runs/35147037039).
-This is branch qualification; additional toolchain/shape evidence remains open.
+main `6dcfc7b` in [run 35149953474](https://github.com/Alexsvensson99/PkgLift/actions/runs/35149953474).
+The [multi-target intake and preservation protocol](MultiTargetQualification-1.0.md)
+records the next uncovered positive shape. No positive multi-target candidate has
+yet been accepted; additional toolchain/shape evidence remains open.
 Deliver an evidence matrix separating read-only, repository-fixture and real-project results.
 
 - Preserve the ten upstream read-only pilots and their current prohibition on
