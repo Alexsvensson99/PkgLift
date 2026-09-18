@@ -18,6 +18,17 @@ Target platform and deployment values apply project xcconfig, project settings, 
 
 Each `TargetInfo` may include a `sourceProfile` with sorted `languages` values and `completeness`. The values are derived only from PBX compiled-source metadata. A candidate's `packageCandidate.supportedConsumerLanguages` records the mapping's language evidence. Its optional `supportedConsumerPlatforms` array records explicit platform and minimum-deployment constraints copied from a schema-2 registry mapping; schema 2 requires the constraint, while schema-1 mappings must omit it for compatibility with older clients. When that array is present, AUTO requires the exact target's statically resolved platform to have one matching entry and its deployment target to meet or exceed the recorded minimum. `detectedIntegrations` contains only typed enum values such as `carthage`, `reactNative`, `flutter`, and `capacitor`; it never carries integration filenames or source contents.
 
+### Public registry source provenance
+
+Registry-backed dependencies may separately carry `registrySourceProvenance`.
+Its `declarations` identify supported global Podfile source lines and public
+repository identities; `lockfile` records bounded per-pod origin evidence from
+`SPEC REPOS`. The derived `status` is `matchedExplicitPublic`, `implicitPublic`,
+`missingLockEvidence`, `unsupportedRepository`, or `conflicting`. Decoding rejects
+a status that contradicts the evidence. Unknown repository URLs are not retained.
+An explicit source requires matching lock evidence for AUTO; missing fields do
+not prove that match. See the [bounded source contract](StaticPublicSpecSource.md).
+
 ### External Git source provenance
 
 An external Git dependency may contain additive `sourceProvenance` with `kind: "git"` and a `git` object. The Git object contains deterministically ordered `declarations`, optional `lockfile` evidence, and a derived `status`. Declaration evidence records a sanitized repository, a bounded reference, and whether the declaration syntax was supported. Lockfile evidence keeps the external-source repository/reference separate from the checkout repository, retained branch or tag, and concrete checkout commit; it also records malformed or conflicting evidence without retaining malformed raw values.
@@ -74,6 +85,13 @@ Repeated literal declarations of the same exact pod name are represented by one 
 Plan entries use the same additive `reasonDetails` representation and preserve the same legacy `reasons` array. Preflight intentionally does not use reason text or reason details as authorization; it recomputes and compares the typed executable evidence described below.
 
 External entries may carry the same additive `sourceProvenance` snapshot as analysis. Preflight compares saved and current external provenance together with version, declaration origins, and target attribution, and refuses added, removed, or changed evidence before mutation. Redacted, malformed, incomplete, conflicting, credential-bearing, or otherwise lossy provenance cannot prove equality and therefore also refuses an unrelated `AUTO` apply. An `AUTO` entry is invalid when `sourceProvenance` is present; provenance analysis does not authorize automatic external-source migration.
+
+Registry entries carry any `registrySourceProvenance` into the plan separately.
+Preflight compares this evidence with the regenerated current plan, including
+retained entries, and rejects changed, missing or non-comparable origin evidence
+before writing. Older readers cannot safely infer AUTO from this new field.
+The added reporting codes are `registry_source_evidence_missing`,
+`registry_source_unsupported`, and `registry_source_evidence_conflict`.
 
 An executable AUTO entry contains typed actions like:
 

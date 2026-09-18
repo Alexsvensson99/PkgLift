@@ -867,16 +867,103 @@ final class MigrationClassifierTests: XCTestCase {
         })
     }
 
+    func testMatchedPublicRegistrySourceCanRemainAutomatic() {
+        let provenance = RegistrySourceProvenance(
+            declarations: [
+                RegistrySourceDeclarationEvidence(line: 1, repository: .cocoaPodsSpecsGit),
+            ],
+            lockfile: RegistrySourceLockfileEvidence(repositories: [.cocoaPodsSpecsGit])
+        )
+        let result = MigrationClassifier().classify(
+            dependency: makeDependency(version: "5.18.1", registrySourceProvenance: provenance),
+            mapping: makeMapping(minimumVersion: "5.1.0"),
+            targetSourceProfile: swiftProfile,
+            podfileFeatures: explicitPublicSourceFeatures()
+        )
+        XCTAssertEqual(result.category, .auto)
+    }
+
+    func testUnsupportedOrIncompleteRegistrySourceRequiresReview() {
+        let cases: [(RegistrySourceProvenance, MigrationReasonCode, PodfileFeatures)] = [
+            (
+                RegistrySourceProvenance(
+                    declarations: [RegistrySourceDeclarationEvidence(
+                        line: 1,
+                        repository: .cocoaPodsSpecsGit
+                    )]
+                ),
+                .registrySourceEvidenceMissing,
+                explicitPublicSourceFeatures()
+            ),
+            (
+                RegistrySourceProvenance(
+                    declarations: [],
+                    lockfile: RegistrySourceLockfileEvidence(hasUnsupportedRepository: true)
+                ),
+                .registrySourceUnsupported,
+                PodfileFeatures()
+            ),
+            (
+                RegistrySourceProvenance(
+                    declarations: [RegistrySourceDeclarationEvidence(
+                        line: 1,
+                        repository: .cocoaPodsSpecsGit
+                    )],
+                    lockfile: RegistrySourceLockfileEvidence(repositories: [.cocoaPodsTrunk])
+                ),
+                .registrySourceEvidenceConflict,
+                explicitPublicSourceFeatures()
+            ),
+        ]
+        for (provenance, reason, features) in cases {
+            let result = MigrationClassifier().classify(
+                dependency: makeDependency(
+                    version: "5.18.1",
+                    registrySourceProvenance: provenance
+                ),
+                mapping: makeMapping(minimumVersion: "5.1.0"),
+                targetSourceProfile: swiftProfile,
+                podfileFeatures: features
+            )
+            XCTAssertEqual(result.category, .review)
+            XCTAssertTrue(result.reasonDetails.contains { $0.code == reason })
+        }
+    }
+
+    func testExplicitSourceWithDroppedDependencyEvidenceRequiresReview() {
+        let result = MigrationClassifier().classify(
+            dependency: makeDependency(version: "5.18.1"),
+            mapping: makeMapping(minimumVersion: "5.1.0"),
+            targetSourceProfile: swiftProfile,
+            podfileFeatures: explicitPublicSourceFeatures()
+        )
+        XCTAssertEqual(result.category, .review)
+        XCTAssertTrue(result.reasonDetails.contains {
+            $0.code == .registrySourceEvidenceMissing
+        })
+    }
+
+    private func explicitPublicSourceFeatures() -> PodfileFeatures {
+        var features = PodfileFeatures()
+        features.registrySourceDeclarations = [RegistrySourceDeclarationEvidence(
+            line: 1,
+            repository: .cocoaPodsSpecsGit
+        )]
+        return features
+    }
+
     private func makeDependency(
         name: String = "SDWebImage",
         version: String,
-        sourceProvenance: DependencySourceProvenance? = nil
+        sourceProvenance: DependencySourceProvenance? = nil,
+        registrySourceProvenance: RegistrySourceProvenance? = nil
     ) -> CocoaPodDependency {
         CocoaPodDependency(
             name: name,
             version: version,
             source: .registry,
             sourceProvenance: sourceProvenance,
+            registrySourceProvenance: registrySourceProvenance,
             isDirect: true,
             targets: ["App"],
             declarations: [

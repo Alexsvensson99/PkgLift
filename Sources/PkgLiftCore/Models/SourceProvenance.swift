@@ -796,6 +796,141 @@ public struct GitSourceProvenance: Sendable, Codable, Equatable {
     }
 }
 
+/// A recognized public CocoaPods specifications source whose identity is safe
+/// to retain.
+/// Unknown repository keys are deliberately represented only by a boolean in
+/// lockfile evidence so private source URLs never enter analysis or plan JSON.
+public enum RegistrySpecRepository: String, Sendable, Codable, CaseIterable, Hashable {
+    case cocoaPodsSpecsGit = "cocoapods-specs-git"
+    case cocoaPodsTrunk = "cocoapods-trunk"
+
+    public static let cocoaPodsSpecsGitURL = "https://github.com/CocoaPods/Specs.git"
+}
+
+/// One exact, top-level Podfile `source` declaration accepted by the bounded
+/// static grammar.
+public struct RegistrySourceDeclarationEvidence: Sendable, Codable, Hashable {
+    public let line: Int
+    public let repository: RegistrySpecRepository
+
+    public init(line: Int, repository: RegistrySpecRepository) {
+        self.line = line
+        self.repository = repository
+    }
+}
+
+/// Per-base-pod source evidence from `Podfile.lock`'s `SPEC REPOS` section.
+public struct RegistrySourceLockfileEvidence: Sendable, Codable, Equatable {
+    public let repositories: [RegistrySpecRepository]
+    public let hasUnsupportedRepository: Bool
+    public let hasConflictingEvidence: Bool
+
+    public init(
+        repositories: [RegistrySpecRepository] = [],
+        hasUnsupportedRepository: Bool = false,
+        hasConflictingEvidence: Bool = false
+    ) {
+        self.repositories = Array(Set(repositories)).sorted { $0.rawValue < $1.rawValue }
+        self.hasUnsupportedRepository = hasUnsupportedRepository
+        self.hasConflictingEvidence = hasConflictingEvidence
+    }
+}
+
+public enum RegistrySourceEvidenceStatus: String, Sendable, Codable, CaseIterable {
+    case matchedExplicitPublic
+    case implicitPublic
+    case missingLockEvidence
+    case unsupportedRepository
+    case conflicting
+}
+
+/// Dedicated origin evidence for registry-backed pods. This is intentionally
+/// distinct from external Git provenance: a public specs repository is still a
+/// registry source, but an explicit global Podfile source must agree with the
+/// exact per-pod lockfile origin before it can support AUTO.
+public struct RegistrySourceProvenance: Sendable, Codable, Equatable {
+    public let declarations: [RegistrySourceDeclarationEvidence]
+    public let lockfile: RegistrySourceLockfileEvidence?
+    public let status: RegistrySourceEvidenceStatus
+
+    public init(
+        declarations: [RegistrySourceDeclarationEvidence],
+        lockfile: RegistrySourceLockfileEvidence? = nil
+    ) {
+        let declarations = declarations.sorted {
+            if $0.line == $1.line { return $0.repository.rawValue < $1.repository.rawValue }
+            return $0.line < $1.line
+        }
+        self.declarations = declarations
+        self.lockfile = lockfile
+        self.status = Self.deriveStatus(declarations: declarations, lockfile: lockfile)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case declarations
+        case lockfile
+        case status
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let declarations = try container.decode(
+            [RegistrySourceDeclarationEvidence].self,
+            forKey: .declarations
+        ).sorted {
+            if $0.line == $1.line { return $0.repository.rawValue < $1.repository.rawValue }
+            return $0.line < $1.line
+        }
+        let lockfile = try container.decodeIfPresent(
+            RegistrySourceLockfileEvidence.self,
+            forKey: .lockfile
+        )
+        let encodedStatus = try container.decode(RegistrySourceEvidenceStatus.self, forKey: .status)
+        let derivedStatus = Self.deriveStatus(declarations: declarations, lockfile: lockfile)
+        guard encodedStatus == derivedStatus else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .status,
+                in: container,
+                debugDescription: "Encoded registry-source status does not match its evidence."
+            )
+        }
+        self.declarations = declarations
+        self.lockfile = lockfile
+        self.status = derivedStatus
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(declarations, forKey: .declarations)
+        try container.encodeIfPresent(lockfile, forKey: .lockfile)
+        try container.encode(status, forKey: .status)
+    }
+
+    private static func deriveStatus(
+        declarations: [RegistrySourceDeclarationEvidence],
+        lockfile: RegistrySourceLockfileEvidence?
+    ) -> RegistrySourceEvidenceStatus {
+        if declarations.contains(where: {
+            $0.line <= 0 || $0.repository != .cocoaPodsSpecsGit
+        }) || declarations.count > 1 || lockfile?.hasConflictingEvidence == true {
+            return .conflicting
+        }
+        if lockfile?.hasUnsupportedRepository == true {
+            return .unsupportedRepository
+        }
+        if let declaration = declarations.first {
+            guard let lockfile else { return .missingLockEvidence }
+            guard lockfile.repositories.count == 1,
+                  lockfile.repositories.first == declaration.repository else {
+                return .conflicting
+            }
+            return .matchedExplicitPublic
+        }
+        guard let lockfile else { return .missingLockEvidence }
+        return lockfile.repositories.count == 1 ? .implicitPublic : .conflicting
+    }
+}
+
 /// Additive source-evidence wrapper used by dependency and plan JSON.
 ///
 /// The explicit discriminator avoids relying on Swift enum payload encoding and

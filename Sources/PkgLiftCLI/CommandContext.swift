@@ -312,6 +312,7 @@ struct CommandContext: Sendable {
                 podName: candidate.pod.name,
                 currentVersion: candidate.pod.version,
                 sourceProvenance: candidate.pod.sourceProvenance,
+                registrySourceProvenance: candidate.pod.registrySourceProvenance,
                 classification: candidate.classification,
                 actions: actions,
                 reasons: candidate.reasons,

@@ -123,8 +123,11 @@ refusal coverage is also integrated. The selected [pinned real-project protocol]
 passed one real AWS partial migration and two intentional refusal controls on
 main `6dcfc7b` in [run 35149953474](https://github.com/Alexsvensson99/PkgLift/actions/runs/35149953474).
 The [multi-target intake and preservation protocol](MultiTargetQualification-1.0.md)
-records the next uncovered positive shape. No positive multi-target candidate has
-yet been accepted; additional toolchain/shape evidence remains open.
+records the next uncovered positive shape. ZBNetworking is selected at a pinned
+revision for a separate fail-closed, iOS 15 compile-only qualification. Local
+analysis confirms one AUTO dependency; disposable plan/dry-run/apply preserves
+sibling targets and user data. Hosted CocoaPods refresh, baseline and
+sibling-target builds remain pending. Additional toolchain/shape evidence remains open.
 Deliver an evidence matrix separating read-only, repository-fixture and real-project results.
 
 - Preserve the ten upstream read-only pilots and their current prohibition on

@@ -52,6 +52,7 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
     case conflictingRequirements(repositoryURL: String)
     case staleAutoEntry(dependency: String)
     case staleSourceProvenance(dependency: String)
+    case staleRegistrySourceProvenance(dependency: String)
     case invalidConsumerPlatformEvidence(dependency: String)
     case targetPlatformEvidenceMissing(dependency: String)
     case targetPlatformUnsupported(dependency: String, platform: String)
@@ -79,6 +80,8 @@ public enum MigrationPlanPreflightError: LocalizedError, Equatable, Sendable {
             return "Automatic migration refused for '\(dependency)': the saved plan no longer matches the current Podfile, lockfile, registry mapping, configuration, or target evidence. Regenerate the plan."
         case .staleSourceProvenance(let dependency):
             return "Automatic migration refused for '\(dependency)': external Git source provenance changed, is missing, or cannot be compared safely. Regenerate the plan before any mutation."
+        case .staleRegistrySourceProvenance(let dependency):
+            return "Automatic migration refused for '\(dependency)': CocoaPods registry source evidence changed, is missing, or cannot be compared safely. Regenerate the plan before any mutation."
         case .invalidConsumerPlatformEvidence(let dependency):
             return "Automatic migration refused for '\(dependency)': saved consumer-platform evidence is invalid. Regenerate the plan from a validated registry."
         case .targetPlatformEvidenceMissing(let dependency):
@@ -107,6 +110,10 @@ public struct MigrationPlanPreflight: Sendable {
         availableTargetInfos: [TargetInfo]
     ) throws -> PreparedMigration {
         try validateSavedSourceProvenanceEntries(
+            plan.entries,
+            against: currentPlan.entries
+        )
+        try validateSavedRegistrySourceProvenanceEntries(
             plan.entries,
             against: currentPlan.entries
         )
@@ -148,6 +155,11 @@ public struct MigrationPlanPreflight: Sendable {
                 dependency: external.podName
             )
         }
+        if let registry = plan.entries.first(where: { $0.registrySourceProvenance != nil }) {
+            throw MigrationPlanPreflightError.staleRegistrySourceProvenance(
+                dependency: registry.podName
+            )
+        }
         return try prepareValidatedPlan(
             plan: plan,
             availableTargetInfos: availableTargetInfos
@@ -182,6 +194,15 @@ public struct MigrationPlanPreflight: Sendable {
                     dependency: dependency,
                     detail: "external Git source provenance is analysis-only and cannot authorize AUTO migration."
                 )
+            }
+            if let registrySource = entry.registrySourceProvenance {
+                guard registrySource.status == .matchedExplicitPublic
+                        || registrySource.status == .implicitPublic else {
+                    throw MigrationPlanPreflightError.incompleteAutoEntry(
+                        dependency: dependency,
+                        detail: "registry source evidence is missing, unsupported, or conflicting."
+                    )
+                }
             }
             guard let package = entry.packageCandidate else {
                 throw MigrationPlanPreflightError.incompleteAutoEntry(
@@ -416,6 +437,7 @@ public struct MigrationPlanPreflight: Sendable {
                   current.targetName == saved.targetName,
                   current.packageCandidate == saved.packageCandidate,
                   current.sourceProvenance == saved.sourceProvenance,
+                  current.registrySourceProvenance == saved.registrySourceProvenance,
                   current.declarations == saved.declarations,
                   current.targetAttribution == saved.targetAttribution,
                   current.targetSourceProfile == saved.targetSourceProfile else {
@@ -471,6 +493,49 @@ public struct MigrationPlanPreflight: Sendable {
             return true
         case .credentialBearing, .incomplete, .conflicting, .unsupportedURL,
              .unsupportedSyntax:
+            return false
+        }
+    }
+
+    /// Registry source directives are global and ordered. Preserve the complete
+    /// direct-entry snapshot, including retained pods, so a source change cannot
+    /// authorize an otherwise unrelated AUTO entry.
+    private func validateSavedRegistrySourceProvenanceEntries(
+        _ savedEntries: [MigrationPlanEntry],
+        against currentEntries: [MigrationPlanEntry]
+    ) throws {
+        let savedRegistry = Dictionary(grouping: savedEntries.filter {
+            $0.registrySourceProvenance != nil
+        }, by: \.podName)
+        let currentRegistry = Dictionary(grouping: currentEntries.filter {
+            $0.registrySourceProvenance != nil
+        }, by: \.podName)
+        let names = Set(savedRegistry.keys).union(currentRegistry.keys).sorted()
+
+        for name in names {
+            guard let saved = savedRegistry[name], saved.count == 1,
+                  let current = currentRegistry[name], current.count == 1,
+                  isSafelyComparable(saved[0].registrySourceProvenance),
+                  isSafelyComparable(current[0].registrySourceProvenance),
+                  saved[0].registrySourceProvenance == current[0].registrySourceProvenance,
+                  saved[0].currentVersion == current[0].currentVersion,
+                  saved[0].declarations == current[0].declarations,
+                  saved[0].targetAttribution == current[0].targetAttribution else {
+                throw MigrationPlanPreflightError.staleRegistrySourceProvenance(
+                    dependency: name
+                )
+            }
+        }
+    }
+
+    private func isSafelyComparable(
+        _ provenance: RegistrySourceProvenance?
+    ) -> Bool {
+        guard let provenance else { return false }
+        switch provenance.status {
+        case .matchedExplicitPublic, .implicitPublic:
+            return true
+        case .missingLockEvidence, .unsupportedRepository, .conflicting:
             return false
         }
     }

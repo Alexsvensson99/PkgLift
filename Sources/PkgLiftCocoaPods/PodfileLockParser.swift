@@ -37,7 +37,7 @@ public struct PodfileLockParser: Sendable {
         } catch {
             throw Error.yamlParsingFailed
         }
-        try validateExternalSourceNodes(in: rootNode)
+        try validateLockfileNodes(in: rootNode)
 
         guard let yaml = try? Yams.load(yaml: content) as? [String: Any] else {
             throw Error.yamlParsingFailed
@@ -57,6 +57,7 @@ public struct PodfileLockParser: Sendable {
         // artifact, then retain only canonical repository and bounded ref data.
         let externalSources = try mappingSection(named: "EXTERNAL SOURCES", in: yaml)
         let checkoutOptions = try mappingSection(named: "CHECKOUT OPTIONS", in: yaml)
+        let registrySources = try registrySourceEvidence(in: yaml)
         
         // CocoaPods emits a lockfile containing only its checksum and version
         // after the last dependency is removed. Accept that exact empty state,
@@ -84,7 +85,8 @@ public struct PodfileLockParser: Sendable {
                     stringEntry,
                     directDependencies: directDependencies,
                     externalSources: externalSources,
-                    checkoutOptions: checkoutOptions
+                    checkoutOptions: checkoutOptions,
+                    registrySources: registrySources
                 ) else {
                     throw Error.malformedStructure
                 }
@@ -98,7 +100,8 @@ public struct PodfileLockParser: Sendable {
                           key,
                           directDependencies: directDependencies,
                           externalSources: externalSources,
-                          checkoutOptions: checkoutOptions
+                          checkoutOptions: checkoutOptions,
+                          registrySources: registrySources
                       ) else {
                     throw Error.malformedStructure
                 }
@@ -120,7 +123,8 @@ public struct PodfileLockParser: Sendable {
         _ entry: String,
         directDependencies: Set<String>,
         externalSources: [String: [String: Any]],
-        checkoutOptions: [String: [String: Any]]
+        checkoutOptions: [String: [String: Any]],
+        registrySources: [String: RegistrySourceLockfileEvidence]
     ) -> CocoaPodDependency? {
         let nameAndVersion = entry.split(separator: " ", maxSplits: 1)
         guard let rawName = nameAndVersion.first else { return nil }
@@ -151,6 +155,11 @@ public struct PodfileLockParser: Sendable {
             version: version,
             source: parsedSource.source,
             sourceProvenance: parsedSource.provenance,
+            registrySourceProvenance: parsedSource.source == .registry
+                ? registrySources[baseName].map {
+                    RegistrySourceProvenance(declarations: [], lockfile: $0)
+                }
+                : nil,
             isDirect: isDirect,
             targets: []
         )
@@ -180,6 +189,62 @@ public struct PodfileLockParser: Sendable {
             result[dependency] = options
         }
         return result
+    }
+
+    private func registrySourceEvidence(
+        in yaml: [String: Any]
+    ) throws -> [String: RegistrySourceLockfileEvidence] {
+        guard let rawSection = yaml["SPEC REPOS"] else { return [:] }
+        guard let section = rawSection as? [String: Any] else {
+            throw Error.malformedStructure
+        }
+
+        struct Accumulator {
+            var repositories: [RegistrySpecRepository] = []
+            var hasUnsupportedRepository = false
+            var assignmentCount = 0
+        }
+        var accumulators: [String: Accumulator] = [:]
+
+        for (rawRepository, rawPods) in section {
+            guard let pods = rawPods as? [Any],
+                  pods.allSatisfy({ $0 is String }) else {
+                throw Error.malformedStructure
+            }
+            let repository: RegistrySpecRepository?
+            switch rawRepository {
+            case RegistrySpecRepository.cocoaPodsSpecsGitURL:
+                repository = .cocoaPodsSpecsGit
+            case "trunk", "https://cdn.cocoapods.org/":
+                repository = .cocoaPodsTrunk
+            default:
+                repository = nil
+            }
+
+            for case let pod as String in pods {
+                guard !pod.isEmpty,
+                      !pod.contains(where: { $0.isWhitespace }),
+                      extractBaseName(from: pod) == pod else {
+                    throw Error.malformedStructure
+                }
+                var accumulator = accumulators[pod] ?? Accumulator()
+                accumulator.assignmentCount += 1
+                if let repository {
+                    accumulator.repositories.append(repository)
+                } else {
+                    accumulator.hasUnsupportedRepository = true
+                }
+                accumulators[pod] = accumulator
+            }
+        }
+
+        return accumulators.mapValues { accumulator in
+            RegistrySourceLockfileEvidence(
+                repositories: accumulator.repositories,
+                hasUnsupportedRepository: accumulator.hasUnsupportedRepository,
+                hasConflictingEvidence: accumulator.assignmentCount > 1
+            )
+        }
     }
 
     private func parsedSource(
@@ -335,7 +400,7 @@ public struct PodfileLockParser: Sendable {
     /// Dictionary decoding keeps only one value for a repeated YAML key. Check
     /// the node sequence first so duplicate source/ref evidence cannot silently
     /// become last-value-wins input.
-    private func validateExternalSourceNodes(in root: Node) throws {
+    private func validateLockfileNodes(in root: Node) throws {
         guard let rootMapping = root.mapping else {
             throw Error.malformedStructure
         }
@@ -364,6 +429,29 @@ public struct PodfileLockParser: Sendable {
                           optionNames.insert(optionName).inserted else {
                         throw Error.malformedStructure
                     }
+                }
+            }
+        }
+
+        let specSections = rootMapping.filter { $0.key.string == "SPEC REPOS" }
+        guard specSections.count <= 1 else { throw Error.malformedStructure }
+        guard let specSection = specSections.first else { return }
+        guard let repositories = specSection.value.mapping else {
+            throw Error.malformedStructure
+        }
+        var repositoryNames: Set<String> = []
+        for repository in repositories {
+            guard let repositoryName = repository.key.string,
+                  repositoryNames.insert(repositoryName).inserted,
+                  let pods = repository.value.sequence else {
+                throw Error.malformedStructure
+            }
+            var podNames: Set<String> = []
+            for pod in pods {
+                guard let podName = pod.string,
+                      !podName.isEmpty,
+                      podNames.insert(podName).inserted else {
+                    throw Error.malformedStructure
                 }
             }
         }

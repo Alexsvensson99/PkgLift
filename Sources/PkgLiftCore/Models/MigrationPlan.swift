@@ -181,6 +181,10 @@ public struct MigrationPlanEntry: Sendable, Codable {
     /// preflight evidence only; it never enables automatic migration in v0.4.
     public let sourceProvenance: DependencySourceProvenance?
 
+    /// Dedicated public registry-origin evidence. Unlike external Git
+    /// provenance, an exact matched value can be executable evidence.
+    public let registrySourceProvenance: RegistrySourceProvenance?
+
     /// The migration classification.
     public let classification: MigrationClassification
 
@@ -214,6 +218,7 @@ public struct MigrationPlanEntry: Sendable, Codable {
         podName: String,
         currentVersion: String? = nil,
         sourceProvenance: DependencySourceProvenance? = nil,
+        registrySourceProvenance: RegistrySourceProvenance? = nil,
         classification: MigrationClassification,
         actions: [MigrationAction] = [],
         reasons: [String] = [],
@@ -227,6 +232,7 @@ public struct MigrationPlanEntry: Sendable, Codable {
         self.podName = podName
         self.currentVersion = currentVersion
         self.sourceProvenance = sourceProvenance
+        self.registrySourceProvenance = registrySourceProvenance
         self.classification = classification
         self.actions = actions
         self.reasons = reasons

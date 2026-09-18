@@ -1,6 +1,6 @@
 # Multi-target real-project qualification for 1.0
 
-Status: **bounded candidate screen complete; no positive multi-target result**.
+Status: **ZBNetworking selected for a fail-closed hosted qualification; no positive multi-target build result yet**.
 Reviewed against main `6dcfc7bf5b2bcc0f8654e920c6ce7fd57767b986` on 2026-09-18.
 The existing [selected G3 cases](RealProjectQualification-1.0.md) passed on that
 main commit in [run 35149953474](https://github.com/Alexsvensson99/PkgLift/actions/runs/35149953474).
@@ -23,8 +23,10 @@ to an upstream app would be fixture evidence, not this real-project shape.
 The initial screen requires a pinned public source revision, a reviewed license,
 a committed lockfile and an unchanged Podfile that passes the current classifier.
 Static-looking Ruby is not automatically supported syntax. In particular, the
-current classifier retains review for `use_frameworks!`, installation hooks,
-abstract targets and unsupported statements, including a literal `source` line.
+classifier retains review for `use_frameworks!`, installation hooks, abstract
+targets and unsupported statements. The new [bounded public-source contract](StaticPublicSpecSource.md)
+accepts one exact official Specs Git source only with matching lock evidence.
+The historical screens below predate that support.
 Missing locked versions cannot be replaced with an assumed latest version.
 
 ## Bounded source survey
@@ -132,3 +134,60 @@ simulator builds; launching apps or accessing live services is outside this test
 The existing AWS runner requires exactly one native target. Do not relax that
 assertion globally to reuse it for an unrelated source. A new selected case needs
 its own reviewed target inventory and preservation checks before hosted execution.
+
+## Selected ZBNetworking execution protocol
+
+[`Suzhibin/ZBNetworking` at `fda54d347a0a8be11cf63e5eea76d0289e3a728d`](https://github.com/Suzhibin/ZBNetworking/tree/fda54d347a0a8be11cf63e5eea76d0289e3a728d)
+is the selected MIT-licensed case. Its unchanged Podfile and committed lock attribute
+SDWebImage 5.8.4 and AFNetworking 4.0.1 only to `ZBNetworkingDemo`. The project
+already contains `ZBNetworkingDemoTests` and `ZBNetworkingDemoUITests`.
+The new local classifier produces exactly one AUTO entry, SDWebImage, with the
+exact locked version; unmapped AFNetworking remains on CocoaPods. The
+[portable analysis](Evidence/MultiTargetQualification-1.0/zb-portable-analysis.json)
+and [local validation record](Evidence/MultiTargetQualification-1.0/zb-local-screening.json)
+bind that result and prove analysis left the source-tree snapshot unchanged.
+On a separate disposable local copy, the unedited plan and dry run passed; apply
+changed only Podfile, project.pbxproj and its backup. The new product links once
+to the app and zero times to either sibling. Sibling object closure, protected
+project state, user schemes and breakpoints are preserved. No upstream Ruby,
+CocoaPods refresh or Xcode build ran locally; hosted qualification remains pending.
+
+The [execution intake](Evidence/MultiTargetQualification-1.0/zb-execution-intake.json)
+binds the full upstream Git tree, target identifiers, existing schemes, executable
+phase, original lock, exact public podspec bytes, dependency commits and Swift
+package manifest. The separate manual
+[`G3 Multi-Target Qualification`](../.github/workflows/multi-target-qualification.yml)
+uses [`run-real-project-zb.py`](../Scripts/run-real-project-zb.py); the existing AWS
+one-target assertion remains unchanged.
+
+Baseline and migrated copies use the same Xcode 16.4, CocoaPods 1.17.0, Debug,
+generic iOS Simulator `build-for-testing` command with explicit
+`IPHONEOS_DEPLOYMENT_TARGET=15.0`. The upstream app itself sets 13.0; test targets
+inherit the project's older 7.0 setting. The qualification therefore establishes
+compilation under the controlled iOS 15 profile only. It cannot establish original
+minimum-OS compatibility, runtime behavior or executed tests. All three app/test
+products must be produced from fresh, separate build outputs.
+
+The upstream schemes are committed under another user’s `xcuserdata`. The runner
+copies one reviewed scheme byte-for-byte to the shared scheme directory in both
+copies, records and commits that exact harness-only setup delta, and then takes
+the qualification snapshots. No target or action is generated. Baseline means
+pinned upstream plus this identical scheme promotion. An unavailable scheme or
+failing baseline is inconclusive. No upstream Podfile source rewrite, version change or
+synthetic target may be used to manufacture a positive result. The runner checks
+one app package link, zero sibling links, complete sibling object closure,
+protected source/resource/settings state, exact Podfile removal, dry-run file and
+Git invariance, retained AFNetworking payload and lock, and structural verification.
+The two pinned public podspecs form a bounded local Specs-cache projection;
+CocoaPods refresh disables repository updates and network access.
+
+Only `report/` may be uploaded. Source, logs, caches and build products remain
+private job-local material. Hosted execution remains pending; this protocol does
+not close G3 or authorize a release.
+
+Local verification of this preparation passed 372 XCTest cases and 233 Swift
+Testing cases, 211 Python harness/policy tests, registry validation (25 mappings),
+and repository YAML/workflow validation. An independent source-contract review
+found no actionable issues.
+The editor now writes only `project.pbxproj`, avoiding unrelated scheme and
+breakpoint reserialization discovered by the real-project apply check.

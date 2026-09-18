@@ -200,7 +200,14 @@ public struct XcodeProjectEditor: Sendable {
     
     private func saveProject(_ xcodeproj: XcodeProj, at path: String) throws {
         do {
-            try xcodeproj.write(pathString: path, override: true)
+            // Package mutations only change the PBX graph. Writing the whole
+            // XcodeProj also reserializes unrelated workspaces, schemes, and
+            // breakpoint files, creating out-of-scope apply deltas.
+            try xcodeproj.writePBXProj(
+                path: Path(path),
+                override: true,
+                outputSettings: PBXOutputSettings()
+            )
         } catch {
             throw XcodeProjectEditorError.saveFailed(path)
         }

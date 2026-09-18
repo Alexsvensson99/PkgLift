@@ -35,6 +35,7 @@ public struct PodfileParser: Sendable {
         var targets: [String] = []
         var seenTargets: Set<String> = []
         var scopes: [StaticScope] = []
+        var registrySourceDeclarations: [RegistrySourceDeclarationEvidence] = []
 
         let lexicalAnalysis = sanitizedLinesForStaticAnalysis(
             rubyPhysicalLines(in: content)
@@ -53,6 +54,15 @@ public struct PodfileParser: Sendable {
         for (offset, line) in lines.enumerated() {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty || trimmed.hasPrefix("#") { continue }
+
+            let isSourceInvocation = PodfileStaticSyntax.isDirectiveInvocation("source", in: trimmed)
+            let registrySourceDeclaration = PodfileStaticSyntax.registrySourceDeclaration(
+                from: trimmed,
+                lineNumber: offset + 1
+            )
+            if let registrySourceDeclaration, scopes.isEmpty {
+                registrySourceDeclarations.append(registrySourceDeclaration)
+            }
 
             let integrationDirectives: [(String, ProjectIntegration)] = [
                 ("use_react_native!", .reactNative),
@@ -117,6 +127,7 @@ public struct PodfileParser: Sendable {
                 || hasVariableAssignment
                 || hasUnmodeledStatement
                 || helperAnalysis.dynamicLines.contains(offset)
+                || (isSourceInvocation && (registrySourceDeclaration == nil || !scopes.isEmpty))
                 || trimmed.contains("require ")
                 || trimmed.contains("#{")
                 || trimmed.contains("eval(")
@@ -214,6 +225,7 @@ public struct PodfileParser: Sendable {
                     version: nil,
                     source: source,
                     sourceProvenance: parsedSource.sourceProvenance,
+                    registrySourceProvenance: nil,
                     isDirect: true,
                     targets: targetNames,
                     declarations: [declaration],
@@ -256,11 +268,35 @@ public struct PodfileParser: Sendable {
                 version: dependency.version,
                 source: dependency.source,
                 sourceProvenance: dependency.sourceProvenance,
+                registrySourceProvenance: dependency.registrySourceProvenance,
                 isDirect: dependency.isDirect,
                 targets: resolution.targets,
                 declarations: declarations,
                 targetAttribution: resolution.attribution
             )
+        }
+
+        if registrySourceDeclarations.count > 1 {
+            features.hasDynamicRuby = true
+        }
+        features.registrySourceDeclarations = registrySourceDeclarations
+        if !registrySourceDeclarations.isEmpty {
+            directDependencies = directDependencies.map { dependency in
+                guard dependency.source == .registry else { return dependency }
+                return CocoaPodDependency(
+                    name: dependency.name,
+                    version: dependency.version,
+                    source: dependency.source,
+                    sourceProvenance: dependency.sourceProvenance,
+                    registrySourceProvenance: RegistrySourceProvenance(
+                        declarations: registrySourceDeclarations
+                    ),
+                    isDirect: dependency.isDirect,
+                    targets: dependency.targets,
+                    declarations: dependency.declarations,
+                    targetAttribution: dependency.targetAttribution
+                )
+            }
         }
 
         return (features, directDependencies, targets)
@@ -692,6 +728,7 @@ public struct PodfileParser: Sendable {
             || PodfileStaticSyntax.targetName(from: line) != nil
             || PodfileStaticSyntax.abstractTargetName(from: line) != nil
             || isReachabilitySafePodDeclaration
+            || PodfileStaticSyntax.registrySourceDeclaration(from: line, lineNumber: offset + 1) != nil
             || helperAnalysis.eligibleDefinitionLines.contains(offset)
             || isStaticHelperDirective(line) {
             return true
@@ -712,8 +749,11 @@ public struct PodfileParser: Sendable {
             return true
         }
 
+        if PodfileStaticSyntax.isLiteralPlatformDeclaration(line) {
+            return true
+        }
+
         let staticMetadataPatterns = [
-            #"^platform\s+:[A-Za-z_]\w*(?:\s*,\s*['"][A-Za-z0-9._-]+['"])?\s*(?:#.*)?$"#,
             #"^inherit!\s+:(?:search_paths|none|complete)\s*(?:#.*)?$"#,
         ]
         if staticMetadataPatterns.contains(where: {

@@ -403,6 +403,45 @@ final class SourceProvenanceTests: XCTestCase {
         XCTAssertThrowsError(try JSONDecoder().decode(GitSourceProvenance.self, from: tampered))
     }
 
+    func testRegistrySourceEvidenceRejectsForgedExplicitMatch() throws {
+        let valid = RegistrySourceProvenance(
+            declarations: [RegistrySourceDeclarationEvidence(
+                line: 1,
+                repository: .cocoaPodsSpecsGit
+            )],
+            lockfile: RegistrySourceLockfileEvidence(repositories: [.cocoaPodsSpecsGit])
+        )
+        let data = try JSONEncoder().encode(valid)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["status"] = RegistrySourceEvidenceStatus.implicitPublic.rawValue
+        let tampered = try JSONSerialization.data(withJSONObject: object)
+
+        XCTAssertThrowsError(try JSONDecoder().decode(
+            RegistrySourceProvenance.self,
+            from: tampered
+        ))
+        XCTAssertEqual(
+            RegistrySourceProvenance(
+                declarations: [RegistrySourceDeclarationEvidence(
+                    line: 1,
+                    repository: .cocoaPodsTrunk
+                )],
+                lockfile: RegistrySourceLockfileEvidence(repositories: [.cocoaPodsTrunk])
+            ).status,
+            .conflicting
+        )
+        XCTAssertEqual(
+            RegistrySourceProvenance(
+                declarations: [RegistrySourceDeclarationEvidence(
+                    line: 0,
+                    repository: .cocoaPodsSpecsGit
+                )],
+                lockfile: RegistrySourceLockfileEvidence(repositories: [.cocoaPodsSpecsGit])
+            ).status,
+            .conflicting
+        )
+    }
+
     func testCodableRejectsTamperedReferenceStabilityAndCanonicalIdentity() throws {
         let branch = try XCTUnwrap(GitReferenceEvidence.make(kind: .branch, value: "main"))
         var referenceObject = try XCTUnwrap(

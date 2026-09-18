@@ -53,6 +53,39 @@ enum PodfileStaticSyntax {
         startsWithKeyword("pod", line: line)
     }
 
+    /// Recognizes only the one legacy public Specs Git source admitted by the
+    /// current contract. The literal is byte-exact after bounded Ruby quote
+    /// decoding; aliases and normalization are intentionally not accepted.
+    static func registrySourceDeclaration(
+        from line: String,
+        lineNumber: Int
+    ) -> RegistrySourceDeclarationEvidence? {
+        let source = line.trimmingCharacters(in: rubyHorizontalWhitespace)
+        var index = source.startIndex
+        guard let parenthesized = consumeInvocationKeyword("source", in: source, index: &index),
+              index < source.endIndex,
+              source[index] == "'" || source[index] == "\"",
+              let literal = parseQuotedLiteral(in: source, index: &index),
+              literal == RegistrySpecRepository.cocoaPodsSpecsGitURL,
+              finishesInvocation(in: source, index: &index, parenthesized: parenthesized) else {
+            return nil
+        }
+        return RegistrySourceDeclarationEvidence(
+            line: lineNumber,
+            repository: .cocoaPodsSpecsGit
+        )
+    }
+
+    /// Complete literal platform metadata, including CocoaPods' valid compact
+    /// `platform:ios,'9.0'` form. This models reachability only; platform support
+    /// still comes from the selected Xcode target graph.
+    static func isLiteralPlatformDeclaration(_ line: String) -> Bool {
+        line.range(
+            of: #"^platform\s*:(?:ios|osx|macos|tvos|watchos|visionos)(?:\s*,\s*(?:'[0-9]+(?:\.[0-9]+)*'|\"[0-9]+(?:\.[0-9]+)*\"))?\s*(?:#.*)?$"#,
+            options: .regularExpression
+        ) != nil
+    }
+
     static func targetName(from line: String) -> String? {
         scopeName(from: line, keyword: "target", allowsParentheses: true)
     }

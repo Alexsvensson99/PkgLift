@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "case": {
+    "id": "zbnetworking-multitarget",
+    "repository": "https://github.com/Suzhibin/ZBNetworking.git",
+    "commit": "fda54d347a0a8be11cf63e5eea76d0289e3a728d",
+    "tree": "b8718f5fe44b0b4c153827892eb0606176747267",
+    "license": "MIT"
+  },
+  "sourceInventory": {
+    "blobCount": 449,
+    "regularBlobCount": 279,
+    "symlinkBlobCount": 167,
+    "executableBlobCount": 3,
+    "submoduleCount": 0,
+    "totalBytes": 1967286,
+    "gitTreeDigest": "b8718f5fe44b0b4c153827892eb0606176747267",
+    "reviewedFiles": [
+      {
+        "path": "LICENSE",
+        "sha256": "7dd5c739b413d02d7d4fb856d3e0e8024e1b4b3bd34766c14d88e06625c11e57"
+      },
+      {
+        "path": "Podfile",
+        "sha256": "4e6978b049ad6ca4778fe126ee03695e82f61ad427cab8775986cee29dcd1618"
+      },
+      {
+        "path": "Podfile.lock",
+        "sha256": "66aa510b37123646b137f5377c4987809d5a33954fcaaf2efe8934e9310b67c3"
+      },
+      {
+        "path": "Pods/Manifest.lock",
+        "sha256": "66aa510b37123646b137f5377c4987809d5a33954fcaaf2efe8934e9310b67c3"
+      },
+      {
+        "path": "ZBNetworkingDemo.xcodeproj/project.pbxproj",
+        "sha256": "96b0b48d67392ec93d3293dec7dea86ee7a976461753ad21621c6c1e129908c0"
+      },
+      {
+        "path": "ZBNetworkingDemo.xcworkspace/contents.xcworkspacedata",
+        "sha256": "6025277185c430e5167f34e206a45a9d4f0b71913edf11a486c88f7ec8b915bc"
+      },
+      {
+        "path": "Pods/Pods.xcodeproj/project.pbxproj",
+        "sha256": "5a7aadfaae8da768e926d396bfb75cb09578c80c964916c72346258daa04f9a8"
+      }
+    ]
+  },
+  "selection": {
+    "root": ".",
+    "project": "ZBNetworkingDemo.xcodeproj",
+    "workspace": "ZBNetworkingDemo.xcworkspace",
+    "scheme": "ZBNetworkingDemo",
+    "nativeTargets": [
+      {
+        "name": "ZBNetworkingDemo",
+        "productType": "com.apple.product-type.application",
+        "blueprintID": "7DF8262C1D5815BE000D1109"
+      },
+      {
+        "name": "ZBNetworkingDemoTests",
+        "productType": "com.apple.product-type.bundle.unit-test",
+        "blueprintID": "7DF826451D5815BE000D1109"
+      },
+      {
+        "name": "ZBNetworkingDemoUITests",
+        "productType": "com.apple.product-type.bundle.ui-testing",
+        "blueprintID": "7DF826501D5815BE000D1109"
+      }
+    ],
+    "schemeFiles": [
+      {
+        "path": "ZBNetworkingDemo.xcodeproj/xcuserdata/nquec.xcuserdatad/xcschemes/ZBNetworkingDemo.xcscheme",
+        "sha256": "c379780bc19dca2b862149d7f17cf07117c44f019cd4dff06f8d119227d73032",
+        "buildTarget": "ZBNetworkingDemo",
+        "testTargets": [
+          "ZBNetworkingDemoTests",
+          "ZBNetworkingDemoUITests"
+        ]
+      },
+      {
+        "path": "ZBNetworkingDemo.xcodeproj/xcuserdata/suzhibin.xcuserdatad/xcschemes/ZBNetworkingDemo.xcscheme",
+        "sha256": "16a07efd2134379e38fff38b44d6aa6e7b949b634b1b01425ed67aef76d67c96",
+        "buildTarget": "ZBNetworkingDemo",
+        "testTargets": [
+          "ZBNetworkingDemoTests",
+          "ZBNetworkingDemoUITests"
+        ]
+      }
+    ],
+    "shellPhases": [
+      {
+        "owner": "ZBNetworkingDemo",
+        "name": "[CP] Check Pods Manifest.lock",
+        "bodySHA256": "f27ea9d89e0c46c0d4633696a1334ef50d5a8c9584c538e9eebfb38b0b62e9a7",
+        "inputPaths": [
+          "${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+          "${PODS_ROOT}/Manifest.lock"
+        ],
+        "outputPaths": [
+          "$(DERIVED_FILE_DIR)/Pods-ZBNetworkingDemo-checkManifestLockResult.txt"
+        ]
+      }
+    ],
+    "podsProjectShellPhaseCount": 0,
+    "executionObjectInventory": {
+      "applicationProject": {
+        "PBXBuildRule": 0,
+        "PBXLegacyTarget": 0,
+        "PBXAggregateTarget": 0,
+        "PBXNativeTarget": 3,
+        "PBXShellScriptBuildPhase": 1
+      },
+      "podsProject": {
+        "PBXBuildRule": 0,
+        "PBXLegacyTarget": 0,
+        "PBXAggregateTarget": 0,
+        "PBXNativeTarget": 3,
+        "PBXShellScriptBuildPhase": 0
+      }
+    }
+  },
+  "podfile": {
+    "sha256": "4e6978b049ad6ca4778fe126ee03695e82f61ad427cab8775986cee29dcd1618",
+    "sourceURL": "https://github.com/CocoaPods/Specs.git",
+    "platform": {
+      "name": "ios",
+      "version": "9.0",
+      "syntax": "platform:ios,'9.0'"
+    },
+    "target": "ZBNetworkingDemo",
+    "directPods": [
+      "SDWebImage",
+      "AFNetworking"
+    ],
+    "noHooks": true
+  },
+  "lock": {
+    "sha256": "66aa510b37123646b137f5377c4987809d5a33954fcaaf2efe8934e9310b67c3",
+    "manifestSHA256": "66aa510b37123646b137f5377c4987809d5a33954fcaaf2efe8934e9310b67c3",
+    "cocoaPodsAtPin": "1.9.1",
+    "roots": [
+      "AFNetworking",
+      "SDWebImage"
+    ],
+    "versions": {
+      "AFNetworking": "4.0.1",
+      "AFNetworking/NSURLSession": "4.0.1",
+      "AFNetworking/Reachability": "4.0.1",
+      "AFNetworking/Security": "4.0.1",
+      "AFNetworking/Serialization": "4.0.1",
+      "AFNetworking/UIKit": "4.0.1",
+      "SDWebImage": "5.8.4",
+      "SDWebImage/Core": "5.8.4"
+    },
+    "checksums": {
+      "AFNetworking": "7864c38297c79aaca1500c33288e429c3451fdce",
+      "SDWebImage": "cf6922231e95550934da2ada0f20f2becf2ceba9"
+    }
+  },
+  "specs": {
+    "repository": "https://github.com/CocoaPods/Specs.git",
+    "commit": "e4af897aa0ddc011a5adc30aa3568aa6ae2ab600",
+    "elements": [
+      {
+        "name": "AFNetworking",
+        "version": "4.0.1",
+        "path": "Specs/a/7/5/AFNetworking/4.0.1/AFNetworking.podspec.json",
+        "url": "https://raw.githubusercontent.com/CocoaPods/Specs/e4af897aa0ddc011a5adc30aa3568aa6ae2ab600/Specs/a/7/5/AFNetworking/4.0.1/AFNetworking.podspec.json",
+        "rawSHA256": "c16319d0d9133f5a7f07444450554d8d97157a2d6b89bf49d731cc5af8247790",
+        "lockSHA1": "7864c38297c79aaca1500c33288e429c3451fdce",
+        "source": {
+          "git": "https://github.com/AFNetworking/AFNetworking.git",
+          "tag": "4.0.1",
+          "revision": "ffae2391ab0c29dc88eb0a58d2f5b2c2c27cadbf"
+        },
+        "license": "MIT",
+        "forbiddenExecutionInputsAbsent": true
+      },
+      {
+        "name": "SDWebImage",
+        "version": "5.8.4",
+        "path": "Specs/1/1/7/SDWebImage/5.8.4/SDWebImage.podspec.json",
+        "url": "https://raw.githubusercontent.com/CocoaPods/Specs/e4af897aa0ddc011a5adc30aa3568aa6ae2ab600/Specs/1/1/7/SDWebImage/5.8.4/SDWebImage.podspec.json",
+        "rawSHA256": "1991b919ea6129e9031d12b691d8134353662141b4a8a0691b9f3a7a0d1c4d34",
+        "lockSHA1": "cf6922231e95550934da2ada0f20f2becf2ceba9",
+        "source": {
+          "git": "https://github.com/SDWebImage/SDWebImage.git",
+          "tag": "5.8.4",
+          "revision": "2f9ef53b99a25bdfba97660c69c42cb54e323b78"
+        },
+        "license": "MIT",
+        "forbiddenExecutionInputsAbsent": true
+      }
+    ]
+  },
+  "swiftPackage": {
+    "repository": "https://github.com/SDWebImage/SDWebImage",
+    "tag": "5.8.4",
+    "revision": "2f9ef53b99a25bdfba97660c69c42cb54e323b78",
+    "manifestURL": "https://raw.githubusercontent.com/SDWebImage/SDWebImage/2f9ef53b99a25bdfba97660c69c42cb54e323b78/Package.swift",
+    "manifestSHA256": "2e40ec6f0016ac0d08c2d4175d5c4c292bb1c3829589a2a8764d75586084db4a",
+    "products": [
+      "SDWebImage"
+    ],
+    "dependencyCount": 0,
+    "pluginCount": 0,
+    "binaryTargetCount": 0
+  },
+  "buildProfile": {
+    "host": "macos-15",
+    "xcode": "16.4",
+    "cocoaPods": "1.17.0",
+    "configuration": "Debug",
+    "sdk": "iphonesimulator",
+    "destination": "generic/platform=iOS Simulator",
+    "deploymentOverride": "15.0",
+    "action": "build-for-testing",
+    "compileOnly": true
+  },
+  "decision": {
+    "status": "accepted-fail-closed",
+    "schemeGate": "Promote the reviewed existing scheme byte-for-byte to shared scheme path in both copies. Record and commit the identical bounded harness delta before qualification snapshots. No target or action generation. Missing scheme or products is inconclusive-baseline.",
+    "claimsExcluded": [
+      "Original iOS 7/8/9/13 deployment compatibility",
+      "Runtime behavior",
+      "Test execution",
+      "Complete G3 or 1.0 readiness"
+    ]
+  },
+  "implementationReview": {
+    "minimalSpecsCache": "Generated projection of the two immutable reviewed podspecs with official remote URL; not a full Specs checkout.",
+    "noRepoUpdate": true,
+    "networkDeniedDuringPodInstall": true,
+    "expectedAUTO": [
+      "SDWebImage"
+    ],
+    "retained": [
+      "AFNetworking"
+    ],
+    "schemePromotion": {
+      "source": "ZBNetworkingDemo.xcodeproj/xcuserdata/nquec.xcuserdatad/xcschemes/ZBNetworkingDemo.xcscheme",
+      "destination": "ZBNetworkingDemo.xcodeproj/xcshareddata/xcschemes/ZBNetworkingDemo.xcscheme",
+      "sha256": "c379780bc19dca2b862149d7f17cf07117c44f019cd4dff06f8d119227d73032",
+      "identicalInBothCopies": true,
+      "generatedActions": false
+    }
+  },
+  "reviewedAt": "2026-09-18",
+  "notes": [
+    "Preparation only: no hosted execution result yet.",
+    "The application overrides deployment to 13.0 upstream; test targets inherit project 7.0. Both qualification copies use explicit 15.0.",
+    "Original Podfile and lockfile are qualification inputs; do not rewrite the source URL or versions to obtain AUTO.",
+    "Baseline means pinned upstream plus an exact portable projection of one already committed upstream scheme; no project, Podfile or source edits during preparation."
+  ]
+}
