@@ -1,0 +1,512 @@
+{
+  "schemaVersion": 1,
+  "runID": 35444656493,
+  "runAttempt": 1,
+  "runURL": "https://github.com/Alexsvensson99/PkgLift/actions/runs/35444656493",
+  "pullRequest": 128,
+  "workflowConclusion": "failure",
+  "status": "failed-migration",
+  "failure": "post-migration-pod-install exited 1; private log retained",
+  "artifact": {
+    "manifestSHA256": "eaec8ef801ef76eec61fb72006f4794472c8716a30027e33b7eed3ac9c1e89c0",
+    "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "runAttempt": "1",
+    "runID": "35444656493",
+    "sha256": "2cd7edb990f22b185b7fbee262bbfb36d8e405131848d50417ab8d67b1253ee9",
+    "sourceSHA": "26618525c934999784e54f0f6ca18481f67f8dd8"
+  },
+  "implementation": {
+    "executionIntakeSHA256": "4384db27757bf1095fd368d13158a88e89fd14ccefefde85acc04b0dcf126c7d",
+    "runnerSHA256": "9cc6a3f4d56fe0fa4fe32d144a5a34ff2465ef80d8506fbcdd89f50bcebcf75f",
+    "sharedRunnerSHA256": "911376e6a06d08689976e2104d6eb8b7aba152d5a6eee703ce458e95337ef970"
+  },
+  "summarySHA256": "d505e33e100b94366e7d6c4f1d41921f587733d88b7aeb5016e2f7dbb32e3c69",
+  "directoryPreparationIdenticalInBothCopies": true,
+  "baselineBuild": {
+    "commandMode": "build-for-testing",
+    "deploymentTarget": "15.0",
+    "products": {
+      "ZBNetworkingDemo.app": [
+        "Build/Products/Debug-iphonesimulator/ZBNetworkingDemo.app"
+      ],
+      "ZBNetworkingDemoTests.xctest": [
+        "Build/Products/Debug-iphonesimulator/ZBNetworkingDemo.app/PlugIns/ZBNetworkingDemoTests.xctest"
+      ],
+      "ZBNetworkingDemoUITests.xctest": [
+        "Build/Products/Debug-iphonesimulator/ZBNetworkingDemoUITests-Runner.app/PlugIns/ZBNetworkingDemoUITests.xctest"
+      ]
+    }
+  },
+  "baselineSettings": {
+    "AFNetworking": "15.0",
+    "Pods-ZBNetworkingDemo": "15.0",
+    "SDWebImage": "15.0",
+    "ZBNetworkingDemo": "15.0",
+    "ZBNetworkingDemoTests": "15.0",
+    "ZBNetworkingDemoUITests": "15.0"
+  },
+  "sourceMutationChecks": {
+    "baseline-AFNetworking-settings": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "baseline-Pods-ZBNetworkingDemo-settings": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "baseline-SDWebImage-settings": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "baseline-ZBNetworkingDemo-settings": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "baseline-ZBNetworkingDemoTests-settings": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "baseline-ZBNetworkingDemoUITests-settings": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "baseline-build": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "baseline-probes-build": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "baseline-scheme-list": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "baseline-settings-group": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "migration-scheme-list": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    }
+  },
+  "plan": {
+    "auto": [
+      "SDWebImage"
+    ],
+    "retained": [
+      "AFNetworking"
+    ],
+    "target": "ZBNetworkingDemo",
+    "version": "5.8.4"
+  },
+  "migration": {
+    "dryRunCommand": {
+      "argv": [
+        "<private>/pkglift",
+        "migrate",
+        "--path",
+        "<private>/migration-source",
+        "--project",
+        "ZBNetworkingDemo.xcodeproj",
+        "--workspace",
+        "ZBNetworkingDemo.xcworkspace",
+        "--no-color"
+      ],
+      "durationSeconds": 0.466,
+      "exitCode": 0,
+      "label": "migration-dry-run",
+      "stderrBytes": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutBytes": 135,
+      "stdoutSHA256": "4131021f65fd55510d9e4520d47d1c309b6045cb375ea2a2c92751920a2026c9"
+    },
+    "applyCommand": {
+      "argv": [
+        "<private>/pkglift",
+        "migrate",
+        "--path",
+        "<private>/migration-source",
+        "--project",
+        "ZBNetworkingDemo.xcodeproj",
+        "--workspace",
+        "ZBNetworkingDemo.xcworkspace",
+        "--no-color",
+        "--apply"
+      ],
+      "durationSeconds": 0.364,
+      "exitCode": 0,
+      "label": "migration-apply",
+      "stderrBytes": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutBytes": 131,
+      "stdoutSHA256": "e0fed92c65ab4b45ceee6dd0f16b7bce5044e690f7c3b951012dedf4006466cb"
+    },
+    "postApplyGuards": "passed by reaching post-migration-pod-install in the pinned runner; no standalone guard record was emitted"
+  },
+  "cocoaPodsRefresh": {
+    "argv": [
+      "/usr/bin/sandbox-exec",
+      "-p",
+      "(version 1)(allow default)(deny network*)",
+      "pod",
+      "install",
+      "--no-repo-update",
+      "--no-ansi"
+    ],
+    "durationSeconds": 1.186,
+    "exitCode": 1,
+    "label": "post-migration-pod-install",
+    "stderrBytes": 0,
+    "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutBytes": 306,
+    "stdoutSHA256": "4921b61aa4b446c22568865628b6db7f0461ab7fe50301a0692fd7ee57c8befb"
+  },
+  "finalBuild": "not-run",
+  "refusalControls": [
+    {
+      "case": "firebaseui-project",
+      "status": "passed-refusal",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "binarySHA256": "2cd7edb990f22b185b7fbee262bbfb36d8e405131848d50417ab8d67b1253ee9",
+      "pkgLiftSourceCommit": "26618525c934999784e54f0f6ca18481f67f8dd8"
+    },
+    {
+      "case": "hammerspoon-workspace",
+      "status": "passed-refusal",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "binarySHA256": "2cd7edb990f22b185b7fbee262bbfb36d8e405131848d50417ab8d67b1253ee9",
+      "pkgLiftSourceCommit": "26618525c934999784e54f0f6ca18481f67f8dd8"
+    }
+  ],
+  "testsExecuted": false,
+  "appLaunched": false,
+  "g3Closed": false,
+  "localDiagnostic": {
+    "scope": "local CocoaPods diagnostic only; not hosted G3 acceptance",
+    "environment": {
+      "macOS": "27.0",
+      "cocoaPods": "1.17.0",
+      "binarySHA256": "6b0cd881c46934a36bc4da84d129ccfb78e6993d5d99002179c2e35d4bf0a94c"
+    },
+    "networkDenied": true,
+    "command": [
+      "pod",
+      "install",
+      "--no-repo-update",
+      "--no-ansi"
+    ],
+    "before": {
+      "exitCode": 1,
+      "stdoutBytes": 306,
+      "stdoutSHA256": "4921b61aa4b446c22568865628b6db7f0461ab7fe50301a0692fd7ee57c8befb",
+      "stderrBytes": 0,
+      "message": "Analyzing dependencies\n[!] Unable to find a specification for `AFNetworking`\n\nYou have either:\n * out-of-date source repos which you can update with `pod repo update` or with `pod install --repo-update`.\n * mistyped the name or version.\n * not added the source repo that hosts the Podspec to your Podfile.\n",
+      "exactHostedOutputMatch": true
+    },
+    "fix": {
+      "path": "CocoaPods-version.yml",
+      "sourceURL": "https://raw.githubusercontent.com/CocoaPods/Specs/e4af897aa0ddc011a5adc30aa3568aa6ae2ab600/CocoaPods-version.yml",
+      "sha256": "4d1dc0966425cdd834073ff6852045975d08bf63fd500bfaa0cad2795506c713",
+      "prefixLengths": [
+        1,
+        1,
+        1
+      ]
+    },
+    "after": {
+      "exitCode": 0,
+      "stdoutSHA256": "e12c424974008a190f58d0148793a292fed1bb2d0008a36c5c181e29266fe55c",
+      "stderrBytes": 0,
+      "sourceChanges": {
+        "changedPathCount": 14,
+        "contentAndShapeUnchanged": true,
+        "exactModeTransition": "regular-file mode & ~0200 (owner write only); all other descriptor fields unchanged",
+        "beforeTreeSHA256": "46b246ffa903b939afb8c97185f4475a3740de1ed498706788325f6856788698",
+        "afterTreeSHA256": "302af4b95d030153d4cbd86ac886b27eb0b3b5384cf440778ee3663cd32e3d35",
+        "expectedLockedTreeSHA256": "302af4b95d030153d4cbd86ac886b27eb0b3b5384cf440778ee3663cd32e3d35",
+        "modeTransitionCounts": {
+          "0644->0444": 13,
+          "0755->0555": 1
+        }
+      },
+      "checks": {
+        "siblingClosureUnchanged": true,
+        "protectedProjectStateUnchanged": true,
+        "protectedZBStateUnchanged": true,
+        "linkage": {
+          "ZBNetworkingDemo": 1,
+          "ZBNetworkingDemoTests": 0,
+          "ZBNetworkingDemoUITests": 0
+        },
+        "executionInputs": {
+          "nativeTargets": [
+            "ZBNetworkingDemo",
+            "ZBNetworkingDemoTests",
+            "ZBNetworkingDemoUITests"
+          ],
+          "appShellPhases": [
+            "[CP] Check Pods Manifest.lock"
+          ],
+          "manifestPhaseSHA256": "f27ea9d89e0c46c0d4633696a1334ef50d5a8c9584c538e9eebfb38b0b62e9a7",
+          "podNativeTargets": [
+            "AFNetworking",
+            "Pods-ZBNetworkingDemo"
+          ],
+          "podsShellPhaseCount": 0
+        },
+        "headers": {
+          "count": 36,
+          "allowedPods": [
+            "AFNetworking"
+          ]
+        },
+        "lock": {
+          "roots": [
+            "AFNetworking"
+          ],
+          "versions": {
+            "AFNetworking": "4.0.1",
+            "AFNetworking/NSURLSession": "4.0.1",
+            "AFNetworking/Reachability": "4.0.1",
+            "AFNetworking/Security": "4.0.1",
+            "AFNetworking/Serialization": "4.0.1",
+            "AFNetworking/UIKit": "4.0.1"
+          },
+          "checksums": {
+            "AFNetworking": "7864c38297c79aaca1500c33288e429c3451fdce"
+          }
+        },
+        "structuralVerifyExitCode": 0,
+        "structuralVerify": {
+          "checks": [
+            {
+              "description": "Xcode project file parses correctly",
+              "name": "project_parses",
+              "passed": true
+            },
+            {
+              "description": "SwiftPM package reference exists for https://github.com/SDWebImage/SDWebImage",
+              "name": "package_https://github.com/SDWebImage/SDWebImage",
+              "passed": true
+            },
+            {
+              "description": "SwiftPM product 'SDWebImage' is linked to target 'ZBNetworkingDemo'",
+              "name": "product_SDWebImage_ZBNetworkingDemo",
+              "passed": true
+            },
+            {
+              "description": "Pod 'SDWebImage' removed from Podfile",
+              "name": "pod_removed_SDWebImage",
+              "passed": true
+            }
+          ],
+          "issues": [],
+          "passed": true,
+          "pkgLiftVersion": "0.10.0",
+          "schemaVersion": 1,
+          "timestamp": "2026-09-19T13:18:35Z"
+        },
+        "retainedPayloadDescriptorTreeUnchanged": false
+      },
+      "fixedHelperVerification": {
+        "intake": {
+          "sha256": "fa185c078c84b63f6e69461894f39b149b96f49126a486d5ea19a160b1b999fd",
+          "schemaVersion": 1,
+          "decision": {
+            "status": "accepted-fail-closed",
+            "schemeGate": "Promote the reviewed existing scheme byte-for-byte to shared scheme path in both copies. Record and commit the identical bounded harness delta before qualification snapshots. No target or action generation. Missing scheme or products is inconclusive-baseline. Before discovery, create only the four observed SwiftPM directory entries in the outer and app project workspaces with no files (both configuration leaves are empty) in both copies and require equal full-tree snapshots; directory creation is setup evidence, not a permitted discovery mutation.",
+            "claimsExcluded": [
+              "Original iOS 7/8/9/13 deployment compatibility",
+              "Runtime behavior",
+              "Test execution",
+              "Complete G3 or 1.0 readiness"
+            ]
+          }
+        },
+        "lockedAFPayload": {
+          "selectedSourceEntries": 14,
+          "selectedSourceTreeSHA256": "302af4b95d030153d4cbd86ac886b27eb0b3b5384cf440778ee3663cd32e3d35",
+          "reviewedSourceTreeSHA256": "46b246ffa903b939afb8c97185f4475a3740de1ed498706788325f6856788698",
+          "expectedLockedTreeSHA256": "302af4b95d030153d4cbd86ac886b27eb0b3b5384cf440778ee3663cd32e3d35",
+          "modePolicy": {
+            "phase": "post-migration-pod-install",
+            "pod": "AFNetworking",
+            "version": "4.0.1",
+            "cocoaPods": "1.17.0",
+            "removeModeBits": 128,
+            "reviewedSourceTreeSHA256": "46b246ffa903b939afb8c97185f4475a3740de1ed498706788325f6856788698",
+            "expectedLockedTreeSHA256": "302af4b95d030153d4cbd86ac886b27eb0b3b5384cf440778ee3663cd32e3d35",
+            "fileCount": 14
+          },
+          "modeTransitions": {
+            "0644->0444": 13,
+            "0755->0555": 1
+          }
+        },
+        "generatedCache": {
+          "generated": true,
+          "remoteURL": "https://github.com/CocoaPods/Specs.git",
+          "specsCommit": "e4af897aa0ddc011a5adc30aa3568aa6ae2ab600",
+          "metadata": {
+            "path": "CocoaPods-version.yml",
+            "url": "https://raw.githubusercontent.com/CocoaPods/Specs/e4af897aa0ddc011a5adc30aa3568aa6ae2ab600/CocoaPods-version.yml",
+            "rawSHA256": "4d1dc0966425cdd834073ff6852045975d08bf63fd500bfaa0cad2795506c713",
+            "specsCommit": "e4af897aa0ddc011a5adc30aa3568aa6ae2ab600"
+          },
+          "paths": {
+            "AFNetworking": "Specs/a/7/5/AFNetworking/4.0.1/AFNetworking.podspec.json",
+            "SDWebImage": "Specs/1/1/7/SDWebImage/5.8.4/SDWebImage.podspec.json"
+          }
+        },
+        "trackedFiles": [
+          "CocoaPods-version.yml",
+          "Specs/1/1/7/SDWebImage/5.8.4/SDWebImage.podspec.json",
+          "Specs/a/7/5/AFNetworking/4.0.1/AFNetworking.podspec.json"
+        ],
+        "onlyGitAndReadOnlyValidatorsExecuted": true
+      }
+    },
+    "finalXcodeBuild": "not-run",
+    "appLaunched": false,
+    "testsExecuted": false,
+    "sourceCommit": "fda54d347a0a8be11cf63e5eea76d0289e3a728d",
+    "sourceTree": "b8718f5fe44b0b4c153827892eb0606176747267",
+    "schemePreparedTree": "56de19f59350f55ea88b68d064c20dd489642bf8"
+  }
+}

@@ -161,6 +161,11 @@
   "specs": {
     "repository": "https://github.com/CocoaPods/Specs.git",
     "commit": "e4af897aa0ddc011a5adc30aa3568aa6ae2ab600",
+    "metadata": {
+      "path": "CocoaPods-version.yml",
+      "url": "https://raw.githubusercontent.com/CocoaPods/Specs/e4af897aa0ddc011a5adc30aa3568aa6ae2ab600/CocoaPods-version.yml",
+      "rawSHA256": "4d1dc0966425cdd834073ff6852045975d08bf63fd500bfaa0cad2795506c713"
+    },
     "elements": [
       {
         "name": "AFNetworking",
@@ -238,6 +243,16 @@
     "retained": [
       "AFNetworking"
     ],
+    "retainedAFLockModePolicy": {
+      "phase": "post-migration-pod-install",
+      "pod": "AFNetworking",
+      "version": "4.0.1",
+      "cocoaPods": "1.17.0",
+      "removeModeBits": 128,
+      "reviewedSourceTreeSHA256": "46b246ffa903b939afb8c97185f4475a3740de1ed498706788325f6856788698",
+      "expectedLockedTreeSHA256": "302af4b95d030153d4cbd86ac886b27eb0b3b5384cf440778ee3663cd32e3d35",
+      "fileCount": 14
+    },
     "schemePromotion": {
       "source": "ZBNetworkingDemo.xcodeproj/xcuserdata/nquec.xcuserdatad/xcschemes/ZBNetworkingDemo.xcscheme",
       "destination": "ZBNetworkingDemo.xcodeproj/xcshareddata/xcschemes/ZBNetworkingDemo.xcscheme",
