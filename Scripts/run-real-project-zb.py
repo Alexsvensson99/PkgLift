@@ -25,7 +25,7 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
 AWS_PATH = ROOT / "Scripts/run-real-project-aws.py"
 INTAKE = ROOT / "Documentation/Evidence/MultiTargetQualification-1.0/zb-execution-intake.json"
-INTAKE_SHA256 = "fa185c078c84b63f6e69461894f39b149b96f49126a486d5ea19a160b1b999fd"
+INTAKE_SHA256 = "c6f137e0ebe572a51f345076688da021c9657cc8cee9e556beffce1d6d2742cb"
 _SPEC = importlib.util.spec_from_file_location("pkglift_g3_aws_shared", AWS_PATH)
 assert _SPEC and _SPEC.loader
 shared = importlib.util.module_from_spec(_SPEC)
@@ -77,8 +77,16 @@ RETAINED_AF_LOCK_MODE_POLICY = {
     "expectedLockedTreeSHA256": RETAINED_AF_EXPECTED_LOCKED_TREE_SHA256,
     "fileCount": RETAINED_AF_FILE_COUNT,
 }
+PACKAGE_RESOLVED_PATHS = (
+    f"{WORKSPACE}/xcshareddata/swiftpm/Package.resolved",
+    f"{PROJECT}/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+)
 PACKAGE_URL = "https://github.com/SDWebImage/SDWebImage"
 PACKAGE_REVISION = "2f9ef53b99a25bdfba97660c69c42cb54e323b78"
+PACKAGE_RESOLVED_DOCUMENT = {"pins": [{"identity": "sdwebimage", "kind": "remoteSourceControl",
+    "location": PACKAGE_URL, "state": {"revision": PACKAGE_REVISION, "version": "5.8.4"}}], "version": 2}
+PACKAGE_RESOLVED_BYTES = (json.dumps(PACKAGE_RESOLVED_DOCUMENT, indent=2, sort_keys=True) + "\n").encode()
+PACKAGE_RESOLVED_SHA256 = "7d81be39079d84cbc2a284c7464b4675b244bf6b125c37a7095088080f502da0"
 PACKAGE_MANIFEST_SHA256 = "2e40ec6f0016ac0d08c2d4175d5c4c292bb1c3829589a2a8764d75586084db4a"
 AF_REVISION = "ffae2391ab0c29dc88eb0a58d2f5b2c2c27cadbf"
 MANIFEST_PHASE_SHA256 = "f27ea9d89e0c46c0d4633696a1334ef50d5a8c9584c538e9eebfb38b0b62e9a7"
@@ -172,6 +180,10 @@ def validate_execution_intake() -> dict[str, Any]:
     require(value.get("implementationReview", {}).get("retainedAFLockModePolicy")
             == RETAINED_AF_LOCK_MODE_POLICY,
             "execution intake retained AF lock-mode policy changed", "blocked-input")
+    require(value.get("implementationReview", {}).get("packageResolvedInputs") == {
+        "paths": list(PACKAGE_RESOLVED_PATHS), "rawSHA256": PACKAGE_RESOLVED_SHA256,
+        "schemaVersion": 2, "mode": 0o644},
+            "execution intake package resolution inputs changed", "blocked-input")
     swift_package = value.get("swiftPackage", {})
     require(swift_package.get("products") == ["SDWebImage"]
             and {key: swift_package.get(key) for key in ("dependencyCount", "pluginCount", "binaryTargetCount")}
@@ -816,7 +828,10 @@ class Runner(shared.Runner):
         self.source_mutation_checks[label] = evidence
         return evidence
 
-    def settings(self, root: Path, label: str, pods: set[str]) -> dict[str, str]:
+    def settings(self, root: Path, label: str, pods: set[str], package_context: Mapping[str, Any] | None = None) -> dict[str, str]:
+        if label == "final":
+            require(package_context is not None, "final settings require verified package resolution inputs", "blocked-input")
+            self.validate_package_resolution_context(root, Path(package_context["derived"]))
         result = {}
         group_before = tree_snapshot(root)
         group_index = self.git(root, ["ls-files", "--stage", "-z"])
@@ -829,27 +844,41 @@ class Runner(shared.Runner):
                     index = self.git(root, ["ls-files", "--stage", "-z"])
                     status = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
                     try:
-                        document = self.execute(probe, ["xcodebuild", "-project", project, "-target", target,
+                        command = ["xcodebuild", "-project", project, "-target", target,
                             "-configuration", "Debug", "-sdk", "iphonesimulator", "-showBuildSettings", "-json",
-                            "CODE_SIGNING_ALLOWED=NO", "IPHONEOS_DEPLOYMENT_TARGET=15.0"], expect_json=True,
+                            "CODE_SIGNING_ALLOWED=NO", "IPHONEOS_DEPLOYMENT_TARGET=15.0"]
+                        if label == "final" and project == root / PROJECT:
+                            derived = Path(package_context["derived"])
+                            command.extend(["-clonedSourcePackagesDirPath", derived / "SourcePackages",
+                                            "-onlyUsePackageVersionsFromResolvedFile", "-disableAutomaticPackageResolution",
+                                            "-skipPackageUpdates"])
+                        document = self.execute(probe, command, expect_json=True,
                             outcome="inconclusive-baseline" if label.startswith("baseline") else "failed-migration")
                     finally:
                         evidence = self.record_source_mutation(root, probe, before, index, status)
+                        if label == "final" and project == root / PROJECT:
+                            self.validate_package_resolution_context(root, Path(package_context["derived"]))
                         require(not evidence["treeChanged"] and not evidence["indexChanged"] and not evidence["statusChanged"],
                                 f"{probe} changed source or Git state", "failed-safety")
                     result.update(validate_effective_settings(document, {target}))
         finally:
             evidence = self.record_source_mutation(root, label + "-settings-group", group_before, group_index, group_status)
+            if label == "final":
+                self.validate_package_resolution_context(root, Path(package_context["derived"]))
             require(not evidence["treeChanged"] and not evidence["indexChanged"] and not evidence["statusChanged"],
                     f"{label} settings changed source or Git state", "failed-safety")
         return result
 
-    def build(self, root: Path, derived: Path, label: str, outcome: str) -> dict[str, Any]:
+    def build(self, root: Path, derived: Path, label: str, outcome: str,
+              package_context: Mapping[str, Any] | None = None) -> dict[str, Any]:
+        if label == "final-build":
+            require(package_context is not None, "final build requires verified package resolution inputs", "blocked-input")
+            self.validate_package_resolution_context(root, derived)
         before = tree_snapshot(root)
         index = self.git(root, ["ls-files", "--stage", "-z"])
         status = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
         try:
-            self.execute(label, ["xcodebuild", "-workspace", root / WORKSPACE, "-scheme", TARGET,
+            command = ["xcodebuild", "-workspace", root / WORKSPACE, "-scheme", TARGET,
                 "-configuration", "Debug", "-sdk", "iphonesimulator", "-destination", "generic/platform=iOS Simulator",
                 "-derivedDataPath", derived, "-clonedSourcePackagesDirPath", derived / "SourcePackages",
                 "-onlyUsePackageVersionsFromResolvedFile", "-disableAutomaticPackageResolution",
@@ -857,9 +886,12 @@ class Runner(shared.Runner):
                 "IPHONEOS_DEPLOYMENT_TARGET=15.0", "SYMROOT=" + str(derived / "Build/Products"),
                 "OBJROOT=" + str(derived / "Build/Intermediates.noindex"),
                 "SHARED_PRECOMPS_DIR=" + str(derived / "Build/Intermediates.noindex/PrecompiledHeaders"),
-                "build-for-testing"], timeout=1800, outcome=outcome)
+                "build-for-testing"]
+            if label == "final-build": command.insert(-1, "-skipPackageUpdates")
+            self.execute(label, command, timeout=1800, outcome=outcome)
         finally:
             evidence = self.record_source_mutation(root, label, before, index, status)
+            if label == "final-build": self.validate_package_resolution_context(root, derived)
             require(not evidence["treeChanged"] and not evidence["indexChanged"] and not evidence["statusChanged"],
                     f"{label} changed source or Git state", "failed-safety")
         products = {name: [str(p.relative_to(derived)) for p in derived.rglob(name)]
@@ -921,32 +953,107 @@ class Runner(shared.Runner):
                 "modePolicy": RETAINED_AF_LOCK_MODE_POLICY,
                 "modeTransitions": transitions}
 
-    def resolve_reviewed_package(self, root: Path, derived: Path) -> dict[str, Any]:
-        resolved = root / WORKSPACE / "xcshareddata/swiftpm/Package.resolved"
-        require(not resolved.exists(), "unexpected preexisting Package.resolved", "blocked-input")
-        resolved.parent.mkdir(parents=True, exist_ok=True)
-        document = {"pins": [{"identity": "sdwebimage", "kind": "remoteSourceControl",
-                               "location": PACKAGE_URL,
-                               "state": {"revision": PACKAGE_REVISION, "version": "5.8.4"}}], "version": 2}
-        resolved.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")
-        input_digest = file_sha256(resolved)
-        self.execute("resolve-reviewed-package", ["xcodebuild", "-resolvePackageDependencies",
-            "-workspace", root / WORKSPACE, "-scheme", TARGET, "-derivedDataPath", derived,
-            "-clonedSourcePackagesDirPath", derived / "SourcePackages",
-            "-onlyUsePackageVersionsFromResolvedFile"], timeout=900, outcome="failed-migration")
-        final_document = json.loads(resolved.read_text())
-        require(final_document.get("pins") == document["pins"] and final_document.get("version") in {2, 3}
-                and set(final_document) <= {"pins", "version", "originHash"}
-                and ("originHash" not in final_document
-                     or re.fullmatch(r"[0-9a-f]{64}", str(final_document["originHash"]))),
-                "Xcode changed reviewed Package.resolved pins", "failed-safety")
+    def validate_package_resolution_locks(self, root: Path) -> None:
+        paths = [root / relative for relative in PACKAGE_RESOLVED_PATHS]
+        require({str(path.relative_to(root)) for path in root.rglob("Package.resolved")
+                 if ".git" not in path.parts} == set(PACKAGE_RESOLVED_PATHS),
+                "Package.resolved inventory changed", "failed-safety")
+        for path in paths:
+            parents = [root / Path(*Path(path.relative_to(root)).parts[:index])
+                       for index in range(1, len(Path(path.relative_to(root)).parts))]
+            require(all(parent.is_dir() and not parent.is_symlink() for parent in parents)
+                    and path.is_file() and not path.is_symlink() and (path.stat().st_mode & 0o777) == 0o644
+                    and path.read_bytes() == PACKAGE_RESOLVED_BYTES and file_sha256(path) == PACKAGE_RESOLVED_SHA256,
+                    "reviewed Package.resolved changed", "failed-safety")
+
+    def validate_package_checkout_paths(self, derived: Path) -> Path:
         checkout = derived / "SourcePackages/checkouts/SDWebImage"
-        require(checkout.is_dir() and self.git(checkout, ["rev-parse", "HEAD"]).strip() == PACKAGE_REVISION
-                and file_sha256(checkout / "Package.swift") == PACKAGE_MANIFEST_SHA256,
-                "resolved checkout differs from reviewed source", "blocked-input")
-        return {"version": "5.8.4", "revision": PACKAGE_REVISION,
-                "manifestSHA256": PACKAGE_MANIFEST_SHA256, "inputResolvedSHA256": input_digest,
-                "resolvedSHA256": file_sha256(resolved), "resolvedSchemaVersion": final_document["version"]}
+        for path in (derived, derived / "SourcePackages", derived / "SourcePackages/checkouts", checkout):
+            if path.exists() or path.is_symlink():
+                require(path.is_dir() and not path.is_symlink(),
+                        "package checkout path is not a real directory", "failed-safety")
+        return checkout
+
+    def validate_package_resolution_context(self, root: Path, derived: Path) -> dict[str, Any]:
+        self.validate_package_resolution_locks(root)
+        checkout = self.validate_package_checkout_paths(derived)
+        try:
+            require(checkout.is_dir()
+                    and self.git(checkout, ["rev-parse", "HEAD"]).strip() == PACKAGE_REVISION
+                    and not self.git(checkout, ["status", "--porcelain", "--untracked-files=all"])
+                    and file_sha256(checkout / "Package.swift") == PACKAGE_MANIFEST_SHA256,
+                    "resolved checkout differs from reviewed source", "failed-safety")
+        except (QualificationError, OSError) as error:
+            raise QualificationError("failed-safety", "resolved checkout differs from reviewed source") from error
+        return {"paths": list(PACKAGE_RESOLVED_PATHS), "rawSHA256": PACKAGE_RESOLVED_SHA256,
+                "derived": str(derived), "checkoutRevision": PACKAGE_REVISION,
+                "manifestSHA256": PACKAGE_MANIFEST_SHA256}
+
+    def prepare_package_resolution_inputs(self, root: Path) -> dict[str, Any]:
+        paths = [root / relative for relative in PACKAGE_RESOLVED_PATHS]
+        require(sha256_bytes(PACKAGE_RESOLVED_BYTES) == PACKAGE_RESOLVED_SHA256,
+                "reviewed Package.resolved bytes changed", "blocked-input")
+        for path in paths:
+            parents = [root / Path(*Path(path.relative_to(root)).parts[:index])
+                       for index in range(1, len(Path(path.relative_to(root)).parts))]
+            require(all(parent.is_dir() and not parent.is_symlink() for parent in parents)
+                    and not path.exists() and not path.is_symlink(),
+                    "Package.resolved input path is unavailable", "blocked-input")
+        before, index = tree_snapshot(root), self.git(root, ["ls-files", "--stage", "-z"])
+        status = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+        before_records = sorted(filter(None, status.split("\0")))
+        require(all(len(record) >= 4 and record[2] == " " and not set(record[:2]) & {"R", "C"}
+                    for record in before_records),
+                "package input preparation does not accept rename/copy status records", "blocked-input")
+        for path in paths:
+            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+            try:
+                os.write(descriptor, PACKAGE_RESOLVED_BYTES)
+            finally:
+                os.close(descriptor)
+            os.chmod(path, 0o644)
+        after = tree_snapshot(root)
+        index_after = self.git(root, ["ls-files", "--stage", "-z"])
+        status_after = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+        expected_status_added = "?? " + PACKAGE_RESOLVED_PATHS[0]
+        after_records = sorted(filter(None, status_after.split("\0")))
+        require(changed_paths(before, after) == sorted(PACKAGE_RESOLVED_PATHS)
+                and all(after[relative] == {"kind": "file", "mode": 0o644, "size": len(PACKAGE_RESOLVED_BYTES),
+                                             "sha256": PACKAGE_RESOLVED_SHA256}
+                        for relative in PACKAGE_RESOLVED_PATHS)
+                and index_after == index
+                and expected_status_added not in before_records
+                and after_records == sorted([*before_records, expected_status_added]),
+                "Package.resolved preparation changed unexpected source or Git state", "failed-safety")
+        return {"paths": list(PACKAGE_RESOLVED_PATHS), "rawSHA256": PACKAGE_RESOLVED_SHA256,
+                "mode": 0o644, "treeSHA256": tree_digest(after), "expectedStatusAdded": expected_status_added,
+                "beforeIndexSHA256": sha256_bytes(index.encode()), "afterIndexSHA256": sha256_bytes(index_after.encode()),
+                "beforeStatusSHA256": sha256_bytes(status.encode()), "afterStatusSHA256": sha256_bytes(status_after.encode())}
+
+    def resolve_reviewed_package(self, root: Path, derived: Path) -> dict[str, Any]:
+        self.validate_package_resolution_locks(root)
+        self.validate_package_checkout_paths(derived)
+        before, index = tree_snapshot(root), self.git(root, ["ls-files", "--stage", "-z"])
+        status = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+        command_error: QualificationError | None = None
+        try:
+            self.execute("resolve-reviewed-package", ["xcodebuild", "-resolvePackageDependencies",
+                "-workspace", root / WORKSPACE, "-scheme", TARGET, "-derivedDataPath", derived,
+                "-clonedSourcePackagesDirPath", derived / "SourcePackages",
+                "-onlyUsePackageVersionsFromResolvedFile", "-disableAutomaticPackageResolution", "-skipPackageUpdates"],
+                timeout=900, outcome="failed-migration")
+        except QualificationError as error:
+            command_error = error
+        finally:
+            evidence = self.record_source_mutation(root, "resolve-reviewed-package", before, index, status)
+            self.validate_package_resolution_locks(root)
+            checkout = self.validate_package_checkout_paths(derived)
+            if checkout.exists(): self.validate_package_resolution_context(root, derived)
+            require(not evidence["treeChanged"] and not evidence["indexChanged"] and not evidence["statusChanged"],
+                    "resolve-reviewed-package changed source or Git state", "failed-safety")
+        if command_error is not None: raise command_error
+        context = self.validate_package_resolution_context(root, derived)
+        return context
 
     def post_install(self, root: Path) -> dict[str, Any]:
         profile = "(version 1)(allow default)(deny network*)"
@@ -1079,16 +1186,14 @@ class Runner(shared.Runner):
             verify = self.execute("structural-verification", [self.binary, "verify", *common, "--json"], expect_json=True)
             require(verify.get("checks") and all(x.get("passed") is True for x in verify["checks"]), "structural verification failed")
             (self.report / "structural-verification.json").write_text(json.dumps(shared.redact(verify, self.redaction_roots), indent=2, sort_keys=True) + "\n")
-            summary["resolved"] = self.resolve_reviewed_package(migration, self.private / "final-derived")
-            summary["finalSettings"] = self.settings(migration, "final", {"Pods-ZBNetworkingDemo", "AFNetworking"})
-            summary["finalBuild"] = self.build(migration, self.private / "final-derived", "final-build", "failed-migration")
-            resolved = shared.find_package_resolved(migration)
-            pins = json.loads(resolved.read_text()).get("pins", [])
-            pin = next((x for x in pins if str(x.get("identity", "")).lower() == "sdwebimage"), None)
-            require(pin and pin.get("state", {}).get("version") == "5.8.4"
-                    and pin.get("state", {}).get("revision") == PACKAGE_REVISION, "resolved package pin changed")
-            require(file_sha256(resolved) == summary["resolved"]["resolvedSHA256"],
-                    "build changed reviewed Package.resolved")
+            final_derived = self.private / "final-derived"
+            summary["packageResolutionInputs"] = self.prepare_package_resolution_inputs(migration)
+            summary["resolved"] = self.resolve_reviewed_package(migration, final_derived)
+            summary["finalSettings"] = self.settings(migration, "final", {"Pods-ZBNetworkingDemo", "AFNetworking"},
+                                                       summary["resolved"])
+            summary["resolvedAfterSettings"] = self.validate_package_resolution_context(migration, final_derived)
+            summary["finalBuild"] = self.build(migration, final_derived, "final-build", "failed-migration", summary["resolved"])
+            summary["resolvedAfterBuild"] = self.validate_package_resolution_context(migration, final_derived)
             summary["finalChangedPaths"] = validate_final_delta(original, tree_snapshot(migration))
             require(file_sha256(migration / SCHEME_DESTINATION) == SCHEME_SHA256
                     and all(validate_scheme_bytes((migration / path).read_bytes()) for path in

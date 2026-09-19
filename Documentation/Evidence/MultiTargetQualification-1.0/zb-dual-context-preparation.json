@@ -1,0 +1,25 @@
+{
+  "afterIndexSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+  "afterStatusSHA256": "4a721ddd9b8eb218dd2fffe540c6ec4c4cc637dc337b6300f20b134620ce809d",
+  "afterTreeSHA256": "5d7c9237d7536331fdf1d7aed34da1be7646a94a80a6d7074f49768eb893ad54",
+  "beforeIndexSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+  "beforeStatusSHA256": "b3ff623463b6f41df13126e71a7e4bd09e9d0d53d1e3c514ff941dedda623367",
+  "beforeTreeSHA256": "4bce765634c5109bf1d4ae23a7d95feeeaa173261190820500628d4c07880009",
+  "changedPaths": [
+    "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+    "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+  ],
+  "expectedStatusAdded": "?? ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+  "gitExcludeUnchanged": true,
+  "mode": 420,
+  "paths": [
+    "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+    "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+  ],
+  "rawSHA256": "7d81be39079d84cbc2a284c7464b4675b244bf6b125c37a7095088080f502da0",
+  "schemaVersion": 1,
+  "scope": "local package-input preparation only; no Xcode, package resolver or final build executed",
+  "scriptSHA256": "d59ce8aea9d9262c0b59d86138d246ed49eb946e07639d16bd52d1389043aeed",
+  "sourceCommit": "fda54d347a0a8be11cf63e5eea76d0289e3a728d",
+  "treeSHA256": "5d7c9237d7536331fdf1d7aed34da1be7646a94a80a6d7074f49768eb893ad54"
+}

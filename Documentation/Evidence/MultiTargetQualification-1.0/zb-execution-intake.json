@@ -253,6 +253,15 @@
       "expectedLockedTreeSHA256": "302af4b95d030153d4cbd86ac886b27eb0b3b5384cf440778ee3663cd32e3d35",
       "fileCount": 14
     },
+    "packageResolvedInputs": {
+      "paths": [
+        "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+        "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+      ],
+      "rawSHA256": "7d81be39079d84cbc2a284c7464b4675b244bf6b125c37a7095088080f502da0",
+      "schemaVersion": 2,
+      "mode": 420
+    },
     "schemePromotion": {
       "source": "ZBNetworkingDemo.xcodeproj/xcuserdata/nquec.xcuserdatad/xcschemes/ZBNetworkingDemo.xcscheme",
       "destination": "ZBNetworkingDemo.xcodeproj/xcshareddata/xcschemes/ZBNetworkingDemo.xcscheme",

@@ -243,6 +243,145 @@ class RetainedAFLockModeTests(unittest.TestCase):
                 self.assertEqual(zb.tree_snapshot(outside), before)
 
 
+class PackageResolutionInputTests(unittest.TestCase):
+    def fixture(self, directory):
+        root = Path(directory) / "source"; root.mkdir()
+        (root / ".git/info").mkdir(parents=True)
+        for relative in zb.PACKAGE_RESOLVED_PATHS:
+            (root / relative).parent.mkdir(parents=True)
+        runner = zb.Runner({"binary": root / "pkglift", "output": root / "output", "runnerTemp": Path(directory)}, 2)
+        status_calls = 0
+        def git(path, args):
+            nonlocal status_calls
+            if args[:2] == ["rev-parse", "HEAD"]: return zb.PACKAGE_REVISION
+            if args[0] == "status" and path == root:
+                status_calls += 1
+                return "" if status_calls == 1 else "?? " + zb.PACKAGE_RESOLVED_PATHS[0] + "\0"
+            return ""
+        runner.git = Mock(side_effect=git)
+        return runner, root
+
+    def checkout(self, root):
+        checkout = root / "derived/SourcePackages/checkouts/SDWebImage"
+        checkout.mkdir(parents=True); (checkout / "Package.swift").write_bytes(b"reviewed manifest")
+        return checkout
+
+    def test_prepares_only_the_two_exact_excluded_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root = self.fixture(directory)
+            result = runner.prepare_package_resolution_inputs(root)
+            self.assertEqual(result["paths"], list(zb.PACKAGE_RESOLVED_PATHS))
+            self.assertEqual(result["expectedStatusAdded"], "?? " + zb.PACKAGE_RESOLVED_PATHS[0])
+            for relative in zb.PACKAGE_RESOLVED_PATHS:
+                path = root / relative
+                self.assertEqual(path.read_bytes(), zb.PACKAGE_RESOLVED_BYTES)
+                self.assertEqual(path.stat().st_mode & 0o777, 0o644)
+            self.assertEqual(runner.git.call_count, 4)
+
+    def test_rejects_existing_second_input_and_symlinked_parent_before_writing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root = self.fixture(directory)
+            second = root / zb.PACKAGE_RESOLVED_PATHS[1]; second.write_bytes(b"existing")
+            with self.assertRaises(zb.QualificationError): runner.prepare_package_resolution_inputs(root)
+            self.assertFalse((root / zb.PACKAGE_RESOLVED_PATHS[0]).exists())
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root = self.fixture(directory)
+            parent = (root / zb.PACKAGE_RESOLVED_PATHS[0]).parent
+            outside = root / "outside"; parent.rename(outside); parent.symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(zb.QualificationError): runner.prepare_package_resolution_inputs(root)
+
+    def test_context_rejects_missing_extra_size_mode_and_malformed_pins(self):
+        for mutation in ("missing", "extra", "pods-extra", "size", "mode", "pins"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                runner, root = self.fixture(directory); runner.prepare_package_resolution_inputs(root)
+                checkout = self.checkout(root)
+                with patch.object(zb, "PACKAGE_MANIFEST_SHA256", zb.file_sha256(checkout / "Package.swift")):
+                    if mutation == "missing": (root / zb.PACKAGE_RESOLVED_PATHS[0]).unlink()
+                    elif mutation in {"extra", "pods-extra"}:
+                        extra = root / ("unexpected/Package.resolved" if mutation == "extra" else "Pods/Unexpected/Package.resolved")
+                        extra.parent.mkdir(parents=True); extra.write_bytes(zb.PACKAGE_RESOLVED_BYTES)
+                    elif mutation == "size": (root / zb.PACKAGE_RESOLVED_PATHS[0]).write_bytes(zb.PACKAGE_RESOLVED_BYTES + b"x")
+                    elif mutation == "mode": os.chmod(root / zb.PACKAGE_RESOLVED_PATHS[0], 0o600)
+                    else: (root / zb.PACKAGE_RESOLVED_PATHS[0]).write_bytes(b'{"pins": []}\n')
+                    with self.assertRaises(zb.QualificationError): runner.validate_package_resolution_context(root, root / "derived")
+
+    def test_final_settings_require_context_and_lock_flags_for_app_probes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root = self.fixture(directory); runner.prepare_package_resolution_inputs(root)
+            checkout = self.checkout(root)
+            runner.execute = Mock(side_effect=lambda _label, command, **_kwargs: [{"target": command[command.index("-target") + 1], "buildSettings": {"IPHONEOS_DEPLOYMENT_TARGET": "15.0"}}])
+            with patch.object(zb, "PACKAGE_MANIFEST_SHA256", zb.file_sha256(checkout / "Package.swift")):
+                with self.assertRaises(zb.QualificationError): runner.settings(root, "final", {"AFNetworking"})
+                runner.settings(root, "final", {"AFNetworking"}, {"derived": str(root / "derived")})
+            app_calls = [call.args[1] for call in runner.execute.call_args_list if "-project" in call.args[1] and root / zb.PROJECT in call.args[1]]
+            self.assertTrue(app_calls)
+            for command in app_calls:
+                for flag in ("-onlyUsePackageVersionsFromResolvedFile", "-disableAutomaticPackageResolution", "-skipPackageUpdates", "-clonedSourcePackagesDirPath"):
+                    self.assertIn(flag, command)
+                self.assertNotIn("-derivedDataPath", command)
+
+    def test_resolver_rewrite_overrides_a_command_failure_with_safety_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root = self.fixture(directory); runner.prepare_package_resolution_inputs(root)
+            checkout = self.checkout(root)
+            def rewrite_then_fail(_label, _command, **_kwargs):
+                (root / zb.PACKAGE_RESOLVED_PATHS[1]).write_bytes(b"rewritten")
+                raise zb.QualificationError("failed-migration", "resolver failed")
+            runner.execute = Mock(side_effect=rewrite_then_fail)
+            with patch.object(zb, "PACKAGE_MANIFEST_SHA256", zb.file_sha256(checkout / "Package.swift")):
+                with self.assertRaises(zb.QualificationError) as error:
+                    runner.resolve_reviewed_package(root, root / "derived")
+            self.assertEqual(error.exception.outcome, "failed-safety")
+
+    def test_unchanged_resolver_failure_with_empty_derived_preserves_command_outcome(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root = self.fixture(directory); runner.prepare_package_resolution_inputs(root)
+            (root / "derived/SourcePackages").mkdir(parents=True)
+            runner.execute = Mock(side_effect=zb.QualificationError("failed-migration", "resolver failed"))
+            with self.assertRaises(zb.QualificationError) as error:
+                runner.resolve_reviewed_package(root, root / "derived")
+            self.assertEqual(error.exception.outcome, "failed-migration")
+
+    def test_resolver_unexpected_swiftpm_write_is_failed_safety(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root = self.fixture(directory); runner.prepare_package_resolution_inputs(root)
+            def mutate(_label, _command, **_kwargs):
+                (root / zb.PACKAGE_RESOLVED_PATHS[0]).parent.joinpath("unexpected").write_text("bad")
+            runner.execute = Mock(side_effect=mutate)
+            with self.assertRaises(zb.QualificationError) as error:
+                runner.resolve_reviewed_package(root, root / "derived")
+            self.assertEqual(error.exception.outcome, "failed-safety")
+
+    def test_final_setting_checkout_mutation_stops_before_second_app_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root = self.fixture(directory); runner.prepare_package_resolution_inputs(root)
+            checkout = self.checkout(root); manifest_hash = zb.file_sha256(checkout / "Package.swift")
+            calls = []
+            def mutate_then_fail(_label, command, **_kwargs):
+                calls.append(command)
+                (checkout / "Package.swift").write_bytes(b"mutated")
+                raise zb.QualificationError("failed-migration", "settings failed")
+            runner.execute = Mock(side_effect=mutate_then_fail)
+            with patch.object(zb, "PACKAGE_MANIFEST_SHA256", manifest_hash):
+                with self.assertRaises(zb.QualificationError) as error:
+                    runner.settings(root, "final", {"AFNetworking"}, {"derived": str(root / "derived")})
+            self.assertEqual(error.exception.outcome, "failed-safety")
+            self.assertEqual(len(calls), 1)
+
+    def test_final_build_checkout_mutation_is_detected_in_finally(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root = self.fixture(directory); runner.prepare_package_resolution_inputs(root)
+            checkout = self.checkout(root); manifest_hash = zb.file_sha256(checkout / "Package.swift")
+            def mutate_then_fail(_label, _command, **_kwargs):
+                (checkout / "Package.swift").write_bytes(b"mutated")
+                raise zb.QualificationError("failed-migration", "build failed")
+            runner.execute = Mock(side_effect=mutate_then_fail)
+            with patch.object(zb, "PACKAGE_MANIFEST_SHA256", manifest_hash):
+                with self.assertRaises(zb.QualificationError) as error:
+                    runner.build(root, root / "derived", "final-build", "failed-migration", {"derived": str(root / "derived")})
+            self.assertEqual(error.exception.outcome, "failed-safety")
+
+
 class SchemeTests(unittest.TestCase):
     def test_requires_both_test_targets_and_no_execution_actions(self):
         flags = " ".join(f'{key}="{value}"' for key, value in zb.SCHEME_BUILD_FLAGS.items())
@@ -665,7 +804,7 @@ class XcodeProbeMutationTests(unittest.TestCase):
     def test_settings_accept_unchanged_reviewed_dirty_state_and_observe_every_target(self):
         with tempfile.TemporaryDirectory() as directory:
             runner, root, _ = self.runner(directory, dirty=True)
-            result = runner.settings(root, "final", {"AFNetworking"})
+            result = runner.settings(root, "baseline", {"AFNetworking"})
             self.assertEqual(set(result), {zb.TARGET, *zb.SIBLINGS, "AFNetworking"})
             self.assertEqual(runner.execute.call_count, 4)
             self.assertEqual(len(runner.source_mutation_checks), 5)
@@ -688,12 +827,13 @@ class XcodeProbeMutationTests(unittest.TestCase):
         for mutation in (None, "tree", "index", "status"):
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
                 runner, root, derived = self.runner(directory, mutation=mutation, dirty=True)
-                if mutation:
-                    with self.assertRaises(zb.QualificationError) as error:
-                        runner.build(root, derived, "final-build", "failed-migration")
-                    self.assertEqual(error.exception.outcome, "failed-safety")
-                else:
-                    self.assertEqual(len(runner.build(root, derived, "final-build", "failed-migration")["products"]), 3)
+                with patch.object(runner, "validate_package_resolution_context", return_value={}):
+                    if mutation:
+                        with self.assertRaises(zb.QualificationError) as error:
+                            runner.build(root, derived, "final-build", "failed-migration", {"derived": str(derived)})
+                        self.assertEqual(error.exception.outcome, "failed-safety")
+                    else:
+                        self.assertEqual(len(runner.build(root, derived, "final-build", "failed-migration", {"derived": str(derived)})["products"]), 3)
                 self.assertEqual(runner.source_mutation_checks["final-build"]["statusChanged"], mutation == "status")
 
     def test_failed_command_outcome_is_preserved_only_when_source_is_unchanged(self):
