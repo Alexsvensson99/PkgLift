@@ -382,6 +382,147 @@ class PackageResolutionInputTests(unittest.TestCase):
             self.assertEqual(error.exception.outcome, "failed-safety")
 
 
+class FinalBuildDiagnosticTests(unittest.TestCase):
+    def command(self, stdout, stderr):
+        return {"stdoutBytes": len(stdout), "stdoutSHA256": zb.sha256_bytes(stdout),
+                "stderrBytes": len(stderr), "stderrSHA256": zb.sha256_bytes(stderr)}
+
+    def test_collects_both_streams_without_exposing_log_text_or_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); source, package = root / "source", root / "package"
+            stdout = (str(source / "App.m") + ":12:3: error: 'SDImageCache.h' file not found\n"
+                      "https://secret.invalid/token command --api-key=raw-secret\n").encode()
+            stderr = b"ld: Undefined symbols for architecture arm64:\n/private/unknown/Thing.m:7: error: 'UnknownHeader.h' file not found\n"
+            paths = {"stdout": root / "stdout", "stderr": root / "stderr"}
+            paths["stdout"].write_bytes(stdout); paths["stderr"].write_bytes(stderr)
+            result = zb.collect_build_diagnostics(paths, self.command(stdout, stderr), source, package)
+            self.assertEqual([row["stream"] for row in result["rows"]], ["stdout", "stderr", "stderr"])
+            self.assertEqual(result["rows"][0]["category"], "header-not-found")
+            self.assertEqual(result["rows"][0]["pathScope"], "project")
+            self.assertEqual(result["rows"][0]["reviewedSubject"], "SDImageCache.h")
+            self.assertNotIn("reviewedSubject", result["rows"][2])
+            rendered = json.dumps(result)
+            for secret in ("raw-secret", "secret.invalid", "/private/unknown", "UnknownHeader.h", "App.m"):
+                self.assertNotIn(secret, rendered)
+
+    def test_bounds_rows_streams_and_oversized_lines(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); stdout = (b"ld: duplicate symbol a\nld: duplicate symbol b\n"
+                                               b"ld: duplicate symbol c\nld: duplicate symbol d\n" + b"x" * 300)
+            stderr = b"x" * 100 + b"\nclang: error: module 'A' not found\n"
+            paths = {"stdout": root / "stdout", "stderr": root / "stderr"}
+            paths["stdout"].write_bytes(stdout); paths["stderr"].write_bytes(stderr)
+            policy = {**zb.BUILD_DIAGNOSTIC_POLICY, "maxRows": 2, "maxLineBytes": 32,
+                      "maxScanBytesPerStream": 200}
+            with patch.object(zb, "BUILD_DIAGNOSTIC_POLICY", policy):
+                result = zb.collect_build_diagnostics(paths, self.command(stdout, stderr), root, root)
+            self.assertEqual(len(result["rows"]), 2); self.assertTrue(result["rowsTruncated"])
+            self.assertEqual(result["streams"]["stdout"]["captureStatus"], "bounded-prefix")
+            self.assertGreater(result["streams"]["stderr"]["oversizedLines"], 0)
+
+    def test_unavailable_and_complete_mismatch_logs_are_not_parsed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); stdout = b"clang: error: module 'A' not found\n"
+            missing = root / "missing"; link = root / "link"; link.symlink_to(missing)
+            result = zb.collect_build_diagnostics({"stdout": root / "stdout", "stderr": link},
+                self.command(stdout, b""), root, root)
+            self.assertEqual(result["streams"]["stdout"]["captureStatus"], "unavailable")
+            self.assertEqual(result["streams"]["stderr"]["captureStatus"], "unavailable")
+            path = root / "stdout"; path.write_bytes(stdout)
+            bad = self.command(stdout, b""); bad["stdoutSHA256"] = "0" * 64
+            result = zb.collect_build_diagnostics({"stdout": path, "stderr": missing}, bad, root, root)
+            self.assertEqual(result["streams"]["stdout"]["captureStatus"], "log-mismatch")
+            self.assertFalse(result["rows"])
+
+    def test_generic_and_fixed_failure_markers_are_hashed_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); stdout = b"error: raw-token-should-not-leak\n** BUILD FAILED **\n"
+            stderr = b"Command /private/secret command failed with a nonzero exit code\n"
+            paths = {"stdout": root / "stdout", "stderr": root / "stderr"}
+            paths["stdout"].write_bytes(stdout); paths["stderr"].write_bytes(stderr)
+            result = zb.collect_build_diagnostics(paths, self.command(stdout, stderr), root, root)
+            self.assertEqual(result["unknownDiagnosticCount"], 3)
+            self.assertEqual(len(result["unknownAggregateSHA256"]), 64)
+            self.assertEqual(result["rows"][0]["category"], "unclassified-error")
+            rendered = json.dumps(result)
+            self.assertNotIn("raw-token-should-not-leak", rendered)
+            self.assertNotIn("/private/secret", rendered)
+
+    def test_non_failed_final_or_baseline_execute_never_collects(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); runner = zb.Runner({"binary": root / "bin", "output": root / "out", "runnerTemp": root}, 2)
+            with patch.object(zb.shared.Runner, "execute", return_value="ok"):
+                runner.execute("baseline-build", ["true"])
+                runner.execute("final-build", ["true"])
+            self.assertIsNone(runner.final_build_diagnostic)
+
+    def test_failed_final_execute_preserves_command_error_when_capture_is_unavailable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); runner = zb.Runner({"binary": root / "bin", "output": root / "out", "runnerTemp": root}, 2)
+            def failed(_label, _command, **_kwargs):
+                runner.commands.append({"label": "final-build", "exitCode": 1, "stdoutBytes": 0,
+                                        "stdoutSHA256": zb.sha256_bytes(b""), "stderrBytes": 0,
+                                        "stderrSHA256": zb.sha256_bytes(b"")})
+                raise zb.QualificationError("failed-migration", "build failed")
+            with patch.object(zb.shared.Runner, "execute", side_effect=failed):
+                with self.assertRaises(zb.QualificationError) as error:
+                    runner.execute("final-build", ["false"])
+            self.assertEqual(error.exception.outcome, "failed-migration")
+            self.assertEqual(runner.final_build_diagnostic["streams"]["stdout"]["captureStatus"], "unavailable")
+
+
+    def test_each_stream_gets_room_and_repeated_errors_are_counted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = b"/private/App.m:1:1: error: 'SDImageCache.h' file not found\n"
+            stdout = first * 30 + b"".join(f"error: private-{i}\n".encode() for i in range(25))
+            stderr = b"clang: error: module 'SDWebImage' not found\n"
+            paths = {"stdout": root / "stdout", "stderr": root / "stderr"}
+            paths["stdout"].write_bytes(stdout); paths["stderr"].write_bytes(stderr)
+            result = zb.collect_build_diagnostics(paths, self.command(stdout, stderr), root, root)
+            self.assertEqual(len(result["rows"]), 11)
+            self.assertEqual(result["rows"][0]["occurrences"], 30)
+            self.assertEqual(result["rows"][-1]["stream"], "stderr")
+            self.assertEqual(result["matchedCount"], 56)
+            self.assertTrue(result["rowsTruncated"])
+            self.assertNotIn("private-", json.dumps(result))
+
+    def test_diagnostic_failure_cannot_skip_build_safety_guards(self):
+        for mutation in (False, True):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                runner = zb.Runner({"binary": root / "bin", "output": root / "out", "runnerTemp": root}, 2)
+                runner.git = Mock(return_value="")
+                runner.validate_package_resolution_context = Mock(return_value={})
+                runner.record_source_mutation = Mock(return_value={"treeChanged": mutation,
+                    "indexChanged": False, "statusChanged": False})
+                def failed(_label, _command, **_kwargs):
+                    runner.commands.append({"label": "final-build", "exitCode": 65})
+                    raise zb.QualificationError("failed-migration", "original failure")
+                with patch.object(zb.shared.Runner, "execute", side_effect=failed), patch.object(
+                        zb, "collect_build_diagnostics", side_effect=ValueError("private exception text")):
+                    with self.assertRaises(zb.QualificationError) as error:
+                        runner.build(root, root / "derived", "final-build", "failed-migration", {"derived": str(root / "derived")})
+                self.assertEqual(error.exception.outcome, "failed-safety" if mutation else "failed-migration")
+                runner.record_source_mutation.assert_called_once()
+                self.assertEqual(runner.validate_package_resolution_context.call_count, 2)
+                self.assertEqual(runner.final_build_diagnostic["captureStatus"], "unavailable")
+                self.assertNotIn("private exception text", json.dumps(runner.final_build_diagnostic))
+
+    def test_malicious_diagnostic_fields_never_appear_as_plaintext(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = (b"/Users/secret-person/project/secret-file.m:12:3: error: 'https://user:password@host/private-key.h' file not found\n"
+                    b"error: token=secret-token `cat /private/secret-path` source = password\n"
+                    b"   12 | #import <private-source-snippet.h>\n     | ^~~~~~~~~~~~\n")
+            paths = {"stdout": root / "stdout", "stderr": root / "stderr"}
+            paths["stdout"].write_bytes(data); paths["stderr"].write_bytes(b"")
+            result = zb.collect_build_diagnostics(paths, self.command(data, b""), root, root)
+            self.assertEqual(len(result["rows"]), 2)
+            for secret in ("secret-person", "secret-file", "user:password", "private-key", "secret-token", "private-source-snippet", "secret-path"):
+                self.assertNotIn(secret, json.dumps(result))
+
+
 class SchemeTests(unittest.TestCase):
     def test_requires_both_test_targets_and_no_execution_actions(self):
         flags = " ".join(f'{key}="{value}"' for key, value in zb.SCHEME_BUILD_FLAGS.items())

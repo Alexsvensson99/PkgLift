@@ -1,0 +1,177 @@
+{
+  "allObservedSourceIndexStatusChecksUnchanged": true,
+  "appLaunched": false,
+  "artifact": {
+    "manifestSHA256": "cba41a9ee4cb6ad76b7eabee8a72102204113eb6bde8111618382a6c6fed9dd0",
+    "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "runAttempt": "1",
+    "runID": "35449033922",
+    "sha256": "3d50c9b32a93b1dab5bf13b3070a4bcbbe6945231a30795eace50f911954706c",
+    "sourceSHA": "0039eb0e6ed0dc8cadfa6d76b1030cd808ba9688"
+  },
+  "baselineBuild": {
+    "commandMode": "build-for-testing",
+    "deploymentTarget": "15.0",
+    "products": {
+      "ZBNetworkingDemo.app": [
+        "Build/Products/Debug-iphonesimulator/ZBNetworkingDemo.app"
+      ],
+      "ZBNetworkingDemoTests.xctest": [
+        "Build/Products/Debug-iphonesimulator/ZBNetworkingDemo.app/PlugIns/ZBNetworkingDemoTests.xctest"
+      ],
+      "ZBNetworkingDemoUITests.xctest": [
+        "Build/Products/Debug-iphonesimulator/ZBNetworkingDemoUITests-Runner.app/PlugIns/ZBNetworkingDemoUITests.xctest"
+      ]
+    }
+  },
+  "diagnosis": "Exact compiler error unavailable: raw command stdout/stderr were private and were not uploaded. Exit 65 alone does not establish a root cause.",
+  "failure": "final-build exited 65; private log retained",
+  "finalBuildCommand": {
+    "argv": [
+      "xcodebuild",
+      "-workspace",
+      "<private>/migration-source/ZBNetworkingDemo.xcworkspace",
+      "-scheme",
+      "ZBNetworkingDemo",
+      "-configuration",
+      "Debug",
+      "-sdk",
+      "iphonesimulator",
+      "-destination",
+      "generic/platform=iOS Simulator",
+      "-derivedDataPath",
+      "<private>/final-derived",
+      "-clonedSourcePackagesDirPath",
+      "<private>/final-derived/SourcePackages",
+      "-onlyUsePackageVersionsFromResolvedFile",
+      "-disableAutomaticPackageResolution",
+      "-jobs",
+      "2",
+      "CODE_SIGNING_ALLOWED=NO",
+      "IPHONEOS_DEPLOYMENT_TARGET=15.0",
+      "SYMROOT=<private>/final-derived/Build/Products",
+      "OBJROOT=<private>/final-derived/Build/Intermediates.noindex",
+      "SHARED_PRECOMPS_DIR=<private>/final-derived/Build/Intermediates.noindex/PrecompiledHeaders",
+      "-skipPackageUpdates",
+      "build-for-testing"
+    ],
+    "durationSeconds": 23.439,
+    "exitCode": 65,
+    "label": "final-build",
+    "stderrBytes": 613,
+    "stderrSHA256": "10c38a41871fcc510bf0b4b21671d38cb3e8ebe32f0e6816f14f7d172998b472",
+    "stdoutBytes": 1701431,
+    "stdoutSHA256": "ac2d97c39c22e39fcd457bbc9487f4a6670944a7f0020488eb8f476c1a30bccd"
+  },
+  "finalBuildSourceCheck": {
+    "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+    "afterTreeSHA256": "d1d2a5fc41aa7fbeb1abd2b5b0ea1907c5ed22aa1ddaa5494a85d77c3743c9fd",
+    "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+    "beforeStatusTextSHA256": "4a721ddd9b8eb218dd2fffe540c6ec4c4cc637dc337b6300f20b134620ce809d",
+    "beforeTreeSHA256": "d1d2a5fc41aa7fbeb1abd2b5b0ea1907c5ed22aa1ddaa5494a85d77c3743c9fd",
+    "changedPathCount": 0,
+    "changes": [],
+    "changesTruncated": false,
+    "gitStatusDirty": true,
+    "gitStatusTextSHA256": "4a721ddd9b8eb218dd2fffe540c6ec4c4cc637dc337b6300f20b134620ce809d",
+    "indexChanged": false,
+    "schemaVersion": 1,
+    "statusChanged": false,
+    "treeChanged": false
+  },
+  "finalSettings": {
+    "AFNetworking": "15.0",
+    "Pods-ZBNetworkingDemo": "15.0",
+    "ZBNetworkingDemo": "15.0",
+    "ZBNetworkingDemoTests": "15.0",
+    "ZBNetworkingDemoUITests": "15.0"
+  },
+  "g3Closed": false,
+  "mergeCommit": "0039eb0e6ed0dc8cadfa6d76b1030cd808ba9688",
+  "packageResolutionInputs": {
+    "afterIndexSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+    "afterStatusSHA256": "4a721ddd9b8eb218dd2fffe540c6ec4c4cc637dc337b6300f20b134620ce809d",
+    "beforeIndexSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+    "beforeStatusSHA256": "b3ff623463b6f41df13126e71a7e4bd09e9d0d53d1e3c514ff941dedda623367",
+    "expectedStatusAdded": "?? ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+    "mode": 420,
+    "paths": [
+      "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+      "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+    ],
+    "rawSHA256": "7d81be39079d84cbc2a284c7464b4675b244bf6b125c37a7095088080f502da0",
+    "treeSHA256": "d1d2a5fc41aa7fbeb1abd2b5b0ea1907c5ed22aa1ddaa5494a85d77c3743c9fd"
+  },
+  "postErrorPackageContext": {
+    "basis": "The final-build finally block revalidated locks and pinned checkout without replacing the original failed-migration error.",
+    "evidenceType": "control-flow inference",
+    "passed": true
+  },
+  "pullRequest": 130,
+  "refusalControls": [
+    {
+      "binarySHA256": "3d50c9b32a93b1dab5bf13b3070a4bcbbe6945231a30795eace50f911954706c",
+      "case": "firebaseui-project",
+      "indexUnchanged": true,
+      "pkgLiftSourceCommit": "0039eb0e6ed0dc8cadfa6d76b1030cd808ba9688",
+      "sourceUnchanged": true,
+      "status": "passed-refusal"
+    },
+    {
+      "binarySHA256": "3d50c9b32a93b1dab5bf13b3070a4bcbbe6945231a30795eace50f911954706c",
+      "case": "hammerspoon-workspace",
+      "indexUnchanged": true,
+      "pkgLiftSourceCommit": "0039eb0e6ed0dc8cadfa6d76b1030cd808ba9688",
+      "sourceUnchanged": true,
+      "status": "passed-refusal"
+    }
+  ],
+  "releasePublished": false,
+  "resolvedAfterSettings": {
+    "checkoutRevision": "2f9ef53b99a25bdfba97660c69c42cb54e323b78",
+    "derived": "<private>/final-derived",
+    "manifestSHA256": "2e40ec6f0016ac0d08c2d4175d5c4c292bb1c3829589a2a8764d75586084db4a",
+    "paths": [
+      "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+      "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+    ],
+    "rawSHA256": "7d81be39079d84cbc2a284c7464b4675b244bf6b125c37a7095088080f502da0"
+  },
+  "runAttempt": 1,
+  "runID": 35449033922,
+  "runURL": "https://github.com/Alexsvensson99/PkgLift/actions/runs/35449033922",
+  "schemaVersion": 1,
+  "sourceMutationCheckCount": 19,
+  "status": "failed-migration",
+  "structuralVerification": {
+    "checks": [
+      {
+        "description": "Xcode project file parses correctly",
+        "name": "project_parses",
+        "passed": true
+      },
+      {
+        "description": "SwiftPM package reference exists for https://github.com/SDWebImage/SDWebImage",
+        "name": "package_https://github.com/SDWebImage/SDWebImage",
+        "passed": true
+      },
+      {
+        "description": "SwiftPM product 'SDWebImage' is linked to target 'ZBNetworkingDemo'",
+        "name": "product_SDWebImage_ZBNetworkingDemo",
+        "passed": true
+      },
+      {
+        "description": "Pod 'SDWebImage' removed from Podfile",
+        "name": "pod_removed_SDWebImage",
+        "passed": true
+      }
+    ],
+    "issues": [],
+    "passed": true,
+    "pkgLiftVersion": "0.10.0",
+    "schemaVersion": 1,
+    "timestamp": "2026-09-19T14:37:32Z"
+  },
+  "summarySHA256": "254c237cf432e55e264c44700ed5b9b3776cb156ec0b85c1d5eb29ef5ca9bc8e",
+  "testsExecuted": false
+}

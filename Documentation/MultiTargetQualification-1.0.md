@@ -478,3 +478,65 @@ records a check on a disposable copy of the actual locally migrated/refreshed
 project: exactly the two reviewed lockfiles were added, the index and Git
 exclusion rules were unchanged, and status gained only the expected outer lock.
 This validates input preparation only, not hosted resolution or compilation.
+
+
+## Hosted dual-context success and final build failure
+
+[PR #130](https://github.com/Alexsvensson99/PkgLift/pull/130) merged at
+`0039eb0e6ed0dc8cadfa6d76b1030cd808ba9688` after 26 successful checks and review.
+The project-bundle input finding was independently assessed and resolved as the
+explicitly owner-approved disposable qualification exception documented above.
+[Run 35449033922, attempt 1](https://github.com/Alexsvensson99/PkgLift/actions/runs/35449033922)
+passed both refusal controls, the reference build, CocoaPods refresh, structural
+verification (4/4 checks), both exact resolved inputs, package resolution and all
+five final target settings checks at iOS 15. All 19 source/index/status observations
+were unchanged, including the final build. See the
+[portable result record](Evidence/MultiTargetQualification-1.0/zb-final-build-run.json).
+
+The final build exited 65 after 23.439 seconds. Its private stdout had 1,701,431
+bytes and stderr 613 bytes; only lengths and hashes were uploaded. The exact
+compiler/linker cause is unknown. The retained `failed-migration` outcome also
+implies that the final-build `finally` block accepted both locks and the pinned
+checkout after the command error; this is a control-flow inference, not a
+standalone post-build result. Final product checks and the final delta check did
+not run. No test/runtime or complete G3/1.0 claim is made.
+
+
+The local diagnostic follow-up reads only the already captured logs of a failed
+`final-build`; it adds no build or package-resolution command. Both stdout and
+stderr are considered because Xcode compiler diagnostics can be in stdout while
+stderr contains only the build-failure summary. Whole-log size and SHA-256 are
+verified before parsing at most an 8 MiB prefix of each stream. Individual lines
+above 8 KiB are skipped and counted. Each stream may emit at most ten distinct
+rows (twenty total); duplicates record occurrence counts. Prefix and row limits
+are explicit, and unknown diagnostic/failure markers contribute only counts and
+an aggregate digest.
+
+Rows contain fixed categories, numeric source positions, hashes of message,
+source path and original diagnostic line, and optionally one of five reviewed
+public subjects: `SDWebImage`, `AFNetworking`, `UIImageView+WebCache.h`,
+`SDImageCache.h`, or `SDWebImageManager.h`. Paths under the known project/package
+roots are hashed relative to those roots; external paths are hash-only too.
+Known local paths can be matched against these hashes without uploading their
+names. No raw messages, paths, commands, continuation lines, or source excerpts
+are emitted. Hashes of public identifiers remain dictionary-matchable and are
+not represented as encryption or secret storage.
+
+Unavailable, mismatched or unparsable logs yield fixed diagnostic status metadata;
+they never replace the original command outcome. The existing build source,
+index, status, lock and checkout checks still execute in `finally`, and safety
+violations still override ordinary build failure. Successful and baseline builds
+do not collect diagnostics. Shared AWS behavior, build flags, sources and package
+versions are unchanged. The intake hash binds this explicit report policy.
+
+An [isolated local clang probe](Evidence/MultiTargetQualification-1.0/zb-build-diagnostic-smoke.json)
+confirmed missing-header classification with row/column metadata while retaining
+its raw source excerpt and path privately. This was an intentionally failing
+one-line syntax check, not a reproduction or diagnosis of the hosted build.
+
+Local verification passed 257 ReleaseManifest Python tests, including 62 ZB
+protocol tests, repository YAML validation and patch whitespace checks. Independent
+review found no remaining material correctness/privacy issue. Adversarial tests
+cover private text inside diagnostic fields, per-stream capacity, duplicate counts,
+missing/mismatched logs, parser failure and preservation of build safety precedence.
+No new hosted G3 run has been dispatched for this diagnostic policy.
