@@ -558,12 +558,42 @@ def validate_effective_settings(documents: Any, expected: set[str]) -> dict[str,
     return result
 
 
+def scheme_mutation_evidence(before: Mapping[str, Any], after: Mapping[str, Any],
+                             index_before: str, index_after: str, status: str) -> dict[str, Any]:
+    """Bounded metadata only; never publish file bytes, link targets or Git output."""
+    def descriptor(value: Mapping[str, Any] | None) -> dict[str, Any] | None:
+        if value is None:
+            return None
+        result = {key: value[key] for key in ("kind", "mode", "size", "sha256") if key in value}
+        if value.get("kind") == "symlink":
+            result["targetSHA256"] = sha256_bytes(os.fsencode(value["target"]))
+        return result
+
+    changes = changed_paths(before, after)
+    rows = []
+    for path in changes[:64]:
+        # Preserve useful relative structure without publishing an Xcode username.
+        portable_path = re.sub(r"(?<=xcuserdata/)[^/]+(?=\.xcuserdatad(?:/|$))", "<user>", path)
+        rows.append({"path": portable_path[:1024], "pathTruncated": len(portable_path) > 1024,
+                     "pathSHA256": sha256_bytes(os.fsencode(path)),
+                     "change": "added" if path not in before else "removed" if path not in after else "modified",
+                     "before": descriptor(before.get(path)), "after": descriptor(after.get(path))})
+    return {"schemaVersion": 1, "treeChanged": bool(changes),
+            "beforeTreeSHA256": tree_digest(before), "afterTreeSHA256": tree_digest(after),
+            "changedPathCount": len(changes), "changesTruncated": len(changes) > len(rows), "changes": rows,
+            "indexChanged": index_before != index_after,
+            "beforeIndexTextSHA256": sha256_bytes(index_before.encode()),
+            "afterIndexTextSHA256": sha256_bytes(index_after.encode()),
+            "gitStatusDirty": bool(status), "gitStatusTextSHA256": sha256_bytes(status.encode())}
+
+
 class Runner(shared.Runner):
     def __init__(self, contract: Mapping[str, Any], jobs: int):
         super().__init__(contract, jobs)
         self.cp_home = self.private / "cocoapods-home"
         self.spec_bytes: dict[str, bytes] = {}
         self.reference_payloads: dict[str, dict[str, Any]] = {}
+        self.scheme_discovery: dict[str, Any] = {}
 
     def clone_exact(self, repository: str, commit: str, destination: Path, label: str) -> None:
         destination.mkdir(parents=True)
@@ -659,10 +689,15 @@ class Runner(shared.Runner):
         index = self.git(root, ["ls-files", "--stage", "-z"])
         listing = self.execute(label, ["xcodebuild", "-list", "-json", "-workspace", root / WORKSPACE],
                                expect_json=True, outcome="inconclusive-baseline")
+        # Collect every postcondition before failing: a tree change must not hide
+        # index/status evidence, and the report must survive the raised error.
+        after = tree_snapshot(root)
+        index_after = self.git(root, ["ls-files", "--stage", "-z"])
+        status = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+        self.scheme_discovery[label] = scheme_mutation_evidence(before, after, index, index_after, status)
         schemes = listing.get("workspace", {}).get("schemes", [])
         require(schemes.count(TARGET) == 1, "existing hosted scheme is missing or ambiguous", "inconclusive-baseline")
-        require(tree_snapshot(root) == before and self.git(root, ["ls-files", "--stage", "-z"]) == index
-                and not self.git(root, ["status", "--porcelain", "--untracked-files=all"]),
+        require(after == before and index_after == index and not status,
                 "scheme discovery mutated source", "failed-safety")
         return {"name": TARGET, "count": 1, "generated": False}
 
@@ -907,6 +942,7 @@ class Runner(shared.Runner):
             raise QualificationError("failed-safety", summary["failure"]) from error
         finally:
             summary["commands"] = self.commands
+            summary["schemeDiscovery"] = self.scheme_discovery
             portable = shared.redact(summary, self.redaction_roots)
             for command in portable.get("commands", []):
                 command.pop("redactedStderrTail", None)

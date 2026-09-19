@@ -1,7 +1,10 @@
 import importlib.util
 import json
+import tempfile
 import unittest
+from contextlib import ExitStack
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "Scripts/run-real-project-zb.py"
@@ -98,6 +101,94 @@ class SchemeTests(unittest.TestCase):
             zb.validate_scheme_bytes(raw.replace(f"container:{zb.PROJECT}".encode(), b"container:Other.xcodeproj"))
         with self.assertRaises(zb.QualificationError):
             zb.validate_scheme_bytes(raw.replace(b'buildForArchiving="YES"', b'buildForArchiving="NO"'))
+
+
+class SchemeDiscoveryTests(unittest.TestCase):
+    def runner(self, directory, mutate=False, index_changed=False, dirty=False):
+        contract = {"binary": Path(directory) / "pkglift", "output": Path(directory) / "output",
+                    "runnerTemp": Path(directory), "artifact": {}}
+        runner = zb.Runner(contract, 2)
+
+        def execute(_label, command, **_kwargs):
+            if mutate:
+                (Path(command[-1]).parent / "generated.txt").write_text("private generated content")
+            return {"workspace": {"schemes": [zb.TARGET]}}
+
+        runner.execute = Mock(side_effect=execute)
+        runner.git = Mock(side_effect=["original index", "changed index" if index_changed else "original index",
+                                      "?? private-status-path\0" if dirty else ""])
+        return runner, contract
+
+    def test_unchanged_discovery_passes_and_collects_all_postconditions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, _ = self.runner(directory)
+            self.assertEqual(runner.discover_scheme(Path(directory), "probe")["name"], zb.TARGET)
+            evidence = runner.scheme_discovery["probe"]
+            self.assertEqual(evidence["changedPathCount"], 0)
+            self.assertFalse(evidence["treeChanged"] or evidence["indexChanged"] or evidence["gitStatusDirty"])
+            self.assertEqual(runner.git.call_count, 3)
+
+    def test_each_mutation_refuses_and_tree_failure_does_not_skip_git_checks(self):
+        for tree, index, status in [(True, False, False), (False, True, False),
+                                    (False, False, True), (True, True, True)]:
+            with self.subTest(tree=tree, index=index, status=status), tempfile.TemporaryDirectory() as directory:
+                runner, _ = self.runner(directory, tree, index, status)
+                with self.assertRaises(zb.QualificationError) as error:
+                    runner.discover_scheme(Path(directory), "probe")
+                self.assertEqual(error.exception.outcome, "failed-safety")
+                evidence = runner.scheme_discovery["probe"]
+                self.assertEqual((evidence["treeChanged"], evidence["indexChanged"], evidence["gitStatusDirty"]),
+                                 (tree, index, status))
+                self.assertEqual(runner.git.call_count, 3)
+                serialized = json.dumps(evidence)
+                self.assertNotIn("private generated content", serialized)
+                self.assertNotIn("private-status-path", serialized)
+                self.assertNotIn("original index", serialized)
+
+    def test_failed_run_writes_diagnostics_before_returning_error(self):
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as patches:
+            runner, contract = self.runner(directory, mutate=True, index_changed=True, dirty=True)
+            for method in ("command_env", "environment_gate", "fetch_inputs", "seed_specs_cache"):
+                patches.enter_context(patch.object(runner, method, return_value={}))
+            patches.enter_context(patch.object(runner, "clone_source",
+                                               side_effect=lambda root, _label: root.mkdir() or {}))
+            patches.enter_context(patch.object(runner, "prepare_portable_scheme", return_value={"tree": "same"}))
+            patches.enter_context(patch.object(zb, "validate_execution_intake", return_value={}))
+            original_is_file = Path.is_file
+            patches.enter_context(patch.object(Path, "is_file",
+                lambda path: str(path) == "/usr/bin/sandbox-exec" or original_is_file(path)))
+            with self.assertRaises(zb.QualificationError):
+                runner.run(contract)
+            summary = json.loads((runner.report / "summary.json").read_text())
+            evidence = summary["schemeDiscovery"]["baseline-scheme-list"]
+            self.assertEqual(summary["status"], "failed-safety")
+            self.assertEqual(evidence["changes"][0]["path"], "generated.txt")
+            self.assertTrue(evidence["indexChanged"] and evidence["gitStatusDirty"])
+            self.assertNotIn("baselineBuild", summary)
+            self.assertEqual(runner.execute.call_count, 1)
+
+    def test_changed_metadata_excludes_link_targets_and_xcode_usernames(self):
+        path = "App.xcodeproj/xcuserdata/private-user.xcuserdatad/link"
+        before = {path: {"kind": "symlink", "mode": 511, "target": "/private/secret-before"},
+                  "removed": {"kind": "file", "mode": 420, "sha256": "a" * 64, "size": 3}}
+        after = {path: {"kind": "symlink", "mode": 511, "target": "/private/secret-after"},
+                 "added": {"kind": "directory", "mode": 493}}
+        result = zb.scheme_mutation_evidence(before, after, "", "", "")
+        self.assertEqual([row["change"] for row in result["changes"]], ["modified", "added", "removed"])
+        link = result["changes"][0]
+        self.assertEqual(link["after"]["targetSHA256"], zb.sha256_bytes(b"/private/secret-after"))
+        self.assertIn("<user>.xcuserdatad", link["path"])
+        for secret in ("secret-before", "secret-after", "private-user"):
+            self.assertNotIn(secret, json.dumps(result))
+
+    def test_diagnostics_are_bounded_without_truncating_the_mutation_decision(self):
+        after = {f"{index:03d}" + "x" * 1100: {"kind": "directory", "mode": 493} for index in range(70)}
+        result = zb.scheme_mutation_evidence({}, after, "", "", "")
+        self.assertTrue(result["treeChanged"] and result["changesTruncated"])
+        self.assertEqual(result["changedPathCount"], 70)
+        self.assertEqual(len(result["changes"]), 64)
+        self.assertTrue(all(row["pathTruncated"] and len(row["path"]) == 1024 for row in result["changes"]))
+        self.assertEqual(result["afterTreeSHA256"], zb.tree_digest(after))
 
 
 class PlanTests(unittest.TestCase):

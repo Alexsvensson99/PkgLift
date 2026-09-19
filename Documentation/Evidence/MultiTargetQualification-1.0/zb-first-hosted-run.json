@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "runID": 35396091852,
+  "runAttempt": 1,
+  "runURL": "https://github.com/Alexsvensson99/PkgLift/actions/runs/35396091852",
+  "workflowConclusion": "failure",
+  "artifact": {
+    "manifestSHA256": "6f781b75bd66b8475a26ee6b23acdbff30f9e35b7f877456023f27b83c489a6c",
+    "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "runAttempt": "1",
+    "runID": "35396091852",
+    "sha256": "0f38c8ea56565d993f955d63ea1abd8ee591a218c5670ab5ee5ee6a2211f2f0b",
+    "sourceSHA": "45c26db3434f9dc7bba369859a0e313cff940748"
+  },
+  "source": {
+    "commit": "fda54d347a0a8be11cf63e5eea76d0289e3a728d",
+    "license": "MIT",
+    "repository": "https://github.com/Suzhibin/ZBNetworking.git"
+  },
+  "implementation": {
+    "executionIntakeSHA256": "ba8acdbce8975d12e2e24db8db92414cce01c493226cfb97a1126ccc145bbd32",
+    "runnerSHA256": "6508fe29be71773b43b43c3de7b3eb4ab0252c6ec7404d5ca08fc03e5319320f",
+    "sharedRunnerSHA256": "911376e6a06d08689976e2104d6eb8b7aba152d5a6eee703ce458e95337ef970"
+  },
+  "zbReport": {
+    "artifactID": 10567627676,
+    "artifactName": "pkglift-g3-zb-45c26db3434f9dc7bba369859a0e313cff940748-1",
+    "summarySHA256": "93e7a11cfd5b63243de9d530db3e9e6a3412ba7298e8833d0424a4c97424fce6"
+  },
+  "environment": {
+    "macOS": {
+      "build": "24G830",
+      "status": "passed",
+      "version": "15.7.9"
+    },
+    "machine": "arm64",
+    "xcode": [
+      "Xcode 16.4",
+      "Build version 16F6"
+    ]
+  },
+  "outcome": {
+    "status": "failed-safety",
+    "failure": "scheme discovery mutated source",
+    "stage": "baseline-scheme-list",
+    "schemeListExitCode": 0,
+    "schemeListStdoutSHA256": "514f18c55e70508062b7311727cf35589780c056a1b3b5ff8bc3383397c492fe",
+    "schemeListStderrBytes": 0,
+    "sourceTreeChanged": true,
+    "changedPaths": null,
+    "indexUnchanged": null,
+    "worktreeClean": null,
+    "cause": "unknown; the first runner did not retain mutation diagnostics",
+    "baselineBuild": "not-run",
+    "migration": "not-run",
+    "cocoaPodsRefresh": "not-run",
+    "finalBuild": "not-run",
+    "testsExecuted": false,
+    "appLaunched": false
+  },
+  "schemePreparation": {
+    "byteIdenticalInBothCopies": true,
+    "schemeSHA256": "c379780bc19dca2b862149d7f17cf07117c44f019cd4dff06f8d119227d73032",
+    "preparedTree": "56de19f59350f55ea88b68d064c20dd489642bf8"
+  },
+  "refusalControls": [
+    {
+      "case": "firebaseui-project",
+      "status": "passed-refusal",
+      "repository": "firebase/FirebaseUI-iOS",
+      "upstreamCommit": "c30af73fee50724dcd9a3acf70548d3e58c86dc7",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "exactAutoSet": [],
+      "reportSHA256": "060c34b6ae4cf68c43a8e1e0774574ec5c55de4faf6a1c4df9375b8b79f32e47"
+    },
+    {
+      "case": "hammerspoon-workspace",
+      "status": "passed-refusal",
+      "repository": "Hammerspoon/hammerspoon",
+      "upstreamCommit": "23e387e2805a9890066366e0ac96c71b27f0cfd5",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "exactAutoSet": [],
+      "reportSHA256": "e4256fb2478063ba8e19e66f1c369c059d0bc2cf08f709ded344c0e6b00f0e43"
+    }
+  ],
+  "g3Closed": false,
+  "releasePublished": false
+}
