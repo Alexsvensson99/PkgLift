@@ -72,7 +72,15 @@ The upstream working tree remains clean after read-only analysis. See the
 [local validation receipt](Evidence/MultiTargetQualification-1.0/zb-header-import-review.json).
 This does not close the positive G3 qualification.
 
-Local checks: 403 XCTest tests, 233 Swift Testing tests, 257 Python policy tests,
+The pinned AWS Grid Feed source-only tree at
+`5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d` references absent generated Pods
+xcconfigs. Its ordinary read-only pilot therefore requires SDWebImage REVIEW
+with exactly `target_header_import_evidence_incomplete`. No generated settings
+are fabricated or copied into the checkout. The separate AWS build qualification
+still requires its real generated baseline and successful final build. See the
+[read-only AWS receipt](Evidence/MultiTargetQualification-1.0/aws-header-import-review.json).
+
+Local checks: 403 XCTest tests, 233 Swift Testing tests, 264 Python policy tests,
 25 registry mappings and repository YAML validation passed. Build and Swift tests
 used the existing SwiftPM `native` cache after the default `swiftbuild` engine
 failed its test-bundle signing step on filesystem metadata. Independent review

@@ -250,6 +250,16 @@ class SharedCIWorkflowTests(unittest.TestCase):
                                                     capture_output=True, text=True)
                             self.assertNotEqual(result.returncode, 0, result.stdout)
 
+    def test_header_evidence_pilots_keep_their_exact_inputs(self):
+        for case in ('aws_grid_feed_source_only', 'mixed'):
+            for key in ('case', 'repository', 'commit', 'root', 'workspace', 'project'):
+                with self.subTest(case=case, key=key):
+                    def mutate(w):
+                        entry = next(e for e in w['jobs']['analyze']['strategy']['matrix']['include']
+                                     if e['case'] == case)
+                        entry[key] = 'changed'
+                    self.reject(mutate, 'must retain its exact reviewed input')
+
     def test_missing_pilot_case_still_fails(self):
         self.reject(lambda w: w['jobs']['analyze']['strategy']['matrix']['include'].pop(),
                     'missing matrix entry for supported pilot case')

@@ -58,7 +58,7 @@
   "verification": {
     "swiftXCTestPassed": 403,
     "swiftTestingPassed": 233,
-    "pythonPolicyTestsPassed": 257,
+    "pythonPolicyTestsPassed": 264,
     "registryMappingsValidated": 25,
     "repositoryYAML": "passed",
     "build": "passed-native",

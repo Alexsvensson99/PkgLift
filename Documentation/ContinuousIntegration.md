@@ -30,7 +30,12 @@ fails closed; rerun the whole workflow to produce a new one.
 
 The pilot gates require successful producer and consumer jobs, even when an
 upstream job is failed, cancelled or skipped. The ten pinned cases retain their
-individual reports and run with matrix fail-fast disabled.
+individual reports and run with matrix fail-fast disabled. The pinned gate
+checks exact expected classifications, including typed conservative refusals;
+it does not assert that all ten projects can migrate. The AWS source-only case
+requires missing-configuration REVIEW, while Loodos retains its exact mixed
+AUTO set. Executable migration/build gates still require successful migration
+and a final build.
 
 ## Preserved coverage
 

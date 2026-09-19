@@ -68,6 +68,18 @@ def require_reason_code(errors, records, name, expected)
   errors << "#{name}: missing reason code #{expected}" unless codes.include?(expected)
 end
 
+def require_exact_reason_codes(errors, records, name, expected)
+  record = records[name]
+  if record.nil?
+    errors << "#{name}: dependency was not present"
+    return
+  end
+
+  actual = Array(record["reasonDetails"]).map { |detail| detail["code"] }.sort
+  expected = expected.sort
+  errors << "#{name}: expected exact reason codes #{expected.join(", ")}, got #{actual.join(", ")}" unless actual == expected
+end
+
 def require_git_provenance_status(errors, records, name, expected)
   record = records[name]
   provenance = if record&.key?("pod")
@@ -96,6 +108,13 @@ def require_entry_count(errors, records, expected)
   return if records.length == expected
 
   errors << "expected #{expected} direct dependencies, got #{records.length}"
+end
+
+def require_raw_direct_counts(errors, analysis, plan, expected)
+  candidate_count = Array(analysis["candidates"]).count { |candidate| candidate.dig("pod", "isDirect") == true }
+  plan_count = Array(plan["entries"]).length
+  errors << "expected #{expected} direct analysis dependencies, got #{candidate_count}" unless candidate_count == expected
+  errors << "expected #{expected} plan entries, got #{plan_count}" unless plan_count == expected
 end
 
 def require_reporting_parity(errors, raw_records, portable_records, label)
@@ -197,11 +216,19 @@ require_reporting_parity(errors, candidates, portable_candidates, "analysis")
 require_reporting_parity(errors, entries, portable_entries, "plan")
 
 case pilot_case
-when "positive"
-  require_classification(errors, candidates, "SDWebImage", "AUTO")
-  require_classification(errors, entries, "SDWebImage", "AUTO")
+when "aws_grid_feed_source_only"
+  require_raw_direct_counts(errors, analysis, plan, 2)
+  require_raw_direct_counts(errors, portable_analysis, portable_plan, 2)
+  require_entry_count(errors, candidates, 2)
+  require_entry_count(errors, entries, 2)
+  require_classification(errors, candidates, "SDWebImage", "REVIEW")
+  require_classification(errors, entries, "SDWebImage", "REVIEW")
+  require_exact_reason_codes(errors, candidates, "SDWebImage", ["target_header_import_evidence_incomplete"])
+  require_exact_reason_codes(errors, entries, "SDWebImage", ["target_header_import_evidence_incomplete"])
   require_not_auto(errors, candidates, "AmazonIVSPlayer")
   require_not_auto(errors, entries, "AmazonIVSPlayer")
+  require_no_auto(errors, candidates, "AWS Grid Feed analysis")
+  require_no_auto(errors, entries, "AWS Grid Feed plan")
 when "mixed"
   %w[Alamofire Kingfisher lottie-ios].each do |name|
     require_classification(errors, candidates, name, "AUTO")

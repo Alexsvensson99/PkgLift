@@ -23,7 +23,7 @@ for variable in "${required_variables[@]}"; do
 done
 
 case "$PILOT_CASE" in
-  positive|mixed|negative|tinode|xcodebenchmark|hammerspoon|acknowlist|fastlane|firebaseui|firebaseauth) ;;
+  aws_grid_feed_source_only|mixed|negative|tinode|xcodebenchmark|hammerspoon|acknowlist|fastlane|firebaseui|firebaseauth) ;;
   *)
     echo "Unsupported pilot case: $PILOT_CASE" >&2
     exit 2
