@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "runID": 35441212940,
+  "runAttempt": 1,
+  "runURL": "https://github.com/Alexsvensson99/PkgLift/actions/runs/35441212940",
+  "pullRequest": 126,
+  "workflowConclusion": "failure",
+  "status": "failed-safety",
+  "failure": "baseline probes/build changed prepared source",
+  "artifact": {
+    "manifestSHA256": "73e711d0aec6d8fb2e6fa5912fe1c60b1985389a735ae5e65e3138013ad25523",
+    "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "runAttempt": "1",
+    "runID": "35441212940",
+    "sha256": "09641308f6dd48b306908dc57562bfffedbcb185171d1a9fc0fdafac056369c1",
+    "sourceSHA": "38dc4ed041cfbb235582775cbbab6b602b82292b"
+  },
+  "implementation": {
+    "executionIntakeSHA256": "5a7031b2021cb5c6a381bb7e5f73c65bceba87fa89e28ba5f11077d2a3fa4f2a",
+    "runnerSHA256": "57c93e33cc8b6ce35497763a5c460d8bc22b6e9ffb28a9f9a45750e38e81ec8a",
+    "sharedRunnerSHA256": "911376e6a06d08689976e2104d6eb8b7aba152d5a6eee703ce458e95337ef970"
+  },
+  "summarySHA256": "5afb30ca74e0fe5d84bc81aed85dfd4b47587d0b20a7d03bf20250acd1abeabb",
+  "directoryPreparation": {
+    "afterTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+    "beforeTreeSHA256": "cc35c1945bdb1943274d7b8a2634e4845b0fd86810fe5c803538105d94a639c4",
+    "indexUnchanged": true,
+    "mode": 511,
+    "noFilesCreated": true,
+    "paths": [
+      "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm",
+      "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/configuration"
+    ],
+    "worktreeClean": true
+  },
+  "directoryPreparationIdenticalInBothCopies": true,
+  "schemeDiscovery": {
+    "baseline-scheme-list": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "treeChanged": false
+    },
+    "migration-scheme-list": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "treeChanged": false
+    }
+  },
+  "baselineSettings": {
+    "AFNetworking": "15.0",
+    "Pods-ZBNetworkingDemo": "15.0",
+    "SDWebImage": "15.0",
+    "ZBNetworkingDemo": "15.0",
+    "ZBNetworkingDemoTests": "15.0",
+    "ZBNetworkingDemoUITests": "15.0"
+  },
+  "baselineBuild": {
+    "commandMode": "build-for-testing",
+    "deploymentTarget": "15.0",
+    "products": {
+      "ZBNetworkingDemo.app": [
+        "Build/Products/Debug-iphonesimulator/ZBNetworkingDemo.app"
+      ],
+      "ZBNetworkingDemoTests.xctest": [
+        "Build/Products/Debug-iphonesimulator/ZBNetworkingDemo.app/PlugIns/ZBNetworkingDemoTests.xctest"
+      ],
+      "ZBNetworkingDemoUITests.xctest": [
+        "Build/Products/Debug-iphonesimulator/ZBNetworkingDemoUITests-Runner.app/PlugIns/ZBNetworkingDemoUITests.xctest"
+      ]
+    },
+    "exitCode": 0,
+    "durationSeconds": 33.737,
+    "sourceAndIndexGuardPassed": true
+  },
+  "remainingMutation": {
+    "changedPaths": null,
+    "indexAfterSettingsComparedWithBeforeSettings": null,
+    "inference": "The build source/index comparison passed, while the outer before-settings tree checkpoint failed. This narrows the unexplained delta to the settings-probe interval; the exact command and paths were not recorded."
+  },
+  "migration": "not-run",
+  "cocoaPodsRefresh": "not-run",
+  "finalBuild": "not-run",
+  "refusalControls": [
+    {
+      "case": "firebaseui-project",
+      "status": "passed-refusal",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "binarySHA256": "09641308f6dd48b306908dc57562bfffedbcb185171d1a9fc0fdafac056369c1",
+      "pkgLiftSourceCommit": "38dc4ed041cfbb235582775cbbab6b602b82292b"
+    },
+    {
+      "case": "hammerspoon-workspace",
+      "status": "passed-refusal",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "binarySHA256": "09641308f6dd48b306908dc57562bfffedbcb185171d1a9fc0fdafac056369c1",
+      "pkgLiftSourceCommit": "38dc4ed041cfbb235582775cbbab6b602b82292b"
+    }
+  ],
+  "testsExecuted": false,
+  "appLaunched": false,
+  "g3Closed": false
+}

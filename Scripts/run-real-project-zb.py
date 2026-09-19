@@ -566,8 +566,9 @@ def validate_effective_settings(documents: Any, expected: set[str]) -> dict[str,
     return result
 
 
-def scheme_mutation_evidence(before: Mapping[str, Any], after: Mapping[str, Any],
-                             index_before: str, index_after: str, status: str) -> dict[str, Any]:
+def source_mutation_evidence(before: Mapping[str, Any], after: Mapping[str, Any],
+                             index_before: str, index_after: str, status: str,
+                             status_before: str = "") -> dict[str, Any]:
     """Bounded metadata only; never publish file bytes, link targets or Git output."""
     def descriptor(value: Mapping[str, Any] | None) -> dict[str, Any] | None:
         if value is None:
@@ -592,7 +593,9 @@ def scheme_mutation_evidence(before: Mapping[str, Any], after: Mapping[str, Any]
             "indexChanged": index_before != index_after,
             "beforeIndexTextSHA256": sha256_bytes(index_before.encode()),
             "afterIndexTextSHA256": sha256_bytes(index_after.encode()),
-            "gitStatusDirty": bool(status), "gitStatusTextSHA256": sha256_bytes(status.encode())}
+            "gitStatusDirty": bool(status), "gitStatusTextSHA256": sha256_bytes(status.encode()),
+            "beforeStatusTextSHA256": sha256_bytes(status_before.encode()),
+            "statusChanged": status_before != status}
 
 
 class Runner(shared.Runner):
@@ -602,6 +605,7 @@ class Runner(shared.Runner):
         self.spec_bytes: dict[str, bytes] = {}
         self.reference_payloads: dict[str, dict[str, Any]] = {}
         self.scheme_discovery: dict[str, Any] = {}
+        self.source_mutation_checks: dict[str, Any] = {}
 
     def clone_exact(self, repository: str, commit: str, destination: Path, label: str) -> None:
         destination.mkdir(parents=True)
@@ -695,18 +699,18 @@ class Runner(shared.Runner):
     def discover_scheme(self, root: Path, label: str) -> dict[str, Any]:
         before = tree_snapshot(root)
         index = self.git(root, ["ls-files", "--stage", "-z"])
-        listing = self.execute(label, ["xcodebuild", "-list", "-json", "-workspace", root / WORKSPACE],
-                               expect_json=True, outcome="inconclusive-baseline")
-        # Collect every postcondition before failing: a tree change must not hide
-        # index/status evidence, and the report must survive the raised error.
-        after = tree_snapshot(root)
-        index_after = self.git(root, ["ls-files", "--stage", "-z"])
         status = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
-        self.scheme_discovery[label] = scheme_mutation_evidence(before, after, index, index_after, status)
+        try:
+            listing = self.execute(label, ["xcodebuild", "-list", "-json", "-workspace", root / WORKSPACE],
+                                   expect_json=True, outcome="inconclusive-baseline")
+        finally:
+            evidence = self.record_source_mutation(root, label, before, index, status)
+            self.scheme_discovery[label] = evidence
+            require(not evidence["treeChanged"] and not evidence["indexChanged"]
+                    and not evidence["statusChanged"] and not evidence["gitStatusDirty"],
+                    "scheme discovery mutated source", "failed-safety")
         schemes = listing.get("workspace", {}).get("schemes", [])
         require(schemes.count(TARGET) == 1, "existing hosted scheme is missing or ambiguous", "inconclusive-baseline")
-        require(after == before and index_after == index and not status,
-                "scheme discovery mutated source", "failed-safety")
         return {"name": TARGET, "count": 1, "generated": False}
 
     def prepare_swiftpm_directories(self, root: Path) -> dict[str, Any]:
@@ -761,31 +765,61 @@ class Runner(shared.Runner):
                 "byteIdentical": True, "inventedActions": False, "setupCommit": self.git(root, ["rev-parse", "HEAD"]).strip(),
                 "tree": self.git(root, ["rev-parse", "HEAD^{tree}"]).strip()}
 
+    def record_source_mutation(self, root: Path, label: str, before: Mapping[str, Any],
+                               index: str, status_before: str) -> dict[str, Any]:
+        after = tree_snapshot(root)
+        index_after = self.git(root, ["ls-files", "--stage", "-z"])
+        status = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+        evidence = source_mutation_evidence(before, after, index, index_after, status, status_before)
+        self.source_mutation_checks[label] = evidence
+        return evidence
+
     def settings(self, root: Path, label: str, pods: set[str]) -> dict[str, str]:
         result = {}
-        for project, targets in [(root / PROJECT, {TARGET, *SIBLINGS}), (root / "Pods/Pods.xcodeproj", pods)]:
-            for target in sorted(targets):
-                document = self.execute(f"{label}-{target}-settings", ["xcodebuild", "-project", project, "-target", target,
-                    "-configuration", "Debug", "-sdk", "iphonesimulator", "-showBuildSettings", "-json",
-                    "CODE_SIGNING_ALLOWED=NO", "IPHONEOS_DEPLOYMENT_TARGET=15.0"], expect_json=True,
-                    outcome="inconclusive-baseline" if label.startswith("baseline") else "failed-migration")
-                result.update(validate_effective_settings(document, {target}))
+        group_before = tree_snapshot(root)
+        group_index = self.git(root, ["ls-files", "--stage", "-z"])
+        group_status = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+        try:
+            for project, targets in [(root / PROJECT, {TARGET, *SIBLINGS}), (root / "Pods/Pods.xcodeproj", pods)]:
+                for target in sorted(targets):
+                    probe = f"{label}-{target}-settings"
+                    before = tree_snapshot(root)
+                    index = self.git(root, ["ls-files", "--stage", "-z"])
+                    status = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+                    try:
+                        document = self.execute(probe, ["xcodebuild", "-project", project, "-target", target,
+                            "-configuration", "Debug", "-sdk", "iphonesimulator", "-showBuildSettings", "-json",
+                            "CODE_SIGNING_ALLOWED=NO", "IPHONEOS_DEPLOYMENT_TARGET=15.0"], expect_json=True,
+                            outcome="inconclusive-baseline" if label.startswith("baseline") else "failed-migration")
+                    finally:
+                        evidence = self.record_source_mutation(root, probe, before, index, status)
+                        require(not evidence["treeChanged"] and not evidence["indexChanged"] and not evidence["statusChanged"],
+                                f"{probe} changed source or Git state", "failed-safety")
+                    result.update(validate_effective_settings(document, {target}))
+        finally:
+            evidence = self.record_source_mutation(root, label + "-settings-group", group_before, group_index, group_status)
+            require(not evidence["treeChanged"] and not evidence["indexChanged"] and not evidence["statusChanged"],
+                    f"{label} settings changed source or Git state", "failed-safety")
         return result
 
     def build(self, root: Path, derived: Path, label: str, outcome: str) -> dict[str, Any]:
         before = tree_snapshot(root)
         index = self.git(root, ["ls-files", "--stage", "-z"])
-        self.execute(label, ["xcodebuild", "-workspace", root / WORKSPACE, "-scheme", TARGET,
-            "-configuration", "Debug", "-sdk", "iphonesimulator", "-destination", "generic/platform=iOS Simulator",
-            "-derivedDataPath", derived, "-clonedSourcePackagesDirPath", derived / "SourcePackages",
-            "-onlyUsePackageVersionsFromResolvedFile", "-disableAutomaticPackageResolution",
-            "-jobs", self.jobs, "CODE_SIGNING_ALLOWED=NO",
-            "IPHONEOS_DEPLOYMENT_TARGET=15.0", "SYMROOT=" + str(derived / "Build/Products"),
-            "OBJROOT=" + str(derived / "Build/Intermediates.noindex"),
-            "SHARED_PRECOMPS_DIR=" + str(derived / "Build/Intermediates.noindex/PrecompiledHeaders"),
-            "build-for-testing"], timeout=1800, outcome=outcome)
-        require(tree_snapshot(root) == before and self.git(root, ["ls-files", "--stage", "-z"]) == index,
-                f"{label} changed source or Git index", "failed-safety")
+        status = self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+        try:
+            self.execute(label, ["xcodebuild", "-workspace", root / WORKSPACE, "-scheme", TARGET,
+                "-configuration", "Debug", "-sdk", "iphonesimulator", "-destination", "generic/platform=iOS Simulator",
+                "-derivedDataPath", derived, "-clonedSourcePackagesDirPath", derived / "SourcePackages",
+                "-onlyUsePackageVersionsFromResolvedFile", "-disableAutomaticPackageResolution",
+                "-jobs", self.jobs, "CODE_SIGNING_ALLOWED=NO",
+                "IPHONEOS_DEPLOYMENT_TARGET=15.0", "SYMROOT=" + str(derived / "Build/Products"),
+                "OBJROOT=" + str(derived / "Build/Intermediates.noindex"),
+                "SHARED_PRECOMPS_DIR=" + str(derived / "Build/Intermediates.noindex/PrecompiledHeaders"),
+                "build-for-testing"], timeout=1800, outcome=outcome)
+        finally:
+            evidence = self.record_source_mutation(root, label, before, index, status)
+            require(not evidence["treeChanged"] and not evidence["indexChanged"] and not evidence["statusChanged"],
+                    f"{label} changed source or Git state", "failed-safety")
         products = {name: [str(p.relative_to(derived)) for p in derived.rglob(name)]
                     for name in ("ZBNetworkingDemo.app", "ZBNetworkingDemoTests.xctest", "ZBNetworkingDemoUITests.xctest")}
         require(all(values for values in products.values()), "build-for-testing did not produce all app/test products", outcome)
@@ -893,11 +927,20 @@ class Runner(shared.Runner):
             baseline_protected = shared.protected_project_state(baseline_project)
             baseline_zb_protected = zb_protected_project_state(baseline_project)
             baseline_checkpoint = tree_snapshot(baseline)
-            summary["baselineSettings"] = self.settings(baseline, "baseline", {"Pods-ZBNetworkingDemo", *POD_VERSIONS})
-            summary["baselineBuild"] = self.build(baseline, self.private / "baseline-derived", "baseline-build", "inconclusive-baseline")
-            require(tree_snapshot(baseline) == baseline_checkpoint
-                    and not self.git(baseline, ["status", "--porcelain", "--untracked-files=all"]),
-                    "baseline probes/build changed prepared source", "failed-safety")
+            baseline_index = self.git(baseline, ["ls-files", "--stage", "-z"])
+            baseline_status = self.git(baseline, ["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+            require(not baseline_status
+                    and tree_digest(baseline_checkpoint) == summary["baselineDirectoryPreparation"]["afterTreeSHA256"],
+                    "baseline differs from the clean prepared source before probes", "failed-safety")
+            try:
+                summary["baselineSettings"] = self.settings(baseline, "baseline", {"Pods-ZBNetworkingDemo", *POD_VERSIONS})
+                summary["baselineBuild"] = self.build(baseline, self.private / "baseline-derived", "baseline-build", "inconclusive-baseline")
+            finally:
+                evidence = self.record_source_mutation(baseline, "baseline-probes-build", baseline_checkpoint,
+                                                       baseline_index, baseline_status)
+                require(not evidence["treeChanged"] and not evidence["indexChanged"]
+                        and not evidence["statusChanged"] and not evidence["gitStatusDirty"],
+                        "baseline probes/build changed prepared source", "failed-safety")
             original = tree_snapshot(migration)
             original_podfile = (migration / "Podfile").read_bytes()
             exclude_generated_plan(migration, ".pkglift/plan.json")
@@ -982,6 +1025,7 @@ class Runner(shared.Runner):
         finally:
             summary["commands"] = self.commands
             summary["schemeDiscovery"] = self.scheme_discovery
+            summary["sourceMutationChecks"] = self.source_mutation_checks
             portable = shared.redact(summary, self.redaction_roots)
             for command in portable.get("commands", []):
                 command.pop("redactedStderrTail", None)
