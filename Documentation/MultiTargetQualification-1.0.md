@@ -312,4 +312,43 @@ All 229 Python harness/policy tests and repository YAML/whitespace checks pass
 locally. Six new test methods cover independent tree/index/status changes, early
 stopping, unchanged dirty state, failed-command safety precedence, changed-baseline
 preflight refusal and persisted aggregate evidence.
-Swift sources are unchanged. Hosted verification of the new observer remains pending.
+Swift sources are unchanged. The hosted observer result follows below.
+
+
+## Hosted settings diagnosis and app workspace preparation
+
+[PR #127](https://github.com/Alexsvensson99/PkgLift/pull/127) merged at
+`af49faf95dec12ef0dd5faf6710d0a8d636f176b` after all 26 checks passed.
+[Run 35443019152, attempt 1](https://github.com/Alexsvensson99/PkgLift/actions/runs/35443019152)
+stopped immediately after `baseline-ZBNetworkingDemo-settings`. The command
+exited 0 but created exactly two directories, both mode `0777`, inside the app
+project's existing workspace:
+
+- `ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm`
+- `ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/configuration`
+
+The [portable diagnostic record](Evidence/MultiTargetQualification-1.0/zb-settings-diagnostic-run.json)
+contains the complete bounded delta and artifact identity. No files or Git index
+entries changed and Git status remained clean. Both discovery checks passed with
+zero changes. The new immediate guard stopped before any sibling/Pods settings
+probe, baseline build or migration. Both refusal controls passed with the same
+binary and source commit. G3 remains open.
+
+The local follow-up adds only this observed pair to the existing outer-workspace
+preparation. Both copies receive the same four sorted directory entries before
+Xcode runs. Every pre-existing ancestor must be a real directory, every setup
+path must be absent, and the resulting delta must contain exactly the four
+mode-`0777` directories with no files or Git changes. Both configuration leaves
+remain empty. Complete tree, index and status guards remain active for every
+later probe and build. No Pods workspace metadata is pre-created: that workspace
+is absent upstream and its probe behavior remains unobserved.
+
+Local verification passed 231 Python harness/policy tests, repository YAML and
+whitespace checks. Coverage includes each existing setup path and symlinked
+ancestor, missing parents, mode independence, unexpected files and Git mutation.
+Two disposable copies of the pinned project produced identical preparation
+records and the exact hosted post-probe tree digest
+`d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1`.
+Only Git and setup helpers ran locally; no Xcode, CocoaPods or upstream code ran.
+The extension has not yet been qualified on GitHub. A later unknown mutation
+will still stop the run and retain evidence.

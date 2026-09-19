@@ -203,6 +203,10 @@ class SchemeDiscoveryTests(unittest.TestCase):
 
 
 class SwiftPMDirectorySetupTests(unittest.TestCase):
+    def parents(self, root):
+        for workspace in (zb.WORKSPACE, f"{zb.PROJECT}/project.xcworkspace"):
+            (root / workspace / "xcshareddata").mkdir(parents=True)
+
     def runner(self, root):
         runner = zb.Runner({"binary": root / "pkglift", "output": root / "output", "runnerTemp": root}, 2)
         runner.git = Mock(side_effect=["index", "", "index", ""])
@@ -232,7 +236,7 @@ class SwiftPMDirectorySetupTests(unittest.TestCase):
             snapshots = []
             for name, mask in [("baseline", 0o077), ("migration", 0o022)]:
                 root = Path(directory) / name
-                (root / zb.WORKSPACE / "xcshareddata").mkdir(parents=True)
+                self.parents(root)
                 before = zb.tree_snapshot(root)
                 runner = self.runner(root)
                 old = os.umask(mask)
@@ -243,41 +247,70 @@ class SwiftPMDirectorySetupTests(unittest.TestCase):
                 after = zb.tree_snapshot(root)
                 self.assertEqual(zb.changed_paths(before, after), list(zb.SWIFTPM_SETUP_DIRECTORIES))
                 self.assertTrue(result["noFilesCreated"] and result["indexUnchanged"] and result["worktreeClean"])
-                self.assertEqual(list((root / zb.SWIFTPM_SETUP_DIRECTORIES[-1]).iterdir()), [])
+                for leaf in (path for path in zb.SWIFTPM_SETUP_DIRECTORIES if path.endswith("/configuration")):
+                    self.assertEqual(list((root / leaf).iterdir()), [])
                 for path in zb.SWIFTPM_SETUP_DIRECTORIES:
                     self.assertEqual(after[path], {"kind": "directory", "mode": 0o777})
+                    if path.endswith("/swiftpm"):
+                        self.assertEqual([child.name for child in (root / path).iterdir()], ["configuration"])
                 snapshots.append(result)
             self.assertEqual(snapshots[0], snapshots[1])
 
     def test_rejects_any_existing_setup_path_without_modifying_it(self):
-        for kind in ("empty-directory", "nonempty-directory", "file", "symlink"):
-            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:
-                root = Path(directory)
-                parent = root / zb.WORKSPACE / "xcshareddata"; parent.mkdir(parents=True)
-                path = root / zb.SWIFTPM_SETUP_DIRECTORIES[0]
-                if kind.endswith("directory"):
-                    path.mkdir()
-                    if kind == "nonempty-directory": (path / "keep").write_text("keep")
-                elif kind == "file": path.write_text("keep")
-                else: path.symlink_to("missing")
-                before = zb.tree_snapshot(root)
+        for relative in zb.SWIFTPM_SETUP_DIRECTORIES:
+            for kind in ("empty-directory", "nonempty-directory", "file", "symlink"):
+                with self.subTest(path=relative, kind=kind), tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory); self.parents(root)
+                    path = root / relative
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    if kind.endswith("directory"):
+                        path.mkdir()
+                        if kind == "nonempty-directory": (path / "keep").write_text("keep")
+                    elif kind == "file": path.write_text("keep")
+                    else: path.symlink_to("missing")
+                    before = zb.tree_snapshot(root)
+                    runner = self.runner(root)
+                    with self.assertRaises(zb.QualificationError): runner.prepare_swiftpm_directories(root)
+                    self.assertEqual(zb.tree_snapshot(root), before)
+                    runner.git.assert_not_called()
+
+    def test_rejects_every_symlinked_ancestor_without_writing_outside_copy(self):
+        ancestors = [zb.WORKSPACE, f"{zb.WORKSPACE}/xcshareddata", zb.PROJECT,
+                     f"{zb.PROJECT}/project.xcworkspace",
+                     f"{zb.PROJECT}/project.xcworkspace/xcshareddata"]
+        for ancestor in ancestors:
+            with self.subTest(ancestor=ancestor), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "source"; self.parents(root)
+                outside = Path(directory) / "outside"
+                original = root / ancestor
+                original.rename(outside)
+                original.symlink_to(outside, target_is_directory=True)
+                before = zb.tree_snapshot(Path(directory))
                 runner = self.runner(root)
                 with self.assertRaises(zb.QualificationError): runner.prepare_swiftpm_directories(root)
-                self.assertEqual(zb.tree_snapshot(root), before)
+                self.assertEqual(zb.tree_snapshot(Path(directory)), before)
                 runner.git.assert_not_called()
 
-    def test_rejects_symlinked_parent_without_writing_outside_copy(self):
+    def test_rejects_missing_app_workspace_before_creating_outer_directories(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory) / "source"; root.mkdir()
-            outside = Path(directory) / "outside"; (outside / "xcshareddata").mkdir(parents=True)
-            (root / zb.WORKSPACE).symlink_to(outside, target_is_directory=True)
-            before = zb.tree_snapshot(Path(directory))
-            with self.assertRaises(zb.QualificationError): self.runner(root).prepare_swiftpm_directories(root)
-            self.assertEqual(zb.tree_snapshot(Path(directory)), before)
+            root = Path(directory)
+            (root / zb.WORKSPACE / "xcshareddata").mkdir(parents=True)
+            before = zb.tree_snapshot(root); runner = self.runner(root)
+            with self.assertRaises(zb.QualificationError): runner.prepare_swiftpm_directories(root)
+            self.assertEqual(zb.tree_snapshot(root), before)
+            runner.git.assert_not_called()
+
+    def test_rejects_git_mutation_during_preparation(self):
+        for index_after, status_after in [("changed-index", ""), ("index", "?? extra\0")]:
+            with self.subTest(index=index_after, status=status_after), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory); self.parents(root); runner = self.runner(root)
+                runner.git = Mock(side_effect=["index", "", index_after, status_after])
+                with self.assertRaises(zb.QualificationError) as error: runner.prepare_swiftpm_directories(root)
+                self.assertEqual(error.exception.outcome, "failed-safety")
 
     def test_rejects_unexpected_extra_file_during_setup(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory); (root / zb.WORKSPACE / "xcshareddata").mkdir(parents=True)
+            root = Path(directory); self.parents(root)
             original = Path.mkdir
 
             def mkdir(path, *args, **kwargs):
@@ -290,7 +323,7 @@ class SwiftPMDirectorySetupTests(unittest.TestCase):
 
     def test_discovery_still_rejects_file_created_inside_prepared_directories(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory); (root / zb.WORKSPACE / "xcshareddata").mkdir(parents=True)
+            root = Path(directory); self.parents(root)
             runner = self.runner(root); runner.prepare_swiftpm_directories(root)
             runner.git = Mock(side_effect=["index", "", "index", "?? extra\0"])
 

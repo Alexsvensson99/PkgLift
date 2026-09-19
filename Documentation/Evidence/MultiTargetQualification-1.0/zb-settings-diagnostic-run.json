@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "runID": 35443019152,
+  "runAttempt": 1,
+  "runURL": "https://github.com/Alexsvensson99/PkgLift/actions/runs/35443019152",
+  "pullRequest": 127,
+  "workflowConclusion": "failure",
+  "status": "failed-safety",
+  "failure": "baseline probes/build changed prepared source",
+  "artifact": {
+    "manifestSHA256": "a5b37848a13a1bb25718a6a45abf78c43339adad59ee5f7471939deff99fb9e7",
+    "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "runAttempt": "1",
+    "runID": "35443019152",
+    "sha256": "77cabd9c46f7c35222be857b98e5d11cb812c06dba2003382b4ee04829994c83",
+    "sourceSHA": "af49faf95dec12ef0dd5faf6710d0a8d636f176b"
+  },
+  "implementation": {
+    "executionIntakeSHA256": "5a7031b2021cb5c6a381bb7e5f73c65bceba87fa89e28ba5f11077d2a3fa4f2a",
+    "runnerSHA256": "7b38cd86b9a3cbd765ae47fdba6a66ddfbad7fa8ffcea60d0bfdc744cb02ba19",
+    "sharedRunnerSHA256": "911376e6a06d08689976e2104d6eb8b7aba152d5a6eee703ce458e95337ef970"
+  },
+  "summarySHA256": "bfbab257abc007556e6903387a5bfbe2598f4a467f37130c166e5d44d10eb404",
+  "sourceMutationChecks": {
+    "baseline-ZBNetworkingDemo-settings": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "changedPathCount": 2,
+      "changes": [
+        {
+          "after": {
+            "kind": "directory",
+            "mode": 511
+          },
+          "before": null,
+          "change": "added",
+          "path": "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm",
+          "pathSHA256": "0e69f0facd3d753bd80b4b47cd3831471cfe087826fb4cb41052cd5fcf226b5b",
+          "pathTruncated": false
+        },
+        {
+          "after": {
+            "kind": "directory",
+            "mode": 511
+          },
+          "before": null,
+          "change": "added",
+          "path": "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/configuration",
+          "pathSHA256": "8911ea8ef5a8f487edaab216b127b19d4aed60da2df34ff3678affcab228a971",
+          "pathTruncated": false
+        }
+      ],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": true
+    },
+    "baseline-probes-build": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "changedPathCount": 2,
+      "changes": [
+        {
+          "after": {
+            "kind": "directory",
+            "mode": 511
+          },
+          "before": null,
+          "change": "added",
+          "path": "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm",
+          "pathSHA256": "0e69f0facd3d753bd80b4b47cd3831471cfe087826fb4cb41052cd5fcf226b5b",
+          "pathTruncated": false
+        },
+        {
+          "after": {
+            "kind": "directory",
+            "mode": 511
+          },
+          "before": null,
+          "change": "added",
+          "path": "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/configuration",
+          "pathSHA256": "8911ea8ef5a8f487edaab216b127b19d4aed60da2df34ff3678affcab228a971",
+          "pathTruncated": false
+        }
+      ],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": true
+    },
+    "baseline-scheme-list": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    },
+    "baseline-settings-group": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "d60b75d6ae0cf86e567f2fa7d6241d38da2f453e51a9817b8eb61fb12a187cd1",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "changedPathCount": 2,
+      "changes": [
+        {
+          "after": {
+            "kind": "directory",
+            "mode": 511
+          },
+          "before": null,
+          "change": "added",
+          "path": "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm",
+          "pathSHA256": "0e69f0facd3d753bd80b4b47cd3831471cfe087826fb4cb41052cd5fcf226b5b",
+          "pathTruncated": false
+        },
+        {
+          "after": {
+            "kind": "directory",
+            "mode": 511
+          },
+          "before": null,
+          "change": "added",
+          "path": "ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/configuration",
+          "pathSHA256": "8911ea8ef5a8f487edaab216b127b19d4aed60da2df34ff3678affcab228a971",
+          "pathTruncated": false
+        }
+      ],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": true
+    },
+    "migration-scheme-list": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "beforeTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "changedPathCount": 0,
+      "changes": [],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "statusChanged": false,
+      "treeChanged": false
+    }
+  },
+  "firstMutatingCommand": {
+    "argv": [
+      "xcodebuild",
+      "-project",
+      "<private>/baseline-source/ZBNetworkingDemo.xcodeproj",
+      "-target",
+      "ZBNetworkingDemo",
+      "-configuration",
+      "Debug",
+      "-sdk",
+      "iphonesimulator",
+      "-showBuildSettings",
+      "-json",
+      "CODE_SIGNING_ALLOWED=NO",
+      "IPHONEOS_DEPLOYMENT_TARGET=15.0"
+    ],
+    "durationSeconds": 4.854,
+    "exitCode": 0,
+    "label": "baseline-ZBNetworkingDemo-settings",
+    "stderrBytes": 0,
+    "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutBytes": 39667,
+    "stdoutSHA256": "59848dedbdefc40b955275843a83ee2b50116d2e6c11d68ae007123c67be5f31"
+  },
+  "baselineBuild": "not-run",
+  "migration": "not-run",
+  "cocoaPodsRefresh": "not-run",
+  "finalBuild": "not-run",
+  "refusalControls": [
+    {
+      "case": "firebaseui-project",
+      "status": "passed-refusal",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "binarySHA256": "77cabd9c46f7c35222be857b98e5d11cb812c06dba2003382b4ee04829994c83",
+      "pkgLiftSourceCommit": "af49faf95dec12ef0dd5faf6710d0a8d636f176b"
+    },
+    {
+      "case": "hammerspoon-workspace",
+      "status": "passed-refusal",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "binarySHA256": "77cabd9c46f7c35222be857b98e5d11cb812c06dba2003382b4ee04829994c83",
+      "pkgLiftSourceCommit": "af49faf95dec12ef0dd5faf6710d0a8d636f176b"
+    }
+  ],
+  "testsExecuted": false,
+  "appLaunched": false,
+  "g3Closed": false
+}
