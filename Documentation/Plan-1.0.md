@@ -130,9 +130,12 @@ sibling targets and user data. The first hosted attempt on main `45c26db`
 stopped at scheme discovery because Xcode changed the source snapshot; it did
 not reach baseline build or migration. Diagnostic run `35409428336` on main
 `8a936c2` identified exactly two added SwiftPM directories with no file or Git-index
-changes. The next bounded setup prepares those directories in both copies before
-the unchanged zero-mutation guard. Hosted CocoaPods refresh, baseline and sibling-target
-builds remain pending. Additional toolchain/shape evidence remains open.
+changes. With the bounded setup on main `38dc4ed`, run `35441212940` passed both
+scheme checks and compiled the baseline app and sibling test bundles. The outer
+baseline source-preservation checkpoint then failed; the exact settings-probe
+delta remains unknown. Per-command mutation evidence is prepared locally, with
+immediate refusal on unexpected changes. Baseline qualification, hosted CocoaPods
+refresh and post-migration builds remain pending. Additional toolchain/shape evidence remains open.
 Deliver an evidence matrix separating read-only, repository-fixture and real-project results.
 
 - Preserve the ten upstream read-only pilots and their current prohibition on

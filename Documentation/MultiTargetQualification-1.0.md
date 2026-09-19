@@ -1,7 +1,7 @@
 # Multi-target real-project qualification for 1.0
 
-Status: **Diagnostic run identified two Xcode-created SwiftPM directories; bounded setup prepared, no positive multi-target build result yet**.
-Latest hosted diagnostic: main `8a936c2e299419fdcc1140d730926e3d35b5f4e8` on 2026-09-19.
+Status: **Scheme discovery and baseline compilation passed; baseline source preservation failed, migration not reached**.
+Latest hosted result: main `38dc4ed041cfbb235582775cbbab6b602b82292b` on 2026-09-19.
 The earlier design review used main `6dcfc7bf5b2bcc0f8654e920c6ce7fd57767b986` on 2026-09-18.
 The existing [selected G3 cases](RealProjectQualification-1.0.md) passed on that
 main commit in [run 35149953474](https://github.com/Alexsvensson99/PkgLift/actions/runs/35149953474).
@@ -261,9 +261,9 @@ is explicitly bound in the updated execution intake. Mode `0777` reproduces only
 the observed directories inside the disposable private job copies.
 
 The discovery, baseline and migration preservation checks retain their complete
-snapshots. Any later file, mode, index or status change still fails. The new setup
-has not yet been exercised on GitHub; positive baseline and post-migration builds
-remain unverified.
+snapshots. Any later file, mode, index or status change still fails. The setup
+subsequently passed on GitHub as recorded below; complete baseline qualification
+and post-migration builds remain unverified.
 
 Local verification passed all 223 Python harness/policy tests and repository YAML/whitespace
 checks. Six new tests cover exact setup, umask, existing entries, symlinked parents,
@@ -272,3 +272,44 @@ setup-only check on two disposable copies of the pinned real project produced th
 exact same before/after tree hashes as the hosted diagnostic. The original source
 remained unchanged; no Xcode or CocoaPods command ran locally. Independent review
 found no remaining implementation or test-gate issue.
+
+## Hosted baseline compilation and probe-preservation failure
+
+[PR #126](https://github.com/Alexsvensson99/PkgLift/pull/126) merged at
+`38dc4ed041cfbb235582775cbbab6b602b82292b` after all 26 checks passed.
+In [run 35441212940, attempt 1](https://github.com/Alexsvensson99/PkgLift/actions/runs/35441212940),
+both copies received identical directory preparation and both scheme-discovery
+checks passed with zero tree or index changes and clean Git status. The
+[portable result record](Evidence/MultiTargetQualification-1.0/zb-baseline-probe-run.json)
+binds these results, the executable and the remaining failure.
+
+All six baseline settings commands exited 0 with the expected iOS 15 deployment
+settings. `build-for-testing` exited 0 and produced the app, unit-test bundle and
+UI-test bundle. The build's own before/after source and index guard passed.
+However, the outer source checkpoint taken before the settings commands differed
+after the build, so the run stopped with `failed-safety: baseline probes/build
+changed prepared source`. This narrows the unexplained delta to the settings-probe
+interval; it does not identify the exact command or changed paths. The report
+does not contain that delta, so no new directory or file is assumed safe.
+
+Baseline compilation is proven under the controlled profile; baseline source
+preservation and positive migration qualification are not. No PkgLift migration,
+CocoaPods refresh, post-migration build, app launch or test execution occurred.
+Both refusal controls passed using the same verified executable.
+
+The next diagnostic follow-up records bounded before/after tree, index and status
+evidence around scheme discovery, each settings probe, and each baseline/final
+build, including when the command fails. A proven mutation is `failed-safety` even
+if Xcode also fails; unchanged failed commands retain their original outcome.
+A settings mutation now stops before the next Xcode command. Aggregate settings and baseline evidence survive inner failures
+in the final report. Status is compared exactly with its pre-command value, so
+the reviewed dirty state after migration is accepted only if it remains unchanged.
+The baseline must match its recorded prepared-tree hash and have clean Git status
+before any settings or build command. The outer baseline also retains its clean-status requirement. No accepted mutation,
+source preparation or dependency input is added by this diagnostic change.
+
+All 229 Python harness/policy tests and repository YAML/whitespace checks pass
+locally. Six new test methods cover independent tree/index/status changes, early
+stopping, unchanged dirty state, failed-command safety precedence, changed-baseline
+preflight refusal and persisted aggregate evidence.
+Swift sources are unchanged. Hosted verification of the new observer remains pending.

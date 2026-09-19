@@ -116,7 +116,7 @@ class SchemeDiscoveryTests(unittest.TestCase):
             return {"workspace": {"schemes": [zb.TARGET]}}
 
         runner.execute = Mock(side_effect=execute)
-        runner.git = Mock(side_effect=["original index", "changed index" if index_changed else "original index",
+        runner.git = Mock(side_effect=["original index", "", "changed index" if index_changed else "original index",
                                       "?? private-status-path\0" if dirty else ""])
         return runner, contract
 
@@ -127,7 +127,7 @@ class SchemeDiscoveryTests(unittest.TestCase):
             evidence = runner.scheme_discovery["probe"]
             self.assertEqual(evidence["changedPathCount"], 0)
             self.assertFalse(evidence["treeChanged"] or evidence["indexChanged"] or evidence["gitStatusDirty"])
-            self.assertEqual(runner.git.call_count, 3)
+            self.assertEqual(runner.git.call_count, 4)
 
     def test_each_mutation_refuses_and_tree_failure_does_not_skip_git_checks(self):
         for tree, index, status in [(True, False, False), (False, True, False),
@@ -140,7 +140,7 @@ class SchemeDiscoveryTests(unittest.TestCase):
                 evidence = runner.scheme_discovery["probe"]
                 self.assertEqual((evidence["treeChanged"], evidence["indexChanged"], evidence["gitStatusDirty"]),
                                  (tree, index, status))
-                self.assertEqual(runner.git.call_count, 3)
+                self.assertEqual(runner.git.call_count, 4)
                 serialized = json.dumps(evidence)
                 self.assertNotIn("private generated content", serialized)
                 self.assertNotIn("private-status-path", serialized)
@@ -184,7 +184,7 @@ class SchemeDiscoveryTests(unittest.TestCase):
                   "removed": {"kind": "file", "mode": 420, "sha256": "a" * 64, "size": 3}}
         after = {path: {"kind": "symlink", "mode": 511, "target": "/private/secret-after"},
                  "added": {"kind": "directory", "mode": 493}}
-        result = zb.scheme_mutation_evidence(before, after, "", "", "")
+        result = zb.source_mutation_evidence(before, after, "", "", "")
         self.assertEqual([row["change"] for row in result["changes"]], ["modified", "added", "removed"])
         link = result["changes"][0]
         self.assertEqual(link["after"]["targetSHA256"], zb.sha256_bytes(b"/private/secret-after"))
@@ -194,7 +194,7 @@ class SchemeDiscoveryTests(unittest.TestCase):
 
     def test_diagnostics_are_bounded_without_truncating_the_mutation_decision(self):
         after = {f"{index:03d}" + "x" * 1100: {"kind": "directory", "mode": 493} for index in range(70)}
-        result = zb.scheme_mutation_evidence({}, after, "", "", "")
+        result = zb.source_mutation_evidence({}, after, "", "", "")
         self.assertTrue(result["treeChanged"] and result["changesTruncated"])
         self.assertEqual(result["changedPathCount"], 70)
         self.assertEqual(len(result["changes"]), 64)
@@ -292,7 +292,7 @@ class SwiftPMDirectorySetupTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); (root / zb.WORKSPACE / "xcshareddata").mkdir(parents=True)
             runner = self.runner(root); runner.prepare_swiftpm_directories(root)
-            runner.git = Mock(side_effect=["index", "index", "?? extra\0"])
+            runner.git = Mock(side_effect=["index", "", "index", "?? extra\0"])
 
             def execute(*_args, **_kwargs):
                 (root / zb.SWIFTPM_SETUP_DIRECTORIES[-1] / "extra").write_text("not allowed")
@@ -427,6 +427,141 @@ class ProjectTests(unittest.TestCase):
         root_changed = json.loads(json.dumps(baseline))
         root_changed["objects"]["P"]["attributes"]["LastUpgradeCheck"] = "9999"
         self.assertNotEqual(expected, zb.zb_protected_project_state(root_changed))
+
+
+class XcodeProbeMutationTests(unittest.TestCase):
+    def runner(self, directory, mutation=None, dirty=False, fail=False):
+        root = Path(directory) / "source"; root.mkdir()
+        derived = Path(directory) / "derived"
+        runner = zb.Runner({"binary": root / "pkglift", "output": Path(directory) / "report-output",
+                            "runnerTemp": Path(directory)}, 2)
+        state = {"ran": False}
+        status_before = " M reviewed-migration-change\0" if dirty else ""
+
+        def git(_root, args, **_kwargs):
+            if args[0] == "ls-files":
+                return "different index" if state["ran"] and mutation == "index" else "index"
+            self.assertEqual(args[0], "status")
+            return status_before + ("?? new-private-status\0" if state["ran"] and mutation == "status" else "")
+
+        def execute(_label, command, **_kwargs):
+            state["ran"] = True
+            if mutation == "tree": (root / "unexpected").write_text("private source bytes")
+            if fail: raise zb.QualificationError("inconclusive-baseline", "probe failed")
+            if "-showBuildSettings" in command:
+                target = command[command.index("-target") + 1]
+                return [{"target": target, "buildSettings": {"IPHONEOS_DEPLOYMENT_TARGET": "15.0"}}]
+            if "-list" in command: return {"workspace": {"schemes": [zb.TARGET]}}
+            for name in ("ZBNetworkingDemo.app", "ZBNetworkingDemoTests.xctest", "ZBNetworkingDemoUITests.xctest"):
+                (derived / name).mkdir(parents=True, exist_ok=True)
+            return ""
+
+        runner.git = Mock(side_effect=git); runner.execute = Mock(side_effect=execute)
+        return runner, root, derived
+
+    def prepare_run(self, runner, patches):
+        for method in ("command_env", "environment_gate", "fetch_inputs", "seed_specs_cache", "discover_scheme",
+                       "validate_pod_payload", "pbx_json"):
+            patches.enter_context(patch.object(runner, method, return_value={}))
+        patches.enter_context(patch.object(runner, "clone_source", side_effect=lambda path, _label: path.mkdir() or {}))
+        patches.enter_context(patch.object(runner, "prepare_portable_scheme", return_value={"tree": "same"}))
+        patches.enter_context(patch.object(runner, "prepare_swiftpm_directories", return_value={"afterTreeSHA256": zb.tree_digest({})}))
+        build = patches.enter_context(patch.object(runner, "build"))
+        for function in ("validate_execution_intake", "validate_build_execution_inputs", "validate_header_links",
+                         "sibling_closure", "zb_protected_project_state"):
+            patches.enter_context(patch.object(zb, function, return_value={}))
+        patches.enter_context(patch.object(zb.shared, "protected_project_state", return_value={}))
+        original_is_file = Path.is_file
+        patches.enter_context(patch.object(Path, "is_file",
+            lambda path: str(path) == "/usr/bin/sandbox-exec" or original_is_file(path)))
+        return build
+
+    def test_settings_accept_unchanged_reviewed_dirty_state_and_observe_every_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root, _ = self.runner(directory, dirty=True)
+            result = runner.settings(root, "final", {"AFNetworking"})
+            self.assertEqual(set(result), {zb.TARGET, *zb.SIBLINGS, "AFNetworking"})
+            self.assertEqual(runner.execute.call_count, 4)
+            self.assertEqual(len(runner.source_mutation_checks), 5)
+            self.assertTrue(all(not e["statusChanged"] and not e["treeChanged"] and not e["indexChanged"]
+                                and e["gitStatusDirty"] for e in runner.source_mutation_checks.values()))
+
+    def test_each_settings_mutation_stops_before_the_next_command(self):
+        for mutation in ("tree", "index", "status"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                runner, root, _ = self.runner(directory, mutation=mutation)
+                with self.assertRaises(zb.QualificationError) as error: runner.settings(root, "baseline", {"AFNetworking"})
+                self.assertEqual(error.exception.outcome, "failed-safety")
+                self.assertEqual(runner.execute.call_count, 1)
+                self.assertEqual(len(runner.source_mutation_checks), 2)  # Individual probe and aggregate.
+                for evidence in runner.source_mutation_checks.values(): self.assertTrue(evidence[mutation + "Changed"])
+                self.assertNotIn("private source bytes", json.dumps(runner.source_mutation_checks))
+                self.assertNotIn("new-private-status", json.dumps(runner.source_mutation_checks))
+
+    def test_build_accepts_unchanged_dirty_state_and_rejects_each_new_mutation(self):
+        for mutation in (None, "tree", "index", "status"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                runner, root, derived = self.runner(directory, mutation=mutation, dirty=True)
+                if mutation:
+                    with self.assertRaises(zb.QualificationError) as error:
+                        runner.build(root, derived, "final-build", "failed-migration")
+                    self.assertEqual(error.exception.outcome, "failed-safety")
+                else:
+                    self.assertEqual(len(runner.build(root, derived, "final-build", "failed-migration")["products"]), 3)
+                self.assertEqual(runner.source_mutation_checks["final-build"]["statusChanged"], mutation == "status")
+
+    def test_failed_command_outcome_is_preserved_only_when_source_is_unchanged(self):
+        for kind in ("scheme", "settings", "build"):
+            for mutation in (None, "tree"):
+                with self.subTest(kind=kind, mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                    runner, root, derived = self.runner(directory, mutation=mutation, fail=True)
+                    with self.assertRaises(zb.QualificationError) as error:
+                        if kind == "scheme": runner.discover_scheme(root, "scheme")
+                        elif kind == "settings": runner.settings(root, "baseline", {"AFNetworking"})
+                        else: runner.build(root, derived, "baseline-build", "inconclusive-baseline")
+                    self.assertEqual(error.exception.outcome, "failed-safety" if mutation else "inconclusive-baseline")
+                    if not mutation: self.assertEqual(str(error.exception), "probe failed")
+                    self.assertTrue(all(e["treeChanged"] == bool(mutation) for e in runner.source_mutation_checks.values()))
+                    self.assertTrue(runner.source_mutation_checks)
+
+    def test_failed_settings_persist_individual_and_aggregate_report_without_build(self):
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as patches:
+            runner, root, _ = self.runner(directory, mutation="tree")
+            # Point the controlled probe at the actual baseline source created by run().
+            original_execute = runner.execute.side_effect
+
+            def execute(label, command, **kwargs):
+                baseline = runner.private / "baseline-source"
+                if "-showBuildSettings" in command:
+                    (baseline / "unexpected").write_text("private source bytes")
+                return original_execute(label, command, **kwargs)
+
+            runner.execute.side_effect = execute
+            build = self.prepare_run(runner, patches)
+            with self.assertRaises(zb.QualificationError): runner.run({"artifact": {}})
+            build.assert_not_called()
+            summary = json.loads((runner.report / "summary.json").read_text())
+            evidence = summary["sourceMutationChecks"]
+            self.assertEqual(set(evidence), {f"baseline-{zb.TARGET}-settings", "baseline-settings-group", "baseline-probes-build"})
+            self.assertTrue(all(e["treeChanged"] and e["changes"][0]["path"] == "unexpected" for e in evidence.values()))
+            self.assertEqual(summary["status"], "failed-safety")
+            self.assertNotIn("baselineBuild", summary)
+
+    def test_dirty_or_changed_baseline_is_rejected_before_settings_and_build(self):
+        for mutation in ("dirty", "untracked-directory"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory, ExitStack() as patches:
+                runner, _, _ = self.runner(directory, dirty=mutation == "dirty")
+                build = self.prepare_run(runner, patches)
+                if mutation == "untracked-directory":
+                    def clone(path, _label):
+                        path.mkdir(); (path / "git-invisible-directory").mkdir(); return {}
+                    runner.clone_source.side_effect = clone
+                settings = patches.enter_context(patch.object(runner, "settings"))
+                with self.assertRaises(zb.QualificationError) as error: runner.run({"artifact": {}})
+                self.assertEqual(error.exception.outcome, "failed-safety")
+                self.assertIn("before probes", str(error.exception))
+                settings.assert_not_called(); build.assert_not_called(); runner.execute.assert_not_called()
+
 
 
 class BuildSettingsTests(unittest.TestCase):
