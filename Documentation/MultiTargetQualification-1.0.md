@@ -352,3 +352,67 @@ records and the exact hosted post-probe tree digest
 Only Git and setup helpers ran locally; no Xcode, CocoaPods or upstream code ran.
 The extension has not yet been qualified on GitHub. A later unknown mutation
 will still stop the run and retain evidence.
+
+
+## Hosted apply result and CocoaPods Specs-layout diagnosis
+
+[PR #128](https://github.com/Alexsvensson99/PkgLift/pull/128) merged at
+`26618525c934999784e54f0f6ca18481f67f8dd8` after all 26 checks passed. The
+project-write-rule review was resolved as an explicitly approved, directory-only
+qualification-fixture exception; production mutation rules were unchanged.
+
+[Run 35444656493, attempt 1](https://github.com/Alexsvensson99/PkgLift/actions/runs/35444656493)
+passed both refusal controls, identical four-directory preparation, all six
+baseline settings probes and baseline `build-for-testing`. All 11 recorded source
+checks had zero tree, index or Git-status changes. The app and both test products
+were produced. Analysis, planning, dry run and PkgLift apply exited 0. Reaching the
+next CocoaPods command establishes by control-flow inference that the preceding
+sibling, protected-project, linkage, exact Podfile and apply-delta assertions
+passed; those post-apply states were not separately serialized in the summary.
+
+CocoaPods then exited 1 before final verification or build. Its 306-byte stdout
+was omitted from the portable report. The [run and local diagnostic receipt](Evidence/MultiTargetQualification-1.0/zb-cocoapods-diagnostic-run.json)
+binds the executable, source and exact output hashes. Both refusal controls use
+the same binary, source commit, registry, run and attempt. G3 remains open.
+
+An isolated local reproduction used CocoaPods 1.17.0, the pinned upstream copy,
+reviewed podspec bytes, the existing local PkgLift binary, and the same
+network-denying sandbox. It emitted exactly the hosted stdout hash
+`4921b61aa4b446c22568865628b6db7f0461ab7fe50301a0692fd7ee57c8befb`:
+CocoaPods could not find the AFNetworking specification. No Xcode build, package
+resolution, app launch or test execution ran locally.
+
+The generated Specs repo omitted `CocoaPods-version.yml`. CocoaPods therefore
+used an unprefixed layout while the pinned specs were stored in three hash-prefix
+directories. The [official metadata at the already pinned Specs commit](https://raw.githubusercontent.com/CocoaPods/Specs/e4af897aa0ddc011a5adc30aa3568aa6ae2ab600/CocoaPods-version.yml)
+declares `prefix_lengths: [1, 1, 1]`; its exact SHA-256 is
+`4d1dc0966425cdd834073ff6852045975d08bf63fd500bfaa0cad2795506c713`.
+Adding only those bytes made the same offline `pod install` complete locally.
+The fix seeds and commits the metadata alongside the two original podspecs and
+binds it in the execution intake. The generated repo remains a local projection;
+only its selected bytes are pinned to the official Specs commit, not its Git HEAD.
+
+The local continuation also proved CocoaPods' source-locking behavior. It removed
+owner-write permission from the 14 retained AFNetworking source files: thirteen
+`0644 -> 0444` transitions and one `0755 -> 0555`, with identical paths, kinds,
+content hashes and sizes. CocoaPods 1.17.0 `PodSourceInstaller#lock_files!` applies
+`chmod('u-w', ...)`; it does not remove other write or executable bits. The original
+full descriptor digest is
+`46b246ffa903b939afb8c97185f4475a3740de1ed498706788325f6856788698` and the exact
+locked digest is
+`302af4b95d030153d4cbd86ac886b27eb0b3b5384cf440778ee3663cd32e3d35`.
+
+The follow-up validates this exact candidate-specific transition only after a
+successful CocoaPods refresh. It preserves actual tree descriptors and separately
+reports the reviewed and expected locked digests. Baseline validation and the
+pre-refresh migration delta guard remain unchanged. Extra/missing paths, content
+changes, different modes, kind changes and executable-bit changes remain errors;
+no file is chmodded back and no mode is ignored globally. Local sibling/protected
+project checks and PkgLift structural verification passed after the refresh.
+Final hosted package resolution and post-migration compilation remain unverified.
+
+Local follow-up validation passed all 239 Python harness/policy tests (44 ZB tests),
+repository YAML and whitespace checks. The updated seeding helper produced a Git
+cache containing exactly the two original specs and the pinned metadata file.
+The updated payload helper also accepted the actual locally refreshed AF tree
+against both pinned descriptor digests. No hosted rerun has been dispatched.

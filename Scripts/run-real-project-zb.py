@@ -25,7 +25,7 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
 AWS_PATH = ROOT / "Scripts/run-real-project-aws.py"
 INTAKE = ROOT / "Documentation/Evidence/MultiTargetQualification-1.0/zb-execution-intake.json"
-INTAKE_SHA256 = "4384db27757bf1095fd368d13158a88e89fd14ccefefde85acc04b0dcf126c7d"
+INTAKE_SHA256 = "fa185c078c84b63f6e69461894f39b149b96f49126a486d5ea19a160b1b999fd"
 _SPEC = importlib.util.spec_from_file_location("pkglift_g3_aws_shared", AWS_PATH)
 assert _SPEC and _SPEC.loader
 shared = importlib.util.module_from_spec(_SPEC)
@@ -61,7 +61,22 @@ SIBLINGS = ("ZBNetworkingDemoTests", "ZBNetworkingDemoUITests")
 POD_VERSIONS = {"AFNetworking": "4.0.1", "SDWebImage": "5.8.4"}
 SPECS_COMMIT = "e4af897aa0ddc011a5adc30aa3568aa6ae2ab600"
 SPECS_URL = "https://github.com/CocoaPods/Specs.git"
+SPECS_METADATA_PATH = "CocoaPods-version.yml"
+SPECS_METADATA_URL = f"https://raw.githubusercontent.com/CocoaPods/Specs/{SPECS_COMMIT}/{SPECS_METADATA_PATH}"
+SPECS_METADATA_SHA256 = "4d1dc0966425cdd834073ff6852045975d08bf63fd500bfaa0cad2795506c713"
+SPECS_METADATA_BYTES = b"---\nmin: 1.0.0\nlast: 1.9.3\nprefix_lengths:\n- 1\n- 1\n- 1\n"
 COCOAPODS_VERSION = "1.17.0"
+RETAINED_AF_REVIEWED_SOURCE_TREE_SHA256 = "46b246ffa903b939afb8c97185f4475a3740de1ed498706788325f6856788698"
+RETAINED_AF_EXPECTED_LOCKED_TREE_SHA256 = "302af4b95d030153d4cbd86ac886b27eb0b3b5384cf440778ee3663cd32e3d35"
+RETAINED_AF_FILE_COUNT = 14
+RETAINED_AF_REMOVE_MODE_BITS = 0o200
+RETAINED_AF_LOCK_MODE_POLICY = {
+    "phase": "post-migration-pod-install", "pod": "AFNetworking", "version": "4.0.1",
+    "cocoaPods": COCOAPODS_VERSION, "removeModeBits": RETAINED_AF_REMOVE_MODE_BITS,
+    "reviewedSourceTreeSHA256": RETAINED_AF_REVIEWED_SOURCE_TREE_SHA256,
+    "expectedLockedTreeSHA256": RETAINED_AF_EXPECTED_LOCKED_TREE_SHA256,
+    "fileCount": RETAINED_AF_FILE_COUNT,
+}
 PACKAGE_URL = "https://github.com/SDWebImage/SDWebImage"
 PACKAGE_REVISION = "2f9ef53b99a25bdfba97660c69c42cb54e323b78"
 PACKAGE_MANIFEST_SHA256 = "2e40ec6f0016ac0d08c2d4175d5c4c292bb1c3829589a2a8764d75586084db4a"
@@ -146,11 +161,17 @@ def validate_execution_intake() -> dict[str, Any]:
     require(selection.get("nativeTargets") == expected_native_targets
             and selection.get("executionObjectInventory") == expected_execution_inventory,
             "execution intake target/object inventory changed", "blocked-input")
+    expected_metadata = {"path": SPECS_METADATA_PATH, "url": SPECS_METADATA_URL,
+                         "rawSHA256": SPECS_METADATA_SHA256}
     require(value.get("podfile", {}).get("sha256") == EXPECTED_SOURCE_HASHES["Podfile"]
             and value.get("specs", {}).get("commit") == SPECS_COMMIT
+            and value.get("specs", {}).get("metadata") == expected_metadata
             and value.get("swiftPackage", {}).get("revision") == PACKAGE_REVISION
             and value.get("swiftPackage", {}).get("manifestSHA256") == PACKAGE_MANIFEST_SHA256,
             "execution intake dependency closure changed", "blocked-input")
+    require(value.get("implementationReview", {}).get("retainedAFLockModePolicy")
+            == RETAINED_AF_LOCK_MODE_POLICY,
+            "execution intake retained AF lock-mode policy changed", "blocked-input")
     swift_package = value.get("swiftPackage", {})
     require(swift_package.get("products") == ["SDWebImage"]
             and {key: swift_package.get(key) for key in ("dependencyCount", "pluginCount", "binaryTargetCount")}
@@ -224,6 +245,13 @@ def validate_podspec(name: str, raw: bytes) -> dict[str, Any]:
     require(not dependencies, f"{name} gained external pod dependencies", "blocked-input")
     return {"name": name, "version": source["version"], "rawSHA256": source["rawSHA256"],
             "lockChecksum": source["rawSHA1"], "specsCommit": SPECS_COMMIT, "path": source["path"]}
+
+
+def validate_specs_metadata() -> dict[str, str]:
+    require(sha256_bytes(SPECS_METADATA_BYTES) == SPECS_METADATA_SHA256,
+            "CocoaPods Specs metadata changed", "blocked-input")
+    return {"path": SPECS_METADATA_PATH, "url": SPECS_METADATA_URL,
+            "rawSHA256": SPECS_METADATA_SHA256, "specsCommit": SPECS_COMMIT}
 
 
 def validate_scheme_bytes(raw: bytes) -> dict[str, Any]:
@@ -674,8 +702,14 @@ class Runner(shared.Runner):
                 "packageManifestSHA256": PACKAGE_MANIFEST_SHA256}
 
     def seed_specs_cache(self) -> dict[str, Any]:
+        metadata = validate_specs_metadata()
         repo = self.cp_home / "repos" / "pkglift-zb-specs"
         repo.mkdir(parents=True)
+        metadata_path = repo / SPECS_METADATA_PATH
+        metadata_path.write_bytes(SPECS_METADATA_BYTES)
+        require(metadata_path.is_file() and not metadata_path.is_symlink()
+                and file_sha256(metadata_path) == SPECS_METADATA_SHA256,
+                "generated CocoaPods Specs metadata changed", "blocked-input")
         for name, source in PODSPEC_INPUTS.items():
             path = repo / source["path"]
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -683,11 +717,11 @@ class Runner(shared.Runner):
         self.execute("spec-cache-init", ["git", "-c", "init.templateDir=", "init", "--quiet", repo])
         self.execute("spec-cache-hooks", ["git", "-C", repo, "config", "core.hooksPath", "/dev/null"])
         self.execute("spec-cache-remote", ["git", "-C", repo, "remote", "add", "origin", SPECS_URL])
-        self.execute("spec-cache-add", ["git", "-C", repo, "add", "Specs"])
+        self.execute("spec-cache-add", ["git", "-C", repo, "add", "Specs", SPECS_METADATA_PATH])
         self.execute("spec-cache-commit", ["git", "-C", repo, "-c", "user.name=PkgLift Qualification",
                                             "-c", "user.email=qualification@invalid", "commit", "--quiet", "-m", "Pinned reviewed specs"])
         return {"generated": True, "remoteURL": SPECS_URL, "specsCommit": SPECS_COMMIT,
-                "paths": {name: source["path"] for name, source in PODSPEC_INPUTS.items()}}
+                "metadata": metadata, "paths": {name: source["path"] for name, source in PODSPEC_INPUTS.items()}}
 
     def command_env(self) -> None:
         os.environ["CP_HOME_DIR"] = str(self.cp_home)
@@ -852,6 +886,41 @@ class Runner(shared.Runner):
                                                              if item["kind"] != "directory" and p not in material])}
         return result
 
+    def validate_retained_af_locked_payload(self, root: Path) -> dict[str, Any]:
+        """Accept only CocoaPods' reviewed owner-write-bit removal on AF sources."""
+        reference = self.reference_payloads["AFNetworking"]
+        reviewed_digest = tree_digest(reference)
+        require(len(reference) == RETAINED_AF_FILE_COUNT
+                and all(item["kind"] == "file" and Path(path).suffix in {".h", ".m"}
+                        for path, item in reference.items())
+                and sum(item["mode"] == 0o644 for item in reference.values()) == 13
+                and sum(item["mode"] == 0o755 for item in reference.values()) == 1
+                and reviewed_digest == RETAINED_AF_REVIEWED_SOURCE_TREE_SHA256,
+                "reviewed AFNetworking payload changed", "blocked-input")
+        expected = copy.deepcopy(reference)
+        transitions: dict[str, int] = {}
+        for item in expected.values():
+            before = item["mode"]
+            item["mode"] = before & ~RETAINED_AF_REMOVE_MODE_BITS
+            transition = f"{before:04o}->{item['mode']:04o}"
+            transitions[transition] = transitions.get(transition, 0) + 1
+        expected_digest = tree_digest(expected)
+        require(expected_digest == RETAINED_AF_EXPECTED_LOCKED_TREE_SHA256,
+                "expected AFNetworking locked payload changed", "blocked-input")
+        installed = root / "Pods" / "AFNetworking" / "AFNetworking"
+        require(all(path.is_dir() and not path.is_symlink()
+                    for path in (root / "Pods", root / "Pods" / "AFNetworking", installed)),
+                "installed AFNetworking payload path contains a symlink", "blocked-input")
+        actual = tree_snapshot(installed)
+        require(actual == expected,
+                "installed AFNetworking payload differs from exact locked reviewed payload", "blocked-input")
+        return {"selectedSourceEntries": RETAINED_AF_FILE_COUNT,
+                "selectedSourceTreeSHA256": tree_digest(actual),
+                "reviewedSourceTreeSHA256": reviewed_digest,
+                "expectedLockedTreeSHA256": expected_digest,
+                "modePolicy": RETAINED_AF_LOCK_MODE_POLICY,
+                "modeTransitions": transitions}
+
     def resolve_reviewed_package(self, root: Path, derived: Path) -> dict[str, Any]:
         resolved = root / WORKSPACE / "xcshareddata/swiftpm/Package.resolved"
         require(not resolved.exists(), "unexpected preexisting Package.resolved", "blocked-input")
@@ -895,7 +964,7 @@ class Runner(shared.Runner):
         project_text = (root / "Pods/Pods.xcodeproj/project.pbxproj").read_text()
         require("PBXShellScriptBuildPhase" not in project_text, "Pods project gained a shell phase", "blocked-input")
         return {"lock": validated, "podspecPath": PODSPEC_INPUTS["AFNetworking"]["path"],
-                "payload": self.validate_pod_payload(root, {"AFNetworking"})}
+                "payload": {"AFNetworking": self.validate_retained_af_locked_payload(root)}}
 
     def run(self, contract: Mapping[str, Any]) -> dict[str, Any]:
         self.output.mkdir(); self.private.mkdir(); self.report.mkdir(); self.command_env()
@@ -991,7 +1060,7 @@ class Runner(shared.Runner):
                          if path not in allowed_apply and path != ".pkglift" and not path.startswith(".pkglift/")]
             require(not bad_apply, "unexpected apply delta: " + ", ".join(bad_apply[:10]))
             summary["cocoaPodsRefresh"] = self.post_install(migration)
-            require(summary["cocoaPodsRefresh"]["payload"]["AFNetworking"]["selectedSourceTreeSHA256"]
+            require(summary["cocoaPodsRefresh"]["payload"]["AFNetworking"]["reviewedSourceTreeSHA256"]
                     == baseline_payload["AFNetworking"]["selectedSourceTreeSHA256"]
                     and summary["cocoaPodsRefresh"]["payload"]["AFNetworking"]["selectedSourceEntries"]
                     == baseline_payload["AFNetworking"]["selectedSourceEntries"],

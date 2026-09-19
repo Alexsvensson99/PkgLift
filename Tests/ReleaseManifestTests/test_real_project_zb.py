@@ -89,6 +89,159 @@ class IntakeTests(unittest.TestCase):
     def test_repository_intake_matches_runner_contract(self):
         self.assertEqual(zb.validate_execution_intake()["sha256"], zb.INTAKE_SHA256)
 
+    def test_missing_or_wrong_specs_metadata_binding_is_rejected(self):
+        intake = json.loads(zb.INTAKE.read_text())
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "intake.json"
+            for mutation in ("missing", "wrong"):
+                with self.subTest(mutation=mutation):
+                    value = json.loads(json.dumps(intake))
+                    if mutation == "missing":
+                        del value["specs"]["metadata"]
+                    else:
+                        value["specs"]["metadata"]["rawSHA256"] = "0" * 64
+                    raw = json.dumps(value, indent=2).encode()
+                    path.write_bytes(raw)
+                    with patch.object(zb, "INTAKE", path), patch.object(zb, "INTAKE_SHA256", zb.sha256_bytes(raw)):
+                        with self.assertRaises(zb.QualificationError) as error:
+                            zb.validate_execution_intake()
+                    self.assertEqual(error.exception.outcome, "blocked-input")
+
+    def test_missing_or_wrong_retained_af_lock_mode_policy_is_rejected(self):
+        intake = json.loads(zb.INTAKE.read_text())
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "intake.json"
+            for mutation in ("missing", "wrong"):
+                with self.subTest(mutation=mutation):
+                    value = json.loads(json.dumps(intake))
+                    if mutation == "missing":
+                        del value["implementationReview"]["retainedAFLockModePolicy"]
+                    else:
+                        value["implementationReview"]["retainedAFLockModePolicy"]["removeModeBits"] = 0
+                    raw = json.dumps(value, indent=2).encode()
+                    path.write_bytes(raw)
+                    with patch.object(zb, "INTAKE", path), patch.object(zb, "INTAKE_SHA256", zb.sha256_bytes(raw)):
+                        with self.assertRaises(zb.QualificationError) as error:
+                            zb.validate_execution_intake()
+                    self.assertEqual(error.exception.outcome, "blocked-input")
+
+
+class SpecsCacheTests(unittest.TestCase):
+    def runner(self, directory):
+        runner = zb.Runner({"binary": Path(directory) / "pkglift", "output": Path(directory) / "output",
+                            "runnerTemp": Path(directory)}, 2)
+        runner.execute = Mock(return_value="")
+        return runner
+
+    def test_rejects_changed_metadata_before_cache_commands(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            with patch.object(zb, "SPECS_METADATA_BYTES", b"changed metadata\n"):
+                with self.assertRaises(zb.QualificationError) as error:
+                    runner.seed_specs_cache()
+            self.assertEqual(error.exception.outcome, "blocked-input")
+            runner.execute.assert_not_called()
+
+    def test_seeds_exact_metadata_and_original_podspec_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            original = {name: ("original " + name).encode() for name in zb.PODSPEC_INPUTS}
+            runner.spec_bytes = original.copy()
+            result = runner.seed_specs_cache()
+            repo = runner.cp_home / "repos" / "pkglift-zb-specs"
+            self.assertEqual((repo / zb.SPECS_METADATA_PATH).read_bytes(), zb.SPECS_METADATA_BYTES)
+            self.assertEqual(zb.file_sha256(repo / zb.SPECS_METADATA_PATH), zb.SPECS_METADATA_SHA256)
+            for name, source in zb.PODSPEC_INPUTS.items():
+                self.assertEqual((repo / source["path"]).read_bytes(), original[name])
+            self.assertEqual(result["metadata"], zb.validate_specs_metadata())
+            runner.execute.assert_any_call("spec-cache-add",
+                                           ["git", "-C", repo, "add", "Specs", zb.SPECS_METADATA_PATH])
+
+
+class RetainedAFLockModeTests(unittest.TestCase):
+    def fixture(self, directory):
+        root = Path(directory)
+        source = root / "reviewed"
+        installed = root / "Pods" / "AFNetworking" / "AFNetworking"
+        for index in range(14):
+            suffix = ".m" if index == 13 else ".h"
+            relative = f"AF{index:02d}{suffix}"
+            for base in (source, installed):
+                path = base / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(f"reviewed-{index}".encode())
+            os.chmod(source / relative, 0o755 if index == 13 else 0o644)
+            os.chmod(installed / relative, 0o555 if index == 13 else 0o444)
+        runner = zb.Runner({"binary": root / "pkglift", "output": root / "output", "runnerTemp": root}, 2)
+        runner.reference_payloads["AFNetworking"] = zb.tree_snapshot(source)
+        reference = runner.reference_payloads["AFNetworking"]
+        expected = json.loads(json.dumps(reference))
+        for item in expected.values(): item["mode"] &= ~0o200
+        patches = (patch.object(zb, "RETAINED_AF_REVIEWED_SOURCE_TREE_SHA256", zb.tree_digest(reference)),
+                   patch.object(zb, "RETAINED_AF_EXPECTED_LOCKED_TREE_SHA256", zb.tree_digest(expected)))
+        return runner, root, source, installed, patches
+
+    def test_exact_locked_payload_only_removes_owner_write_and_preserves_baseline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root, source, _installed, patches = self.fixture(directory)
+            baseline = root / "baseline" / "Pods" / "AFNetworking" / "AFNetworking"
+            for path in source.iterdir():
+                copied = baseline / path.name; copied.parent.mkdir(parents=True, exist_ok=True)
+                copied.write_bytes(path.read_bytes()); os.chmod(copied, path.stat().st_mode & 0o777)
+            with patches[0], patches[1]:
+                baseline_payload = runner.validate_pod_payload(root / "baseline", {"AFNetworking"})["AFNetworking"]
+                with self.assertRaises(zb.QualificationError):
+                    runner.validate_pod_payload(root, {"AFNetworking"})
+                locked = runner.validate_retained_af_locked_payload(root)
+            self.assertEqual(baseline_payload["selectedSourceTreeSHA256"], locked["reviewedSourceTreeSHA256"])
+            self.assertEqual(locked["selectedSourceEntries"], 14)
+            self.assertEqual(locked["modeTransitions"], {"0644->0444": 13, "0755->0555": 1})
+
+    def test_rejects_every_descriptor_change_after_locking(self):
+        mode_mutations = {"mode-executable": 0o445, "mode-group": 0o464,
+                          "mode-other": 0o440, "mode-owner-write": 0o644}
+        for mutation in ("bytes", "size", "path", "kind", *mode_mutations, "add", "remove"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                runner, root, _source, installed, patches = self.fixture(directory)
+                target = installed / "AF00.h"
+                if mutation in {"bytes", "size"}: os.chmod(target, 0o644)
+                if mutation == "bytes":
+                    self.assertEqual(len(target.read_bytes()), len(b"changed-00"))
+                    target.write_bytes(b"changed-00"); os.chmod(target, 0o444)
+                elif mutation == "size":
+                    target.write_bytes(target.read_bytes() + b"x"); os.chmod(target, 0o444)
+                elif mutation == "path": target.rename(installed / "renamed.h")
+                elif mutation == "kind": target.unlink(); target.mkdir()
+                elif mutation in mode_mutations: os.chmod(target, mode_mutations[mutation])
+                elif mutation == "add": (installed / "extra.h").write_bytes(b"extra")
+                else: target.unlink()
+                with patches[0], patches[1]:
+                    with self.assertRaises(zb.QualificationError):
+                        runner.validate_retained_af_locked_payload(root)
+
+    def test_rejects_a_changed_reference_tree_against_the_pinned_digest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, root, _source, _installed, patches = self.fixture(directory)
+            with patches[0], patches[1]:
+                runner.validate_retained_af_locked_payload(root)
+                runner.reference_payloads["AFNetworking"]["AF00.h"]["sha256"] = "0" * 64
+                with self.assertRaises(zb.QualificationError):
+                    runner.validate_retained_af_locked_payload(root)
+
+    def test_rejects_payload_root_and_ancestor_symlinks_without_writing_outside(self):
+        for relative in ("Pods", "Pods/AFNetworking", "Pods/AFNetworking/AFNetworking"):
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as directory:
+                runner, root, _source, _installed, patches = self.fixture(directory)
+                target = root / relative
+                outside = root / "outside"
+                target.rename(outside)
+                target.symlink_to(outside, target_is_directory=True)
+                before = zb.tree_snapshot(outside)
+                with patches[0], patches[1]:
+                    with self.assertRaises(zb.QualificationError):
+                        runner.validate_retained_af_locked_payload(root)
+                self.assertEqual(zb.tree_snapshot(outside), before)
+
 
 class SchemeTests(unittest.TestCase):
     def test_requires_both_test_targets_and_no_execution_actions(self):
