@@ -416,3 +416,65 @@ repository YAML and whitespace checks. The updated seeding helper produced a Git
 cache containing exactly the two original specs and the pinned metadata file.
 The updated payload helper also accepted the actual locally refreshed AF tree
 against both pinned descriptor digests. No hosted rerun has been dispatched.
+
+## Hosted CocoaPods success and final project-context pin failure
+
+[PR #129](https://github.com/Alexsvensson99/PkgLift/pull/129) merged at
+`8d0a941bcf0f496adf8d3d6297f4c36761105591` after all 26 checks passed and GitHub
+review completed without findings.
+[Run 35446659800, attempt 1](https://github.com/Alexsvensson99/PkgLift/actions/runs/35446659800)
+verified the corrected Specs metadata and exact retained AF source-lock policy.
+CocoaPods refresh, retained payload/lock checks, final target/linkage checks and
+PkgLift structural verification passed. Workspace SwiftPM resolution verified
+SDWebImage 5.8.4 at revision `2f9ef53b99a25bdfba97660c69c42cb54e323b78` with the
+reviewed manifest hash. The workspace resolved file retained its exact prepared
+schema-2 bytes, SHA-256
+`7d81be39079d84cbc2a284c7464b4675b244bf6b125c37a7095088080f502da0`.
+Both refusal controls passed with the same executable and source commit.
+
+The [portable result record](Evidence/MultiTargetQualification-1.0/zb-final-settings-run.json)
+shows the next failure: the first final app-project settings command created
+`ZBNetworkingDemo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`.
+This was the only source-tree change: a 388-byte regular file, mode `0644`, SHA-256
+`469c65d39c53bf0b02bd88054d05f311cfb04d3175ee072929799a1de6381a0b`.
+Git index and existing dirty status were unchanged. The immediate guard stopped
+before the next settings command or the final build. Its file contents were not
+retained; neither the filename nor its digest proves the generated pin set.
+The generated file is not accepted as reviewed input. G3 remains open.
+
+The resolution command used the outer workspace, whereas each settings probe
+used its project context. The local follow-up prepares the same deterministic,
+reviewed schema-2 pin document for both contexts during the explicit package-input
+phase, before package-sensitive Xcode commands. Both files must be absent and all
+existing ancestors must be real directories. Preparation must add only the two
+exact `0644` files while preserving the Git index and all existing status records.
+The only permitted status addition is the outer workspace lock; the project lock
+is already ignored by the pinned upstream `.gitignore`. Preparation does not
+change Git exclusion rules. Their exact bytes,
+semantic pins and the two-file inventory are checked throughout final validation.
+This is candidate-specific qualification input preparation, including one file
+inside the disposable project bundle; it is not a production migration write path
+or permission to accept later probe mutations.
+
+The proven individual app and sibling target probes are retained. The original
+scheme has one app BuildAction entry and two TestAction testables, so a generic
+workspace settings query alone is not assumed to cover all three targets.
+Final app-project probes require the verified package context, use both resolved-
+version lock flags, skip package updates, and reuse the verified checkout. The
+checkout revision, reviewed manifest and clean Git state are checked alongside
+the two lockfiles. Baseline probes and the full source/index/status guards remain
+unchanged. Any lock rewrite, extra resolved file, changed checkout, or other probe
+mutation still fails. The AWS single-context protocol is unchanged.
+
+Final hosted settings and post-migration compilation remain unverified. No new
+hosted run or local Xcode build is part of preparing this correction.
+
+Local verification passed 248 ReleaseManifest Python tests, including 53 ZB
+protocol tests, plus repository YAML and whitespace checks. Fault-path coverage
+confirms that an unchanged early resolver failure retains its original outcome,
+while lock rewrites, unexpected SwiftPM files and changed checkouts stop safely.
+The [local preparation record](Evidence/MultiTargetQualification-1.0/zb-dual-context-preparation.json)
+records a check on a disposable copy of the actual locally migrated/refreshed
+project: exactly the two reviewed lockfiles were added, the index and Git
+exclusion rules were unchanged, and status gained only the expected outer lock.
+This validates input preparation only, not hosted resolution or compilation.
