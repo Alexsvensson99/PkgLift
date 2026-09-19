@@ -944,6 +944,62 @@ final class XcodeProjectAnalyzerTests: XCTestCase {
         XCTAssertEqual(try analyzedTarget(in: project).sourceProfile?.headerImports, .incomplete)
     }
 
+    func testHeaderInspectionAcceptsCocoaPodsModuleFlagsAcrossConfigurations() throws {
+        for fileTypes in [["sourcecode.swift"], ["sourcecode.swift", "sourcecode.c.objc"]] {
+            let root = try makeDirectory()
+            defer { try? FileManager.default.removeItem(at: root) }
+            let project = try writeSourceProfileProject(in: root, fileTypes: fileTypes)
+            let model = try XcodeProj(pathString: project.path)
+            let target = try XCTUnwrap(model.pbxproj.nativeTargets.first)
+            let rootProject = try XCTUnwrap(model.pbxproj.rootObject)
+            let configReference = PBXFileReference(sourceTree: .sourceRoot, path: "Pods.xcconfig")
+            model.pbxproj.add(object: configReference)
+            let projectRelease = XCBuildConfiguration(name: "Release")
+            let targetRelease = XCBuildConfiguration(name: "Release")
+            model.pbxproj.add(object: projectRelease)
+            model.pbxproj.add(object: targetRelease)
+            rootProject.buildConfigurationList?.buildConfigurations.append(projectRelease)
+            target.buildConfigurationList?.buildConfigurations.append(targetRelease)
+            for configuration in target.buildConfigurationList?.buildConfigurations ?? [] {
+                configuration.baseConfiguration = configReference
+            }
+            try write("""
+            OTHER_CFLAGS = $(inherited) -fmodule-map-file="${PODS_CONFIGURATION_BUILD_DIR}/KeychainAccess/KeychainAccess.modulemap" -fmodule-map-file="${PODS_ROOT}/Headers/Public/SDWebImage/SDWebImage.modulemap"
+            OTHER_SWIFT_FLAGS = $(inherited) -D COCOAPODS -Xcc -fmodule-map-file="${PODS_CONFIGURATION_BUILD_DIR}/KeychainAccess/KeychainAccess.modulemap" -Xcc -fmodule-map-file="${PODS_ROOT}/Headers/Public/SDWebImage/SDWebImage.modulemap"
+            """, to: root.appendingPathComponent("Pods.xcconfig"))
+            try model.write(pathString: project.path, override: true)
+            XCTAssertTrue(try analyzedTarget(in: project).sourceProfile?.hasAutomaticHeaderImportEvidence == true)
+
+            // A supported array in one configuration must not hide a dangerous
+            // inherited project setting in another configuration.
+            targetRelease.buildSettings["OTHER_SWIFT_FLAGS"] = .array(["$(inherited)", "-D", "COCOAPODS"])
+            try model.write(pathString: project.path, override: true)
+            XCTAssertTrue(try analyzedTarget(in: project).sourceProfile?.hasAutomaticHeaderImportEvidence == true)
+            projectRelease.buildSettings["OTHER_SWIFT_FLAGS"] = .string("-Xcc -include Hidden.h")
+            try model.write(pathString: project.path, override: true)
+            XCTAssertEqual(try analyzedTarget(in: project).sourceProfile?.headerImports, .incomplete)
+            if fileTypes.count > 1 {
+                try write("#import <SDImageCache.h>\n", to: root.appendingPathComponent("Source1"))
+                XCTAssertEqual(try analyzedTarget(in: project).sourceProfile?.headerImports, .requiresReview)
+            }
+        }
+    }
+
+    func testMissingCocoaPodsConfigurationRefusesFreshSwiftHeaderEvidence() throws {
+        let root = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let project = try writeSourceProfileProject(in: root, fileTypes: ["sourcecode.swift"])
+        let model = try XcodeProj(pathString: project.path)
+        let target = try XCTUnwrap(model.pbxproj.nativeTargets.first)
+        let reference = PBXFileReference(sourceTree: .sourceRoot, path: "Pods/Target Support Files/Pods-Example/Pods-Example.debug.xcconfig")
+        model.pbxproj.add(object: reference)
+        let configuration = try XCTUnwrap(target.buildConfigurationList?.buildConfigurations.first)
+        configuration.baseConfiguration = reference
+        try model.write(pathString: project.path, override: true)
+        XCTAssertEqual(try analyzedTarget(in: project).sourceProfile?.headerImports, .incomplete)
+        XCTAssertFalse(try analyzedTarget(in: project).sourceProfile?.hasAutomaticHeaderImportEvidence == true)
+    }
+
     func testFreshSourceProfileRequiresConfigurationEvidenceForSwiftAndObjectiveC() throws {
         for language in ["sourcecode.swift", "sourcecode.c.objc"] {
             let root = try makeDirectory()

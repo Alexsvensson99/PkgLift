@@ -36,6 +36,17 @@ considered conservatively, including values a target might override. Swift-only
 legacy language profiles remain decodable; observed prefix/bridging header risks
 still prevent automatic migration.
 
+Compiler flag settings use a bounded, non-executing allowlist: simple C/Swift
+conditional-compilation defines, C undefines, and CocoaPods module-map flags under
+`PODS_CONFIGURATION_BUILD_DIR` or `PODS_ROOT/Headers/Public`. Swift permits `-Xcc`
+only immediately before one such module-map flag. These flags do not force a
+header into the consumer source. Unknown flags, response files, forced headers,
+search-path options, malformed quoting and unresolved module-map roots still
+make inspection incomplete. Empty settings and inherited placeholders are allowed;
+per-file compiler flags remain unsupported. The parser accepts at most 64 KiB and
+512 tokens per setting. Module-map availability and compatibility still require
+the final build.
+
 Limits per target: 1 MiB per file, 16 MiB total, 512 files and 32 local-header
 recursion levels. Cycles terminate. Descriptor-relative regular-file reads reject
 symlinks and verify file metadata across the read. Only the fixed status is
@@ -61,7 +72,7 @@ The upstream working tree remains clean after read-only analysis. See the
 [local validation receipt](Evidence/MultiTargetQualification-1.0/zb-header-import-review.json).
 This does not close the positive G3 qualification.
 
-Local checks: 395 XCTest tests, 233 Swift Testing tests, 257 Python policy tests,
+Local checks: 403 XCTest tests, 233 Swift Testing tests, 257 Python policy tests,
 25 registry mappings and repository YAML validation passed. Build and Swift tests
 used the existing SwiftPM `native` cache after the default `swiftbuild` engine
 failed its test-bundle signing step on filesystem metadata. Independent review

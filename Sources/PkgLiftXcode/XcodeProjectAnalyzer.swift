@@ -372,19 +372,29 @@ public struct XcodeProjectAnalyzer: Sendable {
                 for (key, setting) in settings where Self.headerImportSettings.contains(where: {
                     key == $0 || isVariant(key, of: $0)
                 }) {
-                    guard Self.headerImportSettings.contains(key),
-                          case .string(let rawValue) = setting else {
+                    guard Self.headerImportSettings.contains(key) else {
+                        importsIncomplete = true
+                        continue
+                    }
+                    if key.hasPrefix("OTHER_") {
+                        // Admit only a bounded grammar of import-neutral defines
+                        // and CocoaPods module-map flags, never arbitrary options.
+                        let rawValue: String
+                        switch setting {
+                        case .string(let value): rawValue = value
+                        case .array(let values): rawValue = values.joined(separator: " ")
+                        }
+                        if !HeaderImportCompilerFlags.accepts(value: rawValue, setting: key) {
+                            importsIncomplete = true
+                        }
+                        continue
+                    }
+                    guard case .string(let rawValue) = setting else {
                         importsIncomplete = true
                         continue
                     }
                     let value = normalizedSettingValue(rawValue)
                     if value.isEmpty || value == "$(inherited)" { continue }
-                    guard key == "GCC_PREFIX_HEADER" || key == "SWIFT_OBJC_BRIDGING_HEADER" else {
-                        // Arbitrary compiler flags may force headers or change
-                        // preprocessing; never execute or infer them here.
-                        importsIncomplete = true
-                        continue
-                    }
                     let expanded = value
                         .replacingOccurrences(of: "$(SRCROOT)", with: projectPath.parent().string)
                         .replacingOccurrences(of: "${SRCROOT}", with: projectPath.parent().string)
