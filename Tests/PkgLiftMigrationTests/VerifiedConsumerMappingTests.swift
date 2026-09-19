@@ -241,7 +241,8 @@ final class VerifiedConsumerMappingTests: XCTestCase {
             deploymentTarget: deploymentTarget,
             sourceProfile: TargetSourceProfile(
                 languages: languages,
-                completeness: .complete
+                completeness: .complete,
+                headerImports: languages.contains(where: { $0 != .swift }) ? .clear : nil
             )
         )
     }

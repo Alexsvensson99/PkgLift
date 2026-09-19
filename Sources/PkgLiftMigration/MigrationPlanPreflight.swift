@@ -294,6 +294,12 @@ public struct MigrationPlanPreflight: Sendable {
                     detail: "the destination target source-language profile is incomplete or empty. Regenerate the plan."
                 )
             }
+            guard targetSourceProfile.hasAutomaticHeaderImportEvidence else {
+                throw MigrationPlanPreflightError.incompleteAutoEntry(
+                    dependency: dependency,
+                    detail: "the destination target header-import evidence is missing, incomplete or requires review. Regenerate the plan."
+                )
+            }
             guard Set(targetSourceProfile.languages).isSubset(of: Set(supportedLanguages)) else {
                 throw MigrationPlanPreflightError.actionMismatch(dependency: dependency)
             }

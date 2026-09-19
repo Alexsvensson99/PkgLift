@@ -349,6 +349,21 @@ public struct MigrationClassifier: Sendable {
                         remediation: "Confirm the target's compiled source membership before migration."
                     ))
                 }
+                if !targetSourceProfile.hasAutomaticHeaderImportEvidence {
+                    if targetSourceProfile.headerImports == .requiresReview {
+                        reasons.append(MigrationReason(
+                            code: .targetHeaderImportsRequireReview,
+                            message: "Target header imports may rely on CocoaPods header search paths",
+                            remediation: "Review unqualified or unresolved header imports before migration; PkgLift does not rewrite consumer source."
+                        ))
+                    } else {
+                        reasons.append(MigrationReason(
+                            code: .targetHeaderImportEvidenceIncomplete,
+                            message: "Target header-import inspection is missing or incomplete",
+                            remediation: "Resolve unreadable source, unsupported imports or build settings, then regenerate the plan."
+                        ))
+                    }
+                }
                 if let supportedLanguages {
                     let supported = Set(supportedLanguages)
                     let unsupported = targetSourceProfile.languages.filter { !supported.contains($0) }

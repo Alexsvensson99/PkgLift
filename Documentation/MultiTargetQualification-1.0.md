@@ -539,4 +539,30 @@ protocol tests, repository YAML validation and patch whitespace checks. Independ
 review found no remaining material correctness/privacy issue. Adversarial tests
 cover private text inside diagnostic fields, per-stream capacity, duplicate counts,
 missing/mismatched logs, parser failure and preservation of build safety precedence.
-No new hosted G3 run has been dispatched for this diagnostic policy.
+The authorized diagnostic run subsequently completed; its result is recorded below.
+
+## Diagnosed consumer header-import blocker
+
+[Run 35463129448](https://github.com/Alexsvensson99/PkgLift/actions/runs/35463129448),
+at merge `522c56a56ff18310644ae44ec88700f550c83dd9`, completed attempt 1 with
+`failed-migration`. The message and relative-path hashes in its bounded report
+match `ZBNetworkingDemo/SettingViewController.m:12:9` and the missing
+`SDImageCache.h` diagnostic exactly. That source line imports the header as
+`#import <SDImageCache.h>`. See the [diagnostic receipt](Evidence/MultiTargetQualification-1.0/zb-header-import-failure.json).
+
+The baseline build, four structural checks, five final target settings and all
+19 observed source/index/status guards passed. Both refusal controls used the
+same executable and passed. This identifies the first captured compiler error;
+it does not prove that changing one import would make the whole build pass.
+
+PkgLift now performs [bounded header-import inspection](HeaderImportInspection.md)
+before AUTO classification and again through migration preflight. The unchanged
+ZB consumer must remain REVIEW when its flat imports are detected. It is a
+regression case for conservative refusal, not successful automatic migration.
+
+The existing positive ZB execution protocol still requires SDWebImage AUTO and
+will therefore stop before applying this now-refused plan. Its success criteria
+and the G3 gate have not been weakened. Do not rerun it expecting a positive
+qualification result. Replacing the positive candidate or introducing an explicit
+source-adaptation feature requires separately reviewed scope and fresh evidence.
+G3 remains open; no source adaptation or new hosted run is part of this change.

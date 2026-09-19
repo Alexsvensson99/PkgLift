@@ -672,8 +672,10 @@ final class MigrateInterruptionTests: XCTestCase {
         )
 
         let projectURL = root.appendingPathComponent("App.xcodeproj", isDirectory: true)
-        let projectConfigurations = XCConfigurationList()
-        let targetConfigurations = XCConfigurationList()
+        let projectDebug = XCBuildConfiguration(name: "Debug")
+        let targetDebug = XCBuildConfiguration(name: "Debug")
+        let projectConfigurations = XCConfigurationList(buildConfigurations: [projectDebug])
+        let targetConfigurations = XCConfigurationList(buildConfigurations: [targetDebug])
         let sourceReference = PBXFileReference(
             sourceTree: .group,
             lastKnownFileType: "sourcecode.swift",
@@ -709,6 +711,8 @@ final class MigrateInterruptionTests: XCTestCase {
         [
             projectConfigurations,
             targetConfigurations,
+            projectDebug,
+            targetDebug,
             sourceReference,
             sourceBuildFile,
             sources,

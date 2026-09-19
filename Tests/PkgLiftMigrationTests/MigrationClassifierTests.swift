@@ -621,7 +621,8 @@ final class MigrationClassifierTests: XCTestCase {
     func testMixedTargetRequiresExplicitSupportForBothLanguages() {
         let mixedProfile = TargetSourceProfile(
             languages: [.swift, .objectiveC],
-            completeness: .complete
+            completeness: .complete,
+            headerImports: .clear
         )
         let swiftOnly = MigrationClassifier().classify(
             dependency: makeDependency(version: "5.18.1"),
@@ -640,6 +641,35 @@ final class MigrationClassifierTests: XCTestCase {
         XCTAssertEqual(swiftOnly.category, .review)
         XCTAssertTrue(swiftOnly.reasons.contains { $0.contains("objectiveC") })
         XCTAssertEqual(mixedSupported.category, .auto)
+    }
+
+    func testHeaderImportsRequireEvidenceBeforeAutomaticMigration() throws {
+        for status: TargetHeaderImportStatus? in [nil, .incomplete, .requiresReview, .clear] {
+            let profile = TargetSourceProfile(
+                languages: [.objectiveC], completeness: .complete, headerImports: status
+            )
+            let result = MigrationClassifier().classify(
+                dependency: makeDependency(version: "5.18.1"),
+                mapping: makeMapping(minimumVersion: "5.1.0"),
+                targetSourceProfile: profile
+            )
+            XCTAssertEqual(result.category, status == .clear ? .auto : .review)
+            if status != .clear {
+                XCTAssertTrue(result.reasonDetails.contains {
+                    $0.code == (status == .requiresReview
+                        ? .targetHeaderImportsRequireReview : .targetHeaderImportEvidenceIncomplete)
+                })
+            }
+            let decoded = try JSONDecoder().decode(
+                TargetSourceProfile.self, from: JSONEncoder().encode(profile)
+            )
+            XCTAssertEqual(decoded, profile)
+        }
+        let legacy = try JSONDecoder().decode(TargetSourceProfile.self, from:
+            Data(#"{"languages":["objectiveC"],"completeness":"complete"}"#.utf8)
+        )
+        XCTAssertNil(legacy.headerImports)
+        XCTAssertFalse(legacy.hasAutomaticHeaderImportEvidence)
     }
 
     func testCFamilyLanguageWithoutExplicitSupportIsReview() {
@@ -695,7 +725,8 @@ final class MigrationClassifierTests: XCTestCase {
 
         let mixedProfile = TargetSourceProfile(
             languages: [.swift, .objectiveC],
-            completeness: .complete
+            completeness: .complete,
+            headerImports: .clear
         )
         let firebaseNames = [
             ("FirebaseAuth", "FirebaseAuth"),

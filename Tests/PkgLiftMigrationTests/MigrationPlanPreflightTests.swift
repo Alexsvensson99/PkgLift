@@ -28,6 +28,36 @@ final class MigrationPlanPreflightTests: XCTestCase {
         ])
     }
 
+    func testDirectPreflightRejectsLegacyOrUnsafeHeaderEvidence() {
+        let base = makeEntry()
+        let basePackage = makePackage()
+        let package = PackageCandidate(
+            repositoryURL: basePackage.repositoryURL, products: basePackage.products,
+            versionRequirement: basePackage.versionRequirement, confidence: .verified,
+            supportedConsumerLanguages: [.swift, .objectiveC]
+        )
+        for status: TargetHeaderImportStatus? in [nil, .requiresReview, .incomplete] {
+            let profile = TargetSourceProfile(
+                languages: [.objectiveC], completeness: .complete, headerImports: status
+            )
+            let entry = MigrationPlanEntry(
+                podName: base.podName, currentVersion: base.currentVersion,
+                classification: .auto, actions: base.actions, targetName: base.targetName,
+                packageCandidate: package, declarations: base.declarations,
+                targetAttribution: base.targetAttribution, targetSourceProfile: profile
+            )
+            XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
+                plan: makePlan(entries: [entry]),
+                availableTargetInfos: [TargetInfo(name: "App", type: "application", sourceProfile: profile)]
+            )) { error in
+                guard case .incompleteAutoEntry(_, let detail) = error as? MigrationPlanPreflightError else {
+                    return XCTFail("Expected header evidence refusal: \(error)")
+                }
+                XCTAssertTrue(detail.contains("header-import"))
+            }
+        }
+    }
+
     func testMissingPreferredTargetIsRefused() {
         XCTAssertThrowsError(try MigrationPlanPreflight().prepare(
             plan: makePlan(entries: [makeEntry(targetName: "Missing")]),

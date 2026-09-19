@@ -187,29 +187,48 @@ public enum SourceProfileCompleteness: String, Sendable, Codable {
     case incomplete
 }
 
-/// Deterministic source-language evidence derived only from PBX metadata.
+/// Bounded inspection of C-family imports; `clear` is not a compile guarantee.
+/// No source text or private paths are included in this evidence.
+public enum TargetHeaderImportStatus: String, Sendable, Codable {
+    case clear
+    case requiresReview
+    case incomplete
+}
+
+/// Deterministic PBX language evidence with optional bounded header inspection.
 public struct TargetSourceProfile: Sendable, Codable, Equatable {
     public let languages: [SourceLanguage]
     public let completeness: SourceProfileCompleteness
+    /// Absent in legacy artifacts. Required for C-family automatic migration.
+    public let headerImports: TargetHeaderImportStatus?
+
+    public var hasAutomaticHeaderImportEvidence: Bool {
+        if let headerImports { return headerImports == .clear }
+        return languages.allSatisfy { $0 == .swift }
+    }
 
     public init(
         languages: [SourceLanguage],
-        completeness: SourceProfileCompleteness
+        completeness: SourceProfileCompleteness,
+        headerImports: TargetHeaderImportStatus? = nil
     ) {
         self.languages = Array(Set(languages)).sorted()
         self.completeness = completeness
+        self.headerImports = headerImports
     }
 
     private enum CodingKeys: String, CodingKey {
         case languages
         case completeness
+        case headerImports
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.init(
             languages: try container.decode([SourceLanguage].self, forKey: .languages),
-            completeness: try container.decode(SourceProfileCompleteness.self, forKey: .completeness)
+            completeness: try container.decode(SourceProfileCompleteness.self, forKey: .completeness),
+            headerImports: try container.decodeIfPresent(TargetHeaderImportStatus.self, forKey: .headerImports)
         )
     }
 }

@@ -622,6 +622,7 @@ private func hasCompatibleLanguageEvidence(
 ) -> Bool {
     guard let profile,
           profile.completeness == .complete,
+          profile.hasAutomaticHeaderImportEvidence,
           !profile.languages.isEmpty,
           let supportedLanguages,
           !supportedLanguages.isEmpty,

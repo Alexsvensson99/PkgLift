@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "scope": "Local read-only analysis of unchanged pinned ZBNetworking; not G3 qualification",
+  "upstreamCommit": "fda54d347a0a8be11cf63e5eea76d0289e3a728d",
+  "sourceWorktreeCleanAfterAnalysis": true,
+  "implementationBase": "522c56a56ff18310644ae44ec88700f550c83dd9",
+  "sourceSHA256": {
+    "Sources/PkgLiftCore/Models/ProjectAnalysis.swift": "072b1e610726554aafacef0903418136ee7c4bf9a671f4914816c722bcf0a2d8",
+    "Sources/PkgLiftCore/Models/MigrationReason.swift": "a280919117ed343191ffbae61cdcc360cbd8db4427b5d2d5dd973ed0317cabcc",
+    "Sources/PkgLiftXcode/HeaderImportInspector.swift": "f0f683c41c347533ef798b497c653e6d0cff5835ea6c474ecf2ca0d14a1647ec",
+    "Sources/PkgLiftXcode/XcodeProjectAnalyzer.swift": "25ee8b7e236cb2b0f9d68305d85478fcbe5baf423b1d6a7de3dc83c5ce3cc5da",
+    "Sources/PkgLiftMigration/MigrationClassifier.swift": "3174fee32e65ebe73ffc70641f0dba8b4c985ddb63ec5ebcd3ef0db54c00b4b9",
+    "Sources/PkgLiftMigration/MigrationPlanPreflight.swift": "2b60a9f8d625c04b4c5978df729727349df8af2b02f65b798c9e56a1395abcc7",
+    "Sources/PkgLiftCLI/CommandContext.swift": "5122c2e8383fd7e2f9ce3e065a628c3c0b47124f7cbdda636caa8698496efe25"
+  },
+  "binarySHA256": "64728e785a8e58aa031b9aadc9e5d1fb105cf4b4414064960875873bcfcf03ff",
+  "portableAnalysisSHA256": "4c3b0df4249b14d39cc5092cafb90fcc196d96f2cf4d76f7fc15511f1f08af92",
+  "dependency": {
+    "name": "SDWebImage",
+    "classification": "REVIEW",
+    "reasonCodes": [
+      "target_header_imports_require_review"
+    ]
+  },
+  "targets": [
+    {
+      "name": "ZBNetworkingDemo",
+      "sourceProfile": {
+        "completeness": "complete",
+        "headerImports": "requiresReview",
+        "languages": [
+          "objectiveC"
+        ]
+      }
+    },
+    {
+      "name": "ZBNetworkingDemoTests",
+      "sourceProfile": {
+        "completeness": "complete",
+        "headerImports": "clear",
+        "languages": [
+          "objectiveC"
+        ]
+      }
+    },
+    {
+      "name": "ZBNetworkingDemoUITests",
+      "sourceProfile": {
+        "completeness": "complete",
+        "headerImports": "clear",
+        "languages": [
+          "objectiveC"
+        ]
+      }
+    }
+  ],
+  "verification": {
+    "swiftXCTestPassed": 395,
+    "swiftTestingPassed": 233,
+    "pythonPolicyTestsPassed": 257,
+    "registryMappingsValidated": 25,
+    "repositoryYAML": "passed",
+    "build": "passed-native",
+    "independentReview": "no material blocker",
+    "buildSystemLimitation": "Default swiftbuild engine failed on signing metadata; native build and complete tests passed."
+  },
+  "g3Closed": false,
+  "migrationApplied": false,
+  "newHostedRun": false,
+  "releasePublished": false
+}

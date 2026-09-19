@@ -557,9 +557,70 @@ final class CommandContextMigrationTests: XCTestCase {
             entry.targetSourceProfile,
             TargetSourceProfile(
                 languages: [.swift, .objectiveC],
-                completeness: .complete
+                completeness: .complete,
+                headerImports: .clear
             )
         )
+    }
+
+    func testFlatHeaderImportIsReviewWithoutActionsAndDoesNotAffectSibling() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'SDWebImage'\nend\ntarget 'Other' do\n  pod 'Alamofire'\nend\n",
+            lockfile: "PODS:\n  - SDWebImage (5.8.4)\n  - Alamofire (5.0.0)\nDEPENDENCIES:\n  - SDWebImage\n  - Alamofire\n",
+            targetNames: ["App", "Other"],
+            targetSourceFileTypes: ["App": ["sourcecode.c.objc"]]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        // Exact public import form from the failing ZBNetworking consumer.
+        try "#import <SDImageCache.h>\n".write(
+            to: fixture.root.appendingPathComponent("AppSource0"), atomically: true, encoding: .utf8
+        )
+        let context = try await CommandContext.load(from: CommonOptions.parse([
+            "--path", fixture.root.path, "--project", fixture.project.path,
+        ]))
+        let plan = context.buildMigrationPlan()
+        let entry = try XCTUnwrap(plan.entries.first { $0.podName == "SDWebImage" })
+        XCTAssertEqual(entry.classification, .review)
+        XCTAssertTrue(entry.actions.allSatisfy { if case .manual = $0 { true } else { false } })
+        XCTAssertEqual(entry.targetSourceProfile?.headerImports, .requiresReview)
+        XCTAssertTrue(entry.reasonDetails?.contains { $0.code == .targetHeaderImportsRequireReview } == true)
+        XCTAssertEqual(plan.autoEntries.map(\.podName), ["Alamofire"])
+    }
+
+    func testChangedHeaderImportRefusesSavedAutoPlanBeforeWrites() async throws {
+        let fixture = try makeFixture(
+            podfile: "target 'App' do\n  pod 'SDWebImage'\nend\n",
+            lockfile: "PODS:\n  - SDWebImage (5.8.4)\nDEPENDENCIES:\n  - SDWebImage\n",
+            targetNames: ["App"],
+            targetSourceFileTypes: ["App": ["sourcecode.c.objc"]]
+        )
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let source = fixture.root.appendingPathComponent("AppSource0")
+        try "#import <SDWebImage/SDWebImage.h>\n".write(to: source, atomically: true, encoding: .utf8)
+        let arguments = ["--path", fixture.root.path, "--project", fixture.project.path]
+        var planCommand = try PlanCommand.parse(arguments)
+        try await planCommand.run()
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let saved = try decoder.decode(MigrationPlan.self, from:
+            Data(contentsOf: fixture.root.appendingPathComponent(".pkglift/plan.json"))
+        )
+        XCTAssertEqual(saved.autoEntries.map(\.podName), ["SDWebImage"])
+        try "#import <SDImageCache.h>\n".write(to: source, atomically: true, encoding: .utf8)
+        let podfile = fixture.root.appendingPathComponent("Podfile")
+        let project = fixture.project.appendingPathComponent("project.pbxproj")
+        let beforePodfile = try Data(contentsOf: podfile)
+        let beforeProject = try Data(contentsOf: project)
+        var apply = try MigrateCommand.parse(arguments + ["--apply"])
+        do {
+            try await apply.run()
+            XCTFail("Changed header imports must invalidate the saved AUTO plan")
+        } catch {
+            XCTAssertEqual(error as? MigrationPlanPreflightError, .staleAutoEntry(dependency: "SDWebImage"))
+        }
+        XCTAssertEqual(try Data(contentsOf: podfile), beforePodfile)
+        XCTAssertEqual(try Data(contentsOf: project), beforeProject)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fixture.root.appendingPathComponent(".pkglift/backup").path))
     }
 
     func testPerFileCompilerLanguageOverrideCannotReachAutoPlan() async throws {
@@ -589,7 +650,8 @@ final class CommandContextMigrationTests: XCTestCase {
             entry.targetSourceProfile,
             TargetSourceProfile(
                 languages: [.swift, .objectiveC],
-                completeness: .incomplete
+                completeness: .incomplete,
+                headerImports: .incomplete
             )
         )
         XCTAssertTrue(entry.reasons.contains("Target source-language profile is incomplete"))
@@ -987,12 +1049,14 @@ final class CommandContextMigrationTests: XCTestCase {
         }
 
         let projectURL = root.appendingPathComponent("App.xcodeproj")
-        let projectConfigurations = XCConfigurationList()
-        var objects: [PBXObject] = [projectConfigurations]
+        let projectDebug = XCBuildConfiguration(name: "Debug")
+        let projectConfigurations = XCConfigurationList(buildConfigurations: [projectDebug])
+        var objects: [PBXObject] = [projectConfigurations, projectDebug]
         var sourceReferences: [PBXFileReference] = []
         var targets: [PBXNativeTarget] = []
         for name in targetNames {
-            let configurations = XCConfigurationList()
+            let targetDebug = XCBuildConfiguration(name: "Debug")
+            let configurations = XCConfigurationList(buildConfigurations: [targetDebug])
             let frameworks = PBXFrameworksBuildPhase(files: [])
             let references = (targetSourceFileTypes[name] ?? ["sourcecode.swift"])
                 .enumerated()
@@ -1003,6 +1067,11 @@ final class CommandContextMigrationTests: XCTestCase {
                         path: "\(name)Source\(index)"
                     )
                 }
+            for index in references.indices {
+                try "// Fixture source with no dependency imports.\n".write(
+                    to: root.appendingPathComponent("\(name)Source\(index)"), atomically: true, encoding: .utf8
+                )
+            }
             let sourceBuildFiles = references.enumerated().map { index, reference in
                 let settings: [String: BuildFileSetting]? = targetSourceCompilerFlags[name]?[index].map {
                     ["COMPILER_FLAGS": .string($0)]
@@ -1021,7 +1090,7 @@ final class CommandContextMigrationTests: XCTestCase {
             targets.append(target)
             objects.append(contentsOf: references)
             objects.append(contentsOf: sourceBuildFiles)
-            objects.append(contentsOf: [configurations, sources, frameworks, target])
+            objects.append(contentsOf: [configurations, targetDebug, sources, frameworks, target])
         }
         let mainGroup = PBXGroup(
             children: sourceReferences,
