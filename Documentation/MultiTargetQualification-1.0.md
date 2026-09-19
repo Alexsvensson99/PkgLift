@@ -1,7 +1,8 @@
 # Multi-target real-project qualification for 1.0
 
-Status: **First hosted ZBNetworking attempt stopped on source mutation during scheme discovery; no positive multi-target build result yet**.
-Reviewed against main `6dcfc7bf5b2bcc0f8654e920c6ce7fd57767b986` on 2026-09-18.
+Status: **Diagnostic run identified two Xcode-created SwiftPM directories; bounded setup prepared, no positive multi-target build result yet**.
+Latest hosted diagnostic: main `8a936c2e299419fdcc1140d730926e3d35b5f4e8` on 2026-09-19.
+The earlier design review used main `6dcfc7bf5b2bcc0f8654e920c6ce7fd57767b986` on 2026-09-18.
 The existing [selected G3 cases](RealProjectQualification-1.0.md) passed on that
 main commit in [run 35149953474](https://github.com/Alexsvensson99/PkgLift/actions/runs/35149953474).
 Those results remain one positive AWS partial migration and two intentional
@@ -212,8 +213,8 @@ and identical byte-for-byte scheme promotion. Baseline `xcodebuild -list -json`
 exited 0 and its selected-scheme check passed, but the subsequent tree snapshot
 differed. No baseline build, PkgLift migration, CocoaPods refresh or final build
 ran. No app or tests launched. The original short-circuit guard did not collect
-the changed paths, post-list index or worktree status. The specific changed file
-and cause remain unknown; this is neither a successful migration nor evidence
+the changed paths, post-list index or worktree status. The specific changed path
+and cause were unknown in that run; this is neither a successful migration nor evidence
 that PkgLift caused the change.
 
 The diagnostic follow-up collects all three postconditions before checking them
@@ -224,9 +225,50 @@ bounded to 1,024 characters with a full-path hash; Xcode user-directory names ar
 redacted and symlink targets are represented only by hashes. File contents and
 raw Git output remain private. Acceptance still requires an unchanged complete
 tree, identical index and clean worktree; there is no new mutation allowlist,
-cleanup or automatic retry. Another hosted run is needed to identify the delta.
+cleanup or automatic retry. The subsequent hosted run below identified the delta.
 
 Local follow-up verification passed all 217 Python harness/policy tests, including
 five new discovery-diagnostic tests, plus repository YAML/workflow and whitespace
 checks. Independent review found no actionable issues. This follow-up changes
 only the Python runner, its tests and evidence/docs; Swift sources are unchanged.
+
+## Hosted diagnostic result and bounded directory setup
+
+[PR #125](https://github.com/Alexsvensson99/PkgLift/pull/125) merged at
+`8a936c2e299419fdcc1140d730926e3d35b5f4e8` after all 26 checks passed.
+[Run 35409428336, attempt 1](https://github.com/Alexsvensson99/PkgLift/actions/runs/35409428336)
+again stopped before baseline build or migration. Both refusal controls passed.
+This time the [diagnostic record](Evidence/MultiTargetQualification-1.0/zb-directory-diagnostic-run.json)
+shows the complete delta: two added directories, both mode `0777`, beneath
+`ZBNetworkingDemo.xcworkspace/xcshareddata/`:
+
+- `swiftpm`
+- `swiftpm/configuration`
+
+No files were added, removed or modified. The parent contains only the
+`configuration` directory, whose contents are empty. The Git index was unchanged
+and Git status was clean. Directory entries are included in the runner's snapshot
+even though Git does not track empty directories, so the strict guard correctly
+stopped. This is Xcode setup metadata, not a PkgLift migration delta.
+
+The follow-up prepares exactly these paths in both disposable copies after scheme
+promotion and before discovery. It requires real directory parents, absent setup
+paths, an exact two-directory delta and mode `0777` independent of umask, unchanged
+Git index and clean status. The report records both setup snapshots and the runner
+requires identical preparation evidence in both copies. No placeholder files,
+directory commits, source edits or removal/normalization are performed. This setup
+is explicitly bound in the updated execution intake. Mode `0777` reproduces only
+the observed directories inside the disposable private job copies.
+
+The discovery, baseline and migration preservation checks retain their complete
+snapshots. Any later file, mode, index or status change still fails. The new setup
+has not yet been exercised on GitHub; positive baseline and post-migration builds
+remain unverified.
+
+Local verification passed all 223 Python harness/policy tests and repository YAML/whitespace
+checks. Six new tests cover exact setup, umask, existing entries, symlinked parents,
+unexpected files, post-setup mutation refusal and mismatched-copy evidence. A local
+setup-only check on two disposable copies of the pinned real project produced the
+exact same before/after tree hashes as the hosted diagnostic. The original source
+remained unchanged; no Xcode or CocoaPods command ran locally. Independent review
+found no remaining implementation or test-gate issue.

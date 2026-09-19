@@ -220,7 +220,7 @@
   },
   "decision": {
     "status": "accepted-fail-closed",
-    "schemeGate": "Promote the reviewed existing scheme byte-for-byte to shared scheme path in both copies. Record and commit the identical bounded harness delta before qualification snapshots. No target or action generation. Missing scheme or products is inconclusive-baseline.",
+    "schemeGate": "Promote the reviewed existing scheme byte-for-byte to shared scheme path in both copies. Record and commit the identical bounded harness delta before qualification snapshots. No target or action generation. Missing scheme or products is inconclusive-baseline. Before discovery, create only the two observed SwiftPM directory entries with no files (configuration is empty) in both copies and require equal full-tree snapshots; directory creation is setup evidence, not a permitted discovery mutation.",
     "claimsExcluded": [
       "Original iOS 7/8/9/13 deployment compatibility",
       "Runtime behavior",
@@ -244,13 +244,24 @@
       "sha256": "c379780bc19dca2b862149d7f17cf07117c44f019cd4dff06f8d119227d73032",
       "identicalInBothCopies": true,
       "generatedActions": false
+    },
+    "swiftPMDirectorySetup": {
+      "paths": [
+        "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm",
+        "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/configuration"
+      ],
+      "mode": 511,
+      "evidenceRunID": "35409428336",
+      "identicalInBothCopies": true,
+      "noFilesCreated": true,
+      "rejectExistingPaths": true
     }
   },
-  "reviewedAt": "2026-09-18",
+  "reviewedAt": "2026-09-19",
   "notes": [
-    "Preparation only: no hosted execution result yet.",
+    "Hosted run 35409428336 stopped before baseline build: scheme discovery created exactly the two directory entries with no files bound in swiftPMDirectorySetup. Positive qualification remains pending.",
     "The application overrides deployment to 13.0 upstream; test targets inherit project 7.0. Both qualification copies use explicit 15.0.",
     "Original Podfile and lockfile are qualification inputs; do not rewrite the source URL or versions to obtain AUTO.",
-    "Baseline means pinned upstream plus an exact portable projection of one already committed upstream scheme; no project, Podfile or source edits during preparation."
+    "Baseline means pinned upstream plus byte-identical scheme promotion and the two reviewed SwiftPM directory entries with no files. No project, Podfile or source-file edits during preparation."
   ]
 }

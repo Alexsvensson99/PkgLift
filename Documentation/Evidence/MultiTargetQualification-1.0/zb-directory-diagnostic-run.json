@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "runID": 35409428336,
+  "runAttempt": 1,
+  "runURL": "https://github.com/Alexsvensson99/PkgLift/actions/runs/35409428336",
+  "pullRequest": 125,
+  "workflowConclusion": "failure",
+  "status": "failed-safety",
+  "failure": "scheme discovery mutated source",
+  "artifact": {
+    "manifestSHA256": "2a70599ac3e46cea856cdd36507604316a5ab577dff1d91b19f598e119639f5f",
+    "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "runAttempt": "1",
+    "runID": "35409428336",
+    "sha256": "92adcd886fd65d0903837a71b357649644fdb8876065d486ebb750501a1f8bff",
+    "sourceSHA": "8a936c2e299419fdcc1140d730926e3d35b5f4e8"
+  },
+  "implementation": {
+    "executionIntakeSHA256": "ba8acdbce8975d12e2e24db8db92414cce01c493226cfb97a1126ccc145bbd32",
+    "runnerSHA256": "046f128d5e3932289134d5f314ca9b0a6f378a12342f2b6548dbdca5f6d013a4",
+    "sharedRunnerSHA256": "911376e6a06d08689976e2104d6eb8b7aba152d5a6eee703ce458e95337ef970"
+  },
+  "summarySHA256": "98b72a08ea29612deb5800eae538161e4b57fdee5cf8dd8d5648e167c8f524cd",
+  "schemeDiscovery": {
+    "baseline-scheme-list": {
+      "afterIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "afterTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "beforeIndexTextSHA256": "3ce89a3b3fe605c3a6f864d65c9f915c3e709f817bb493b4a94ff8cd730a4442",
+      "beforeTreeSHA256": "cc35c1945bdb1943274d7b8a2634e4845b0fd86810fe5c803538105d94a639c4",
+      "changedPathCount": 2,
+      "changes": [
+        {
+          "after": {
+            "kind": "directory",
+            "mode": 511
+          },
+          "before": null,
+          "change": "added",
+          "path": "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm",
+          "pathSHA256": "71d148636a4dee803e7fa132a08ef60211f621e9577474ada7a022230de606f7",
+          "pathTruncated": false
+        },
+        {
+          "after": {
+            "kind": "directory",
+            "mode": 511
+          },
+          "before": null,
+          "change": "added",
+          "path": "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/configuration",
+          "pathSHA256": "f84a64695fb2d2b7a183a07012d58c82c273d0f5a5cef4468b11682abbaecc86",
+          "pathTruncated": false
+        }
+      ],
+      "changesTruncated": false,
+      "gitStatusDirty": false,
+      "gitStatusTextSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "indexChanged": false,
+      "schemaVersion": 1,
+      "treeChanged": true
+    }
+  },
+  "baselineBuild": "not-run",
+  "migration": "not-run",
+  "cocoaPodsRefresh": "not-run",
+  "refusalControls": [
+    {
+      "case": "firebaseui-project",
+      "status": "passed-refusal",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "binarySHA256": "92adcd886fd65d0903837a71b357649644fdb8876065d486ebb750501a1f8bff",
+      "pkgLiftSourceCommit": "8a936c2e299419fdcc1140d730926e3d35b5f4e8"
+    },
+    {
+      "case": "hammerspoon-workspace",
+      "status": "passed-refusal",
+      "sourceUnchanged": true,
+      "indexUnchanged": true,
+      "binarySHA256": "92adcd886fd65d0903837a71b357649644fdb8876065d486ebb750501a1f8bff",
+      "pkgLiftSourceCommit": "8a936c2e299419fdcc1140d730926e3d35b5f4e8"
+    }
+  ],
+  "testsExecuted": false,
+  "appLaunched": false,
+  "g3Closed": false,
+  "localSetupVerification": {
+    "status": "passed-local-setup-only",
+    "upstreamCommit": "fda54d347a0a8be11cf63e5eea76d0289e3a728d",
+    "bothCopiesIdentical": true,
+    "matchesHostedBeforeAndAfterTreeHashes": true,
+    "setup": {
+      "paths": [
+        "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm",
+        "ZBNetworkingDemo.xcworkspace/xcshareddata/swiftpm/configuration"
+      ],
+      "mode": 511,
+      "noFilesCreated": true,
+      "beforeTreeSHA256": "cc35c1945bdb1943274d7b8a2634e4845b0fd86810fe5c803538105d94a639c4",
+      "afterTreeSHA256": "4bc9d600ab2018a34b61bd6c497a98a9f6371e92d5d67110155b86c36ecd5418",
+      "indexUnchanged": true,
+      "worktreeClean": true
+    },
+    "originalUnchanged": true,
+    "xcodeExecuted": false,
+    "upstreamDependenciesInstalled": false
+  }
+}
