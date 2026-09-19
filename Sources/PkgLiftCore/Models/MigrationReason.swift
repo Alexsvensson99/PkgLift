@@ -45,6 +45,8 @@ public enum MigrationReasonCode: String, Sendable, Codable, CaseIterable {
     case targetSourceProfileIncomplete = "target_source_profile_incomplete"
     case targetSourceProfileEmpty = "target_source_profile_empty"
     case targetLanguageUnsupported = "target_language_unsupported"
+    case targetHeaderImportsRequireReview = "target_header_imports_require_review"
+    case targetHeaderImportEvidenceIncomplete = "target_header_import_evidence_incomplete"
     case targetSourceProfileMissing = "target_source_profile_missing"
     case consumerPlatformEvidenceInvalid = "consumer_platform_evidence_invalid"
     case targetPlatformEvidenceMissing = "target_platform_evidence_missing"

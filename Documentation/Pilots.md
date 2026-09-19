@@ -18,15 +18,15 @@ The `Pinned Pilots` workflow performs these phases:
 
 The read-only matrix does **not** run `pod install`, execute upstream scripts, apply a migration, push to the upstream repository, or receive repository secrets.
 
-The separately prepared [1.0 real-project qualification protocol](RealProjectQualification-1.0.md)
-selects AWS Grid Feed as a future positive partial-migration candidate, with
-FirebaseUI and Hammerspoon as read-only refusal controls. Its separate manual harness is prepared with source intake and acceptance criteria;
-it does not expand this workflow's execution boundary or supply new upstream
-build/migration evidence.
+The separate [1.0 real-project qualification](RealProjectQualification-1.0.md)
+records a completed AWS Grid Feed partial migration and two intentional refusal
+controls. Its recorded build evidence belongs to that exact run and prepared
+baseline. It does not expand this source-only workflow's execution boundary or
+make absent configuration in the pinned tree valid evidence for a new AUTO result.
 
 | Case | Repository and pinned commit | Verified outcome | Tracking |
 |---|---|---|---|
-| Positive | `aws-samples/amazon-ivs-grid-feed-for-ios-demo` at `5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d` | `SDWebImage` is `AUTO`; `AmazonIVSPlayer` remains non-automatic | #23 |
+| Missing generated settings | `aws-samples/amazon-ivs-grid-feed-for-ios-demo` at `5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d` | `SDWebImage` is `REVIEW` with exactly `target_header_import_evidence_incomplete`; both direct dependencies remain non-automatic | #23 |
 | Mixed | `ayseyurek/LoodosCase` at `407b65db02469467b3317ca8dee0d8676c7e673e` | Alamofire, Kingfisher, and the newly mapped `lottie-ios 3.2.2` are `AUTO`; the older `Firebase/RemoteConfig` is `REVIEW`, while other unsupported identities remain non-automatic | #24 |
 | Conservative | `Finb/V2ex-Swift` at `28ef39d2e5fc11d28bc79743ba2bc5f5594ba170` | dynamic Ruby and `post_install` force a mutation-free refusal; no direct entry becomes `AUTO` | #25 |
 | Tinode compatibility | `tinode/ios` at `a4db1251549c40b7aa4f269cd79234eb4c07baff` | 11 direct identities; dynamic Ruby and `post_install` keep every entry non-automatic | local batch `20260815` |
@@ -36,6 +36,15 @@ build/migration evidence.
 | Parenthesized CocoaPods example | `fastlane/fastlane` at `a9a72554e1f4d6658842d4f3a7b0ca236b5c1589` under `gym/examples/cocoapods` | literal `target('Example')` and `pod("HexColors")` are attributed exactly; the unmapped dependency remains `UNKNOWN` | #48 |
 | Project-only FirebaseUI example | `firebase/FirebaseUI-iOS` at `c30af73fee50724dcd9a3acf70548d3e58c86dc7` under `samples/swift` | explicit project selection works without a workspace; local pods remain blocked and `Firebase/Auth` remains `REVIEW` without complete version/project evidence | #48 |
 | Legacy Firebase Auth Quickstart | `firebase/snippets-ios` at `affc6b838d3dc3382ca741983dad489631d52b43` under `qs-snippets/LegacyAuthQuickstart` | direct Firebase mappings are found but remain `REVIEW` because top-level attribution and `use_frameworks!` prevent `AUTO` | #48 |
+
+The AWS pin references generated Pods xcconfigs that are absent from its tree.
+Its source-only report must therefore refuse AUTO; the validator requires the
+exact typed reason, two direct dependencies and an empty AUTO set. Loodos retains
+its positive classification expectations because its generated xcconfigs are
+checked in at the pinned commit. The mixed-language and partial-migration build
+jobs continue to require successful automatic migration and a final build.
+These regression expectations do not alter the separate real-project or G3
+qualification criteria or reinterpret their historical receipts.
 
 Hammerspoon and XcodeBenchmark independently exercise literal external Git sources at pinned public commits. Each case requires matching analysis and plan provenance plus stable reason codes for an unpinned dependency and an incomplete tagged dependency; both also require a complete no-`AUTO` result. The fastlane case directly exercises parenthesized literal syntax. FirebaseUI and the Legacy Auth Quickstart exercise explicit project-without-workspace selection and conservative refusal. No pilot expectation treats source provenance or a new registry mapping alone as sufficient for `AUTO`.
 

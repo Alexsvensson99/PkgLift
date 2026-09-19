@@ -322,6 +322,26 @@ else
   unless pilot_matrix.is_a?(Array) && !pilot_matrix.empty?
     errors << "#{pilot_workflow_path}: analyze matrix must have a non-empty include array"
   else
+    # Bind these distinct header-evidence outcomes to the reviewed inputs.
+    expected_header_pilots = {
+      "aws_grid_feed_source_only" => {
+        "repository" => "aws-samples/amazon-ivs-grid-feed-for-ios-demo",
+        "commit" => "5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d",
+        "root" => ".", "workspace" => "Grid Feed.xcworkspace", "project" => "Grid Feed.xcodeproj"
+      },
+      "mixed" => {
+        "repository" => "ayseyurek/LoodosCase",
+        "commit" => "407b65db02469467b3317ca8dee0d8676c7e673e",
+        "root" => ".", "workspace" => "LoodosCase.xcworkspace", "project" => "LoodosCase.xcodeproj"
+      }
+    }
+    expected_header_pilots.each do |case_name, expected|
+      entry = pilot_matrix.find { |candidate| candidate.is_a?(Hash) && candidate["case"] == case_name }
+      unless entry && expected.all? { |key, value| entry[key] == value }
+        errors << "#{pilot_workflow_path}: header-evidence pilot #{case_name} must retain its exact reviewed input"
+      end
+    end
+
     workflow_pilot_cases = []
     pilot_matrix.each_with_index do |entry, index|
       pilot_case = entry["case"] if entry.is_a?(Hash)

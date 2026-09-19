@@ -118,8 +118,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Positive controlled migration
-            case: positive
+          - name: AWS Grid Feed source-only safety
+            case: aws_grid_feed_source_only
             issue: '23'
             repository: aws-samples/amazon-ivs-grid-feed-for-ios-demo
             commit: 5573a57d4cb7e10f7ad86f95c548ddfbeabc6e1d
@@ -274,7 +274,7 @@ jobs:
           set -euo pipefail
           [[ "$BUILD_RESULT" == 'success' ]] || exit 1
           [[ "$ANALYZE_RESULT" == 'success' ]] || exit 1
-          echo 'All pinned read-only pilots passed.'
+          echo 'All pinned read-only expectations passed.'
 
   migrate-and-build:
     name: Mixed-Language Migration and Build

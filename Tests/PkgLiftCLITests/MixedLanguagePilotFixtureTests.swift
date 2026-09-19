@@ -230,7 +230,8 @@ final class MixedLanguagePilotFixtureTests: XCTestCase {
             entry.targetSourceProfile,
             TargetSourceProfile(
                 languages: [.swift, .objectiveC],
-                completeness: .complete
+                completeness: .complete,
+                headerImports: .clear
             )
         )
 

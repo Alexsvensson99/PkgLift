@@ -16,6 +16,21 @@ final class ProjectAnalysisTests: XCTestCase {
         XCTAssertEqual(decoded, profile)
     }
 
+    func testHeaderEvidenceIsAdditiveAndPortableWithoutSourceDetails() throws {
+        let legacy = try JSONDecoder().decode(TargetSourceProfile.self, from:
+            Data(#"{"languages":["swift"],"completeness":"complete"}"#.utf8)
+        )
+        XCTAssertNil(legacy.headerImports)
+        XCTAssertTrue(legacy.hasAutomaticHeaderImportEvidence)
+        let profile = TargetSourceProfile(
+            languages: [.objectiveC], completeness: .complete, headerImports: .requiresReview
+        )
+        let output = try PortableJSON().render(JSONEncoder().encode(profile))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: output) as? [String: Any])
+        XCTAssertEqual(Set(object.keys), ["languages", "completeness", "headerImports", "portableOutput"])
+        XCTAssertEqual(object["headerImports"] as? String, "requiresReview")
+    }
+
     func testTargetInfoDecodesLegacyJSONWithoutSourceProfile() throws {
         let data = Data(
             #"{"name":"App","type":"application","platform":"iOS","deploymentTarget":"16.0"}"#.utf8

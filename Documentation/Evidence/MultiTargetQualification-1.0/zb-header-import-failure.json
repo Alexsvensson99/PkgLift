@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "runID": 35463129448,
+  "runAttempt": 1,
+  "runURL": "https://github.com/Alexsvensson99/PkgLift/actions/runs/35463129448",
+  "mergeCommit": "522c56a56ff18310644ae44ec88700f550c83dd9",
+  "pullRequest": 131,
+  "status": "failed-migration",
+  "summarySHA256": "25b9b1fdc86a88989ca66c6ee50f25c6d268e08d9c1faba5d69af9e9cfe6a7d3",
+  "artifact": {
+    "manifestSHA256": "f532d49d6abc1dfdee53623f770f347f5a0c7cb240d72adb4dfac5aef02b685b",
+    "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "runAttempt": "1",
+    "runID": "35463129448",
+    "sha256": "99bdf800e7337d2ff84521f84ddf182115eb10e00fb988a8a2a9e21ed60c1875",
+    "sourceSHA": "522c56a56ff18310644ae44ec88700f550c83dd9"
+  },
+  "diagnosis": {
+    "evidenceType": "Exact SHA256 match of public-source path and reconstructed compiler message to hosted diagnostic metadata",
+    "relativePath": "ZBNetworkingDemo/SettingViewController.m",
+    "line": 12,
+    "column": 9,
+    "sourceImport": "#import <SDImageCache.h>",
+    "message": "'SDImageCache.h' file not found (in target 'ZBNetworkingDemo' from project 'ZBNetworkingDemo')",
+    "messageSHA256": "427d318dd61f7edfcd79743a2c560cc7306b739c522e25f8c9143c0065752168",
+    "pathSHA256": "43540f87111a5d2e2b5aa4bdcb31f9d7702d247903897de99370782694242f87",
+    "compilerTemplateReference": "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-17.0.6/clang/include/clang/Basic/DiagnosticLexKinds.td",
+    "conclusion": "The migrated app compilation cannot find the flat SDImageCache.h import. Baseline CocoaPods build passed.",
+    "limitations": [
+      "No raw hosted compiler log was downloaded.",
+      "No fix has been tested; other errors may appear after this first error is fixed.",
+      "The unclassified category resulted from the Xcode target suffix; the message is recovered by exact hash match."
+    ]
+  },
+  "sourceMutationCheckCount": 19,
+  "allObservedSourceIndexStatusChecksUnchanged": true,
+  "g3Closed": false,
+  "testsExecuted": false,
+  "appLaunched": false
+}

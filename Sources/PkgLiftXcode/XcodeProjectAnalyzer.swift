@@ -121,7 +121,7 @@ public struct XcodeProjectAnalyzer: Sendable {
                 type: targetType,
                 platform: environment?.platform,
                 deploymentTarget: environment?.deploymentTarget,
-                sourceProfile: sourceProfile(for: target)
+                sourceProfile: sourceProfile(for: target, project: pbxProject, projectPath: projectPath, rootURL: rootURL)
             )
             targetInfos.append(targetInfo)
             
@@ -302,50 +302,129 @@ public struct XcodeProjectAnalyzer: Sendable {
         return ["bootstrap", "build", "copy-frameworks", "update"].contains(words[1])
     }
 
-    /// Builds a conservative profile without opening or reading source files.
-    ///
-    /// A synchronized root can implicitly contribute sources that are absent
-    /// from the traditional sources build phase, so its presence makes the
-    /// PBX-only profile incomplete.
-    private func sourceProfile(for target: PBXNativeTarget) -> TargetSourceProfile {
+    /// Language membership remains PBX-derived; header evidence reads only
+    /// bounded, contained compiled C-family sources and their local headers.
+    private func sourceProfile(
+        for target: PBXNativeTarget,
+        project: PBXProject,
+        projectPath: Path,
+        rootURL: URL
+    ) -> TargetSourceProfile {
         var languages: [SourceLanguage] = []
         var completeness: SourceProfileCompleteness = .complete
+        var sourceURLs: [URL] = []
+        var importsIncomplete = false
 
         if target.fileSystemSynchronizedGroups?.isEmpty == false {
             completeness = .incomplete
+            importsIncomplete = true
         }
-
         do {
-            guard let sourcesBuildPhase = try target.sourcesBuildPhase() else {
-                return TargetSourceProfile(
-                    languages: languages,
-                    completeness: completeness
-                )
-            }
-
-            for buildFile in sourcesBuildPhase.files ?? [] {
+            for buildFile in try target.sourcesBuildPhase()?.files ?? [] {
                 if Self.hasNonEmptyCompilerFlags(buildFile) {
-                    // Per-file flags can override the language selected by the
-                    // PBX file type (for example, `-x objective-c++`). Parsing
-                    // arbitrary compiler arguments safely is outside this
-                    // PBX-only profile, so any concrete override fails closed.
                     completeness = .incomplete
+                    importsIncomplete = true
                 }
-                guard let fileReference = buildFile.file as? PBXFileReference,
-                      let fileType = fileReference.explicitFileType ?? fileReference.lastKnownFileType,
+                guard let reference = buildFile.file as? PBXFileReference,
+                      let fileType = reference.explicitFileType ?? reference.lastKnownFileType,
                       let language = Self.sourceLanguage(forPBXFileType: fileType) else {
                     completeness = .incomplete
+                    importsIncomplete = true
                     continue
                 }
                 languages.append(language)
+                if language != .swift {
+                    if let path = try reference.fullPath(sourceRoot: projectPath.parent()),
+                       !path.string.contains("$("), !path.string.contains("${") {
+                        sourceURLs.append(URL(fileURLWithPath: path.string))
+                    } else {
+                        importsIncomplete = true
+                    }
+                }
             }
         } catch {
             completeness = .incomplete
+            importsIncomplete = true
         }
 
+        // Prefix/bridging headers may introduce imports even in a Swift target.
+        // Inspect every configuration conservatively, including inherited values.
+        let projectConfigurations = project.buildConfigurationList?.buildConfigurations ?? []
+        let targetConfigurations = target.buildConfigurationList?.buildConfigurations ?? []
+        if !languages.isEmpty,
+           targetConfigurations.isEmpty || projectConfigurations.isEmpty
+            || targetConfigurations.contains(where: { targetConfiguration in
+                projectConfigurations.filter { $0.name == targetConfiguration.name }.count != 1
+            }) {
+            importsIncomplete = true
+        }
+        let configurations = projectConfigurations + targetConfigurations
+        for configuration in configurations {
+            let base = baseConfigurationSettings(
+                for: configuration, projectPath: projectPath, rootURL: rootURL,
+                settingsOfInterest: Self.headerImportSettings
+            )
+            guard case .known(let baseSettings) = base else {
+                importsIncomplete = true
+                continue
+            }
+            for settings in [baseSettings, configuration.buildSettings] {
+                for (key, setting) in settings where Self.headerImportSettings.contains(where: {
+                    key == $0 || isVariant(key, of: $0)
+                }) {
+                    guard Self.headerImportSettings.contains(key) else {
+                        importsIncomplete = true
+                        continue
+                    }
+                    if key.hasPrefix("OTHER_") {
+                        // Admit only a bounded grammar of import-neutral defines
+                        // and CocoaPods module-map flags, never arbitrary options.
+                        let rawValue: String
+                        switch setting {
+                        case .string(let value): rawValue = value
+                        case .array(let values): rawValue = values.joined(separator: " ")
+                        }
+                        if !HeaderImportCompilerFlags.accepts(value: rawValue, setting: key) {
+                            importsIncomplete = true
+                        }
+                        continue
+                    }
+                    guard case .string(let rawValue) = setting else {
+                        importsIncomplete = true
+                        continue
+                    }
+                    let value = normalizedSettingValue(rawValue)
+                    if value.isEmpty || value == "$(inherited)" { continue }
+                    let expanded = value
+                        .replacingOccurrences(of: "$(SRCROOT)", with: projectPath.parent().string)
+                        .replacingOccurrences(of: "${SRCROOT}", with: projectPath.parent().string)
+                        .replacingOccurrences(of: "$(PROJECT_DIR)", with: projectPath.parent().string)
+                        .replacingOccurrences(of: "${PROJECT_DIR}", with: projectPath.parent().string)
+                    guard !expanded.contains("$("), !expanded.contains("${") else {
+                        importsIncomplete = true
+                        continue
+                    }
+                    let path = Path(expanded)
+                    sourceURLs.append(URL(fileURLWithPath:
+                        (path.isAbsolute ? path : projectPath.parent() + path).string
+                    ))
+                }
+            }
+        }
+        let inspectedImports = HeaderImportInspector().inspect(files: sourceURLs, root: rootURL)
+        let headerImports: TargetHeaderImportStatus?
+        if inspectedImports == .requiresReview {
+            // Preserve an actionable finding even if another input is unknown.
+            headerImports = .requiresReview
+        } else if importsIncomplete || inspectedImports == .incomplete {
+            headerImports = .incomplete
+        } else if languages.contains(where: { $0 != .swift }) || !sourceURLs.isEmpty {
+            headerImports = .clear
+        } else {
+            headerImports = nil
+        }
         return TargetSourceProfile(
-            languages: languages,
-            completeness: completeness
+            languages: languages, completeness: completeness, headerImports: headerImports
         )
     }
 
@@ -374,7 +453,7 @@ public struct XcodeProjectAnalyzer: Sendable {
 
     private func sourceProfileSortKey(_ profile: TargetSourceProfile?) -> [String] {
         guard let profile else { return [""] }
-        return [profile.completeness.rawValue] + profile.languages.map(\.rawValue)
+        return [profile.completeness.rawValue, profile.headerImports?.rawValue ?? ""] + profile.languages.map(\.rawValue)
     }
 
     /// Resolves the platform settings that Xcode applies to every target configuration.
@@ -489,7 +568,8 @@ public struct XcodeProjectAnalyzer: Sendable {
     private func baseConfigurationSettings(
         for configuration: XCBuildConfiguration,
         projectPath: Path,
-        rootURL: URL
+        rootURL: URL,
+        settingsOfInterest: Set<String> = Self.relevantEnvironmentSettings
     ) -> BuildSettingsLayer {
         let configurationPath: Path?
 
@@ -516,7 +596,8 @@ public struct XcodeProjectAnalyzer: Sendable {
                 at: configurationPath,
                 rootURL: rootURL,
                 activeIncludes: &activeIncludes,
-                readBudget: &readBudget
+                readBudget: &readBudget,
+                settingsOfInterest: settingsOfInterest
             )
             return .known(settings)
         } catch {
@@ -534,7 +615,8 @@ public struct XcodeProjectAnalyzer: Sendable {
         at path: Path,
         rootURL: URL,
         activeIncludes: inout Set<String>,
-        readBudget: inout XCConfigReadBudget
+        readBudget: inout XCConfigReadBudget,
+        settingsOfInterest: Set<String>
     ) throws -> BuildSettings {
         let canonicalURL = URL(fileURLWithPath: path.string)
             .standardizedFileURL
@@ -595,7 +677,7 @@ public struct XcodeProjectAnalyzer: Sendable {
             guard !line.isEmpty else { continue }
 
             if line.hasSuffix("\\") {
-                if line.hasPrefix("#include") || relevantSettingPrefix(in: line) != nil {
+                if line.hasPrefix("#include") || relevantSettingPrefix(in: line, settingsOfInterest: settingsOfInterest) != nil {
                     throw XCConfigResolutionError.unsupportedRelevantSyntax
                 }
                 continuingUnrelatedSetting = true
@@ -611,7 +693,7 @@ public struct XcodeProjectAnalyzer: Sendable {
                 throw XCConfigResolutionError.unsupportedDirective
             }
 
-            guard let settingName = relevantSettingPrefix(in: line) else { continue }
+            guard let settingName = relevantSettingPrefix(in: line, settingsOfInterest: settingsOfInterest) else { continue }
             guard !line.contains("/*"), !line.contains("*/") else {
                 throw XCConfigResolutionError.unsupportedRelevantSyntax
             }
@@ -650,7 +732,8 @@ public struct XcodeProjectAnalyzer: Sendable {
                     at: includePath,
                     rootURL: rootURL,
                     activeIncludes: &activeIncludes,
-                    readBudget: &readBudget
+                    readBudget: &readBudget,
+                    settingsOfInterest: settingsOfInterest
                 )
                 settings.merge(included, uniquingKeysWith: { _, included in included })
             } else if !directive.optional {
@@ -704,8 +787,8 @@ public struct XcodeProjectAnalyzer: Sendable {
         return resolvedPath.exists ? resolvedPath : nil
     }
 
-    private func relevantSettingPrefix(in line: String) -> String? {
-        for settingName in Self.relevantEnvironmentSettings where line.hasPrefix(settingName) {
+    private func relevantSettingPrefix(in line: String, settingsOfInterest: Set<String>) -> String? {
+        for settingName in settingsOfInterest where line.hasPrefix(settingName) {
             let remainder = line.dropFirst(settingName.count)
             guard let first = remainder.first else { return settingName }
             if first.isWhitespace || first == "=" || first == "[" || first == "+" || first == "?" {
@@ -860,6 +943,11 @@ private extension XcodeProjectAnalyzer {
     static let relevantEnvironmentSettings = Set(
         deploymentTargetSettings.map(\.0) + ["SDKROOT"]
     )
+
+    static let headerImportSettings: Set<String> = [
+        "GCC_PREFIX_HEADER", "SWIFT_OBJC_BRIDGING_HEADER",
+        "OTHER_CFLAGS", "OTHER_CPLUSPLUSFLAGS", "OTHER_SWIFT_FLAGS",
+    ]
 
     static let maximumXCConfigFileBytes = 1_048_576
     static let maximumXCConfigFileCount = 64
