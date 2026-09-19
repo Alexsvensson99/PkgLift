@@ -25,7 +25,7 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
 AWS_PATH = ROOT / "Scripts/run-real-project-aws.py"
 INTAKE = ROOT / "Documentation/Evidence/MultiTargetQualification-1.0/zb-execution-intake.json"
-INTAKE_SHA256 = "5a7031b2021cb5c6a381bb7e5f73c65bceba87fa89e28ba5f11077d2a3fa4f2a"
+INTAKE_SHA256 = "4384db27757bf1095fd368d13158a88e89fd14ccefefde85acc04b0dcf126c7d"
 _SPEC = importlib.util.spec_from_file_location("pkglift_g3_aws_shared", AWS_PATH)
 assert _SPEC and _SPEC.loader
 shared = importlib.util.module_from_spec(_SPEC)
@@ -49,8 +49,12 @@ SOURCE_TREE = "b8718f5fe44b0b4c153827892eb0606176747267"
 SOURCE_LICENSE = "MIT"
 PROJECT = "ZBNetworkingDemo.xcodeproj"
 WORKSPACE = "ZBNetworkingDemo.xcworkspace"
-SWIFTPM_SETUP_DIRECTORIES = (f"{WORKSPACE}/xcshareddata/swiftpm",
-                            f"{WORKSPACE}/xcshareddata/swiftpm/configuration")
+SWIFTPM_SETUP_DIRECTORIES = (
+    f"{PROJECT}/project.xcworkspace/xcshareddata/swiftpm",
+    f"{PROJECT}/project.xcworkspace/xcshareddata/swiftpm/configuration",
+    f"{WORKSPACE}/xcshareddata/swiftpm",
+    f"{WORKSPACE}/xcshareddata/swiftpm/configuration",
+)
 SWIFTPM_SETUP_MODE = 0o777
 TARGET = "ZBNetworkingDemo"
 SIBLINGS = ("ZBNetworkingDemoTests", "ZBNetworkingDemoUITests")
@@ -163,7 +167,7 @@ def validate_execution_intake() -> dict[str, Any]:
                           "generatedActions": False}, "execution intake scheme promotion changed", "blocked-input")
     require(value.get("implementationReview", {}).get("swiftPMDirectorySetup") == {
         "paths": list(SWIFTPM_SETUP_DIRECTORIES), "mode": SWIFTPM_SETUP_MODE,
-        "evidenceRunID": "35409428336", "identicalInBothCopies": True,
+        "evidenceRunIDs": ["35409428336", "35443019152"], "identicalInBothCopies": True,
         "noFilesCreated": True, "rejectExistingPaths": True,
     }, "execution intake SwiftPM directory setup changed", "blocked-input")
     return {"sha256": INTAKE_SHA256, "schemaVersion": 1, "decision": value.get("decision")}
@@ -714,10 +718,14 @@ class Runner(shared.Runner):
         return {"name": TARGET, "count": 1, "generated": False}
 
     def prepare_swiftpm_directories(self, root: Path) -> dict[str, Any]:
-        """Reproduce the two observed directory entries, with no files and an empty leaf."""
+        """Reproduce only observed directories in the outer and app project workspaces."""
         before = tree_snapshot(root)
+        existing_parents = {parent.as_posix()
+                            for relative in SWIFTPM_SETUP_DIRECTORIES
+                            for parent in Path(relative).parents
+                            if parent != Path(".") and parent.as_posix() not in SWIFTPM_SETUP_DIRECTORIES}
         require(all(before.get(path, {}).get("kind") == "directory"
-                    for path in (WORKSPACE, f"{WORKSPACE}/xcshareddata")),
+                    for path in existing_parents),
                 "SwiftPM setup parent missing or symlinked", "blocked-input")
         require(all(path not in before for path in SWIFTPM_SETUP_DIRECTORIES),
                 "SwiftPM setup path unexpectedly exists", "blocked-input")
@@ -732,7 +740,7 @@ class Runner(shared.Runner):
         require(changed_paths(before, after) == list(SWIFTPM_SETUP_DIRECTORIES)
                 and all(after[path] == {"kind": "directory", "mode": SWIFTPM_SETUP_MODE}
                         for path in SWIFTPM_SETUP_DIRECTORIES),
-                "SwiftPM setup changed more than the two reviewed directories", "failed-safety")
+                "SwiftPM setup changed more than the reviewed directories", "failed-safety")
         require(self.git(root, ["ls-files", "--stage", "-z"]) == index
                 and not self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]),
                 "SwiftPM setup changed Git state", "failed-safety")
