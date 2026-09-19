@@ -25,7 +25,7 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
 AWS_PATH = ROOT / "Scripts/run-real-project-aws.py"
 INTAKE = ROOT / "Documentation/Evidence/MultiTargetQualification-1.0/zb-execution-intake.json"
-INTAKE_SHA256 = "ba8acdbce8975d12e2e24db8db92414cce01c493226cfb97a1126ccc145bbd32"
+INTAKE_SHA256 = "5a7031b2021cb5c6a381bb7e5f73c65bceba87fa89e28ba5f11077d2a3fa4f2a"
 _SPEC = importlib.util.spec_from_file_location("pkglift_g3_aws_shared", AWS_PATH)
 assert _SPEC and _SPEC.loader
 shared = importlib.util.module_from_spec(_SPEC)
@@ -49,6 +49,9 @@ SOURCE_TREE = "b8718f5fe44b0b4c153827892eb0606176747267"
 SOURCE_LICENSE = "MIT"
 PROJECT = "ZBNetworkingDemo.xcodeproj"
 WORKSPACE = "ZBNetworkingDemo.xcworkspace"
+SWIFTPM_SETUP_DIRECTORIES = (f"{WORKSPACE}/xcshareddata/swiftpm",
+                            f"{WORKSPACE}/xcshareddata/swiftpm/configuration")
+SWIFTPM_SETUP_MODE = 0o777
 TARGET = "ZBNetworkingDemo"
 SIBLINGS = ("ZBNetworkingDemoTests", "ZBNetworkingDemoUITests")
 POD_VERSIONS = {"AFNetworking": "4.0.1", "SDWebImage": "5.8.4"}
@@ -158,6 +161,11 @@ def validate_execution_intake() -> dict[str, Any]:
     require(promotion == {"source": SCHEME_SOURCE, "destination": SCHEME_DESTINATION,
                           "sha256": SCHEME_SHA256, "identicalInBothCopies": True,
                           "generatedActions": False}, "execution intake scheme promotion changed", "blocked-input")
+    require(value.get("implementationReview", {}).get("swiftPMDirectorySetup") == {
+        "paths": list(SWIFTPM_SETUP_DIRECTORIES), "mode": SWIFTPM_SETUP_MODE,
+        "evidenceRunID": "35409428336", "identicalInBothCopies": True,
+        "noFilesCreated": True, "rejectExistingPaths": True,
+    }, "execution intake SwiftPM directory setup changed", "blocked-input")
     return {"sha256": INTAKE_SHA256, "schemaVersion": 1, "decision": value.get("decision")}
 
 
@@ -701,6 +709,33 @@ class Runner(shared.Runner):
                 "scheme discovery mutated source", "failed-safety")
         return {"name": TARGET, "count": 1, "generated": False}
 
+    def prepare_swiftpm_directories(self, root: Path) -> dict[str, Any]:
+        """Reproduce the two observed directory entries, with no files and an empty leaf."""
+        before = tree_snapshot(root)
+        require(all(before.get(path, {}).get("kind") == "directory"
+                    for path in (WORKSPACE, f"{WORKSPACE}/xcshareddata")),
+                "SwiftPM setup parent missing or symlinked", "blocked-input")
+        require(all(path not in before for path in SWIFTPM_SETUP_DIRECTORIES),
+                "SwiftPM setup path unexpectedly exists", "blocked-input")
+        index = self.git(root, ["ls-files", "--stage", "-z"])
+        require(not self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]),
+                "SwiftPM setup source is dirty", "failed-safety")
+        for relative in SWIFTPM_SETUP_DIRECTORIES:
+            path = root / relative
+            path.mkdir()  # No parents/exist_ok: never adopt an existing entry.
+            path.chmod(SWIFTPM_SETUP_MODE)  # Exact observed mode, independent of umask.
+        after = tree_snapshot(root)
+        require(changed_paths(before, after) == list(SWIFTPM_SETUP_DIRECTORIES)
+                and all(after[path] == {"kind": "directory", "mode": SWIFTPM_SETUP_MODE}
+                        for path in SWIFTPM_SETUP_DIRECTORIES),
+                "SwiftPM setup changed more than the two reviewed directories", "failed-safety")
+        require(self.git(root, ["ls-files", "--stage", "-z"]) == index
+                and not self.git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]),
+                "SwiftPM setup changed Git state", "failed-safety")
+        return {"paths": list(SWIFTPM_SETUP_DIRECTORIES), "mode": SWIFTPM_SETUP_MODE,
+                "noFilesCreated": True, "beforeTreeSHA256": tree_digest(before),
+                "afterTreeSHA256": tree_digest(after), "indexUnchanged": True, "worktreeClean": True}
+
     def prepare_portable_scheme(self, root: Path, label: str) -> dict[str, Any]:
         before = tree_snapshot(root)
         source = root / SCHEME_SOURCE
@@ -841,6 +876,10 @@ class Runner(shared.Runner):
             summary["migrationSchemePreparation"] = self.prepare_portable_scheme(migration, "migration-scheme-prepare")
             require(summary["baselineSchemePreparation"]["tree"] == summary["migrationSchemePreparation"]["tree"],
                     "baseline and migration scheme setup trees differ", "failed-safety")
+            summary["baselineDirectoryPreparation"] = self.prepare_swiftpm_directories(baseline)
+            summary["migrationDirectoryPreparation"] = self.prepare_swiftpm_directories(migration)
+            require(summary["baselineDirectoryPreparation"] == summary["migrationDirectoryPreparation"],
+                    "baseline and migration directory setup evidence differs", "failed-safety")
             summary["baselineScheme"] = self.discover_scheme(baseline, "baseline-scheme-list")
             self.discover_scheme(migration, "migration-scheme-list")
             summary["baselinePayload"] = self.validate_pod_payload(baseline, set(POD_VERSIONS))

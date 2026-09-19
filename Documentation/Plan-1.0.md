@@ -128,8 +128,10 @@ revision for a separate fail-closed, iOS 15 compile-only qualification. Local
 analysis confirms one AUTO dependency; disposable plan/dry-run/apply preserves
 sibling targets and user data. The first hosted attempt on main `45c26db`
 stopped at scheme discovery because Xcode changed the source snapshot; it did
-not reach baseline build or migration. A bounded diagnostic follow-up preserves
-the strict zero-mutation guard. Hosted CocoaPods refresh, baseline and sibling-target
+not reach baseline build or migration. Diagnostic run `35409428336` on main
+`8a936c2` identified exactly two added SwiftPM directories with no file or Git-index
+changes. The next bounded setup prepares those directories in both copies before
+the unchanged zero-mutation guard. Hosted CocoaPods refresh, baseline and sibling-target
 builds remain pending. Additional toolchain/shape evidence remains open.
 Deliver an evidence matrix separating read-only, repository-fixture and real-project results.
 

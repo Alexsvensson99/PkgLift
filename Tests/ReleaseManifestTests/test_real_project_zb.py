@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import tempfile
 import unittest
 from contextlib import ExitStack
@@ -153,6 +154,16 @@ class SchemeDiscoveryTests(unittest.TestCase):
             patches.enter_context(patch.object(runner, "clone_source",
                                                side_effect=lambda root, _label: root.mkdir() or {}))
             patches.enter_context(patch.object(runner, "prepare_portable_scheme", return_value={"tree": "same"}))
+            setup = patches.enter_context(patch.object(runner, "prepare_swiftpm_directories",
+                                                       return_value={"afterTreeSHA256": "same"}))
+            original_execute = runner.execute.side_effect
+
+            def execute_after_setup(*args, **kwargs):
+                self.assertEqual([call.args[0].name for call in setup.call_args_list],
+                                 ["baseline-source", "migration-source"])
+                return original_execute(*args, **kwargs)
+
+            runner.execute.side_effect = execute_after_setup
             patches.enter_context(patch.object(zb, "validate_execution_intake", return_value={}))
             original_is_file = Path.is_file
             patches.enter_context(patch.object(Path, "is_file",
@@ -189,6 +200,109 @@ class SchemeDiscoveryTests(unittest.TestCase):
         self.assertEqual(len(result["changes"]), 64)
         self.assertTrue(all(row["pathTruncated"] and len(row["path"]) == 1024 for row in result["changes"]))
         self.assertEqual(result["afterTreeSHA256"], zb.tree_digest(after))
+
+
+class SwiftPMDirectorySetupTests(unittest.TestCase):
+    def runner(self, root):
+        runner = zb.Runner({"binary": root / "pkglift", "output": root / "output", "runnerTemp": root}, 2)
+        runner.git = Mock(side_effect=["index", "", "index", ""])
+        return runner
+
+    def test_mismatched_copy_setup_stops_before_discovery(self):
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as patches:
+            root = Path(directory); runner = self.runner(root)
+            contract = {"artifact": {}}
+            for method in ("command_env", "environment_gate", "fetch_inputs", "seed_specs_cache", "clone_source"):
+                patches.enter_context(patch.object(runner, method, return_value={}))
+            patches.enter_context(patch.object(runner, "prepare_portable_scheme", return_value={"tree": "same"}))
+            patches.enter_context(patch.object(runner, "prepare_swiftpm_directories", side_effect=[
+                {"afterTreeSHA256": "same", "beforeTreeSHA256": "one"},
+                {"afterTreeSHA256": "same", "beforeTreeSHA256": "different"}]))
+            discover = patches.enter_context(patch.object(runner, "discover_scheme"))
+            patches.enter_context(patch.object(zb, "validate_execution_intake", return_value={}))
+            original_is_file = Path.is_file
+            patches.enter_context(patch.object(Path, "is_file",
+                lambda path: str(path) == "/usr/bin/sandbox-exec" or original_is_file(path)))
+            with self.assertRaises(zb.QualificationError) as error: runner.run(contract)
+            self.assertEqual(error.exception.outcome, "failed-safety")
+            discover.assert_not_called()
+
+    def test_exact_setup_in_both_copies_is_identical_despite_restrictive_umask(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshots = []
+            for name, mask in [("baseline", 0o077), ("migration", 0o022)]:
+                root = Path(directory) / name
+                (root / zb.WORKSPACE / "xcshareddata").mkdir(parents=True)
+                before = zb.tree_snapshot(root)
+                runner = self.runner(root)
+                old = os.umask(mask)
+                try:
+                    result = runner.prepare_swiftpm_directories(root)
+                finally:
+                    os.umask(old)
+                after = zb.tree_snapshot(root)
+                self.assertEqual(zb.changed_paths(before, after), list(zb.SWIFTPM_SETUP_DIRECTORIES))
+                self.assertTrue(result["noFilesCreated"] and result["indexUnchanged"] and result["worktreeClean"])
+                self.assertEqual(list((root / zb.SWIFTPM_SETUP_DIRECTORIES[-1]).iterdir()), [])
+                for path in zb.SWIFTPM_SETUP_DIRECTORIES:
+                    self.assertEqual(after[path], {"kind": "directory", "mode": 0o777})
+                snapshots.append(result)
+            self.assertEqual(snapshots[0], snapshots[1])
+
+    def test_rejects_any_existing_setup_path_without_modifying_it(self):
+        for kind in ("empty-directory", "nonempty-directory", "file", "symlink"):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                parent = root / zb.WORKSPACE / "xcshareddata"; parent.mkdir(parents=True)
+                path = root / zb.SWIFTPM_SETUP_DIRECTORIES[0]
+                if kind.endswith("directory"):
+                    path.mkdir()
+                    if kind == "nonempty-directory": (path / "keep").write_text("keep")
+                elif kind == "file": path.write_text("keep")
+                else: path.symlink_to("missing")
+                before = zb.tree_snapshot(root)
+                runner = self.runner(root)
+                with self.assertRaises(zb.QualificationError): runner.prepare_swiftpm_directories(root)
+                self.assertEqual(zb.tree_snapshot(root), before)
+                runner.git.assert_not_called()
+
+    def test_rejects_symlinked_parent_without_writing_outside_copy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "source"; root.mkdir()
+            outside = Path(directory) / "outside"; (outside / "xcshareddata").mkdir(parents=True)
+            (root / zb.WORKSPACE).symlink_to(outside, target_is_directory=True)
+            before = zb.tree_snapshot(Path(directory))
+            with self.assertRaises(zb.QualificationError): self.runner(root).prepare_swiftpm_directories(root)
+            self.assertEqual(zb.tree_snapshot(Path(directory)), before)
+
+    def test_rejects_unexpected_extra_file_during_setup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); (root / zb.WORKSPACE / "xcshareddata").mkdir(parents=True)
+            original = Path.mkdir
+
+            def mkdir(path, *args, **kwargs):
+                original(path, *args, **kwargs)
+                if path.name == "configuration": (path / "unexpected").write_text("extra")
+
+            with patch.object(Path, "mkdir", mkdir), self.assertRaises(zb.QualificationError) as error:
+                self.runner(root).prepare_swiftpm_directories(root)
+            self.assertEqual(error.exception.outcome, "failed-safety")
+
+    def test_discovery_still_rejects_file_created_inside_prepared_directories(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); (root / zb.WORKSPACE / "xcshareddata").mkdir(parents=True)
+            runner = self.runner(root); runner.prepare_swiftpm_directories(root)
+            runner.git = Mock(side_effect=["index", "index", "?? extra\0"])
+
+            def execute(*_args, **_kwargs):
+                (root / zb.SWIFTPM_SETUP_DIRECTORIES[-1] / "extra").write_text("not allowed")
+                return {"workspace": {"schemes": [zb.TARGET]}}
+
+            runner.execute = Mock(side_effect=execute)
+            with self.assertRaises(zb.QualificationError) as error:
+                runner.discover_scheme(root, "probe")
+            self.assertEqual(error.exception.outcome, "failed-safety")
+            self.assertEqual(runner.scheme_discovery["probe"]["changedPathCount"], 1)
 
 
 class PlanTests(unittest.TestCase):
