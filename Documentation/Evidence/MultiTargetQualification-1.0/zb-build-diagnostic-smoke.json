@@ -1,0 +1,57 @@
+{
+  "diagnostic": {
+    "matchedCount": 1,
+    "policy": {
+      "maxLineBytes": 8192,
+      "maxRows": 20,
+      "maxRowsPerStream": 10,
+      "maxScanBytesPerStream": 8388608,
+      "phase": "failed-final-build",
+      "rawMessages": false,
+      "rawPaths": false,
+      "sourceExcerpts": false,
+      "version": 1
+    },
+    "rows": [
+      {
+        "category": "header-not-found",
+        "column": 9,
+        "line": 1,
+        "lineSHA256": "c9de3eb288b2707865bad9d85e94e136d994726960b504050ab060898dcf56e3",
+        "messageSHA256": "0d41dbf3a56036f085c461025419b628538246d676605abd2fd02e0a23f2992a",
+        "occurrences": 1,
+        "pathSHA256": "6fe37e70d621bbfebd9ffed373065244e2fd45495bcc6df8c48adcd5f9dfa2a0",
+        "pathScope": "project",
+        "reviewedSubject": "UIImageView+WebCache.h",
+        "stream": "stderr",
+        "subjectSHA256": "7360f9661dcf7b71d5a54796738a1f0d47ab3c2a1abe0bf82da1b3f00a2f5838"
+      }
+    ],
+    "rowsTruncated": false,
+    "streams": {
+      "stderr": {
+        "bytes": 282,
+        "captureStatus": "complete",
+        "oversizedLines": 0,
+        "scanLimited": false,
+        "scannedBytes": 282,
+        "sha256": "4aa3d40ac12661560bdc031c375f7cf9c09fa41e4259ea26a846566a07a9beb2"
+      },
+      "stdout": {
+        "bytes": 0,
+        "captureStatus": "complete",
+        "oversizedLines": 0,
+        "scanLimited": false,
+        "scannedBytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "unknownAggregateSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "unknownDiagnosticCount": 0
+  },
+  "originalOutcome": "failed-migration",
+  "rawLogsRemainPrivate": true,
+  "schemaVersion": 1,
+  "scope": "Intentional isolated clang syntax-check failure; not a ZBNetworking build or hosted reproduction",
+  "scriptSHA256": "1b3146794f00b6ee2d3fcc4474bab262eab85c5ebc67a9f55dc0936502e9ccc8"
+}

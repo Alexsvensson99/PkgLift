@@ -284,6 +284,17 @@
         "35409428336",
         "35443019152"
       ]
+    },
+    "finalBuildDiagnosticPolicy": {
+      "version": 1,
+      "phase": "failed-final-build",
+      "maxRows": 20,
+      "maxScanBytesPerStream": 8388608,
+      "maxLineBytes": 8192,
+      "rawMessages": false,
+      "rawPaths": false,
+      "sourceExcerpts": false,
+      "maxRowsPerStream": 10
     }
   },
   "reviewedAt": "2026-09-19",

@@ -25,7 +25,7 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
 AWS_PATH = ROOT / "Scripts/run-real-project-aws.py"
 INTAKE = ROOT / "Documentation/Evidence/MultiTargetQualification-1.0/zb-execution-intake.json"
-INTAKE_SHA256 = "c6f137e0ebe572a51f345076688da021c9657cc8cee9e556beffce1d6d2742cb"
+INTAKE_SHA256 = "1e3813a384755bd5360440a3b85c01523a73af99a273b409bb1698a5cee6abbd"
 _SPEC = importlib.util.spec_from_file_location("pkglift_g3_aws_shared", AWS_PATH)
 assert _SPEC and _SPEC.loader
 shared = importlib.util.module_from_spec(_SPEC)
@@ -184,6 +184,8 @@ def validate_execution_intake() -> dict[str, Any]:
         "paths": list(PACKAGE_RESOLVED_PATHS), "rawSHA256": PACKAGE_RESOLVED_SHA256,
         "schemaVersion": 2, "mode": 0o644},
             "execution intake package resolution inputs changed", "blocked-input")
+    require(value.get("implementationReview", {}).get("finalBuildDiagnosticPolicy") == BUILD_DIAGNOSTIC_POLICY,
+            "execution intake final-build diagnostic policy changed", "blocked-input")
     swift_package = value.get("swiftPackage", {})
     require(swift_package.get("products") == ["SDWebImage"]
             and {key: swift_package.get(key) for key in ("dependencyCount", "pluginCount", "binaryTargetCount")}
@@ -610,6 +612,121 @@ def validate_effective_settings(documents: Any, expected: set[str]) -> dict[str,
     return result
 
 
+# Only fixed categories and hashes cross the private-log boundary. Unknown
+# diagnostics remain useful through their source position and message digest.
+BUILD_DIAGNOSTIC_POLICY = {"version": 1, "phase": "failed-final-build", "maxRows": 20, "maxRowsPerStream": 10,
+                           "maxScanBytesPerStream": 8 * 1024 * 1024, "maxLineBytes": 8192,
+                           "rawMessages": False, "rawPaths": False, "sourceExcerpts": False}
+_REVIEWED_DIAGNOSTIC_SUBJECTS = frozenset({"SDWebImage", "AFNetworking", "UIImageView+WebCache.h",
+                                        "SDImageCache.h", "SDWebImageManager.h"})
+
+
+def build_diagnostic_category(message: str) -> str:
+    if re.fullmatch(r"['<].+['>] file not found", message): return "header-not-found"
+    if re.fullmatch(r"(?:no such module ['\"].+['\"]|module ['\"].+['\"] not found)", message): return "module-not-found"
+    if message.startswith("could not build module "): return "module-build-failed"
+    if message.startswith("use of undeclared identifier "): return "undeclared-identifier"
+    if message.startswith("no member named "): return "missing-member"
+    if message.startswith("property ") and " not found " in message: return "missing-property"
+    if "incompatible" in message: return "incompatible-types"
+    if " is unavailable" in message: return "unavailable-api"
+    if message.startswith("Undefined symbols for architecture "): return "undefined-symbols"
+    if message.startswith("duplicate symbol"): return "duplicate-symbols"
+    if message.startswith("library ") and message.endswith(" not found"): return "library-not-found"
+    if message.startswith("framework ") and message.endswith(" not found"): return "framework-not-found"
+    if message.startswith("linker command failed"): return "linker-failed"
+    return "unclassified-error"
+
+
+def collect_build_diagnostics(log_paths: Mapping[str, Path], command: Mapping[str, Any],
+                              source_root: Path, package_root: Path) -> dict[str, Any]:
+    """Read bounded private output without ever returning log text or paths."""
+    result: dict[str, Any] = {"policy": BUILD_DIAGNOSTIC_POLICY, "rows": [], "streams": {},
+                              "matchedCount": 0, "rowsTruncated": False, "unknownDiagnosticCount": 0}
+    unknown_digest = hashlib.sha256()
+    seen: dict[tuple[str, str], dict[str, Any]] = {}
+    for stream in ("stdout", "stderr"):
+        metadata: dict[str, Any] = {"bytes": command[stream + "Bytes"], "sha256": command[stream + "SHA256"]}
+        result["streams"][stream] = metadata
+        path = log_paths[stream]
+        try:
+            if path.is_symlink() or not path.is_file():
+                metadata["captureStatus"] = "unavailable"
+                continue
+            if path.stat().st_size != metadata["bytes"] or file_sha256(path) != metadata["sha256"]:
+                metadata["captureStatus"] = "log-mismatch"
+                continue
+            with path.open("rb") as handle:
+                data = handle.read(BUILD_DIAGNOSTIC_POLICY["maxScanBytesPerStream"] + 1)
+        except OSError:
+            metadata["captureStatus"] = "unavailable"
+            continue
+        limited = len(data) > BUILD_DIAGNOSTIC_POLICY["maxScanBytesPerStream"]
+        metadata.update(captureStatus="bounded-prefix" if limited else "complete", scanLimited=limited)
+        if not limited and (len(data) != metadata["bytes"] or sha256_bytes(data) != metadata["sha256"]):
+            metadata["captureStatus"] = "log-mismatch"
+            continue
+        if limited:
+            data = data[:BUILD_DIAGNOSTIC_POLICY["maxScanBytesPerStream"]]
+            data = data[:data.rfind(b"\n") + 1]  # Never parse a truncated record.
+        metadata.update(scannedBytes=len(data), oversizedLines=0)
+        stream_rows = 0
+        for raw in data.splitlines():
+            if len(raw) > BUILD_DIAGNOSTIC_POLICY["maxLineBytes"]:
+                metadata["oversizedLines"] += 1
+                continue
+            line = raw.decode("utf-8", errors="replace")
+            # Anchoring rejects source excerpts, shell commands and caret rows.
+            match = re.fullmatch(r"(.+?):([0-9]{1,8})(?::([0-9]{1,8}))?: (?:fatal error|error): (.+)", line)
+            location = None
+            if match:
+                location, line_number, column, message = match.groups()
+                if location != location.strip() or any(ord(c) < 32 for c in location): continue
+            else:
+                tool = re.fullmatch(r"(?:(?:clang(?:\+\+)?|swiftc|xcodebuild|ld): )?(?:fatal )?error: (.+)", line)
+                linker = re.fullmatch(r"(?:ld: )?((?:Undefined symbols for architecture .+:|duplicate symbols?.*|(?:library|framework) .+ not found))", line)
+                if not tool and not linker:
+                    if re.fullmatch(r"(?:Command .+ failed with a nonzero exit code|\*\* (?:BUILD|TEST BUILD) FAILED \*\*)", line):
+                        result["unknownDiagnosticCount"] += 1
+                        unknown_digest.update(stream.encode() + b":" + hashlib.sha256(raw).digest())
+                    continue
+                message = (tool or linker).group(1)
+            category = build_diagnostic_category(message)
+            if category == "unclassified-error":
+                result["unknownDiagnosticCount"] += 1
+                unknown_digest.update(stream.encode() + b":" + hashlib.sha256(raw).digest())
+            result["matchedCount"] += 1
+            key = (stream, sha256_bytes(raw))
+            if key in seen:
+                seen[key]["occurrences"] += 1
+                continue
+            if (len(result["rows"]) >= BUILD_DIAGNOSTIC_POLICY["maxRows"]
+                    or stream_rows >= BUILD_DIAGNOSTIC_POLICY["maxRowsPerStream"]):
+                result["rowsTruncated"] = True
+                continue
+            row: dict[str, Any] = {"stream": stream, "category": category,
+                                   "messageSHA256": sha256_bytes(message.encode()), "lineSHA256": key[1], "occurrences": 1}
+            if location:
+                row.update(line=int(line_number), column=int(column) if column else None, pathScope="external")
+                for scope, root in (("project", source_root), ("package", package_root)):
+                    prefix = str(root) + "/"
+                    if location.startswith(prefix) and ".." not in Path(location[len(prefix):]).parts:
+                        location = location[len(prefix):]
+                        row["pathScope"] = scope
+                        break
+                row["pathSHA256"] = sha256_bytes(location.encode())
+            subjects = re.findall(r"['\"]([^'\"]+)['\"]", message)
+            if subjects:
+                row["subjectSHA256"] = sha256_bytes(subjects[0].encode())
+                if subjects[0] in _REVIEWED_DIAGNOSTIC_SUBJECTS:
+                    row["reviewedSubject"] = subjects[0]
+            result["rows"].append(row)
+            seen[key] = row
+            stream_rows += 1
+    result["unknownAggregateSHA256"] = unknown_digest.hexdigest()
+    return result
+
+
 def source_mutation_evidence(before: Mapping[str, Any], after: Mapping[str, Any],
                              index_before: str, index_after: str, status: str,
                              status_before: str = "") -> dict[str, Any]:
@@ -650,6 +767,28 @@ class Runner(shared.Runner):
         self.reference_payloads: dict[str, dict[str, Any]] = {}
         self.scheme_discovery: dict[str, Any] = {}
         self.source_mutation_checks: dict[str, Any] = {}
+        self.final_build_diagnostic: dict[str, Any] | None = None
+
+    def execute(self, label: str, command: list[Any], **kwargs) -> Any:
+        command_index = len(self.commands)
+        if label == "final-build": self.final_build_diagnostic = None
+        try:
+            return super().execute(label, command, **kwargs)
+        finally:
+            if label == "final-build" and len(self.commands) == command_index + 1:
+                record = self.commands[command_index]
+                if record.get("label") == label and record.get("exitCode"):
+                    try:
+                        logs = {stream: self.private / "logs" / f"{command_index + 1:02d}-{label}.{suffix}"
+                                for stream, suffix in (("stdout", "out"), ("stderr", "err"))}
+                        self.final_build_diagnostic = collect_build_diagnostics(logs, record,
+                            self.private / "migration-source",
+                            self.private / "final-derived/SourcePackages/checkouts/SDWebImage")
+                    except Exception:
+                        # Reporting must not replace the command error or skip
+                        # the build's finally safety checks. Never expose error text.
+                        self.final_build_diagnostic = {"policy": BUILD_DIAGNOSTIC_POLICY,
+                                                       "captureStatus": "unavailable"}
 
     def clone_exact(self, repository: str, commit: str, destination: Path, label: str) -> None:
         destination.mkdir(parents=True)
@@ -1208,6 +1347,8 @@ class Runner(shared.Runner):
             summary["commands"] = self.commands
             summary["schemeDiscovery"] = self.scheme_discovery
             summary["sourceMutationChecks"] = self.source_mutation_checks
+            if self.final_build_diagnostic is not None:
+                summary["finalBuildDiagnostic"] = self.final_build_diagnostic
             portable = shared.redact(summary, self.redaction_roots)
             for command in portable.get("commands", []):
                 command.pop("redactedStderrTail", None)
