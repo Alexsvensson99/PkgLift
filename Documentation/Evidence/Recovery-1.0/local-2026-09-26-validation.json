@@ -1,0 +1,38 @@
+{
+  "hostedAcceptance": false,
+  "independentReview": "No remaining material findings in recovery harness/runbook; release proposal corrected against actual source delta.",
+  "inputSHA256": {
+    "Scripts/build-recovery-inputs.py": "e698100db9c5b6b46683faa7b7fb0eb243325711c6b6b34e118f38ea6b830c3d",
+    "Scripts/run-recovery-drill.py": "142625a496b10c363eef3e132aa9876ab53a9bf6a03d7262cf5344de8aa03e59",
+    "Tests/PkgLiftCLITests/MigrateInterruptionTests.swift": "98cd97eb1e12f21908d15acfa52553fbe92e41dd11c2f05d6e43eeb005613b4b",
+    "Tests/ReleaseManifestTests/test_build_recovery_inputs.py": "1743597d79d8df93529be143bd453850148f94b2478e36d428ce71a7b180006e",
+    "Tests/ReleaseManifestTests/test_recovery_drill.py": "db12da8b0a69482a908d334424cf538f74c4c5632847fe90ffbd459c4e434b96"
+  },
+  "policyCommand": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "Tests/ReleaseManifestTests",
+    "-p",
+    "test_*.py"
+  ],
+  "policyExitCode": 0,
+  "policyLogSHA256": "d2c63c7ab8b2a6d62d7f6e71557d9bad32200df8642039c8f0b19563f833d937",
+  "productionSwiftChanged": false,
+  "pythonPolicyTestCount": 279,
+  "recoveryCommandCount": 97,
+  "recoveryScenariosPassed": 11,
+  "releaseAcceptance": false,
+  "reproducibleBuilderMatchesExecutedArtifacts": true,
+  "reproducibleBuilderPassed": true,
+  "reproducibleBuilderReceiptSHA256": "01b7d5844c994383fd9d237b66d584d355a54f2bdddd2f6798374d4a4d6683fe",
+  "retainedEvidence": "Task-owned external SSD; raw logs, baseline and incident copies retained. Foundation-managed per-user temporary storage was not relocated.",
+  "schemaVersion": 1,
+  "signalTestCount": 16,
+  "signalTestsExitCode": 0,
+  "signalTestsLogSHA256": "688cd192088526f03cee907981faa5d9bae430dc08fbe8d16942a4eef93eae88",
+  "status": "local-validation-passed",
+  "yamlValidation": "13 files, nine pinned workflows and two issue forms passed"
+}

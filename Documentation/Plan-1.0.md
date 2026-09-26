@@ -169,8 +169,12 @@ environment, expected actions, remaining dependencies and redacted results.
 
 ### G4 — Verify recovery as a user procedure
 
-**Priority: fourth; can proceed alongside G3. Status: open.** Deliver a recovery
-runbook and executable drills on disposable, buildable fixtures.
+**Priority: fourth; can proceed alongside G3. Status: eleven local recovery scenarios passed; protected integration pending.**
+The [recovery runbook and executable drill](Recovery-1.0.md) exercise eleven
+controlled scenarios on the repository-owned PartialSwift consumer. All restored
+copies built and passed fresh planning/dry-run checks on 2026-09-26. This local
+execution and independent review are separate from protected integration and
+release-candidate acceptance.
 
 - Reuse current error/signal tests and add only missing user-flow coverage for
   interruptions at Podfile and project/package-write boundaries, including SIGKILL.
@@ -225,6 +229,15 @@ is not an exhaustive security audit and does not close this gate.
 
 **Exit:** all six gates have dated, source-bound evidence and the approved release
 is publicly verified. Prior approval of 0.10.0 publication is not 1.0 publication approval.
+
+## Current work direction
+
+The approved next work is G4 recovery qualification; the broad public replacement
+search is stopped. [A concrete 0.11 proposal](ReleaseProposal-0.11.md) separates
+maintenance release preparation from 1.0, while the [initial 1.0 scope proposal](ScopeProposal-1.0.md)
+identifies the precise external multi-target cell that could be deferred. Neither
+proposal changes current classifications, support promises or release status.
+G3 is not silently declared complete.
 
 ## Prioritization and version decision
 

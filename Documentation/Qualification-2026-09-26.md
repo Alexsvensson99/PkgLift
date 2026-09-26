@@ -136,6 +136,15 @@ Public tag/release/checksum readback and Homebrew acceptance remain separate.
 No new mappings, import rewriting, broad platform claim or completed 1.0 gate is
 part of this maintenance recommendation.
 
+## Subsequent G4 local result
+
+The [recovery qualification](Recovery-1.0.md) subsequently passed eleven local
+scenarios, including restored builds and fresh plans after handled/unhandled
+signals and deliberate post-apply install/build failures. This advances G4
+without changing the open G2/G3 boundaries or claiming protected integration.
+The [0.11 proposal](ReleaseProposal-0.11.md) and [initial 1.0 scope proposal](ScopeProposal-1.0.md)
+make the next release decisions concrete; neither publishes a release.
+
 ## Remaining sequence
 
 1. Resolve the exact G2 support envelope and collect missing same-run evidence.
