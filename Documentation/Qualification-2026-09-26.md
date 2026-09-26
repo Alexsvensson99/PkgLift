@@ -1,9 +1,10 @@
 # PkgLift qualification checkpoint — 2026-09-26
 
-Status: current-main local source and PartialMixed qualification passed. G2 and
-G3 remain open. Same-run CI metadata capture is prepared locally; no hosted
-workflow has executed this change. No support boundary, product version or
-public release was changed by this checkpoint.
+Status updated 2026-09-27: local source, PartialMixed and eleven G4 recovery
+scenarios passed. PR #135 subsequently passed ordinary CI with same-job
+environment receipts. G2/G3 remain open; the focused G5 review has a bounded
+follow-up and G6 candidate acceptance remains outstanding. No support boundary,
+product version or public release was changed by this checkpoint.
 
 Source baseline: `cbff61f47ebd7034509123afcc0afe0a831a009c` (PR #132), tree
 `21af065373fc27c000ea7c1fedc8ea6e121d35a3`. Work used a separate clean checkout;
@@ -115,8 +116,8 @@ is a bounded risk check, not compilation proof. Release notes must explain the
 narrower AUTO eligibility, new reason values, incomplete-evidence refusals and
 required regeneration of saved plans.
 
-There are **20 production/package files changed between the public 0.10.0 commit
-and current main**, not just the header inspector. They also include static source
+At the recorded main baseline `cbff61f…`, there were **20 production/package
+files changed since the public 0.10.0 commit**, not just the header inspector. They also include static source
 and helper parsing, plan/project evidence, registry-resource layout, public API
 contract changes and editor preservation. A release from main must review and
 state that complete delta. Calling such a release a header-only backport would
@@ -145,14 +146,40 @@ without changing the open G2/G3 boundaries or claiming protected integration.
 The [0.11 proposal](ReleaseProposal-0.11.md) and [initial 1.0 scope proposal](ScopeProposal-1.0.md)
 make the next release decisions concrete; neither publishes a release.
 
+## Subsequent hosted evidence and G5 review
+
+[PR #135](https://github.com/Alexsvensson99/PkgLift/pull/135), head
+`bbabfdb5ca9d6d4d0537c471b28d671e1978aa44`, passed all 26 ordinary checks,
+including CodeQL. The [pilot/source workflow](https://github.com/Alexsvensson99/PkgLift/actions/runs/36272014440)
+ran against test-merge commit `c0b7263dc2ebdfd311e06987cdd75c881a2d0fa5`.
+The source build and all seven building consumer jobs produced eight complete
+same-job environment receipts: macOS 15.7.9 (24G830), arm64, Xcode 16.4
+(16F6), Swift 6.1.2 and hosted runner image `20260907.0337.1`.
+
+This supplies the hosted metadata missing in the earlier G2 rows above for
+that exact PR run. It is not main-branch acceptance, exact macOS 14.0 runtime
+coverage, a new toolchain support range or acceptance of a signed artifact.
+Those historical local receipts remain bound to their original source; later
+production changes require their own verification.
+
+The focused G5 review at that PR head examined 50 of 460 tracked paths and
+retained a bounded implementation/documentation follow-up. This is partial
+repository coverage and does not close G5. The follow-up's verification must
+bind its new source revision; green checks on the earlier head do not cover it.
+
 ## Remaining sequence
 
-1. Resolve the exact G2 support envelope and collect missing same-run evidence.
-2. Complete replacement intake and its reviewed G3 execution protocol; never
-   manufacture a positive result by editing AUTO classifications or upstream imports.
-3. Run the documented full-workflow recovery drills (G4), close safety/evidence
-   findings (G5), and qualify the exact candidate (G6).
+1. Resolve the exact G2 support envelope and unavailable macOS 14.0 runtime
+   cell; qualify the final candidate in every adopted cell.
+2. Complete a reviewed external positive G3 multi-target protocol when a suitable
+   project is available. The bounded public search is recorded, not an instruction
+   to restart it indefinitely. Never manufacture a positive result by editing
+   AUTO classifications or upstream imports.
+3. Preserve the completed local G4 drills and their signed-artifact limitations.
+   Verify the bounded G5 follow-up and resolve remaining safety/evidence claims.
+4. Qualify and privately accept the exact candidate in G6, then obtain the
+   separate publication approval required by Distribution.
 
 This checkpoint preserves the six-gate plan. It does not close unavailable
-macOS 14.0 evidence, the external positive multi-target case, recovery qualification,
-or release acceptance.
+macOS 14.0 evidence, the external positive multi-target case, G5 or release
+acceptance. Local G4 results are complete for their documented scenarios.
