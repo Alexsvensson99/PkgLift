@@ -8,7 +8,17 @@ two retained-CocoaPods pilots below. This evidence inventory implements the
 or a promise of universal support. Running a distributed executable, compiling
 PkgLift and migrating/building a consumer project are separate qualifications.
 
-## Evidence matrix
+## Current-main checkpoint on 2026-09-26
+
+The [dated checkpoint](Qualification-2026-09-26.md) records a fresh default-engine
+source build, 403 XCTest plus 233 Swift Testing tests, 25 mappings and a complete
+PartialMixed migration on main `cbff61f…`, with exact local Xcode 27 metadata.
+It also reconciles the historical matrix below: all three partial/coexistence
+fixtures were subsequently main-qualified on `72f19b3…`. G2 remains open for the
+exact lowest host, explicit supported toolchain envelope and missing same-run
+hosted records. No support promise is expanded.
+
+## Historical evidence matrix
 
 | Cell | Exact observations | Evidence and qualification boundary |
 |---|---|---|
@@ -19,7 +29,7 @@ PkgLift and migrating/building a consumer project are separate qualifications.
 | Source, local macOS 27 arm64 | macOS 27.0 (26A428), Xcode 27.0 (27A266a), Swift 6.4 (`swiftlang-6.4.0.34.1`), macOS SDK 27.0 (26A425) | Current G2 checks are recorded below. This is a development observation, pending protected integration and an explicit 1.0 source-support decision. |
 | Swift/iOS consumers, baseline | Xcode 16.4 (16F6), CocoaPods 1.17.0, iPhoneSimulator SDK 18.5 (22F76), Debug/generic iOS Simulator, deployment 15.0 | KeychainAccess, DeviceKit and CryptoSwift baseline/SwiftPM/migrated builds passed on source `cbb0eb1c…` in run 35056724222. Their artifacts record these versions but omit host OS/CPU/Swift. Both simulator architecture slices are not Intel-host evidence. |
 | Swift + Objective-C consumer | SDWebImage job passed in run 35056724222 | The job result is recorded; a complete environment artifact is missing from the retained local evidence. Qualify the combined cell before expanding claims. |
-| Retained CocoaPods + migrated SwiftPM | macOS 15.7.9 (24G830), arm64; Xcode 16.4 (16F6); Swift 6.1.2 (`swiftlang-6.1.2.1.2`); CocoaPods 1.17.0; iPhoneSimulator SDK 18.5 (22F76); Debug/arm64 iOS Simulator, deployment 15.0 | On main `9d2951…`, [PartialSwift](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753608) and [PartialMixed](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753582) passed baseline and post-migration builds, retained-pod refresh/lock checks and structural verification. This qualifies these two repository-owned partial-fixture cells only; existing SwiftPM coexistence, conflicting-requirement refusal, multi-target/workspace and real-upstream cells remain open. |
+| Retained CocoaPods + migrated SwiftPM | macOS 15.7.9 (24G830), arm64; Xcode 16.4 (16F6); Swift 6.1.2 (`swiftlang-6.1.2.1.2`); CocoaPods 1.17.0; iPhoneSimulator SDK 18.5 (22F76); Debug/arm64 iOS Simulator, deployment 15.0 | On main `9d2951…`, [PartialSwift](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753608) and [PartialMixed](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753582) passed baseline and post-migration builds, retained-pod refresh/lock checks and structural verification. This qualifies these two repository-owned partial-fixture cells at this commit. All three fixture/coexistence cells and conflict-refusal coverage were subsequently main-qualified on `72f19b3…`; see [the complete partial-pilot record](PartialMigration-1.0.md#main-qualification-on-2026-09-16). Multi-target/workspace and further real-upstream shapes remain separate gates. |
 
 The public artifact in all released-CLI rows is version **0.10.0**, archive
 SHA-256 `ad0747b3c10794ca93f23dc51953b3d234ddcfdabf4af1b5d4de5cd14876bd12`,
@@ -35,7 +45,11 @@ tracked-change state, exact macOS build, CPU architecture, Xcode/Swift/CocoaPods
 versions and SDK versions/builds. It uses bounded read-only probes, omits raw
 stderr, home paths and environment variables, and marks unavailable, failed or
 timed-out probes explicitly. An incomplete capture returns status 1 while still
-writing JSON. `metadataOnly: true` means a complete capture proves no build or test.
+writing JSON. On GitHub Actions, `runnerImage` records bounded `ImageOS` and
+`ImageVersion` values; missing or invalid image data keeps the capture incomplete.
+New local captures use `runnerImage: null`. The dated clean-main records below
+predate this additive field and intentionally retain their original bytes.
+`metadataOnly: true` means a complete capture proves no build or test.
 
 Pair the record with the exact source commit, command/exit results and retained
 logs from the same job. Record the runner image identifier in hosted jobs too.

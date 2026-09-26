@@ -12,7 +12,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Callable, Mapping, Sequence
 
 
 SCHEMA_VERSION = 1
@@ -178,11 +178,24 @@ def _default_resolver(executable: str) -> str | None:
     return shutil.which(executable)
 
 
+def _runner_image(environment: Mapping[str, str]) -> dict[str, object] | None:
+    if environment.get("GITHUB_ACTIONS") != "true":
+        return None
+    values = {"imageOS": environment.get("ImageOS"), "imageVersion": environment.get("ImageVersion")}
+    if any(value is None or value == "" for value in values.values()):
+        return {"status": "unavailable", "imageOS": None, "imageVersion": None}
+    if any(len(value) > 80 or re.fullmatch(r"[A-Za-z0-9_.-]+", value) is None
+           for value in values.values()):
+        return {"status": "failed", "imageOS": None, "imageVersion": None}
+    return {"status": "passed", **values}
+
+
 def capture_environment(
     *,
     runner: Runner = _run,
     resolver: Resolver = _default_resolver,
     now: Callable[[], datetime] | None = None,
+    environment: Mapping[str, str] | None = None,
 ) -> dict[str, object]:
     repo_root = Path(__file__).resolve().parent.parent
     timestamp = (now or (lambda: datetime.now(timezone.utc)))()
@@ -218,11 +231,13 @@ def capture_environment(
     }
     repository = _repository(repo_root, runner, resolver)
     macos = _macos(repo_root, runner, resolver)
+    runner_image = _runner_image(os.environ if environment is None else environment)
     complete = (
         repository["status"] == "passed"
         and repository["trackedChanges"] is False
         and macos["status"] == "passed"
         and all(probe["status"] == "passed" for probe in commands.values())
+        and (runner_image is None or runner_image["status"] == "passed")
     )
     machine = platform.machine()
     if MACHINE_RE.fullmatch(machine) is None:
@@ -239,6 +254,7 @@ def capture_environment(
             "machine": machine,
         },
         "commands": commands,
+        "runnerImage": runner_image,
     }
 
 

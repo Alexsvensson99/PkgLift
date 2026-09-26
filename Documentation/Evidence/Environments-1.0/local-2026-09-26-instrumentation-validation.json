@@ -1,0 +1,31 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "Tests/ReleaseManifestTests",
+    "-p",
+    "test_*.py"
+  ],
+  "exitCode": 0,
+  "hostedExecution": false,
+  "inputSHA256": {
+    ".github/workflows/positive-e2e.yml": "3d36055efe242d71c2d9999be237b9c125a54a0fb305ddf66ba87f1699fd088f",
+    "Scripts/capture-environment.py": "2da5e32078bce351fe39aad4cefc50cc5c09eddc88ccd71d0ebbf9390fa6df29",
+    "Tests/ReleaseManifestTests/test_capture_environment.py": "f12272cd1004210fd91bc9973393f31af15bd3ce6265801521d43427db15702d"
+  },
+  "logSHA256": "8f463dfe0c7303b797415d1bbf8e00d2ab2e7003d527ca39497aec8c61144f85",
+  "notes": [
+    "Only environment metadata capture and its workflow integration changed; product Swift source is identical to the separately qualified clean-main baseline.",
+    "Raw validation logs remain local on the external SSD. This record describes local results, not hosted CI acceptance."
+  ],
+  "pythonPolicyTestCount": 268,
+  "releaseAcceptance": false,
+  "retainedLog": "logs/policy-final.log",
+  "schemaVersion": 1,
+  "sourceBaseCommit": "cbff61f47ebd7034509123afcc0afe0a831a009c",
+  "status": "local-policy-validation-passed",
+  "workingTreeChanges": true
+}

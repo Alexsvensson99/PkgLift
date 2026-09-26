@@ -10,6 +10,15 @@ The public baseline is [0.10.0](https://github.com/Alexsvensson99/PkgLift/releas
 release commit `7d976d70e66a584e2e25db9852ac0e53bb6201b9`.
 This document proposes acceptance criteria; it does not declare 1.0 ready or change current support.
 
+## Latest checkpoint
+
+The [2026-09-26 qualification checkpoint](Qualification-2026-09-26.md) records
+current-main local source and PartialMixed success, remaining G2 cells, and a
+pre-1.0 maintenance-release assessment. PR #132 changes ZBNetworking into a
+header-import refusal case; the old positive ZB protocol cannot close G3. The
+historical progress narrative below remains evidence for its named commits,
+not a claim of current positive ZB eligibility. G2–G6 remain open.
+
 ## Outcome and scope
 
 Make the existing Analyze → Plan → dry run → Apply → Verify workflow dependable
@@ -123,19 +132,12 @@ refusal coverage is also integrated. The selected [pinned real-project protocol]
 passed one real AWS partial migration and two intentional refusal controls on
 main `6dcfc7b` in [run 35149953474](https://github.com/Alexsvensson99/PkgLift/actions/runs/35149953474).
 The [multi-target intake and preservation protocol](MultiTargetQualification-1.0.md)
-records the next uncovered positive shape. ZBNetworking is selected at a pinned
-revision for a separate fail-closed, iOS 15 compile-only qualification. Local
-analysis confirms one AUTO dependency; disposable plan/dry-run/apply preserves
-sibling targets and user data. The first hosted attempt on main `45c26db`
-stopped at scheme discovery because Xcode changed the source snapshot; it did
-not reach baseline build or migration. Diagnostic run `35409428336` on main
-`8a936c2` identified exactly two added SwiftPM directories with no file or Git-index
-changes. With the bounded setup on main `38dc4ed`, run `35441212940` passed both
-scheme checks and compiled the baseline app and sibling test bundles. The outer
-baseline source-preservation checkpoint then failed; the exact settings-probe
-delta remains unknown. Per-command mutation evidence is prepared locally, with
-immediate refusal on unexpected changes. Baseline qualification, hosted CocoaPods
-refresh and post-migration builds remain pending. Additional toolchain/shape evidence remains open.
+records the next uncovered positive shape. ZBNetworking's hosted baseline built,
+but the final consumer build failed on a flat `SDImageCache.h` import. PR #132
+added bounded header-import evidence, and the unchanged consumer must now remain
+REVIEW. Its earlier AUTO screening is superseded. The positive runner correctly
+stops before apply; select and review a replacement candidate instead of rerunning
+it for a positive result. Additional toolchain/shape evidence remains open.
 Deliver an evidence matrix separating read-only, repository-fixture and real-project results.
 
 - Preserve the ten upstream read-only pilots and their current prohibition on

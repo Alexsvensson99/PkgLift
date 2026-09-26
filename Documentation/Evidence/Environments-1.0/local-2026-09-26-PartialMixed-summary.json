@@ -1,0 +1,36 @@
+{
+  "baselineBuild": "passed",
+  "binarySHA256": "88e7f0cd801f3ea861aa1dbcb2bea2ed8ead31cb3dcc5b5487cb4088f74d900f",
+  "buildSettings": {
+    "architecture": "arm64",
+    "configuration": "Debug",
+    "iOSDeploymentTarget": "15.0"
+  },
+  "case": "PartialMixed",
+  "configurationUnchanged": true,
+  "consumerBytesUnchanged": true,
+  "consumerLanguages": [
+    "objectiveC",
+    "swift"
+  ],
+  "dryRunUnchanged": true,
+  "exactAutoSet": true,
+  "fixtureSHA256": "539a9e0f0ad93b2c81c23429d08f87327bffcae16cfb7c2f566f29e0783adcea",
+  "freshMigratedBuild": true,
+  "migrated": "SDWebImage",
+  "migratedBuild": "passed",
+  "releaseAcceptance": false,
+  "repositoryFixtureUnchanged": true,
+  "repositoryOwned": true,
+  "resolvedRevision": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+  "retained": "KeychainAccess",
+  "retainedPodsManifest": true,
+  "retentionPolicy": "migration.deny",
+  "runnerSHA256": "274f3197b79a531726ab08703f57e28bc533fe94b970f15d38101019fe3fb27c",
+  "schemaVersion": 1,
+  "sourceCommit": "cbff61f47ebd7034509123afcc0afe0a831a009c",
+  "sourceResourceMembershipUnchanged": true,
+  "status": "passed",
+  "swiftPMLinkedExactlyOnce": true,
+  "workingTreeHasChanges": false
+}
