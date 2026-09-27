@@ -112,3 +112,7 @@ On normal terminal completion, the backup carries an internal receipt that ident
 After `SIGKILL`, a crash, `SIGHUP`, or operating-system failure terminates the process, PkgLift cannot run rollback. If the recovery marker and backup survive on disk, a later apply refuses. Filesystem synchronization cannot guarantee recovery data after every power or operating-system failure. Inspect the recovery state before changing anything. If termination occurred while backups were being copied, the backup may be incomplete even though the originals have not yet been mutated; do not blindly restore a partial backup. Restore both the complete Podfile and complete `.xcodeproj` using verified recovery data or a known-good version-control/independent backup. After verifying both originals, archive the recovery marker and backup outside `.pkglift` before generating a new plan. Keep the originals and recovery data until that verification is complete; `--allow-dirty` does not bypass this refusal. PkgLift provides no automatic public recovery command.
 
 Rollback does not extend past a successful `migrate --apply`: `pod install` and `verify` are separate, explicit steps. PkgLift does not currently offer an automatic rollback command after verification.
+
+The [full-workflow recovery runbook](Recovery-1.0.md) describes independent
+baseline preservation, staged manual restoration and build/replan verification
+after both interrupted apply and later dependency-install/build failures.

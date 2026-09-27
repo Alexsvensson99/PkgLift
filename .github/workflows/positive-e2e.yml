@@ -42,6 +42,12 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
           [[ -z "$(git status --porcelain --untracked-files=all)" ]]
 
+      - name: Capture Source Build Environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 Scripts/capture-environment.py > "$RUNNER_TEMP/pkglift-source-environment.json"
+
       - name: Debug Build
         run: swift build -j 2
 
@@ -76,6 +82,14 @@ jobs:
             ${{ runner.temp }}/pkglift-pilot-artifact/pkglift-pilot-binary.tar.gz.sha256
           if-no-files-found: error
           retention-days: 1
+
+      - name: Upload Source Build Environment
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pkglift-source-environment-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pkglift-source-environment.json
+          if-no-files-found: error
+          retention-days: 14
 
   test:
     name: test
@@ -312,6 +326,14 @@ jobs:
       - name: Run Mixed-Language End-to-End Pilot
         run: bash Scripts/run-positive-e2e-pilot.sh
 
+      - name: Capture Mixed Consumer Environment
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pkglift-positive-e2e-report"
+          python3 Scripts/capture-environment.py > "$RUNNER_TEMP/pkglift-positive-e2e-report/environment.json"
+
       - name: Upload Pilot Report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -320,6 +342,7 @@ jobs:
           path: |
             ${{ runner.temp }}/pkglift-positive-e2e-report/summary.md
             ${{ runner.temp }}/pkglift-positive-e2e-report/environment.txt
+            ${{ runner.temp }}/pkglift-positive-e2e-report/environment.json
             ${{ runner.temp }}/pkglift-positive-e2e-report/source.txt
             ${{ runner.temp }}/pkglift-positive-e2e-report/hashes.txt
             ${{ runner.temp }}/pkglift-positive-e2e-report/analysis.json
@@ -402,6 +425,14 @@ jobs:
 
       - name: Verify Registry Consumer
         run: python3 Scripts/run-registry-consumer-pilot.py --case "${{ matrix.library }}" --phase "${{ matrix.phase }}"
+
+      - name: Capture Registry Consumer Environment
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${REGISTRY_REPORT_DIR:-}"
+          python3 Scripts/capture-environment.py > "$REGISTRY_REPORT_DIR/environment.json"
 
       - name: Upload Registry Consumer Evidence
         if: always()

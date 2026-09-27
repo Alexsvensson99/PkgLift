@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-26T20:47:51.309272Z",
+  "metadataOnly": true,
+  "captureStatus": "incomplete",
+  "repository": {
+    "status": "passed",
+    "commit": "6d06f2bcfc2438aecfa58a8e1425704aae316550",
+    "trackedChanges": true
+  },
+  "system": {
+    "macOS": {
+      "status": "passed",
+      "version": "27.0",
+      "build": "26A428"
+    },
+    "machine": "arm64"
+  },
+  "commands": {
+    "xcodebuildVersion": {
+      "status": "passed",
+      "exitCode": 0,
+      "versionOutput": [
+        "Xcode 27.0",
+        "Build version 27A266a"
+      ]
+    },
+    "swiftVersion": {
+      "status": "passed",
+      "exitCode": 0,
+      "versionOutput": [
+        "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)",
+        "Target: arm64-apple-macosx27.0.0"
+      ]
+    },
+    "cocoaPodsVersion": {
+      "status": "passed",
+      "exitCode": 0,
+      "versionOutput": [
+        "1.17.0"
+      ]
+    },
+    "macOSSDKVersion": {
+      "status": "passed",
+      "exitCode": 0,
+      "versionOutput": [
+        "27.0"
+      ]
+    },
+    "macOSSDKBuildVersion": {
+      "status": "passed",
+      "exitCode": 0,
+      "versionOutput": [
+        "26A425"
+      ]
+    },
+    "iOSSimulatorSDKVersion": {
+      "status": "passed",
+      "exitCode": 0,
+      "versionOutput": [
+        "27.0"
+      ]
+    },
+    "iOSSimulatorSDKBuildVersion": {
+      "status": "passed",
+      "exitCode": 0,
+      "versionOutput": [
+        "24A430"
+      ]
+    }
+  },
+  "runnerImage": null
+}

@@ -47,6 +47,7 @@ class CaptureEnvironmentTests(unittest.TestCase):
     @mock.patch.object(capture.platform, "machine", return_value="arm64")
     def test_complete_record_has_bounded_versions_and_repository_state(self, _machine, _system):
         document = capture.capture_environment(
+            environment={},
             runner=self.runner,
             resolver=self.resolver,
             now=lambda: datetime(2026, 9, 16, 8, 30, tzinfo=timezone.utc),
@@ -74,6 +75,7 @@ class CaptureEnvironmentTests(unittest.TestCase):
     @mock.patch.object(capture.platform, "system", return_value="Darwin")
     def test_missing_pod_is_explicitly_unavailable(self, _system):
         document = capture.capture_environment(
+            environment={},
             runner=self.runner,
             resolver=lambda executable: None if executable == "pod" else executable,
         )
@@ -96,6 +98,7 @@ class CaptureEnvironmentTests(unittest.TestCase):
             return self.runner(command, cwd, timeout)
 
         document = capture.capture_environment(
+            environment={},
             runner=unsafe_runner,
             resolver=self.resolver,
         )
@@ -105,6 +108,39 @@ class CaptureEnvironmentTests(unittest.TestCase):
         serialized = str(document)
         self.assertNotIn("/Users/alex", serialized)
         self.assertNotIn("TOKEN", serialized)
+
+
+    @mock.patch.object(capture.platform, "system", return_value="Darwin")
+    def test_hosted_image_is_bound_to_same_capture(self, _system):
+        document = capture.capture_environment(
+            runner=self.runner, resolver=self.resolver,
+            environment={"GITHUB_ACTIONS": "true", "ImageOS": "macos15-arm64", "ImageVersion": "20260907.0337.1"},
+        )
+        self.assertEqual("complete", document["captureStatus"])
+        self.assertEqual({"status": "passed", "imageOS": "macos15-arm64", "imageVersion": "20260907.0337.1"}, document["runnerImage"])
+
+    @mock.patch.object(capture.platform, "system", return_value="Darwin")
+    def test_missing_hosted_image_prevents_complete_qualification_metadata(self, _system):
+        document = capture.capture_environment(
+            runner=self.runner, resolver=self.resolver, environment={"GITHUB_ACTIONS": "true"},
+        )
+        self.assertEqual("incomplete", document["captureStatus"])
+        self.assertEqual("unavailable", document["runnerImage"]["status"])
+
+    @mock.patch.object(capture.platform, "system", return_value="Darwin")
+    def test_hosted_image_rejects_private_or_unbounded_text(self, _system):
+        for value in ("/Users/alex/secret", "image\nTOKEN=secret", "a" * 81):
+            with self.subTest(value=value):
+                document = capture.capture_environment(
+                    runner=self.runner, resolver=self.resolver,
+                    environment={"GITHUB_ACTIONS": "true", "ImageOS": "macos15-arm64", "ImageVersion": value},
+                )
+                self.assertEqual("incomplete", document["captureStatus"])
+                self.assertEqual({"status": "failed", "imageOS": None, "imageVersion": None}, document["runnerImage"])
+                self.assertNotIn(value, str(document))
+
+    def test_local_capture_does_not_trust_runner_variables(self):
+        self.assertIsNone(capture._runner_image({"ImageOS": "private", "ImageVersion": "private"}))
 
 
 if __name__ == "__main__":

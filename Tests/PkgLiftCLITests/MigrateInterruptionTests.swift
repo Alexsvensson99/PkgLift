@@ -193,6 +193,7 @@ final class MigrateInterruptionTests: XCTestCase {
                         throw ChildInjectedFailure()
                     }
                     guard Self.matches(stage, configuredAs: stageName) else { return }
+                    Self.writeChildDiagnostic("reached checkpoint: \(Self.name(for: stage))")
                     // SIGKILL cannot be handled. For handled signals, wait for
                     // capture before the engine advances to its next checkpoint.
                     let delivered = signal == SIGKILL

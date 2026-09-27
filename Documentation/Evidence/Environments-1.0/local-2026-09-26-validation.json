@@ -1,0 +1,161 @@
+{
+  "binarySHA256": "88e7f0cd801f3ea861aa1dbcb2bea2ed8ead31cb3dcc5b5487cb4088f74d900f",
+  "configuration": "debug",
+  "engine": "swiftbuild",
+  "environmentRecord": "local-2026-09-26-environment.json",
+  "mappingCount": 25,
+  "notes": [
+    "Standard Xcode 27 Swift Build engine passed outside the synchronized checkout; no native-engine fallback or metadata stripping.",
+    "No product source changed in this qualification.",
+    "These checks do not qualify macOS 14.0, hosted Xcode 16.4 or a signed release artifact.",
+    "An initial pilot invocation used the native-engine binary location and failed before pilot setup. The corrected invocation uses the observed Swift Build product path; the failed log is retained locally."
+  ],
+  "publicSupportQualified": false,
+  "pythonPolicyTestCount": 264,
+  "releaseAcceptance": false,
+  "schemaVersion": 1,
+  "sourceCommit": "cbff61f47ebd7034509123afcc0afe0a831a009c",
+  "sourceTree": "21af065373fc27c000ea7c1fedc8ea6e121d35a3",
+  "status": "local-validation-passed",
+  "steps": [
+    {
+      "command": [
+        "python3",
+        "Scripts/capture-environment.py"
+      ],
+      "durationSeconds": 0.81,
+      "exitCode": 0,
+      "logSHA256": "8e4e1892076f4f0cfe6161ef6e88471280747c631a0be38bafc77de1719a4a28",
+      "retainedLog": "logs/environment.log",
+      "sourceCommit": "cbff61f47ebd7034509123afcc0afe0a831a009c",
+      "startedAt": "2026-09-26T20:09:25.585193+00:00",
+      "step": "environment"
+    },
+    {
+      "command": [
+        "swift",
+        "build",
+        "--scratch-path",
+        "$EVIDENCE_ROOT/build",
+        "--cache-path",
+        "$SWIFTPM_CACHE",
+        "--manifest-cache",
+        "local",
+        "--disable-automatic-resolution",
+        "--jobs",
+        "4"
+      ],
+      "durationSeconds": 35.93,
+      "exitCode": 0,
+      "logSHA256": "19f207a641b3467c3c60f51524382a2daaeecfc3bf91f112aa8fd354a96c37e4",
+      "retainedLog": "logs/build.log",
+      "sourceCommit": "cbff61f47ebd7034509123afcc0afe0a831a009c",
+      "startedAt": "2026-09-26T20:09:26.525473+00:00",
+      "step": "build"
+    },
+    {
+      "command": [
+        "swift",
+        "test",
+        "--scratch-path",
+        "$EVIDENCE_ROOT/build",
+        "--cache-path",
+        "$SWIFTPM_CACHE",
+        "--manifest-cache",
+        "local",
+        "--disable-automatic-resolution",
+        "--jobs",
+        "4"
+      ],
+      "durationSeconds": 38.69,
+      "exitCode": 0,
+      "logSHA256": "f6e21486ab8b5a3803ff5769f084915b5c517031c3a401881470573f2ecd9115",
+      "retainedLog": "logs/test.log",
+      "sourceCommit": "cbff61f47ebd7034509123afcc0afe0a831a009c",
+      "startedAt": "2026-09-26T20:10:26.573722+00:00",
+      "step": "test"
+    },
+    {
+      "command": [
+        "swift",
+        "run",
+        "--scratch-path",
+        "$EVIDENCE_ROOT/build",
+        "--cache-path",
+        "$SWIFTPM_CACHE",
+        "--manifest-cache",
+        "local",
+        "--disable-automatic-resolution",
+        "--jobs",
+        "4",
+        "--skip-build",
+        "pkglift",
+        "registry",
+        "validate"
+      ],
+      "durationSeconds": 1.59,
+      "exitCode": 0,
+      "logSHA256": "8e20708c93cecf83abe678d5d81138606825b7ce2db40a6639a90f998abed680",
+      "retainedLog": "logs/registry.log",
+      "sourceCommit": "cbff61f47ebd7034509123afcc0afe0a831a009c",
+      "startedAt": "2026-09-26T20:11:50.842652+00:00",
+      "step": "registry"
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "Tests/ReleaseManifestTests",
+        "-p",
+        "test_*.py"
+      ],
+      "durationSeconds": 9.34,
+      "exitCode": 0,
+      "logSHA256": "f76a844d8146890e25a6b3aa7dacaef9fa4940f52027f7ca5c013b2a2b2d430c",
+      "retainedLog": "logs/policy.log",
+      "sourceCommit": "cbff61f47ebd7034509123afcc0afe0a831a009c",
+      "startedAt": "2026-09-26T20:11:52.560581+00:00",
+      "step": "policy"
+    },
+    {
+      "command": [
+        "ruby",
+        "Scripts/validate-repository-yaml.rb"
+      ],
+      "durationSeconds": 0.06,
+      "exitCode": 0,
+      "logSHA256": "e3164d09fd8019a5ee790bc94c20335ae6028edd294ee96225cec4a4424b5262",
+      "retainedLog": "logs/yaml.log",
+      "sourceCommit": "cbff61f47ebd7034509123afcc0afe0a831a009c",
+      "startedAt": "2026-09-26T20:12:02.027679+00:00",
+      "step": "yaml"
+    },
+    {
+      "command": [
+        "python3",
+        "Scripts/run-partial-migration-pilot.py",
+        "--case",
+        "PartialMixed",
+        "--output",
+        "$EVIDENCE_ROOT/PartialMixed",
+        "--pkglift",
+        "$EVIDENCE_ROOT/build/out/Products/Debug/pkglift",
+        "--jobs",
+        "4"
+      ],
+      "durationSeconds": 46.5,
+      "exitCode": 0,
+      "logSHA256": "14008b533e84d4e8836ad566eb81b5fe418af46d83f6bb78c6dba863d17a5ebc",
+      "retainedLog": "logs/partial-mixed-2.log",
+      "sourceCommit": "cbff61f47ebd7034509123afcc0afe0a831a009c",
+      "startedAt": "2026-09-26T20:13:15.173950+00:00",
+      "step": "partial-mixed-2"
+    }
+  ],
+  "storage": "Task-owned external APFS SSD; scratch, temporary, compiler and package cache paths explicitly routed. Raw logs are retained locally; no source/path-bearing logs are committed.",
+  "swiftTestingCount": 233,
+  "xctestCount": 403
+}

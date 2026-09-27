@@ -1,7 +1,13 @@
 # Multi-target real-project qualification for 1.0
 
-Status: **Scheme discovery and baseline compilation passed; baseline source preservation failed, migration not reached**.
-Latest hosted result: main `38dc4ed041cfbb235582775cbbab6b602b82292b` on 2026-09-19.
+Status: **G3 remains open; ZBNetworking is a diagnosed header-import refusal case**.
+Current source: main `cbff61f47ebd7034509123afcc0afe0a831a009c` (PR #132).
+The [final diagnostic section](#diagnosed-consumer-header-import-blocker) supersedes
+the earlier positive-AUTO screening and intermediate baseline failures below.
+The old positive execution protocol must not be rerun expecting qualification.
+The [2026-09-26 checkpoint](Qualification-2026-09-26.md) records the replacement-intake
+requirement and current local G2 evidence; it does not close G3.
+
 The earlier design review used main `6dcfc7bf5b2bcc0f8654e920c6ce7fd57767b986` on 2026-09-18.
 The existing [selected G3 cases](RealProjectQualification-1.0.md) passed on that
 main commit in [run 35149953474](https://github.com/Alexsvensson99/PkgLift/actions/runs/35149953474).

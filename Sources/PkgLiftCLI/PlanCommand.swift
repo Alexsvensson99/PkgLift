@@ -34,9 +34,8 @@ struct PlanCommand: AsyncParsableCommand {
 
         let data = try encoder.encode(plan)
 
-        let directory = context.planURL.deletingLastPathComponent()
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        try data.write(to: context.planURL, options: .atomic)
+        let writer = try PlanFileWriter(canonicalRoot: context.discovery.rootPath)
+        try writer.stage(data).publish()
 
         if common.json || portableJSON {
             let output = try PortableJSON().output(from: data, portable: portableJSON)
