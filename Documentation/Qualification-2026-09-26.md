@@ -167,6 +167,36 @@ retained a bounded implementation/documentation follow-up. This is partial
 repository coverage and does not close G5. The follow-up's verification must
 bind its new source revision; green checks on the earlier head do not cover it.
 
+## Merged safety follow-up and 0.11.0 source preparation
+
+Updated 2026-09-27: PR #135 merged as
+`4ff7b32dce8d706153ad682aa2332d0e61993738`, with a source tree identical to its
+reviewed final head `fd202b2fccf6e15ea8e7608946ab48df299cb352`. The plan-output
+follow-up now uses retained no-follow directory descriptors, private staging,
+binding rechecks and atomic replacement. Its focused review retained no
+findings; this does not turn the earlier partial G5 review into a complete
+repository audit.
+
+The final head passed 646 Swift tests (413 XCTest and 233 Swift Testing),
+279 release-policy tests, 25 registry mappings, debug/release builds and
+18 direct CLI plan-write cases across three output modes. The direct cases
+checked normal writes and refused symlinked/dangling state directories,
+non-directory state paths and symlinked plan destinations while preserving
+outside files. Unit regressions additionally covered directory/FIFO plan
+destinations and controlled binding changes. All 26 PR checks passed.
+The subsequent exact-main [pilot/source](https://github.com/Alexsvensson99/PkgLift/actions/runs/36284796399),
+[CodeQL](https://github.com/Alexsvensson99/PkgLift/actions/runs/36284796377) and
+[Quality](https://github.com/Alexsvensson99/PkgLift/actions/runs/36284796380)
+workflows also passed.
+
+The [0.11.0 source preparation](ReleaseProposal-0.11.md) is now approved and
+adds the version, dated changelog and [release notes](ReleaseNotes-0.11.0.md)
+for the complete delta since 0.10.0. That new commit needs its own checks;
+the evidence above belongs to the production baseline. Public distribution
+remains 0.10.0, and the [1.0 scope proposal](ScopeProposal-1.0.md) remains
+unadopted. No new registry mapping, support boundary or release approval is
+implied.
+
 ## Remaining sequence
 
 1. Resolve the exact G2 support envelope and unavailable macOS 14.0 runtime
@@ -176,7 +206,8 @@ bind its new source revision; green checks on the earlier head do not cover it.
    to restart it indefinitely. Never manufacture a positive result by editing
    AUTO classifications or upstream imports.
 3. Preserve the completed local G4 drills and their signed-artifact limitations.
-   Verify the bounded G5 follow-up and resolve remaining safety/evidence claims.
+   Retain the verified bounded G5 follow-up and resolve the remaining broader
+   safety/evidence claims.
 4. Qualify and privately accept the exact candidate in G6, then obtain the
    separate publication approval required by Distribution.
 

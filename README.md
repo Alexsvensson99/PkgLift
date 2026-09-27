@@ -64,6 +64,16 @@ The release adds a narrow library API in `PkgLiftCocoaPods` for caller-supplied 
 
 The API does not read, expand, traverse, hash, or otherwise verify local files. It does not verify source provenance, resolve packages or products, generate `Package.swift`, load Podspecs through the CLI, change a migration plan, mutate an Xcode project, remove CocoaPods, or broaden `AUTO` eligibility. See the [v0.6.0 release notes](Documentation/ReleaseNotes-0.6.0.md), [generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), [Stage 1 validation record](Documentation/GeneratedPackageStage1Validation.md), and [v0.6 release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) for the pinned S1 boundary and verification results.
 
+## 0.11.0 — Source preparation
+
+The source version is now 0.11.0; the current public download remains 0.10.0.
+The [0.11.0 release notes](Documentation/ReleaseNotes-0.11.0.md) describe the
+complete preparation scope: header-import and registry-source evidence,
+saved-plan write safety, project preservation and qualification coverage.
+Rebuilds of Swift clients may need new reason-code cases, and saved plans must
+be regenerated with the new executable. Signed-artifact acceptance and public
+release approval are still pending.
+
 ## 0.10.0 — CryptoSwift mapping
 
 [PkgLift 0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0)

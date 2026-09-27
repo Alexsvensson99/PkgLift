@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-27
+
+Source preparation only; 0.11.0 has not been published. The date records this
+preparation, not public availability. See the [release notes](Documentation/ReleaseNotes-0.11.0.md).
+
+### Added
+- Capture bounded header-import and configuration evidence for C-family targets.
+  Refuse automatic migration when imports may depend on CocoaPods header search
+  paths, inspection is incomplete, or saved C-family evidence is missing.
+- Reconcile statically recognized public CocoaPods source declarations with
+  lockfile `SPEC REPOS` evidence. Carry registry-source provenance in schema-2
+  plans and report typed missing, unsupported or conflicting evidence.
+- Add public library-contract coverage, partial Swift and mixed-language
+  migration fixtures, existing-SwiftPM coexistence checks, same-job environment
+  receipts, and eleven local full-baseline recovery drills.
+
+### Fixed
+- Constrain saved-plan writes to checked project/state directories using
+  no-follow directory descriptors and atomic replacement. Reject symlinked
+  `.pkglift` directories, unsafe plan destinations and observed binding changes.
+  This is not a filesystem transaction against concurrent directory renames.
+- Tighten static Podfile parsing, target attribution and retained-CocoaPods
+  source-mode validation; reject hidden existing-package requirement conflicts.
+- Preserve unrelated Xcode schemes and breakpoints when editing the PBX file;
+  resolve the bundled registry in both command-line and macOS resource layouts.
+
+### Changed
+- Add five public migration reason codes and optional report evidence fields.
+  Swift clients with exhaustive `MigrationReasonCode` switches need new cases;
+  some previously automatic classifications now require review.
+- Set the source version to `0.11.0`. Regenerate saved plans with the upgraded
+  executable before dry run or apply. Do not edit producer-version or evidence
+  fields to reuse an older plan.
+- Keep all registry mappings, minimum-version thresholds and platform support
+  promises unchanged. Header inspection is bounded risk evidence, not a build
+  result; the new qualification records do not complete the 1.0 gates.
+
 ## [0.10.0] - 2026-09-16
 
 PkgLift 0.10.0 is the current public release.
