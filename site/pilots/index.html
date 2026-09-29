@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Real-project pilot evidence — PkgLift</title>
-  <meta name="description" content="Review PkgLift's pinned, read-only results across ten public CocoaPods projects and the separate repo-owned mixed-language end-to-end fixture.">
+  <meta name="description" content="Review ten pinned read-only CocoaPods pilots, a separate AWS single-target partial migration, and repository-owned mixed-language build evidence.">
   <meta name="theme-color" content="#0a0f15">
   <meta name="color-scheme" content="dark light">
   <link rel="canonical" href="https://www.svensson.design/PkgLift/pilots/">
@@ -14,7 +14,7 @@
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="PkgLift">
   <meta property="og:title" content="Real-project pilot evidence — PkgLift">
-  <meta property="og:description" content="Ten pinned upstream projects are analyzed without mutation; one separate repo-owned fixture proves controlled apply and build verification.">
+  <meta property="og:description" content="Ten pinned projects form a read-only matrix; a separate AWS case and repository-owned fixtures provide bounded migration and build evidence.">
   <meta property="og:url" content="https://www.svensson.design/PkgLift/pilots/">
   <meta property="og:image" content="https://www.svensson.design/PkgLift/assets/social-card.png">
   <meta property="og:image:width" content="1200">
@@ -22,24 +22,24 @@
   <meta property="og:image:alt" content="PkgLift — safe CocoaPods to Swift Package Manager migration">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Real-project pilot evidence — PkgLift">
-  <meta name="twitter:description" content="Ten pinned upstream projects are analyzed without mutation; one separate repo-owned fixture proves controlled apply and build verification.">
+  <meta name="twitter:description" content="Ten pinned projects form a read-only matrix; a separate AWS case and repository-owned fixtures provide bounded migration and build evidence.">
   <meta name="twitter:image" content="https://www.svensson.design/PkgLift/assets/social-card.png">
   <meta name="twitter:image:alt" content="PkgLift — safe CocoaPods to Swift Package Manager migration">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Real-project pilot evidence — PkgLift","description":"Review PkgLift's pinned, read-only results across ten public CocoaPods projects and the separate repo-owned mixed-language end-to-end fixture.","url":"https://www.svensson.design/PkgLift/pilots/","author":{"@type":"Person","name":"Alexander Svensson"},"publisher":{"@type":"Organization","name":"PkgLift"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Real-project pilot evidence — PkgLift","description":"Review ten pinned read-only CocoaPods pilots, a separate AWS single-target partial migration, and repository-owned mixed-language build evidence.","url":"https://www.svensson.design/PkgLift/pilots/","author":{"@type":"Person","name":"Alexander Svensson"},"publisher":{"@type":"Organization","name":"PkgLift"}}</script>
   <script src="/PkgLift/assets/site.js" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header"><div class="header-inner"><a class="brand" href="/PkgLift/" aria-label="PkgLift home"><img src="/PkgLift/assets/logo.svg" alt="" width="36" height="36"><span>PkgLift</span></a><button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-navigation">Menu</button><nav class="site-nav" id="site-navigation" data-nav aria-label="Primary navigation"><a href="/PkgLift/">Home</a><a href="/PkgLift/cocoapods-to-swiftpm/">Migration guide</a><a href="/PkgLift/safe-migration/">Safety</a><a href="/PkgLift/compatibility/">Compatibility</a><a href="/PkgLift/case-study/">Case study</a><a href="/PkgLift/pilots/" aria-current="page">Pilots</a><a href="/PkgLift/troubleshooting/">Troubleshooting</a><a href="/PkgLift/registry/">Registry</a><a class="github-link" href="https://github.com/Alexsvensson99/PkgLift">GitHub ↗</a></nav></div></header>
 <main id="main">
-  <section class="page-hero"><div class="reading"><div class="breadcrumb"><a href="/PkgLift/">Home</a><span>/</span><span>Pilot evidence</span></div><div class="eyebrow">Published evidence</div><h1>Ten real repositories. Zero upstream mutations.</h1><p class="lead">PkgLift tests real project shapes at exact commits, records the classification result, and treats a conservative refusal as useful evidence—not a reason to weaken a safety gate.</p></div></section>
+  <section class="page-hero"><div class="reading"><div class="breadcrumb"><a href="/PkgLift/">Home</a><span>/</span><span>Pilot evidence</span></div><div class="eyebrow">Published evidence</div><h1>Ten read-only pilots. Separate migration proof.</h1><p class="lead">PkgLift tests real project shapes at exact commits, records the classification result, and treats a conservative refusal as useful evidence—not a reason to weaken a safety gate.</p></div></section>
   <article class="article"><div class="reading">
-    <div class="callout callout-warning"><strong>Evidence boundary:</strong> the ten public repositories below receive analysis, plan generation, and a migration dry run only. They are not passed to <code>migrate --apply</code>, their scripts are not executed, and their source is not published as a PkgLift artifact.</div>
+    <div class="callout callout-warning"><strong>Read-only matrix:</strong> the ten pinned cases below receive analysis, plan generation, and a migration dry run only in this workflow. This matrix does not run <code>migrate --apply</code> or project scripts, and upstream source is not published as a PkgLift artifact. The separate AWS apply/build qualification is described below.</div>
 
     <div class="grid-3" style="margin-top:2rem">
       <div class="card"><div class="eyebrow">Upstream pilots</div><h2 style="margin:.5rem 0 0">10</h2><p class="subtle">Pinned, read-only project shapes.</p></div>
-      <div class="card"><div class="eyebrow">External applies</div><h2 style="margin:.5rem 0 0">0</h2><p class="subtle">No public pilot is mutated.</p></div>
-      <div class="card"><div class="eyebrow">Controlled fixture</div><h2 style="margin:.5rem 0 0">1</h2><p class="subtle">Repo-owned apply, resolve, and build proof.</p></div>
+      <div class="card"><div class="eyebrow">External migration case</div><h2 style="margin:.5rem 0 0">1</h2><p class="subtle">Separate AWS single-target partial apply and build.</p></div>
+      <div class="card"><div class="eyebrow">Mixed-language fixture</div><h2 style="margin:.5rem 0 0">1</h2><p class="subtle">Repo-owned apply, resolve, and build proof.</p></div>
     </div>
 
     <h2 id="matrix" class="anchor-heading">Read-only pilot matrix</h2>
@@ -60,19 +60,25 @@
       </tbody>
     </table>
 
-    <h2 id="end-to-end" class="anchor-heading">The separate end-to-end boundary</h2>
-    <p>Apply is proven only in <a href="https://github.com/Alexsvensson99/PkgLift/tree/main/Fixtures/MixedLanguageSDWebImage"><code>Fixtures/MixedLanguageSDWebImage</code></a>, a fixture owned by this repository. It contains one target with both Swift and Objective-C consumers of SDWebImage.</p>
+    <h2 id="external-qualification" class="anchor-heading">Separate 1.0 external qualification</h2>
+    <p>In <a href="https://github.com/Alexsvensson99/PkgLift/actions/runs/36606015426">real-project qualification run 36606015426</a>, a disposable copy of the pinned Amazon IVS grid-feed project passed a baseline build, migrated <code>SDWebImage 5.18.1</code>, and passed a fresh build while retaining <code>AmazonIVSPlayer 1.40.0</code>. The positive case exercises one application target.</p>
+    <p>The same workflow verified conservative refusal for the FirebaseUI project and Hammerspoon workspace: neither produced an <code>AUTO</code> entry or ran apply. These are refusal controls, not positive migration cases.</p>
+    <p>This source qualification ran on PkgLift commit <a href="https://github.com/Alexsvensson99/PkgLift/commit/70575a92e59792e87d8c2d3f536fca9cd20aef33"><code>70575a9</code></a>. The <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/Qualification-1.0.md">1.0 qualification record</a> separately identifies the signed release candidate and its acceptance results.</p>
+    <div class="callout callout-warning"><strong>Deferred scope:</strong> positive external multi-target/workspace qualification remains deferred after 1.0. The AWS single-target result and these refusal controls do not close that case. See the <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/Environments-1.0.md">exact environment cells</a> for each recorded workload.</div>
+
+    <h2 id="end-to-end" class="anchor-heading">The repository-owned end-to-end fixture</h2>
+    <p>Additional controlled apply and build evidence comes from <a href="https://github.com/Alexsvensson99/PkgLift/tree/main/Fixtures/MixedLanguageSDWebImage"><code>Fixtures/MixedLanguageSDWebImage</code></a>, a fixture owned by this repository. It contains one target with both Swift and Objective-C consumers of SDWebImage.</p>
     <ol>
       <li>A disposable baseline copy builds with CocoaPods.</li>
       <li>A second disposable copy records protected source and resource hashes.</li>
       <li>The complete reviewed <code>AUTO</code> set must equal exactly <code>SDWebImage</code>.</li>
       <li>The dry run must leave the whole tree unchanged.</li>
-      <li>Only the repo-owned copy reaches apply, SwiftPM resolution, and simulator build verification.</li>
+      <li>This repo-owned copy reaches apply, SwiftPM resolution, and simulator build verification.</li>
       <li>The protected hashes must still match afterward.</li>
     </ol>
 
     <h2 id="audit" class="anchor-heading">Audit the evidence</h2>
-    <p>The detailed methodology, licensing notes, pins, and expected outcomes live in <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/Pilots.md">Documentation/Pilots.md</a>. The executable definitions are the <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/.github/workflows/pilots.yml">read-only pilot workflow</a> and the separate <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/.github/workflows/positive-e2e.yml">repo-owned end-to-end workflow</a>.</p>
+    <p>The detailed methodology, licensing notes, pins, and expected outcomes live in <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/Pilots.md">Documentation/Pilots.md</a>. The executable definitions are the <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/.github/workflows/pilots.yml">read-only pilot workflow</a> and the separate <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/.github/workflows/positive-e2e.yml">repo-owned end-to-end workflow</a>. The <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/.github/workflows/real-project-qualification.yml">real-project qualification workflow</a> owns the separate AWS apply/build and refusal controls.</p>
     <div class="cta" style="margin-top:3rem"><div class="eyebrow">Have a different project shape?</div><h2>Turn the unknown into reproducible evidence.</h2><p class="lead">Run analysis on a recoverable copy, remove private identifiers, and share the classification or failure without applying changes.</p><div class="hero-actions"><a class="button button-primary" href="https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml">Report a migration</a><a class="button" href="https://github.com/Alexsvensson99/PkgLift">Star or inspect the source</a></div></div>
   </div></article>
 </main>

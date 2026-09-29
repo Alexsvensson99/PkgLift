@@ -1,0 +1,77 @@
+{
+  "baseCommit": "abb0df9aa7319affdbfc3677fa96519d8a339a29",
+  "pr133Head": "9678d04a66b4db3369f7c3aeb118fac647c4d205",
+  "candidatePackageResolvedSHA256": "27541548efda736620628d3afffe7c2f14df3cc9a86ee5295d71d07b42e025f6",
+  "candidateBinarySHA256": "ab9905574cd5753329c40249b27ea7a5017aef9481ead30b85c1dc68bb93d23d",
+  "signedReleaseBinarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+  "releasedAnalyzeExitCode": 1,
+  "releasedAnalyzeRefused": true,
+  "baselineHasPBXProj": false,
+  "afterHasPBXProj": true,
+  "originalXCProjUnchanged": true,
+  "beforeXCProjSHA256": "cf9ec7127d7b3bf7f18cbea51d4f995b5ea906ab4c1f122a5edafe145126f995",
+  "afterPBXProjSHA256": "72f3d2de7e9ba0e0610ceffcbf81ecf2076abde91040a062812e8296aaef4022",
+  "planEntries": [
+    {
+      "podName": "KeychainAccess",
+      "classification": "AUTO"
+    },
+    {
+      "podName": "SDWebImage",
+      "classification": "BLOCKED"
+    }
+  ],
+  "podfileRemovedKeychainAccess": true,
+  "candidateApply": "exit 0 in isolated XCTest child; normal clean-Git guard; no --allow-dirty",
+  "explicitProbe": "FAIL: no-second-project-format assertion",
+  "implicitProbe": "PASS: REVIEW/no AUTO",
+  "consumerBuild": "not run; file-format reproduction only",
+  "rawEvidence": [
+    {
+      "relativePath": "logs/swift-test.log",
+      "sha256": "1b950a61e0f701f1bda2bac9485ceac44727ffec309882b3b542b21c5feef19f",
+      "bytes": 187984
+    },
+    {
+      "relativePath": "logs/xcproj-probe.log",
+      "sha256": "c83e66278e4f848953c06cae1defcdd25745a58759a29201c4c910fc70b9f8c7",
+      "bytes": 5876
+    },
+    {
+      "relativePath": "logs/xcproj-probe-explicit-types.log",
+      "sha256": "47162c2a25d04bc7a55119c5f7fd0e0b5d29ce6c5aedfc67fd5f327cbfdc53f1",
+      "bytes": 6437
+    },
+    {
+      "relativePath": "logs/xcproj-explicit-released-1.0-analyze.log",
+      "sha256": "9f7a1205224a850aae015276db8afde611a263f8f289735c8c89c65e8fc9524d",
+      "bytes": 224
+    },
+    {
+      "relativePath": "guide-smoke.json",
+      "sha256": "6a3777d9bc02163fb4a7a1801709495a2ce5c7979854d7d4d8c8fd01c56c7da6",
+      "bytes": 5297
+    }
+  ],
+  "probeSourceSHA256": "3e572d6f7dfad15984f40c7a15c5fc449eb8ee08264b7dd05d1e19035efff7f0",
+  "standardSuite": {
+    "xctest": 413,
+    "swiftTesting": 233,
+    "failed": 0,
+    "total": 646
+  },
+  "registryMappingsValidated": 25,
+  "codeql": {
+    "prHead": "b5fd443d8e5835a4e30cf128193fea4ca9d6ae05",
+    "prBase": "1839cbfe614c3affeecd6c790bb43ca2053a334a",
+    "actionSHA": "2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2",
+    "version": "4.38.2",
+    "codeqlBundle": "2.27.1",
+    "existingSuccessfulChecks": 26,
+    "existingRun": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36611186473",
+    "localYAMLValidation": "PASS",
+    "requiresCurrentBaseChecks": true
+  },
+  "finalRuntimeChanges": false,
+  "newRemoteWorkflowRuns": 0
+}

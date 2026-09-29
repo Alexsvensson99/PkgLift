@@ -7,11 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Refuse unsupported `.xcproj` project definitions before analysis or migration,
+  including bundles that also contain a PBX project. Check again before editor
+  writes, and before a direct migration-library call can change Podfile or
+  create recovery state. This prevents dependency reader upgrades from silently
+  converting a JSON project into a second PBX definition.
+- Preserve the public 1.0 API and existing incomplete-recovery refusal priority.
+
+
 ## [1.0.0] - 2026-09-29
 
-Source preparation only; 1.0.0 has not been published. The current public
-release remains 0.10.0. See the
-[release notes](Documentation/ReleaseNotes-1.0.0.md).
+Published as [PkgLift 1.0.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0) and available through the
+[Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/2317ae83bc8e1095877c8f79bfd53dbc1b7945e3/Formula/pkglift.rb). See the
+[release notes](Documentation/ReleaseNotes-1.0.0.md) for release verification.
 
 ### Added
 - Define the 1.x compatibility policy for the public CLI, JSON contracts and six
@@ -38,9 +47,10 @@ release remains 0.10.0. See the
   repository fixtures and named single-target evidence. Positive external
   multi-target/workspace migration is explicitly deferred and is not advertised
   as a 1.0 success case; existing discovery and refusal behavior remains.
-- Preserve Apple Silicon as the distribution architecture. The final supported
-  runtime floor and exact toolchain cells must come from the exact signed
-  candidate runs; no unobserved macOS patch or continuous Xcode range is inferred.
+- Preserve Apple Silicon as the distribution architecture. Record the observed
+  macOS 14.8.9 core runtime and separate consumer toolchain cells from exact
+  signed-candidate acceptance; no unobserved macOS patch or continuous Xcode
+  range is inferred.
 - Regenerate analysis and migration plans with 1.0.0 before dry run or apply.
   Do not edit producer-version or evidence fields to reuse older plans.
 
@@ -83,7 +93,7 @@ preparation, not public availability. See the [release notes](Documentation/Rele
 
 ## [0.10.0] - 2026-09-16
 
-PkgLift 0.10.0 is the current public release.
+PkgLift 0.10.0 was published on 2026-09-16.
 
 ### Added
 - Add the exact CryptoSwift 1.10.0 registry mapping for complete Swift iOS
