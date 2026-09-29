@@ -358,7 +358,7 @@ jobs:
       - name: Accept Signed Candidate Conservative Refusal
         run: >-
           python3 Scripts/run-real-project-refusal.py
-          --case hammerspoon
+          --case hammerspoon-workspace
           --pkglift "$PKGLIFT_RELEASE_ACCEPTANCE_BIN"
           --output "$RUNNER_TEMP/pkglift-release-refusal"
 
