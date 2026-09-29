@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-30
+
+**Local source preparation only; not published.** The date above records
+preparation, not publication. The current public release remains 1.0.0.
+See the [release notes](Documentation/ReleaseNotes-1.0.1.md) for the remaining
+candidate qualification and distribution steps.
+
+### Added
+- Add a first-pilot guide ending at a reviewed dry run and improve the migration
+  report template so users can provide the evidence needed to assess a refusal.
+
+### Changed
+- Update XcodeProj to 9.17.5 while retaining the existing supported project-format
+  boundary. JSON-project migration is not supported.
+- Update the SHA-pinned CodeQL init/analyze actions to 4.38.2 without changing
+  workflow permissions, triggers or required gates.
+- Set the source version to 1.0.1. Regenerate saved plans, including plans created
+  with 1.0.0, before dry run or apply; do not edit their producer or evidence fields.
+
 ### Fixed
 - Refuse unsupported `.xcproj` project definitions before analysis or migration,
   including bundles that also contain a PBX project. Check again before editor
