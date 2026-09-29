@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import runpy
+import shlex
 from pathlib import Path
 import subprocess
 import unittest
@@ -130,7 +132,11 @@ class ReleaseWorkflowAcceptanceTests(unittest.TestCase):
 
         refusal = self.step("Accept Signed Candidate Conservative Refusal", self.acceptance_steps)["run"]
         self.assertIn("Scripts/run-real-project-refusal.py", refusal)
-        self.assertIn("--case hammerspoon", refusal)
+        refusal_arguments = shlex.split(refusal)
+        refusal_case = refusal_arguments[refusal_arguments.index("--case") + 1]
+        refusal_cases = runpy.run_path(str(ROOT / "Scripts/run-real-project-refusal.py"))["CASES"]
+        self.assertIn(refusal_case, refusal_cases)
+        self.assertEqual(refusal_cases[refusal_case], "hammerspoon")
         self.assertIn('--pkglift "$PKGLIFT_RELEASE_ACCEPTANCE_BIN"', refusal)
 
     def test_acceptance_evidence_is_separate_from_public_distribution_input(self) -> None:
