@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "recordedAt": "2026-09-29T19:29:48.654772+00:00",
+  "version": "1.0.0",
+  "publicRelease": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "recordedAt": "2026-09-29T19:22:57.059805+00:00",
+    "version": "1.0.0",
+    "tag": "v1.0.0",
+    "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+    "releaseID": 399454485,
+    "url": "https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0",
+    "publishedAt": "2026-09-29T19:21:04Z",
+    "draft": false,
+    "prerelease": false,
+    "archiveSHA256": "402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1",
+    "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+    "registryBundleTreeSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "assets": [
+      {
+        "id": 599019285,
+        "name": "pkglift-macos-arm64.tar.gz",
+        "size": 3042462,
+        "url": "https://github.com/Alexsvensson99/PkgLift/releases/download/v1.0.0/pkglift-macos-arm64.tar.gz",
+        "digest": "sha256:402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1"
+      },
+      {
+        "id": 599019283,
+        "name": "pkglift-macos-arm64.tar.gz.sha256",
+        "size": 93,
+        "url": "https://github.com/Alexsvensson99/PkgLift/releases/download/v1.0.0/pkglift-macos-arm64.tar.gz.sha256",
+        "digest": "sha256:2b15c665bab77a4fe8db8618a0929fa3f76f7231a50d9af804a9a8c9004f6a0d"
+      }
+    ],
+    "commands": {
+      "signature": {
+        "exitCode": 0,
+        "logSHA256": "ae35fdfef59d667306380da383199766d1634e7581e5e199467f976d722bf687"
+      },
+      "version": {
+        "exitCode": 0,
+        "logSHA256": "59854984853104df5c353e2f681a15fc7924742f9a2e468c29af248dce45ce03"
+      },
+      "registry": {
+        "exitCode": 0,
+        "logSHA256": "8e20708c93cecf83abe678d5d81138606825b7ce2db40a6639a90f998abed680"
+      }
+    },
+    "releaseMetadataSHA256": "c5b63128b830076b435624e1b68a9ada8566f2bcca71e3f4de3fa7f0365f5c5c",
+    "tagMetadataSHA256": "e084ed8625d1ca1faf0b41ba0ba944796b5a776db2be2cc090e7b1a7de0771b0",
+    "matchesAcceptedSignedCandidate": true,
+    "commandWorkingDirectory": "isolated-public-readback",
+    "initialRegistryProbe": {
+      "result": "22-source-mappings-from-existing-repository-cwd",
+      "exitCode": 0,
+      "scope": "source-registry-validation-not-bundled-registry",
+      "logSHA256": "c113ea054a341b367c0baea0e7c0473875c8c1c0785e7ea72afa2ac49af48d6f"
+    }
+  },
+  "publishManifestRun": {
+    "id": 36615269741,
+    "status": "passed",
+    "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615269741",
+    "productionDeploymentID": 6743095463
+  },
+  "publicReleaseBodySHA256": "8a4c962e79c42f3fcf0bb77c148a4289d45e5ee75069ab8abc916b28803a5d2a",
+  "homebrew": {
+    "status": "passed",
+    "pullRequest": 17,
+    "pullRequestURL": "https://github.com/Alexsvensson99/homebrew-tap/pull/17",
+    "mergedAt": "2026-09-29T19:27:56Z",
+    "mergeCommit": "2317ae83bc8e1095877c8f79bfd53dbc1b7945e3",
+    "formulaURL": "https://github.com/Alexsvensson99/homebrew-tap/blob/2317ae83bc8e1095877c8f79bfd53dbc1b7945e3/Formula/pkglift.rb",
+    "formulaGitBlobSHA": "e4b8a3ec421a2cbf0c4c5b46d207fd4937b2a4af",
+    "formulaSHA256": "f78c18ca20bcfb109737ab7c54f2d5d588f45505886a46cad053a1e5f0eb93a9",
+    "publicArchiveChecksumMatched": true,
+    "verification": {
+      "pullRequest": {
+        "runID": 36619218315,
+        "sourceCommit": "55d5c18e53aa7b39bcd77a79e2368444f633f9f8",
+        "status": "passed",
+        "url": "https://github.com/Alexsvensson99/homebrew-tap/actions/runs/36619218315",
+        "event": "pull_request",
+        "attempt": 1,
+        "runMetadataSHA256": "00bf231c8236056fa39840b8477023c0b6bf362904bb261ef4096f4c5eb51acc",
+        "jobsMetadataSHA256": "318735d227aa84937aab7d32e77e08d5b6368587977e09686c3ffce3b471ed0e",
+        "logSHA256": "b69db833375fff126950837fdb10e1eeea45da32a8dc1619becf199f2ad2fdd2",
+        "requiredSteps": [
+          {
+            "name": "Require Apple Silicon",
+            "status": "success"
+          },
+          {
+            "name": "Configure Local Tap",
+            "status": "success"
+          },
+          {
+            "name": "Style",
+            "status": "success"
+          },
+          {
+            "name": "Audit",
+            "status": "success"
+          },
+          {
+            "name": "Install",
+            "status": "success"
+          },
+          {
+            "name": "Verify Installation",
+            "status": "success"
+          },
+          {
+            "name": "Formula Test",
+            "status": "success"
+          },
+          {
+            "name": "Uninstall",
+            "status": "success"
+          }
+        ]
+      },
+      "main": {
+        "runID": 36619431921,
+        "sourceCommit": "2317ae83bc8e1095877c8f79bfd53dbc1b7945e3",
+        "status": "passed",
+        "url": "https://github.com/Alexsvensson99/homebrew-tap/actions/runs/36619431921",
+        "event": "push",
+        "attempt": 1,
+        "runMetadataSHA256": "3ca6cc2e725470620eeed6e4334806f0d4d3a4edc3550f449a2c245af6852cfe",
+        "jobsMetadataSHA256": "3fa4f87c12dc88262543e17b9f87446f77b51672204c07eb91d6feb46b94d8ed",
+        "logSHA256": "6a9a165844dca9d7b687388989e1cbbcf82aa6f43f3c249ae6a2b2b65a92d26a",
+        "requiredSteps": [
+          {
+            "name": "Require Apple Silicon",
+            "status": "success"
+          },
+          {
+            "name": "Configure Local Tap",
+            "status": "success"
+          },
+          {
+            "name": "Style",
+            "status": "success"
+          },
+          {
+            "name": "Audit",
+            "status": "success"
+          },
+          {
+            "name": "Install",
+            "status": "success"
+          },
+          {
+            "name": "Verify Installation",
+            "status": "success"
+          },
+          {
+            "name": "Formula Test",
+            "status": "success"
+          },
+          {
+            "name": "Uninstall",
+            "status": "success"
+          }
+        ]
+      }
+    },
+    "localAttempt": {
+      "schemaVersion": 1,
+      "status": "blocked-environment-before-install",
+      "recordedAt": "2026-09-29T19:26:34.079495+00:00",
+      "formulaVersion": "1.0.0",
+      "style": {
+        "exitCode": 0,
+        "logSHA256": "09bb597355fd2b28bfd39fc70df67266ccdc567b773be717687edd616aaecb74"
+      },
+      "audit": {
+        "exitCode": 1,
+        "logSHA256": "75a6b209524010259078b568b248899a7a2eab4185d80c8fe536dc7eba61957b",
+        "reason": "Homebrew prerequisite: installed Command Line Tools older than required by macOS27"
+      },
+      "localInstallStarted": false,
+      "systemComponentsChanged": false,
+      "validationRoute": "required clean macOS15 Homebrew PR and main CI"
+    },
+    "localInstallationPerformed": false,
+    "note": "Required clean macOS15 PR and main CI prove install, validation, test and removal. Local macOS27 audit was blocked by its installed Command Line Tools prerequisite before installation."
+  }
+}

@@ -1,14 +1,14 @@
 # PkgLift 1.0 compatibility contract
 
-G1 policy and interface inventory, based on public 0.10.0 and the
-[1.0 readiness plan](Plan-1.0.md). This contract defines the intended 1.x promise;
-it does not release 1.0 or by itself qualify an environment. The initial G2/G3
-boundaries were adopted on 2026-09-29; their exact-candidate evidence and the
-remaining G4–G6 acceptance still precede a published support commitment.
+The 1.x public compatibility promise is frozen by `v1.0.0`. Its positive support
+envelope follows the adopted 2026-09-29 scope and the [final environment matrix](Environments-1.0.md#final-10-evidence-matrix).
+[Release qualification](Qualification-1.0.md) distinguishes source checks,
+signed-artifact acceptance and public distribution; this contract does not
+promise universal environment or project support.
 
 ## Versioning policy
 
-The first 1.0.0 tag will freeze the supported public surface described here.
+The 1.0.0 tag freezes the supported public surface described here.
 Within 1.x, preserve existing command names/options, documented machine-readable
 meanings, public library declarations and their documented safety boundaries.
 Do not remove or rename a supported surface, change an existing field's type or
@@ -200,7 +200,8 @@ address the 1.0 documentation disposition; optional source-comment and
 non-`@testable` client coverage remain post-1.0 ergonomics work, not a new release
 gate. The review does not require a broader API redesign. The exact public
 declarations selected for the 1.0 source promise are recorded separately in the
-[1.0 API baseline](API-1.0.md); candidate acceptance of that baseline remains G6.
+[1.0 API baseline](API-1.0.md), bound to the final source through the
+[qualification record](Qualification-1.0.md).
 
 Internal targets `PkgLiftInspection` and `PkgLiftSignalSupport`, the CLI's internal
 Swift types, test seams, private helpers and dependency internals are not exported
@@ -213,33 +214,35 @@ Compatible additions must preserve existing overload resolution, defaults,
 Sendable/concurrency requirements and conformances for existing callers. Adding
 a required protocol member, changing isolation or error-case shape can be a
 source break even if the symbol name stays the same. Changes to these surfaces
-need client compilation and review against the 1.0 baseline. Freeze a public API
-inventory/diff baseline at G6; the current representative client tests are not an
+need client compilation and review against the frozen 1.0 API inventory/diff
+baseline; the representative client tests are not an
 exhaustive symbol-level compatibility proof for every future release.
 
 ## Support table and qualification state
 
-“Baseline tested” records existing 0.10 evidence. “Pending” means no 1.0 promise
-may be inferred yet. Host support, target support and detecting a language are
-different dimensions. Keep pending rows visible until G2/G3 close them.
+“Qualified” means the named workload passed at its recorded source/artifact and
+observed environment. Source, runtime, consumer builds and language detection are
+different dimensions. The [final matrix](Environments-1.0.md#final-10-evidence-matrix)
+and [qualification record](Qualification-1.0.md) own those exact boundaries.
+Historical rows remain historical; the deferred external cell remains visible.
 
-| Dimension | Candidate 1.0 boundary | Evidence/status and owner |
-|---|---|---|
-| Distributed host/CPU | Apple Silicon arm64. The runtime floor is the lowest macOS host on which the exact signed final candidate passes runtime acceptance. | The signed 0.10 artifact and Homebrew path have historical evidence. The macOS 14.8.9 smoke is a baseline observation only: it neither qualifies the final 1.0 candidate nor proves exact 14.0. Deployment metadata is not runtime evidence. Intel distribution is outside scope. |
-| Source build toolchain | Two independent selected cells: Xcode 16.4 / Swift 6.1.2 and Xcode 27.0 / Swift 6.4. | Historical and local observations exist for both families. A local 1.0 source build has completed during candidate preparation, while exact final protected CI and release-artifact acceptance remain pending. Passing either cell does not interpolate the versions between them or promise all later Xcode/Swift releases. Swift tools version 6.0 is a syntax minimum only. |
-| Consumer build environment | Explicit scheme/configuration/destination/SDK and recorded CocoaPods version in each selected cell. | Existing consumer CI selects Xcode 16.4, and Xcode 27 local evidence is separate. Repeat every non-deferred promised workload against the exact candidate in its claimed cell; do not infer missing fields from a runner label or another run. |
-| Swift consumer | Mapping-dependent AUTO with complete graph evidence | Three repository-owned KeychainAccess/DeviceKit/CryptoSwift consumers have historical Swift/iOS 15 evidence. Every non-deferred release claim still needs exact-candidate evidence. |
-| Objective-C / Swift+Objective-C | Only mappings supporting every detected language | Repository-owned SDWebImage and PartialMixed evidence remains bounded historical/regression evidence until the relevant exact-candidate row is repeated. Every additional advertised project shape needs its own evidence. |
-| Objective-C++, C, C++ | Detection; non-automatic without exact complete language evidence | No new mapping or positive support is introduced. Preserve conservative refusal. |
-| Target platform/deployment | Mapping-specific, not inherited from host OS support | Schema-2 consumer mappings restrict Swift/iOS 15+. Other mapping claims need their own evidence; macOS/iOS detection is not a universal migration promise. G2/G3 record the accepted matrix. |
-| Project/workspace/targets | Explicit selection when ambiguous, containment and exact target attribution. The initial 1.0 positive envelope defers only an external positive multi-target/workspace migration. | Existing CLI behavior, selection/refusal handling and repository regression coverage remain. The deferred external cell is tracked post-1.0 and is not replaced by a fixture or safe refusal. All non-deferred G3 rows still need exact-candidate reruns. |
-| Existing SwiftPM + remaining CocoaPods | Supported only with nonconflicting, validated partial state inside the adopted positive envelope. | Preflight and preservation behavior plus historical fixture evidence exist; repeat the non-deferred mixed-manager/partial rows against the exact candidate. |
-| External Git/local pods, unsupported Ruby, Carthage/RN/Flutter/Capacitor | Preserve current non-automatic boundaries | See [migration safety](MigrationSafety.md). No new source resolver, dynamic execution or manager conversion is promised. KMP heuristic detection is not claimed. |
-| Recovery | Existing handled-signal rollback and fail-closed markers; manual recovery outside automatic boundary | The eleven local full-workflow scenarios passed; protected integration and exact-candidate acceptance remain pending. Neither 1.x compatibility nor exit status implies power-loss recovery. |
+| Dimension | 1.0 boundary | Evidence/status |
+| --- | --- | --- |
+| Distributed host/CPU | Apple Silicon arm64; lowest observed signed M runtime is macOS 14.8.9 (23J631). | Exact M signature/quarantine/core runtime passed on macOS 14.8.9 and locally on 27.0. macOS 14 package metadata is not evidence of exact 14.0 or every patch. Intel distribution is outside scope. |
+| Source build toolchain | Separate selected Xcode 16.4/Swift 6.1.2 and Xcode 27.0/Swift 6.4 cells. | Protected final source checks plus local source build/test/registry/API/recovery evidence with unchanged-input binding. Historical dirty records retain their original identities. No continuous toolchain range, binary ABI or all-future-Xcode promise. |
+| Consumer build environment | Explicit scheme/configuration/destination/SDK and same-job CocoaPods metadata. | Signed M full/PartialMixed/refusal on macOS 15.7.9/Xcode 16.4; independent signed M local core/four-consumer acceptance on macOS 27.0/Xcode 27.0. The local consumer cell uses Debug/arm64/iOS deployment 15.0. |
+| Swift consumer | Mapping-dependent AUTO with complete graph evidence. | KeychainAccess, DeviceKit and CryptoSwift repository consumers passed on final source F; signed M PartialSwift and existing-SwiftPM coexistence passed locally. These are named version/platform inputs, not proof of every registry lower-bound match. |
+| Objective-C / Swift+Objective-C | Only mappings supporting every detected language. | Signed M complete SDWebImage mixed-language and PartialMixed migration/build passed in both selected consumer cells. Additional shapes need their own evidence. |
+| Objective-C++, C, C++ | Detection; non-automatic without exact complete language evidence. | No new mapping or positive support is introduced. Preserve conservative refusal. |
+| Target platform/deployment | Mapping-specific, separate from host OS support. | Named consumer mappings/cells require iOS 15. Other mapping claims need their own evidence; macOS/iOS detection is not a universal migration promise. |
+| Project/workspace/targets | Explicit selection when ambiguous, containment and exact target attribution. | AWS is named external single-target source qualification; FirebaseUI/Hammerspoon are qualified refusals. Existing selection and sibling-preservation regressions remain. External positive multi-target/workspace migration stays deferred post-1.0. |
+| Existing SwiftPM + remaining CocoaPods | Nonconflicting, validated partial state inside the adopted envelope. | Three final-source and signed M local partial/coexistence cases preserve retained CocoaPods, exact existing SwiftPM objects/pins and fresh post-migration builds. |
+| External Git/local pods, unsupported Ruby, Carthage/RN/Flutter/Capacitor | Existing non-automatic boundaries. | See [migration safety](MigrationSafety.md). No new source resolver, Ruby execution or manager conversion is promised. KMP heuristic detection is not claimed. |
+| Recovery | Handled-signal rollback, fail-closed markers and manual recovery outside the automatic boundary. | Eleven source-bound complete-workflow drills passed and their 194 build inputs bind through final source/M. They are not signed-binary signal tests or universal crash/power-loss recovery. |
 
-The local toolchains used for G1 and candidate preparation are development
-observations until bound to the selected G2 cells by final receipts. They do not
-silently widen the runtime, Xcode/Swift or consumer matrix.
+The separate [signed M local receipt](Evidence/Qualification-1.0/local-final-M-acceptance.json) retains the full-mixed baseline's
+iOS-9 failure and its fresh iOS-15/arm64 retry. That toolchain adjustment did not
+change the candidate executable, classification or migration safety rules.
 
 ## Executable examples and evidence map
 
@@ -263,12 +266,10 @@ optional post-1.0 ergonomics coverage and has not been run here.
 | Signal statuses and recovery boundaries | [MigrateInterruptionTests](../Tests/PkgLiftCLITests/MigrateInterruptionTests.swift) and [atomic tests](../Tests/PkgLiftMigrationTests/AtomicMigrationTests.swift) |
 | Configuration, registry and inspection schema/profile rules | [ConfigurationTests](../Tests/PkgLiftCoreTests/ConfigurationTests.swift), [registry tests](../Tests/PkgLiftRegistryTests), [inspection tests](../Tests/PkgLiftInspectionTests), [Podspec tests](../Tests/PkgLiftCocoaPodsTests) |
 
-G1 is integrated and a local 1.0 source build has completed. G2 still requires
-the final bound receipts for its adopted runtime/toolchain cells; every
-non-deferred G3 row requires its exact-candidate rerun, while the external
-positive multi-target/workspace cell is explicitly deferred. G4 protected and
-candidate acceptance, the remaining G5 dispositions and G6 exact release
-acceptance remain separate gates.
+G1–G6 acceptance for the adopted envelope is recorded in [final qualification](Qualification-1.0.md).
+The external positive multi-target/workspace cell remains deferred. The local
+G1 record below is preserved as historical evidence for its original date and
+source, separate from the signed M artifact acceptance.
 
 ### Local G1 validation
 
