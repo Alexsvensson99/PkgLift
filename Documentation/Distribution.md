@@ -78,16 +78,25 @@ artifacts to a public GitHub Release receives `contents: write` permission.
   protected approval environments remain in force. Concurrent manual dispatches
   are not an atomic transaction with this lookup; multiple visible new matches
   are refused. An uncertain dispatch response is never automatically retried.
-- A manual `workflow_dispatch` run from `main` signs, notarizes, verifies a
-  freshly extracted quarantine-marked CLI, and uploads a private Actions
-  artifact. It never creates a GitHub Release. Manual runs from other refs are
-  skipped.
+- A manual `workflow_dispatch` run from `main` signs and notarizes the package,
+  then verifies the freshly extracted, quarantine-marked CLI against the
+  recorded archive and executable hashes. A dependent consumer-acceptance job
+  with read-only permissions and no signing secrets downloads those exact bytes
+  and exercises
+  a complete supported migration through apply and build, a partial migration
+  that retains CocoaPods dependencies through apply and build, and a
+  conservative refusal that must leave the fixture unchanged. A dependent
+  Apple Silicon macOS 14 job downloads that exact private artifact, records the
+  observed host patch and toolchain, and repeats the bounded runtime and
+  structural-apply checks. The workflow must succeed in full before the
+  manifest workflow can publish. Manual runs never create a GitHub Release,
+  and runs from other refs are skipped.
 - Direct tag pushes never start a distribution or publication workflow. The
   reviewed release-manifest workflow is the only path that creates a public tag
   and GitHub Release.
-- A final tag must match the CLI version exactly (for example, CLI `0.6.0`
-  requires tag `v0.6.0`); prerelease tags may append a suffix such as
-  `v0.6.0-rc.1`.
+- A final tag must match the CLI version exactly (for example, CLI `1.0.0`
+  requires tag `v1.0.0`); prerelease tags may append a suffix such as
+  `v1.0.0-rc.1`.
 - The notarization ZIP is a temporary submission format. Public releases contain
   only `pkglift-macos-arm64.tar.gz` and its `.sha256` file.
 
@@ -119,7 +128,7 @@ update the formula with the exact public archive SHA-256. For a new tap checkout
 the scaffold command is:
 
 ```bash
-bash Scripts/scaffold-homebrew-tap.sh /tmp/homebrew-tap 0.6.0 VERIFIED_SHA256
+bash Scripts/scaffold-homebrew-tap.sh /tmp/homebrew-tap VERSION VERIFIED_SHA256
 ```
 
 The command refuses to overwrite an existing path and creates an initial tap
@@ -164,8 +173,8 @@ pkglift registry validate
 brew uninstall pkglift
 ```
 
-Creating the release-manifest branch, merging its reviewed commit, approving
-the protected publication environment, creating the final tag and GitHub
-Release, and publishing the formula all require explicit approval after the
-private distribution artifact has passed every acceptance check. Do not add a
-new release manifest to the product-preparation commit.
+The protected signing and publication environments still require their
+configured approvals. The release operator must also have current authorization
+for the complete publication and Homebrew update. Those controls do not replace
+the artifact checks, and an authorization does not permit bypassing a failed
+gate. Do not add a new release manifest to the product-preparation commit.

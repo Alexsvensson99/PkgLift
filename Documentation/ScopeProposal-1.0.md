@@ -1,25 +1,29 @@
-# Proposed initial 1.0 support envelope
+# Adopted initial 1.0 support envelope
 
-Status: **proposal awaiting a recorded contract decision.** This document does
-not change the CLI, registry, classifications, published support statement, plan,
-or release status. G2 and G3 remain open; G4–G6 remain release gates.
+Status: **scope adopted on 2026-09-29; qualification remains open.** The decision
+defers only the external positive multi-target/workspace cell from the initial
+1.0 positive-qualification envelope. It does not change the CLI, registry,
+classifications or release status. The G2 environment boundary is evidence-bound
+as recorded below; its final-candidate runs, the non-deferred G3 rows and G4–G6
+remain release gates. Registry eligibility remains unchanged; the [mapping evidence audit](RegistryEvidence-1.0.md) found no contradicted identity, product or minimum boundary requiring a restriction.
 
-## Decision needed
+## Recorded decisions
 
-Decide whether the initial 1.0 release contract should defer an **external,
+On 2026-09-29, the initial 1.0 contract adopted deferral of an **external,
 positive multi-target/workspace migration** from its positive-qualification
-envelope. If adopted, the deferred cell becomes explicit post-1.0 qualification
-work. It is not renamed as complete, replaced by a repository fixture, or
-silently downgraded from an existing public promise.
+envelope. The deferred cell is explicit post-1.0 qualification work. It is not
+renamed as complete, replaced by a repository fixture or satisfied by a safe
+refusal. Existing CLI/API behavior is retained.
 
-If this decision is not adopted, retain the current Plan 1.0 G3 entry condition:
-a current external positive multi-target/workspace case is required before a 1.0
-candidate. If it is adopted, a later, separately reviewed contract update must
-make the public boundary and deferred work visible in the plan, compatibility
-table and README before release-candidate preparation. This proposal makes none
-of those edits.
+The same decision round selected Apple Silicon and an evidence-bound G2 matrix.
+The supported runtime floor is the lowest macOS version on which the exact final
+candidate passes runtime acceptance. The macOS 14.8.9 observation is historical
+baseline evidence, not proof for the final candidate, and deployment metadata
+does not establish exact 14.0 runtime support. Xcode 16.4/Swift 6.1.2 and Xcode
+27/Swift 6.4 are separate selected cells; no version range between or after them
+is inferred. Detailed workload rows and current-candidate results remain G2 work.
 
-## Why a decision is needed
+## Why the decision was needed
 
 The current compatibility table keeps project/workspace/target breadth pending
 until G3 and says that repository-owned fixtures do not qualify external
@@ -38,21 +42,21 @@ The compatibility contract already permits a safety correction to tighten AUTO
 eligibility when new evidence identifies risk, and requires replanning; it does
 not permit a silent widening of migration authority.
 
-## Proposed envelope
+## Adopted envelope
 
-This is a proposed **positive qualification envelope**, separate from retained
+This is the adopted **positive qualification envelope**, separate from retained
 CLI behavior and from documented detection/refusal behavior.
 
-| Area | Proposed initial 1.0 statement | Evidence boundary and remaining work |
+| Area | Adopted initial 1.0 statement | Evidence boundary and remaining work |
 |---|---|---|
 | Public CLI and six library products | Retain the current 1.x compatibility policy, command/options meanings, report/plan distinctions and exact-version executable-plan preflight. | This is an interface promise, not a consumer-build or runtime claim. G6 still freezes the exact public API and candidate. |
-| Static analysis and conservative outcomes | Retain the current literal parsing, project discovery, target attribution and typed REVIEW/BLOCKED/UNKNOWN outcomes. Unsupported constructs remain non-automatic. | A safe refusal is useful existing behavior; it is not a successful migration. No registry identity becomes AUTO by this proposal. |
+| Static analysis and conservative outcomes | Retain the current literal parsing, project discovery, target attribution and typed REVIEW/BLOCKED/UNKNOWN outcomes. Unsupported constructs remain non-automatic. | A safe refusal is useful existing behavior; it is not a successful migration. No registry identity becomes AUTO through this adoption. |
 | Repository-owned positive partial migrations | Include only the qualified `PartialSwift`, `PartialMixed` and `PartialSwiftCoexistence` fixture shapes: iOS 15, pinned dependencies, exact reviewed AUTO set, retained CocoaPods integration and fresh structural/post-migration builds. | These are controlled regression cells. They demonstrate Swift-only, Swift/Objective-C and existing-SwiftPM coexistence behavior only at their recorded inputs/toolchains. |
 | External positive partial migration | Treat the pinned AWS Grid Feed result as historical external single-target partial-migration evidence, to be requalified against the exact 1.0 candidate if it is used in the release claim. | One historical external case cannot prove a current candidate, all Swift mappings or a target/workspace shape it does not contain. |
-| External positive multi-target/workspace migration | **Deferred.** Do not make a positive external multi-target or workspace success claim in the initial envelope. | This is the specific G3 cell deferred by the decision above. It remains open post-1.0 work requiring a reviewed immutable intake, baseline, current-executable AUTO result, dry run, apply, CocoaPods refresh, preservation checks and final build. |
+| External positive multi-target/workspace migration | **Deferred on 2026-09-29.** Do not make a positive external multi-target or workspace success claim in the initial envelope. | This specific G3 cell remains open post-1.0 work requiring a reviewed immutable intake, baseline, current-executable AUTO result, dry run, apply, CocoaPods refresh, preservation checks and final build. |
 | Multi-target regression coverage | Retain repository target-attribution, sibling-preservation and mixed-language regression coverage. | Repository coverage is not substituted for an external qualification. It must be described as regression evidence, not as external project proof. |
 | Languages and mappings | State support only per mapping, exact version, target, detected language and platform evidence. Swift and mixed Swift/Objective-C evidence is bounded to the named fixtures and mappings. | Do not claim that all Swift mappings, all Objective-C projects, or all versions matching a registry lower bound are positively qualified. Objective-C++, C and C++ remain detection/non-automatic without complete evidence. |
-| Toolchains and hosts | Keep the current advertised host boundary and each pending G2 row visible until an explicit support-boundary decision and same-run evidence exist. | The exact macOS 14.0 runtime, the selected lower/upper source and consumer toolchains, and complete hosted metadata remain unresolved. Xcode 27 local evidence does not establish a range. |
+| Toolchains and hosts | Apple Silicon only. Set the supported runtime floor from the exact final candidate's lowest passing macOS host. Qualify selected Xcode 16.4/Swift 6.1.2 and Xcode 27/Swift 6.4 cells separately. | Historical macOS 14.8.9 does not qualify the final candidate or exact 14.0. Final workload rows and same-run evidence remain G2 work; no support continuum or “all newer Xcode” promise is implied. |
 | Recovery and release | Keep G4 recovery drills, G5 safety/evidence disposition and G6 exact-candidate/artifact acceptance as required gates. | Deferring the external multi-target cell does not waive recovery, safety review, signing/notarization, distribution or release approval. |
 
 ## Explicitly retained, but not newly positively qualified
@@ -86,24 +90,23 @@ A repository-owned multi-target regression can improve confidence in classifier
 and editor behavior, but cannot supply the upstream source ownership, generated
 integration, baseline or preservation evidence required by that external cell.
 
-## Acceptance criteria for adopting this proposal
+## Adoption record and remaining acceptance criteria
 
-Adoption is a product-contract decision, not a release acceptance. It requires:
+The product-contract decision is recorded above; it is not release acceptance.
+The remaining implementation and qualification criteria are:
 
-1. An explicit decision on the deferred external positive multi-target/workspace
-   cell and the intended release claim.
-2. A subsequent reviewed documentation change that preserves existing CLI/API
+1. A reviewed documentation change that preserves existing CLI/API
    behavior while accurately updating the plan, compatibility table and README;
    no existing support promise may disappear by implication.
-3. A candidate evidence matrix that labels every row as qualified positive,
+2. A candidate evidence matrix that labels every row as qualified positive,
    qualified refusal, regression-only, historical-only, pending or deferred.
-4. Completion of every G2 cell inside the finally advertised host/toolchain
+3. Completion of every G2 cell inside the finally advertised host/toolchain
    envelope, with exact same-run source, binary and environment evidence.
-5. G3 remaining open until the selected decision's non-deferred positive and
+4. G3 remaining open until the adopted envelope's non-deferred positive and
    refusal rows have current-candidate evidence. The deferred external cell must
    remain visibly tracked for post-1.0 qualification.
-6. Completion of G4, G5 and G6, including recovery drill, safety disposition and
-   exact release-artifact acceptance, before any 1.0 publication decision.
+5. Completion of G4, G5 and G6, including recovery drill, safety disposition and
+   exact release-artifact acceptance, before 1.0 publication.
 
 ## Evidence consulted
 

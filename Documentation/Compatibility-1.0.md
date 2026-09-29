@@ -2,8 +2,9 @@
 
 G1 policy and interface inventory, based on public 0.10.0 and the
 [1.0 readiness plan](Plan-1.0.md). This contract defines the intended 1.x promise;
-it does not release 1.0, change the binary version, or qualify new environments.
-G2–G6 remain required before that promise becomes a published support commitment.
+it does not release 1.0 or by itself qualify an environment. The initial G2/G3
+boundaries were adopted on 2026-09-29; their exact-candidate evidence and the
+remaining G4–G6 acceptance still precede a published support commitment.
 
 ## Versioning policy
 
@@ -75,7 +76,7 @@ does not map errors through it. Do not expect process codes 2…6 from those nam
 
 | Surface | Current version and semantic authority |
 |---|---|
-| `ProjectAnalysis`, `MigrationPlan`, `VerificationResult` | Top-level `schemaVersion: 1`, ISO-8601 timestamp and `pkgLiftVersion`; see [JSON contracts](JSONSchema.md). Analysis/verification are reports. A plan is executable only after current preflight, never just because decoding succeeded. |
+| `ProjectAnalysis`, `MigrationPlan`, `VerificationResult` | Analysis/verification use `schemaVersion: 1`. Migration plans use schema 2 when entries contain CocoaPods registry-source provenance and schema 1 otherwise, with ISO-8601 timestamp and `pkgLiftVersion`; see [JSON contracts](JSONSchema.md). Reports are not execution authority. A plan is executable only after current preflight, including schema/evidence agreement. |
 | `DiagnosticsReport` | Schema 1, minimized local support report with explicit status/failures. It is not an executable plan or an anonymization guarantee. |
 | Portable analyze/plan stdout | `portableOutput.version: 1`; redacted review output, not a replacement executable plan. Project/dependency names may remain. |
 | `.pkglift.yml` | Schema 1. `registry.additionalPaths`, `migration.allow`/`deny`, `verification.build` are model fields. The CLI still requires explicit `verify --build`; declaring a model field does not imply automatic command execution. |
@@ -153,6 +154,54 @@ reuse compiled modules across Xcode/Swift versions.
 | [PkgLiftMigration](../Sources/PkgLiftMigration) | Classifier/planner/preflight, engine, Git safety, atomic orchestration and Core compatibility typealiases. `MigrationPlanner.generatePlan(...)` preserves unsupported dependencies as non-AUTO entries. |
 | [PkgLiftVerification](../Sources/PkgLiftVerification) | Structural/build verification, explicit options and result/error types. `BuildVerificationOptions.validated()` refuses invalid process input; verification does not supply missing migration evidence. |
 
+### Migration-library caller responsibility
+
+A direct `PkgLiftMigration` caller must preserve the same authority boundary as
+the CLI: construct a current plan from the current project, call
+`MigrationPlanPreflight.prepare(plan:currentPlan:availableTargetInfos:)`, and
+pass only that call's returned `PreparedMigration` to
+`MigrationEngine.execute(prepared:...)`. A caller must not construct a substitute
+prepared value, omit current-plan comparison or convert a `REVIEW`, `BLOCKED` or
+`UNKNOWN` result into operations. Direct `PkgLiftXcode` editor calls remain
+lower-level mutations against caller-selected paths; their public availability
+does not establish that migration evidence passed preflight.
+
+Given caller-supplied plans regenerated from the same current project and its
+current analyzed targets, the required execution shape is:
+
+```swift
+let prepared = try MigrationPlanPreflight().prepare(
+    plan: savedPlan,
+    currentPlan: currentPlan,
+    availableTargetInfos: currentTargetInfos
+)
+
+try MigrationEngine().execute(
+    prepared: prepared,
+    podfileURL: podfileURL,
+    projectPath: projectPath,
+    backupDir: backupDirectory
+)
+```
+
+The library caller remains responsible for obtaining `savedPlan`, `currentPlan`
+and `currentTargetInfos` from the same selected and contained project context;
+applying its own Git cleanliness policy; preserving the plan/project identity;
+handling cancellation/signals as needed; and performing the separate dependency
+refresh and verification steps after a successful apply. The engine retains its
+own incomplete-recovery refusal, exact declaration check, backup and rollback
+behavior. The example does not authorize hand-built prepared operations.
+
+The CLI enforces this sequence before apply. The targeted
+[1.0 safety review](SafetyReview-1.0.md#g5-sr-01--the-public-execution-precondition-is-easy-to-miss)
+recorded a Low documentation/API-ergonomics gap because this required sequence
+was not explicit in the compatibility contract. The contract and example above
+address the 1.0 documentation disposition; optional source-comment and
+non-`@testable` client coverage remain post-1.0 ergonomics work, not a new release
+gate. The review does not require a broader API redesign. The exact public
+declarations selected for the 1.0 source promise are recorded separately in the
+[1.0 API baseline](API-1.0.md); candidate acceptance of that baseline remains G6.
+
 Internal targets `PkgLiftInspection` and `PkgLiftSignalSupport`, the CLI's internal
 Swift types, test seams, private helpers and dependency internals are not exported
 library promises. The `podspec inspect` CLI report is still covered separately.
@@ -176,28 +225,33 @@ different dimensions. Keep pending rows visible until G2/G3 close them.
 
 | Dimension | Candidate 1.0 boundary | Evidence/status and owner |
 |---|---|---|
-| Distributed host/CPU | Apple Silicon arm64, macOS 14 minimum retained | Signed 0.10 artifact and Homebrew verified. G2 [runtime smoke on macOS 14.8.9](Environments-1.0.md) passed; exact 14.0 remains untested. Minimum deployment metadata alone is insufficient. Intel distribution is outside scope. |
-| Source build toolchain | Exact supported Xcode/Swift combinations, not “all later versions” | Baseline signing run [35066758613](https://github.com/Alexsvensson99/PkgLift/actions/runs/35066758613) records macOS 15.7.9 arm64 and Swift 6.1.2; workflow selects Xcode 16.4. Capture exact Xcode build and qualify supported lower/upper cells in G2. Swift tools version 6.0 in Package.swift is a syntax minimum, not proof of every Swift 6 toolchain. |
-| Consumer build environment | Explicit scheme/configuration/destination/SDK; recorded CocoaPods version | Existing consumer CI selects Xcode 16.4. Complete the exact environment matrix, including CocoaPods and SDK versions, in G2. Do not infer them from the runner label. |
-| Swift consumer | Mapping-dependent AUTO with complete graph evidence | Three repository-owned KeychainAccess/DeviceKit/CryptoSwift consumers have concrete Swift/iOS 15 evidence. Broader real-project and partial-migration claims are pending G3. |
-| Objective-C / Swift+Objective-C | Only mappings supporting every detected language | Repository-owned SDWebImage mixed-language fixture is baseline evidence. Every additional advertised project shape needs G3 evidence. |
+| Distributed host/CPU | Apple Silicon arm64. The runtime floor is the lowest macOS host on which the exact signed final candidate passes runtime acceptance. | The signed 0.10 artifact and Homebrew path have historical evidence. The macOS 14.8.9 smoke is a baseline observation only: it neither qualifies the final 1.0 candidate nor proves exact 14.0. Deployment metadata is not runtime evidence. Intel distribution is outside scope. |
+| Source build toolchain | Two independent selected cells: Xcode 16.4 / Swift 6.1.2 and Xcode 27.0 / Swift 6.4. | Historical and local observations exist for both families. A local 1.0 source build has completed during candidate preparation, while exact final protected CI and release-artifact acceptance remain pending. Passing either cell does not interpolate the versions between them or promise all later Xcode/Swift releases. Swift tools version 6.0 is a syntax minimum only. |
+| Consumer build environment | Explicit scheme/configuration/destination/SDK and recorded CocoaPods version in each selected cell. | Existing consumer CI selects Xcode 16.4, and Xcode 27 local evidence is separate. Repeat every non-deferred promised workload against the exact candidate in its claimed cell; do not infer missing fields from a runner label or another run. |
+| Swift consumer | Mapping-dependent AUTO with complete graph evidence | Three repository-owned KeychainAccess/DeviceKit/CryptoSwift consumers have historical Swift/iOS 15 evidence. Every non-deferred release claim still needs exact-candidate evidence. |
+| Objective-C / Swift+Objective-C | Only mappings supporting every detected language | Repository-owned SDWebImage and PartialMixed evidence remains bounded historical/regression evidence until the relevant exact-candidate row is repeated. Every additional advertised project shape needs its own evidence. |
 | Objective-C++, C, C++ | Detection; non-automatic without exact complete language evidence | No new mapping or positive support is introduced. Preserve conservative refusal. |
 | Target platform/deployment | Mapping-specific, not inherited from host OS support | Schema-2 consumer mappings restrict Swift/iOS 15+. Other mapping claims need their own evidence; macOS/iOS detection is not a universal migration promise. G2/G3 record the accepted matrix. |
-| Project/workspace/targets | Explicit selection when ambiguous, containment and exact target attribution | Existing selection/refusal tests and read-only pilots. Full real-project workspace/multi-target and retained-CocoaPods builds remain G3 qualification. |
-| Existing SwiftPM + remaining CocoaPods | Supported only with nonconflicting, validated partial state | Preflight and preservation behavior exist; repeatable full mixed-manager build evidence is pending G3. |
+| Project/workspace/targets | Explicit selection when ambiguous, containment and exact target attribution. The initial 1.0 positive envelope defers only an external positive multi-target/workspace migration. | Existing CLI behavior, selection/refusal handling and repository regression coverage remain. The deferred external cell is tracked post-1.0 and is not replaced by a fixture or safe refusal. All non-deferred G3 rows still need exact-candidate reruns. |
+| Existing SwiftPM + remaining CocoaPods | Supported only with nonconflicting, validated partial state inside the adopted positive envelope. | Preflight and preservation behavior plus historical fixture evidence exist; repeat the non-deferred mixed-manager/partial rows against the exact candidate. |
 | External Git/local pods, unsupported Ruby, Carthage/RN/Flutter/Capacitor | Preserve current non-automatic boundaries | See [migration safety](MigrationSafety.md). No new source resolver, dynamic execution or manager conversion is promised. KMP heuristic detection is not claimed. |
-| Recovery | Existing handled-signal rollback and fail-closed markers; manual recovery outside automatic boundary | Full user-flow drills remain G4. Neither 1.x compatibility nor exit status implies power-loss recovery. |
+| Recovery | Existing handled-signal rollback and fail-closed markers; manual recovery outside automatic boundary | The eleven local full-workflow scenarios passed; protected integration and exact-candidate acceptance remain pending. Neither 1.x compatibility nor exit status implies power-loss recovery. |
 
-The local toolchain used to validate G1 is a development observation, not a newly
-qualified support cell. G1 does not silently widen the macOS/Xcode or consumer matrix.
+The local toolchains used for G1 and candidate preparation are development
+observations until bound to the selected G2 cells by final receipts. They do not
+silently widen the runtime, Xcode/Swift or consumer matrix.
 
 ## Executable examples and evidence map
 
 The test [PublicAPIContractTests](../Tests/PkgLiftPublicContractTests/PublicAPIContractTests.swift)
-imports all six libraries without `@testable`. Its read-only examples combine
-Podfile parsing, bundled lookup/validation and conservative planning for an
-unmapped dependency, then exercise typed workspace-containment and build-option
-refusal. It is a public-access/client smoke test, not a real-project migration or ABI test.
+imports all six libraries without `@testable`. Its current read-only examples
+combine Podfile parsing, bundled lookup/validation and conservative planning for
+an unmapped dependency, then exercise typed workspace-containment and
+build-option refusal. It is a public-access/client smoke test, not a real-project
+migration, ABI test or evidence that a direct library caller followed the
+preflight-to-engine sequence. The documented Swift example above addresses the
+Low 1.0 caller-responsibility finding; an executable public-client case remains
+optional post-1.0 ergonomics coverage and has not been run here.
 
 | Contract boundary | Focused evidence |
 |---|---|
@@ -209,9 +263,12 @@ refusal. It is a public-access/client smoke test, not a real-project migration o
 | Signal statuses and recovery boundaries | [MigrateInterruptionTests](../Tests/PkgLiftCLITests/MigrateInterruptionTests.swift) and [atomic tests](../Tests/PkgLiftMigrationTests/AtomicMigrationTests.swift) |
 | Configuration, registry and inspection schema/profile rules | [ConfigurationTests](../Tests/PkgLiftCoreTests/ConfigurationTests.swift), [registry tests](../Tests/PkgLiftRegistryTests), [inspection tests](../Tests/PkgLiftInspectionTests), [Podspec tests](../Tests/PkgLiftCocoaPodsTests) |
 
-All G1 evidence is local until reviewed/integrated through normal protected CI.
-G2 environment qualification, G3 project breadth, G4 recovery drills, G5 safety
-review and G6 exact release acceptance remain separate, open gates.
+G1 is integrated and a local 1.0 source build has completed. G2 still requires
+the final bound receipts for its adopted runtime/toolchain cells; every
+non-deferred G3 row requires its exact-candidate rerun, while the external
+positive multi-target/workspace cell is explicitly deferred. G4 protected and
+candidate acceptance, the remaining G5 dispositions and G6 exact release
+acceptance remain separate gates.
 
 ### Local G1 validation
 

@@ -56,23 +56,32 @@ After review, only the `AUTO` entry may be added as a Swift package. The unknown
 
 CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on December 2, 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). The plan explicitly keeps existing trunk and CDN builds available, and does not mean CocoaPods itself or private spec repositories stop working. PkgLift provides a reviewable path for native Xcode projects that want to move supported dependencies to SwiftPM without pretending every pod or project shape can be converted automatically.
 
-## v0.6.0 — Released
+## 1.0.0 — Source preparation
 
-PkgLift v0.6.0 was released on **2026-09-05** and is available as a signed and notarized [GitHub download](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.6.0) and through [Homebrew](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb). The [release notes](Documentation/ReleaseNotes-0.6.0.md) describe the shipped scope, and the [release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) records the completed verification.
+This checkout prepares PkgLift 1.0.0. The current public download and Homebrew
+formula remain 0.10.0 until the exact 1.0 candidate passes its protected release
+workflow and the public release is verified. See the
+[1.0.0 release notes](Documentation/ReleaseNotes-1.0.0.md) for the candidate scope
+and upgrade rules.
 
-The release adds a narrow library API in `PkgLiftCocoaPods` for caller-supplied evidence under `pkglift.synthetic-local/v1`; a positive result uses the `single-swift-library/v1` blueprint shape. The S1 fixture is repository-owned. Given an already available Podspec JSON document and explicit inventory evidence, it can return a deterministic, read-only structural blueprint candidate for one Swift library. The result retains the exact v0.5 declaration assessment and reasons; it never turns that assessment into package-validity or migration evidence.
+Version 1.0 freezes the documented CLI, JSON and public Swift API contract. It
+also carries forward the unpublished 0.11 safety work: registry-source and
+header-import evidence, safer saved-plan writes, stricter preflight checks and
+project-preservation coverage. Saved plans remain bound to the PkgLift version
+that created them and must be regenerated after upgrading.
 
-The API does not read, expand, traverse, hash, or otherwise verify local files. It does not verify source provenance, resolve packages or products, generate `Package.swift`, load Podspecs through the CLI, change a migration plan, mutate an Xcode project, remove CocoaPods, or broaden `AUTO` eligibility. See the [v0.6.0 release notes](Documentation/ReleaseNotes-0.6.0.md), [generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), [Stage 1 validation record](Documentation/GeneratedPackageStage1Validation.md), and [v0.6 release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) for the pinned S1 boundary and verification results.
+The initial positive qualification envelope includes the reviewed repository
+fixtures and named single-target evidence. A positive external multi-target or
+workspace migration is explicitly deferred and is not a 1.0 support claim.
+Existing discovery and conservative refusal behavior remains available for those
+projects.
 
-## 0.11.0 — Source preparation
-
-The source version is now 0.11.0; the current public download remains 0.10.0.
-The [0.11.0 release notes](Documentation/ReleaseNotes-0.11.0.md) describe the
-complete preparation scope: header-import and registry-source evidence,
-saved-plan write safety, project preservation and qualification coverage.
-Rebuilds of Swift clients may need new reason-code cases, and saved plans must
-be regenerated with the new executable. Signed-artifact acceptance and public
-release approval are still pending.
+The final candidate must pass the ordinary protected checks and the signed
+release workflow. That workflow exercises a complete migration and build, a
+partial migration that retains CocoaPods, a mutation-free refusal, and exact
+runtime acceptance on the observed Apple Silicon macOS 14 host. The resulting
+host patch and toolchain cells will be recorded from the run; this preparation
+does not infer an untested macOS patch or an all-Xcode-version range.
 
 ## 0.10.0 — CryptoSwift mapping
 

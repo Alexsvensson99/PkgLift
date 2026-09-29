@@ -13,6 +13,11 @@ jobs:
     environment: distribution-signing
     permissions:
       contents: read
+    outputs:
+      archive_sha256: ${{ steps.distribution_archive.outputs.archive_sha256 }}
+      binary_sha256: ${{ steps.signing_identity.outputs.binary_sha256 }}
+      registry_bundle_sha256: ${{ steps.signing_identity.outputs.registry_bundle_sha256 }}
+      version: ${{ steps.version_contract.outputs.version }}
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -68,11 +73,13 @@ jobs:
           echo "PKGLIFT_RELEASE_BIN_DIR=$release_bin_directory" >> "$GITHUB_ENV"
 
       - name: Validate Version Contract
+        id: version_contract
         shell: bash
         run: |
           set -euo pipefail
           version="$("$PKGLIFT_RELEASE_BIN_DIR/pkglift" version)"
           echo "PKGLIFT_VERSION=$version" >> "$GITHUB_ENV"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Import Developer ID Certificate
         shell: bash
@@ -108,6 +115,7 @@ jobs:
           echo "PKGLIFT_NOTARY_KEY_PATH=$notary_key_path" >> "$GITHUB_ENV"
 
       - name: Sign Release Binary
+        id: signing_identity
         shell: bash
         run: |
           set -euo pipefail
@@ -126,13 +134,32 @@ jobs:
           grep -F "TeamIdentifier=$APPLE_TEAM_ID" "$RUNNER_TEMP/codesign-details.txt"
           grep -E 'flags=.*runtime' "$RUNNER_TEMP/codesign-details.txt"
           grep -E '^Timestamp=' "$RUNNER_TEMP/codesign-details.txt"
+          signed_binary_sha256="$(shasum -a 256 "$binary_path" | awk '{print $1}')"
+          registry_bundle_sha256="$(
+            python3 Scripts/hash-pilot-tree.py \
+              "$PKGLIFT_RELEASE_BIN_DIR/PkgLift_PkgLiftRegistry.bundle"
+          )"
+          echo "PKGLIFT_SIGNED_BINARY_SHA256=$signed_binary_sha256" >> "$GITHUB_ENV"
+          echo "PKGLIFT_REGISTRY_BUNDLE_SHA256=$registry_bundle_sha256" >> "$GITHUB_ENV"
+          echo "binary_sha256=$signed_binary_sha256" >> "$GITHUB_OUTPUT"
+          echo "registry_bundle_sha256=$registry_bundle_sha256" >> "$GITHUB_OUTPUT"
 
       - name: Create Distribution Archives
+        id: distribution_archive
         env:
           PKGLIFT_ARCH: arm64
           PKGLIFT_REQUIRE_DEVELOPER_ID: '1'
           PKGLIFT_EXPECTED_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: bash Scripts/package-release.sh release release
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash Scripts/package-release.sh release release
+          archive_sha256="$(shasum -a 256 release/pkglift-macos-arm64.tar.gz | awk '{print $1}')"
+          (
+            cd release
+            shasum -a 256 --check pkglift-macos-arm64.tar.gz.sha256
+          )
+          echo "archive_sha256=$archive_sha256" >> "$GITHUB_OUTPUT"
 
       - name: Notarize Distribution
         id: notarize
@@ -240,3 +267,162 @@ jobs:
           rm -f \
             "$RUNNER_TEMP/pkglift-developer-id.p12" \
             "$RUNNER_TEMP/AuthKey_${NOTARY_KEY_ID}.p8"
+
+  acceptance:
+    name: Signed candidate consumer acceptance
+    needs: package
+    runs-on: macos-15
+    timeout-minutes: 90
+    permissions:
+      actions: read
+      contents: read
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download Exact Signed Candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pkglift-macos-arm64-${{ github.sha }}
+          path: ${{ runner.temp }}/pkglift-release-acceptance-input
+
+      - name: Stage Exact Signed Candidate for Workflow Acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive_path="$RUNNER_TEMP/pkglift-release-acceptance-input/pkglift-macos-arm64.tar.gz"
+          archive_sha256="$(shasum -a 256 "$archive_path" | awk '{print $1}')"
+          [[ "$archive_sha256" == "${{ needs.package.outputs.archive_sha256 }}" ]]
+
+          acceptance_root="$(mktemp -d "$RUNNER_TEMP/pkglift-release-acceptance.XXXXXX")"
+          candidate_root="$acceptance_root/candidate"
+          evidence_root="$acceptance_root/evidence"
+          mkdir "$candidate_root" "$evidence_root"
+          tar -xzf "$archive_path" -C "$candidate_root"
+
+          binary_path="$candidate_root/pkglift"
+          bundle_path="$candidate_root/PkgLift_PkgLiftRegistry.bundle"
+          [[ -x "$binary_path" && ! -L "$binary_path" ]]
+          [[ -d "$bundle_path" && ! -L "$bundle_path" ]]
+          [[ -z "$(find "$bundle_path" -type l -print -quit)" ]]
+
+          candidate_binary_sha256="$(shasum -a 256 "$binary_path" | awk '{print $1}')"
+          candidate_bundle_sha256="$(python3 Scripts/hash-pilot-tree.py "$bundle_path")"
+          [[ "$candidate_binary_sha256" == "${{ needs.package.outputs.binary_sha256 }}" ]]
+          [[ "$candidate_bundle_sha256" == "${{ needs.package.outputs.registry_bundle_sha256 }}" ]]
+          codesign --verify --strict --verbose=4 "$binary_path"
+          xattr -w com.apple.quarantine \
+            "0083;$(printf '%x' "$(date +%s)");GitHubActionsReleaseAcceptance;" \
+            "$binary_path"
+
+          cat > "$candidate_root/manifest.txt" <<EOF
+          schema=1
+          repository=$GITHUB_REPOSITORY
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          producer_run_attempt=$GITHUB_RUN_ATTEMPT
+          producer_job=package
+          runner_arch=$(uname -m)
+          archive_sha256=$archive_sha256
+          binary_sha256=$candidate_binary_sha256
+          bundle_sha256=$candidate_bundle_sha256
+          EOF
+
+          python3 Scripts/capture-environment.py > "$evidence_root/environment.json"
+          {
+            echo "PKGLIFT_RELEASE_ACCEPTANCE_ROOT=$acceptance_root"
+            echo "PKGLIFT_RELEASE_ACCEPTANCE_BIN=$binary_path"
+            echo "PKGLIFT_ARTIFACT_SOURCE_SHA=$GITHUB_SHA"
+            echo "PKGLIFT_ARTIFACT_RUN_ID=$GITHUB_RUN_ID"
+            echo "PKGLIFT_ARTIFACT_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT"
+            echo "PKGLIFT_ARCHIVE_SHA256=$archive_sha256"
+            echo "PKGLIFT_BINARY_SHA256=$candidate_binary_sha256"
+          } >> "$GITHUB_ENV"
+
+      - name: Accept Signed Candidate Full Migration
+        env:
+          PKGLIFT_BIN: ${{ env.PKGLIFT_RELEASE_ACCEPTANCE_BIN }}
+        run: bash Scripts/run-positive-e2e-pilot.sh
+
+      - name: Accept Signed Candidate Partial Migration
+        run: >-
+          python3 Scripts/run-partial-migration-pilot.py
+          --case PartialMixed
+          --output "$RUNNER_TEMP/pkglift-release-partial"
+          --pkglift "$PKGLIFT_RELEASE_ACCEPTANCE_BIN"
+          --jobs 2
+
+      - name: Accept Signed Candidate Conservative Refusal
+        run: >-
+          python3 Scripts/run-real-project-refusal.py
+          --case hammerspoon
+          --pkglift "$PKGLIFT_RELEASE_ACCEPTANCE_BIN"
+          --output "$RUNNER_TEMP/pkglift-release-refusal"
+
+      - name: Collect Signed Candidate Acceptance Evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="$PKGLIFT_RELEASE_ACCEPTANCE_ROOT/evidence"
+          cp -R "$RUNNER_TEMP/pkglift-positive-e2e-report" "$evidence_root/full-migration"
+          cp -R "$RUNNER_TEMP/pkglift-release-partial/report" "$evidence_root/partial-migration"
+          cp -R "$RUNNER_TEMP/pkglift-release-refusal/report" "$evidence_root/conservative-refusal"
+          cat > "$evidence_root/candidate-identity.txt" <<EOF
+          repository=$GITHUB_REPOSITORY
+          source_sha=$GITHUB_SHA
+          run_id=$GITHUB_RUN_ID
+          run_attempt=$GITHUB_RUN_ATTEMPT
+          archive_sha256=$PKGLIFT_ARCHIVE_SHA256
+          binary_sha256=$PKGLIFT_BINARY_SHA256
+          registry_bundle_sha256=${{ needs.package.outputs.registry_bundle_sha256 }}
+          EOF
+
+      - name: Upload Signed Candidate Acceptance Evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pkglift-release-acceptance-${{ github.sha }}
+          path: ${{ env.PKGLIFT_RELEASE_ACCEPTANCE_ROOT }}/evidence
+          if-no-files-found: error
+          retention-days: 14
+
+  runtime-macos14:
+    name: Signed candidate runtime (macOS 14)
+    needs: package
+    runs-on: macos-14
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download Exact Signed Candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pkglift-macos-arm64-${{ github.sha }}
+          path: ${{ runner.temp }}/pkglift-release-runtime-input
+
+      - name: Accept Signed Candidate on Observed macOS 14 Host
+        run: >-
+          python3 Scripts/verify-candidate-runtime.py
+          --archive "$RUNNER_TEMP/pkglift-release-runtime-input/pkglift-macos-arm64.tar.gz"
+          --archive-sha256 "${{ needs.package.outputs.archive_sha256 }}"
+          --binary-sha256 "${{ needs.package.outputs.binary_sha256 }}"
+          --source-commit "${{ github.sha }}"
+          --version "${{ needs.package.outputs.version }}"
+          --required-macos-major 14
+          --fixture Fixtures/MixedLanguageSDWebImage
+          --output-dir "$RUNNER_TEMP/pkglift-release-runtime-evidence"
+
+      - name: Upload macOS 14 Runtime Evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pkglift-release-runtime-macos14-${{ github.sha }}
+          path: ${{ runner.temp }}/pkglift-release-runtime-evidence
+          if-no-files-found: error
+          retention-days: 14

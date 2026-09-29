@@ -18,6 +18,14 @@ import time
 
 
 ROOT = Path(__file__).resolve().parent.parent
+PUBLIC_MODULES = (
+    "PkgLiftCore",
+    "PkgLiftCocoaPods",
+    "PkgLiftXcode",
+    "PkgLiftRegistry",
+    "PkgLiftMigration",
+    "PkgLiftVerification",
+)
 
 
 def load_recovery():
@@ -78,6 +86,26 @@ def log_metadata(path):
     return {"sha256": digest(path), "bytes": path.stat().st_size}
 
 
+def public_module_artifacts(product):
+    artifacts = {}
+    for module in PUBLIC_MODULES:
+        container = product / (module + ".swiftmodule")
+        require(container.is_dir() and not container.is_symlink(),
+                "Expected public module directory is missing: " + str(container))
+        candidates = sorted(container.glob("*-apple-macos.swiftmodule"))
+        require(len(candidates) == 1,
+                "Expected exactly one macOS module artifact for " + module)
+        artifact = candidates[0]
+        require(artifact.is_file() and not artifact.is_symlink(),
+                "Expected public module artifact is not a regular file: " + str(artifact))
+        artifacts[module] = {
+            "path": str(artifact.resolve()),
+            "bytes": artifact.stat().st_size,
+            "sha256": digest(artifact),
+        }
+    return artifacts
+
+
 def execute(label, command, environment, logs):
     started = time.monotonic()
     stdout = logs / (label + ".stdout.log")
@@ -114,6 +142,8 @@ def main(argv=None):
     parser.add_argument("--cache-path", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--jobs", type=int, choices=range(1, 5), default=2)
+    parser.add_argument("--record-public-modules", action="store_true",
+                        help="Bind the six public .swiftmodule artifacts for API capture")
     args = parser.parse_args(argv)
     output, scratch, cache = validate_paths(args)
     before = recovery.source_inputs()
@@ -130,7 +160,8 @@ def main(argv=None):
     base = ["swift", "build", "--scratch-path", str(scratch), "--cache-path", str(cache), "--manifest-cache", "local",
             "--disable-automatic-resolution", "--jobs", str(args.jobs)]
     receipt = {"schemaVersion": 1, "status": "failed", "exitCode": None, "buildsBothArtifacts": False,
-               "sourceInputs": before, "sourceInputsAfter": None, "commands": []}
+               "sourceInputs": before, "sourceInputsAfter": None, "publicModuleArtifacts": None,
+               "commands": []}
     receipt_path = output / "build-receipt.json"
     try:
         build = execute("build-tests", [*base, "--build-tests"], environment, logs)
@@ -146,11 +177,13 @@ def main(argv=None):
         binary = product / "pkglift"
         bundle = product / "PkgLiftCLITests.xctest"
         require(binary.is_file() and bundle.is_dir(), "Expected pkglift and PkgLiftCLITests.xctest are missing")
+        module_artifacts = public_module_artifacts(product) if args.record_public_modules else None
         after = recovery.source_inputs()
         require(after == before, "Build changed recovery source inputs")
         receipt.update(status="passed", exitCode=0, buildsBothArtifacts=True, sourceInputs=after,
                        sourceInputsAfter=after, binarySHA256=digest(binary), signalTestBundleSHA256=recovery.state_hash(recovery.snapshot(bundle)),
-                       binary=str(binary), signalTestBundle=str(bundle))
+                       binary=str(binary), signalTestBundle=str(bundle),
+                       publicModuleArtifacts=module_artifacts)
     except (RuntimeError, subprocess.TimeoutExpired, OSError) as error:
         receipt["failure"] = str(error)
     finally:
