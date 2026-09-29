@@ -115,6 +115,30 @@ rules. A fixed diagnostic proves the requested checkpoint was reached. These
 are deterministic command-layer signal tests, not installed signed-CLI signal
 acceptance. Plan, reapply and post-apply checks execute the CLI binary.
 
+## Candidate-source rerun on 2026-09-29
+
+All eleven scenarios passed again with source version `1.0.0`, using the same
+invocation to build the CLI and signal-test bundle. The checkout was based on
+`c5c32ee8e3598975a97dc53207b29596724f65f1` with the recorded 1.0 preparation
+changes; it was not a clean final main commit. The [complete source inventory
+and paired artifact hashes](Evidence/Recovery-1.0/local-2026-09-29-build.json)
+bind the exact tested source bytes independently of that base commit.
+
+The [portable result](Evidence/Recovery-1.0/local-2026-09-29-summary.json)
+records all 11 passing scenarios and 97 commands, preserved incident/internal
+backup evidence, full independent-baseline restoration, fresh restored builds,
+replanning and inert dry runs. The [same-run environment](Evidence/Recovery-1.0/local-2026-09-29-environment.json)
+records Apple Silicon, macOS 27.0, Xcode 27.0 and Swift 6.4. Raw logs, incident
+copies and the original build receipt remain in task-owned external storage.
+
+The [independent evidence review](Evidence/Recovery-1.0/local-2026-09-29-validation.json)
+reconciles all 194 source inputs and 194 command logs. The environment capture
+is marked incomplete because the preparation checkout has tracked changes; all
+host/toolchain probes passed and the paired receipt binds those source bytes.
+
+These are exact candidate-source local recovery results. Protected integration,
+signed artifact acceptance and public distribution remain distinct gates.
+
 ## Reproduction and artifact identity
 
 Build the CLI and `PkgLiftCLITests.xctest` together from the reviewed source with

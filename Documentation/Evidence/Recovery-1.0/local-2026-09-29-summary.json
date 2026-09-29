@@ -1,0 +1,1021 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "repositoryOwned": true,
+  "fixture": "PartialSwift",
+  "sourceCommit": "c5c32ee8e3598975a97dc53207b29596724f65f1",
+  "workingTreeHasChanges": true,
+  "binarySHA256": "48f55ec72fb743e40ce01f2d295160b3d64c9e48ef23c1772f06a6dc971b8ee4",
+  "signalTestBundleSHA256": "7fd823c418e9943aa1017ed2f5aa291758e06606e95322e6df2b592292705953",
+  "buildReceiptSHA256": "64ddfe81fb526c44f23774ed92ac90aa13acadb2421548176b510f7dd76b06eb",
+  "runnerSHA256": "142625a496b10c363eef3e132aa9876ab53a9bf6a03d7262cf5344de8aa03e59",
+  "fixtureSHA256": "1d04b2accccf09804fb1dc9836f208a17463e8371519bb32e7afc7d64821df13",
+  "helperSourceSHA256": "98cd97eb1e12f21908d15acfa52553fbe92e41dd11c2f05d6e43eeb005613b4b",
+  "signalExecution": "XCTest-only harness calling real MigrateCommand; not installed-CLI signal qualification",
+  "scenarios": [
+    {
+      "name": "sigint-podfileWritten",
+      "signal": "SIGINT",
+      "checkpoint": "podfileWritten",
+      "checkpointObserved": true,
+      "exitCode": 130,
+      "internalBackupMatches": true,
+      "terminalReceiptSHA256": "74ae44bd8113d4cf972505643009e9f31dc6db516812b25501b1eddb5b706a25",
+      "automaticRollback": true,
+      "incidentSHA256": "fe84fce564658ee7f672878a415e39bc9d88d8b82d4f7379f9dcf9adcee1fd61",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    },
+    {
+      "name": "sigint-packageAdded-0",
+      "signal": "SIGINT",
+      "checkpoint": "packageAdded:0",
+      "checkpointObserved": true,
+      "exitCode": 130,
+      "internalBackupMatches": true,
+      "terminalReceiptSHA256": "3d6063b1bae7fa7766ef72597a755126cafb74bdc5a2e3dd2569d2c42ebb0a31",
+      "automaticRollback": true,
+      "incidentSHA256": "b2a6d26cc0a7fbe371c7b086a4458f14317ba253050a037ede11820d24374468",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    },
+    {
+      "name": "sigint-productLinked-0",
+      "signal": "SIGINT",
+      "checkpoint": "productLinked:0",
+      "checkpointObserved": true,
+      "exitCode": 130,
+      "internalBackupMatches": true,
+      "terminalReceiptSHA256": "b78b3a03266b0c95105f762949fe32038ddf039301db9f0a19de0305e56809e9",
+      "automaticRollback": true,
+      "incidentSHA256": "802691362320f57111cf79182286b9e2fb7a626910274532ab4d3f796a04f102",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    },
+    {
+      "name": "sigterm-podfileWritten",
+      "signal": "SIGTERM",
+      "checkpoint": "podfileWritten",
+      "checkpointObserved": true,
+      "exitCode": 143,
+      "internalBackupMatches": true,
+      "terminalReceiptSHA256": "c3dcb3a79f399e8773ecd88413d26f24a064ed9f12cf425b80fed2aa59751fa2",
+      "automaticRollback": true,
+      "incidentSHA256": "3c50f90c346fab103af4e6e0c7c810db5c48960f4feb8d069a6f1f70bccc586b",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    },
+    {
+      "name": "sigterm-packageAdded-0",
+      "signal": "SIGTERM",
+      "checkpoint": "packageAdded:0",
+      "checkpointObserved": true,
+      "exitCode": 143,
+      "internalBackupMatches": true,
+      "terminalReceiptSHA256": "15a7f294374f1261a8006dd5a39cf6be9a4ecdb990a6c0cc7882e26596f9e91c",
+      "automaticRollback": true,
+      "incidentSHA256": "2fe759bb085d35bc7abace08260c87e050075e2b232d69eba9cce5ca7c351766",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    },
+    {
+      "name": "sigterm-productLinked-0",
+      "signal": "SIGTERM",
+      "checkpoint": "productLinked:0",
+      "checkpointObserved": true,
+      "exitCode": 143,
+      "internalBackupMatches": true,
+      "terminalReceiptSHA256": "620b6f44ae61358834c20447e4394f75f05123eda24b3f211ed857504f247a53",
+      "automaticRollback": true,
+      "incidentSHA256": "b96e1a20255c722a2649887e4937da210b21530b48c49ea0a58fb99421a6167f",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    },
+    {
+      "name": "sigkill-podfileWritten",
+      "signal": "SIGKILL",
+      "checkpoint": "podfileWritten",
+      "checkpointObserved": true,
+      "exitCode": -9,
+      "internalBackupMatches": true,
+      "activeMarker": true,
+      "reapplyRefused": true,
+      "refusalUnchanged": true,
+      "incidentSHA256": "55fffcea8c5bce93926ba5688dad7c834e7f257b0c588f0c553b3515f7d8fffb",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    },
+    {
+      "name": "sigkill-packageAdded-0",
+      "signal": "SIGKILL",
+      "checkpoint": "packageAdded:0",
+      "checkpointObserved": true,
+      "exitCode": -9,
+      "internalBackupMatches": true,
+      "activeMarker": true,
+      "reapplyRefused": true,
+      "refusalUnchanged": true,
+      "incidentSHA256": "19d728fa1ef1107730beafa78216bc808062236518e71c010c4b8108fdf6e388",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    },
+    {
+      "name": "sigkill-productLinked-0",
+      "signal": "SIGKILL",
+      "checkpoint": "productLinked:0",
+      "checkpointObserved": true,
+      "exitCode": -9,
+      "internalBackupMatches": true,
+      "activeMarker": true,
+      "reapplyRefused": true,
+      "refusalUnchanged": true,
+      "incidentSHA256": "271f6a985a68f1bfc9a6d916eafef10ac046d47e7be4d90e6151a75795c31ead",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    },
+    {
+      "name": "pod-deployment-lock-mismatch",
+      "applyCompleted": true,
+      "terminalReceiptSHA256": "f4509297085aa587865ec1afb18691d4be5cf8566094bee2ab319ae6e25679db",
+      "internalBackupMatches": true,
+      "faultOrigin": "deliberate post-apply qualification fault",
+      "fault": "Deployment install refuses the intentionally stale pre-migration lockfile",
+      "beforeFailureSHA256": "d409e48513f817d021ca53b4eeece8c7a53d55848dfc032445f8d5d36a270b9a",
+      "afterFailureSHA256": "d409e48513f817d021ca53b4eeece8c7a53d55848dfc032445f8d5d36a270b9a",
+      "changedByExternalCommand": [],
+      "noAutomaticRollback": true,
+      "incidentSHA256": "d409e48513f817d021ca53b4eeece8c7a53d55848dfc032445f8d5d36a270b9a",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    },
+    {
+      "name": "verify-injected-compiler-error",
+      "applyCompleted": true,
+      "terminalReceiptSHA256": "0cfc14a796e9f93eea4e12dc2b8620c44aa954bb3fa51de3f6456c1586f92680",
+      "internalBackupMatches": true,
+      "faultOrigin": "deliberate post-apply qualification fault",
+      "fault": "App/Consumer.swift gets an explicit #error after a successful migrated verify --build",
+      "migratedPositiveControl": true,
+      "beforeFailureSHA256": "6ea6ef1dd8782c1e266b8d4cd3fadeda747695fb6bed6a5504c0190cf6856a78",
+      "afterFailureSHA256": "6ea6ef1dd8782c1e266b8d4cd3fadeda747695fb6bed6a5504c0190cf6856a78",
+      "changedByExternalCommand": [],
+      "noAutomaticRollback": true,
+      "incidentSHA256": "6ea6ef1dd8782c1e266b8d4cd3fadeda747695fb6bed6a5504c0190cf6856a78",
+      "restoredBytesMatch": true,
+      "restoredBuild": true,
+      "regeneratedPlan": true,
+      "dryRunUnchanged": true,
+      "incidentPreserved": true,
+      "status": "passed"
+    }
+  ],
+  "commands": [
+    {
+      "label": "baseline-install",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 5.34,
+      "stdoutSHA256": "a1b56e25349e3aa226ae31e44d2ba067c0e4b9de3a9424216eac35bb2e180ae9",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "baseline-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 16.86,
+      "stdoutSHA256": "4fbca5a3c3059058c9e594380c9bcc75ae54e83e85f20fbd6d8261c684576461",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-podfileWritten-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.4,
+      "stdoutSHA256": "7dcbf099fdb2dcdcfa71de2c03039efdded321d1d0611523ebacda4efccc77cb",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-podfileWritten-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "5df70e6e75dbae08b907a8f668890fde8ac595742ebbd51b0bc6457592afa2a6",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-podfileWritten-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.13,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-podfileWritten-interrupt",
+      "exitCode": 130,
+      "expectedExitCode": 130,
+      "seconds": 0.6,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "248280ceed0eb20b877da2acdef733dd68e70aecf355f13f57e707dc94353cec"
+    },
+    {
+      "label": "sigint-podfileWritten-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 13.07,
+      "stdoutSHA256": "7c68ce319d44f296cd64d63f517cc852f3bc9a93eb1411428359de03c96c2f8d",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-podfileWritten-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "9a0928a11ff7d24e7c00650b593bd57fc17652d7a5409aa85ea4d782980fd41c",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-podfileWritten-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "7a310339191deb3fe993587fd106a35d0a44f9d01bf2e454df994ce3b50b6ac0",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-podfileWritten-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-packageAdded-0-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "9b7afa9151afff7a028e3d1eec755595ab89596ff37b3dec0b9e539a747943ae",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-packageAdded-0-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "80f88f64fb4cda116b1862929c7f1333ff24cb6ac889a4ad645d149512face5e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-packageAdded-0-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-packageAdded-0-interrupt",
+      "exitCode": 130,
+      "expectedExitCode": 130,
+      "seconds": 0.23,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "647fc42cdbb198a76b97718af5a8420ea425484333a605e1bb113eea05cf7f5c"
+    },
+    {
+      "label": "sigint-packageAdded-0-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 10.24,
+      "stdoutSHA256": "9bd7e7d2c3915b6bf71e782f94e5484f6892bb700eddd2914bf4a948f90acde6",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-packageAdded-0-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "983659591d02c810007c316b94d0093676b6e70e5cc738ae2e532be5d7af57a9",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-packageAdded-0-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "77d2c4fa132f165816f2e452e5be819743cc132614d20edefe2785711f79307f",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-packageAdded-0-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-productLinked-0-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "f0cf378c4899f60a1fe495497c087f49128c6485f3511a85f7c3d72bd6fdfd99",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-productLinked-0-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "98ae53cdd619e51fb83cb9e5b05d5f12879829e91fe4d9a3da42865f9cf68e6e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-productLinked-0-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-productLinked-0-interrupt",
+      "exitCode": 130,
+      "expectedExitCode": 130,
+      "seconds": 0.12,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "ae26aedd38a7344c33374bf2f763e119b92fd93ed4074b318808b91ffe428f38"
+    },
+    {
+      "label": "sigint-productLinked-0-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 9.93,
+      "stdoutSHA256": "30cc3ae524dfb7c3f138aaab2103dafa44c2c31ca1dc0dc4fca8a37026677da6",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-productLinked-0-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "9926076f065c13640c621e66e42bef90f04e8defd8d193aad59086396a836a22",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-productLinked-0-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "3b9647c82fe4bb31e62ed1ac41a9d1f8bd0322e1538f1aab006ef0743b00a396",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigint-productLinked-0-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-podfileWritten-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "f7cb1fe05d91a869075becc7c297f81f140f0fd04aa8eaad3065ae8fafb40f7a",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-podfileWritten-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "faa7932697cb7e7e6609a47aeea4437c83380f1cf2853689cb88c21b13f044d0",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-podfileWritten-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.08,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-podfileWritten-interrupt",
+      "exitCode": 143,
+      "expectedExitCode": 143,
+      "seconds": 0.13,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "2fde35d3129d94b8e4208d36afe66811a8acdf57b4f16c66489b84c825d22dc1"
+    },
+    {
+      "label": "sigterm-podfileWritten-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 12.76,
+      "stdoutSHA256": "4d67454e7c6bccc11eeedfb7aebd640b7566feba4c27d5a2a6ee4dade3af33e4",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-podfileWritten-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.08,
+      "stdoutSHA256": "4b107ee534e867f2773d1f154a7bc6d92271b4d496132c551d414ebf88452737",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-podfileWritten-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "4f7d9da1ec3ecc55ae890bf4d34cd142b04bc3b991813ec54972809cc58d8d0f",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-podfileWritten-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-packageAdded-0-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "0f9762c84fef505de538e990f534ba711d16c77040c7adc1bb177a28d742afdf",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-packageAdded-0-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "4cad50b1c54e9e4e254c19ab4ff7fc23da2eca1511c54a800694092beda9ce58",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-packageAdded-0-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-packageAdded-0-interrupt",
+      "exitCode": 143,
+      "expectedExitCode": 143,
+      "seconds": 0.18,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "4ba5ca93130d177cbef7f25a515ba3f2623617a6de8871917dda9686aba1ad5e"
+    },
+    {
+      "label": "sigterm-packageAdded-0-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 11.79,
+      "stdoutSHA256": "467bdecd2727c2a17109fd0ac46e6e08c3779a40324878d551716842610dc8d4",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-packageAdded-0-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.13,
+      "stdoutSHA256": "f3b2f0e2c5f87952b366f8fbd680c0e8932d46a8b52fc66826ea7f6f7e1567e2",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-packageAdded-0-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "3aa76cc5350f6c10fe0504bd2a84c961bb07a6b33a06e7e31e84d26e1a62adf8",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-packageAdded-0-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-productLinked-0-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "e8499d0d58fe86e9694c43dc60b7c0f9286d01c71c1bfc4551ab63dfb5385be3",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-productLinked-0-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "f63033414cc9144c347d83d51bcf0af8279bc8826e43596826fff0841cd7faa9",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-productLinked-0-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-productLinked-0-interrupt",
+      "exitCode": 143,
+      "expectedExitCode": 143,
+      "seconds": 0.23,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "99980d028bebe6ba7c3a614b94eb7d4d5f0e4bbd4a1eeef5ed332392d6451895"
+    },
+    {
+      "label": "sigterm-productLinked-0-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 10.89,
+      "stdoutSHA256": "ca9afd1e2e6f109fb5d0fc378f3fff88352b720ab7cc281828e3b55c8af3c888",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-productLinked-0-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.13,
+      "stdoutSHA256": "686beb16a7d83f436118f2adf04e4100e98f513aaf60eedf65509ecb6e9c747c",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-productLinked-0-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.08,
+      "stdoutSHA256": "4833e2b9a0d37b9d6db3e75c9ebdd9c9cbcf42e6664fa544192768ceecf290dc",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigterm-productLinked-0-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-podfileWritten-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "59d7d0102f6d6272d8772fac0bd5cde7097883432274ef1c3f31bd4ddeb83ebd",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-podfileWritten-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "8a478bae4f3d2e2e58c86a862e6cbe94aade4c4c223c4d1b63f3ab524258e85d",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-podfileWritten-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-podfileWritten-interrupt",
+      "exitCode": -9,
+      "expectedExitCode": -9,
+      "seconds": 0.18,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "7a07b9e13eddb16b913ba13abdebdca2c88e56deea4568128c0ec65093ace9f4"
+    },
+    {
+      "label": "sigkill-podfileWritten-refused-reapply",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "seconds": 0.02,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "58a368108f834e9157878b11a9d44ed62ddc2d770f9e74e869bcb2f08c9461e4"
+    },
+    {
+      "label": "sigkill-podfileWritten-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 13.82,
+      "stdoutSHA256": "503fccf91bc7fd88eb81e73124ee9413d6239883d4411f77d2593b2b175c138f",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-podfileWritten-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.13,
+      "stdoutSHA256": "eaaf122773693e4b3e9902b00650c5c9c55ab64ecac9a4a0c64ab4e82b9d89a8",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-podfileWritten-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "0fdf47bc2303e27c48f547ff2b702a4a01ceb005dbace92b3d954906563c3d2b",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-podfileWritten-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.08,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-packageAdded-0-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.08,
+      "stdoutSHA256": "470b51a8d82c1e85fd2f8123f5b1b2ce148af31b8a9950164a3d248e755def7d",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-packageAdded-0-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "dc9e33efd5c39db51f65b6ee261d67fbf1f4547c090a981debf4c2445e3b7ee6",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-packageAdded-0-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.08,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-packageAdded-0-interrupt",
+      "exitCode": -9,
+      "expectedExitCode": -9,
+      "seconds": 0.25,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "4bf3400b774c5f54ce4083436c0230780252c04d75359524119657a3fdbec26b"
+    },
+    {
+      "label": "sigkill-packageAdded-0-refused-reapply",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "seconds": 0.04,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "765e9992b505c66b28c192999ea22fba4bdf72d92cd6a97626344d62c83ebdce"
+    },
+    {
+      "label": "sigkill-packageAdded-0-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 20.41,
+      "stdoutSHA256": "2e3dea3e93772d41c2920d798ba0691efb99be719104fc164a8d36ad987d94e4",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-packageAdded-0-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.13,
+      "stdoutSHA256": "f939e4bd5d1cdfe9c281eb2e30b672fd64baf967fe4881a8f74336a7172deddb",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-packageAdded-0-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.12,
+      "stdoutSHA256": "5d7bc38d8b9de950d9fb31e6de7b1740ac9d5b5a47a87f1c6518acc6f77ed438",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-packageAdded-0-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-productLinked-0-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "437ae61959cee647ea58fd4e2db5c1a1bb61242e66c0c6d0ef5c8dc6d7c6d6ab",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-productLinked-0-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "a54e6f34d2e6bf566ba3fc91de851b2778b72a14b6e2331ea415d4dce9bcd9b5",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-productLinked-0-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-productLinked-0-interrupt",
+      "exitCode": -9,
+      "expectedExitCode": -9,
+      "seconds": 0.39,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "426822e4481682323fbec3f6fb8aae9289ef31ac7ee8a42c4d26e4614a3f572c"
+    },
+    {
+      "label": "sigkill-productLinked-0-refused-reapply",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "seconds": 0.02,
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSHA256": "48c750aaa18e08e51b3900261dcae2649d214950bafe30e4318c7ba448e2a22f"
+    },
+    {
+      "label": "sigkill-productLinked-0-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 14.72,
+      "stdoutSHA256": "6dbe1eb1a148ebf6ef5f5ef0ad8cfc6726cd5a00be8f3fbd4c5ec384d9b66c78",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-productLinked-0-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.13,
+      "stdoutSHA256": "142e0aadc7eb56aa3f055602b54dee5abf91fa3fe567ef87326c2b69a9e7c700",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-productLinked-0-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "b3e80481a71b00eab341aab7275681b8734967645320208262264483e9ef8c90",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "sigkill-productLinked-0-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "pod-deployment-lock-mismatch-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.08,
+      "stdoutSHA256": "0f32a63fcfc6d0147799ae8ef2dbbfa18fc0c1bcf411efb9cb180139f086504f",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "pod-deployment-lock-mismatch-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.07,
+      "stdoutSHA256": "46eb97d1a0970d2d5c8b5d3cbfc7ff9280c593eefb9a92fdb8789a045f7ea483",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "pod-deployment-lock-mismatch-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "pod-deployment-lock-mismatch-apply",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.13,
+      "stdoutSHA256": "e0fed92c65ab4b45ceee6dd0f16b7bce5044e690f7c3b951012dedf4006466cb",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "pod-deployment-lock-mismatch-failure",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "seconds": 0.66,
+      "stdoutSHA256": "fdabbbe5786a2c253f1b9b9db17dfa86c302a6d2c77dd7530d77c8c814438725",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "pod-deployment-lock-mismatch-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 15.05,
+      "stdoutSHA256": "b5c9e2f7e84b971df94918c47818b9aa68afbf7cd2685233dd88fc2e4a8e2446",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "pod-deployment-lock-mismatch-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.12,
+      "stdoutSHA256": "00b408db68e29d61b2f6aecb5176b4d291a1ea435fa89b6f50599551249781f9",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "pod-deployment-lock-mismatch-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "da7fca591ff4d56ab4a1df92c67478c602bfc38c6274320fb38a6e1f390fc422",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "pod-deployment-lock-mismatch-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "verify-injected-compiler-error-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "28614bb061c7e64093875801a0449ec1d5573b3d89d43f5222f230342d4f30dd",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "verify-injected-compiler-error-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "cb62a6639f810c42d6065ba8380c524b33d29721ec9eff6c4640f272aa31c57b",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "verify-injected-compiler-error-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "verify-injected-compiler-error-apply",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.12,
+      "stdoutSHA256": "e0fed92c65ab4b45ceee6dd0f16b7bce5044e690f7c3b951012dedf4006466cb",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "verify-injected-compiler-error-refresh",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.65,
+      "stdoutSHA256": "121268b7a6af9a02bc20e08d0d22a80aa2aefc83e97f3b3ee86a4a322cbb5207",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "verify-injected-compiler-error-positive-control",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 19.24,
+      "stdoutSHA256": "8662464f6c5ea2918f5ea796cc667d805762c763e2b13739e726eaf48d0c4b05",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "verify-injected-compiler-error-failure",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "seconds": 9.1,
+      "stdoutSHA256": "d0dac351ea72f78e98060aa9acbe26cf32149324325ec5db8fd02de1907036ea",
+      "stderrSHA256": "1bc4d9fd3e872678951fa66ab15c70757acb94e9563bab8290ae6cbc7c9deeea"
+    },
+    {
+      "label": "verify-injected-compiler-error-restored-build",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 13.11,
+      "stdoutSHA256": "342ecd529707609daf2e401707267fa1c86b78f71bf6312900c947c39b7f7823",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "verify-injected-compiler-error-restored-analyze",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.13,
+      "stdoutSHA256": "51fbd2bfa53ea2088f97d9cfb385fdbf02ced73cb03ab17446427b1fb3e7bb60",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "verify-injected-compiler-error-restored-plan",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "8b6f380188bd3241c25cd52a0799d2db88575d60c16749dc6f465faf9130f961",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "verify-injected-compiler-error-restored-dry-run",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "seconds": 0.04,
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "releaseAcceptance": false,
+  "hostedAcceptance": false,
+  "buildSettings": {
+    "configuration": "Debug",
+    "sdk": "iphonesimulator",
+    "architecture": "arm64",
+    "deployment": "15.0"
+  },
+  "configuredStorageRoots": {
+    "TMPDIR": "temporary",
+    "CP_HOME_DIR": "cocoapods-home",
+    "CP_CACHE_DIR": "cocoapods-cache",
+    "CLANG_MODULE_CACHE_PATH": "compiler-cache",
+    "SWIFT_MODULECACHE_PATH": "compiler-cache",
+    "SWIFT_MODULE_CACHE_PATH": "compiler-cache",
+    "swiftPMPackageSources": "package-sources",
+    "swiftPMPackageCache": "package-cache"
+  },
+  "systemTemporaryBoundary": "Foundation-managed per-user temporary storage is selected by macOS and was observed to ignore TMPDIR; it is not relocated by this harness.",
+  "xctestSHA256": "1d83a0e126c642bad2fa9bf42c30354eb2744b1eb16f27ff446d517766da543f",
+  "baselineSHA256": "456c7ed93fc516368b910538fefc71ccbf5e55fe1e5b46dd0f24fbd53bc18aab",
+  "scenarioCount": 11,
+  "repositoryFixtureUnchanged": true,
+  "independentBaselineUnchanged": true,
+  "allScenariosPassed": true,
+  "fullBaselineRestorePassed": true,
+  "limitations": [
+    "Repository-owned PartialSwift on one local toolchain; not universal power-loss recovery.",
+    "Signals are executed through the XCTest-only harness, while post-apply commands use the CLI.",
+    "All failure trees and full-baseline copies are retained; no cleanup occurred."
+  ]
+}

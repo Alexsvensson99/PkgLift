@@ -30,8 +30,7 @@
   "@type": "SoftwareApplication",
   "name": "PkgLift",
   "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "macOS 14 or later on Apple Silicon",
-  "softwareVersion": "0.6.0",
+  "operatingSystem": "macOS 14 or later on Apple Silicon (distribution minimum)",
   "description": "A conservative command-line tool for partial CocoaPods-to-SwiftPM migration in native Xcode projects.",
   "url": "https://www.svensson.design/PkgLift/",
   "downloadUrl": "https://github.com/Alexsvensson99/PkgLift/releases/latest",
@@ -60,7 +59,7 @@
         <a class="button button-primary" href="/PkgLift/cocoapods-to-swiftpm/#install">Install &amp; analyze your project</a>
         <a class="button" href="https://github.com/Alexsvensson99/PkgLift">View &amp; star on GitHub</a>
       </div>
-      <p class="fine-print">Apple Silicon · macOS 14 or later · MIT licensed</p>
+      <p class="fine-print">Apple Silicon · macOS 14 distribution minimum · MIT licensed. See the <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/Environments-1.0.md">verified environments</a>.</p>
       <p>1. Install PkgLift:</p>
       <div class="command-card"><code>brew install Alexsvensson99/tap/pkglift</code><button class="copy-button" type="button" data-copy="brew install Alexsvensson99/tap/pkglift" aria-label="Copy install command">Copy</button></div>
       <p style="margin-top:1rem">2. Open Terminal in your project's folder and run:</p>
@@ -108,18 +107,21 @@ Preserved 2 CocoaPods dependencies.
 <section class="section section-border" aria-labelledby="latest-release">
   <div class="container grid-2 release-grid" style="align-items:center">
     <div>
-      <div class="eyebrow">Latest release</div>
-      <h2 class="anchor-heading" id="latest-release">PkgLift 0.6.0 is available</h2>
-      <p class="lead">Use the CLI to analyze and plan supported migrations. The new work in 0.6.0 explores package structure through an experimental library API.</p>
-      <p>Install through Homebrew or download the signed, notarized macOS release. Already using PkgLift? Run <code>brew update &amp;&amp; brew upgrade pkglift</code> to update a Homebrew installation.</p>
+      <div class="eyebrow">Stable releases</div>
+      <h2 class="anchor-heading" id="latest-release">Install the latest signed release</h2>
+      <p class="lead">Use the CLI to analyze, plan, apply, and verify supported migrations while uncertain dependencies stay under CocoaPods.</p>
+      <p><a href="https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0">PkgLift 1.0.0</a>, published 2026-09-29, defines stable public CLI, JSON, and Swift library contracts within its <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/Compatibility-1.0.md">documented compatibility scope</a>. Exact dependency and project evidence still governs every <code>AUTO</code> decision.</p>
+      <p>Install through Homebrew or download the latest signed, notarized macOS release. Already using PkgLift? Run <code>brew update &amp;&amp; brew upgrade pkglift</code> to update a Homebrew installation.</p>
+      <p>Regenerate saved migration plans after upgrading to 1.0.0. Executable plans are bound to the exact PkgLift version that created them.</p>
+      <p class="subtle">The signed CLI runtime was verified on macOS 14.8.9; this does not establish consumer-build support on macOS 14 or testing of every 14.x version. See the <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/Environments-1.0.md">exact environment cells</a>. Positive external multi-target/workspace qualification remains deferred after 1.0.</p>
       <div class="hero-actions">
-        <a class="button button-primary" href="https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.6.0">Read the v0.6.0 release</a>
-        <a class="button" href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/GeneratedPackageEvidence.md">Explore the library API</a>
+        <a class="button button-primary" href="https://github.com/Alexsvensson99/PkgLift/releases/latest">View the latest release</a>
+        <a class="button" href="https://github.com/Alexsvensson99/PkgLift/blob/main/CHANGELOG.md">Read the changelog</a>
       </div>
     </div>
     <div class="grid-2">
-      <div class="card"><h3>Use today: migration CLI</h3><p class="subtle">Review a plan, preview the changes, and apply only entries backed by exact registry, version, target, and language evidence. Uncertain dependencies stay with CocoaPods.</p><p class="subtle">The automatic migration scope is unchanged in 0.6.0.</p></div>
-      <div class="card"><h3>Experimental: package structure</h3><p class="subtle">The library API assesses a possible package structure for one synthetic Swift library, using in-memory Podspec JSON and evidence supplied by the caller.</p><p class="subtle">It does not inspect source files, generate <code>Package.swift</code>, or authorize migration. The CLI does not load Podspecs.</p></div>
+      <div class="card"><h3>Evidence-backed migration</h3><p class="subtle">Review a plan, preview the changes, and apply only entries backed by exact registry, version, target, and language evidence.</p><p class="subtle">Build verification checks the resulting package linkage before you accept the migration.</p></div>
+      <div class="card"><h3>Conservative boundaries</h3><p class="subtle">Uncertain dependencies stay with CocoaPods, and unsupported project shapes are reported instead of guessed.</p><p class="subtle">Dry run remains the default so you can inspect the proposed change first.</p></div>
     </div>
   </div>
 </section>
@@ -141,7 +143,7 @@ Preserved 2 CocoaPods dependencies.
     <div>
       <div class="eyebrow">Real-project evidence</div>
       <h2>The refusals are part of the proof.</h2>
-      <p class="lead">Ten public projects are pinned and exercised through analysis, planning, and dry run without upstream mutation. Only a separate repo-owned fixture is allowed to reach apply and build verification.</p>
+      <p class="lead">Ten public projects are pinned and exercised through read-only analysis, planning, and dry run. A separate qualification run proves one AWS single-target partial migration and build; repository-owned fixtures provide additional controlled migration evidence.</p>
       <a class="button" href="/PkgLift/pilots/">Explore all pilot outcomes</a>
     </div>
     <div class="grid-2">

@@ -1,0 +1,453 @@
+{
+  "artifactMetadataReceiptSHA256": "f7411f3165fc5575cac7aca6b9d3abc236d367e589c2818fa8afb37c8108e1a6",
+  "artifacts": {
+    "11054754931": {
+      "artifactID": 11054754931,
+      "name": "pkglift-release-runtime-macos14-207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "runID": 36615292778,
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778/artifacts/11054754931",
+      "zipSHA256": "10eca26dea45b532a4ae9140e030c4952749b143070699a7ea93c191c5f93683"
+    },
+    "11055725521": {
+      "artifactID": 11055725521,
+      "name": "pkglift-macos-arm64-207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "runID": 36615292778,
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778/artifacts/11055725521",
+      "zipSHA256": "90fb1c3a4ce67088967589dd6152a08123b0a0d865b9f91e06ef3fa18c91414e"
+    },
+    "11056165559": {
+      "artifactID": 11056165559,
+      "name": "pkglift-release-acceptance-207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "runID": 36615292778,
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778/artifacts/11056165559",
+      "zipSHA256": "1d454084aa0e44c533d706bfa7c2af1d3344b3197a07a3bc318f2b87d2e53ae2"
+    }
+  },
+  "candidateIdentity": {
+    "archive_sha256": "402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1",
+    "binary_sha256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+    "registry_bundle_sha256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "repository": "Alexsvensson99/PkgLift",
+    "run_attempt": "1",
+    "run_id": "36615292778",
+    "source_sha": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9"
+  },
+  "candidateIdentityReceipt": {
+    "artifactID": 11056165559,
+    "member": "candidate-identity.txt",
+    "rawReceiptSHA256": "80b916e865a48eaa6bbcc1a95c442d110c04addf4310de999e27b2b672ef6f1c"
+  },
+  "conservativeRefusal": {
+    "environment": {
+      "artifactID": 11056165559,
+      "capturedAt": "2026-09-29T19:04:12.735478Z",
+      "member": "conservative-refusal/environment.json",
+      "observationProfileSHA256": "e5355c1a7f5c51edcec05092258e0cd09617011ea07f8ac56b15d7abea2498fe",
+      "rawReceiptSHA256": "70443ea5e682e64c4bc67754b460014fdfa01d9f55b1215162f4bcd7a33ba5f1",
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "trackedChanges": false
+    },
+    "rawSummary": {
+      "artifactID": 11056165559,
+      "member": "conservative-refusal/result.json",
+      "rawReceiptSHA256": "b54668d42d2ef5a9644bdc869bdc02a054f36418a35159193447c8be0fcce132"
+    },
+    "result": {
+      "apply": "not-run",
+      "artifactProducerAttempt": "1",
+      "artifactRunID": "36615292778",
+      "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+      "build": "not-run",
+      "case": "hammerspoon-workspace",
+      "dependencyInstall": "not-run",
+      "dryRunTreeSHA256": "2d26bddf4af62cedf278d6721e60856fd6fbbeb5e0cb8ea814012a74ab7b0540",
+      "exactAutoSet": [],
+      "indexUnchanged": true,
+      "intakeSHA256": "e045b9c5dc2acf3a676d660723ba92e98cc94f4f763d551f6f018670dd014d00",
+      "license": "MIT",
+      "originalTreeSHA256": "3ae3dc3d3d260bf06404068a93ac80d68bfb656161e2b2e68179ea1ba895e9bd",
+      "pkgLiftSourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "pkgLiftVersion": "1.0.0",
+      "project": "Hammerspoon.xcodeproj",
+      "registryBundleSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+      "repository": "Hammerspoon/hammerspoon",
+      "rubyVersion": "ruby 3.3.12 (2026-07-16 revision 0581089df9) [arm64-darwin24]",
+      "runnerSHA256": "f5fc13d1f658f3f2315e40c5f383514a54bfea4f71033da98535b76620d9e51e",
+      "schemaVersion": 1,
+      "sourceRedistributed": false,
+      "sourceUnchanged": true,
+      "status": "passed-refusal",
+      "upstreamCommit": "23e387e2805a9890066366e0ac96c71b27f0cfd5",
+      "workspace": "Hammerspoon.xcworkspace"
+    }
+  },
+  "coreRuntimeMacOS14": {
+    "rawSummary": {
+      "artifactID": 11054754931,
+      "member": "summary.json",
+      "rawReceiptSHA256": "06e4cb4a6b5b139449716ffcb9586a04900dad98afb8c238fb5307bf665d1a01"
+    },
+    "result": {
+      "acceptanceScope": "signed-core-runtime-structural-apply",
+      "archiveSHA256": "402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1",
+      "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+      "changedProjectFiles": [
+        "PkgLiftMixedFixture.xcodeproj/project.pbxproj",
+        "Podfile"
+      ],
+      "commands": {
+        "analyze": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "apply": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "codesignVerify": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "dryRun": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "gitAdd": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "gitBaseline": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "gitClean": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "gitInit": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "macOSBuildVersion": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "plan": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "readQuarantine": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "registryValidate": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "setQuarantine": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "structuralVerify": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "version": {
+          "exitCode": 0,
+          "status": "passed"
+        }
+      },
+      "consumerBuildTested": false,
+      "dryRunUnchanged": true,
+      "expectedArchiveSHA256": "402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1",
+      "expectedBinarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+      "host": {
+        "cpu": "arm64",
+        "macOSBuild": "23J631",
+        "macOSVersion": "14.8.9",
+        "qualifiesRequiredHost": true,
+        "requiredMacOSMajor": 14,
+        "system": "Darwin"
+      },
+      "metadataOnly": false,
+      "quarantinePresent": true,
+      "recordedAt": "2026-09-29T19:01:23.800905+00:00",
+      "repositoryFixtureUnchanged": true,
+      "runner": {
+        "imageOS": "macos14",
+        "imageVersion": "20260831.0302.1"
+      },
+      "schemaVersion": 1,
+      "signaturePassed": true,
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "status": "passed",
+      "version": "1.0.0"
+    }
+  },
+  "environmentObservationProfiles": {
+    "e5355c1a7f5c51edcec05092258e0cd09617011ea07f8ac56b15d7abea2498fe": {
+      "runnerImage": {
+        "imageOS": "macos15",
+        "imageVersion": "20260907.0337.1",
+        "status": "passed"
+      },
+      "system": {
+        "macOS": {
+          "build": "24G830",
+          "status": "passed",
+          "version": "15.7.9"
+        },
+        "machine": "arm64"
+      },
+      "toolVersions": {
+        "cocoaPodsVersion": [
+          "1.17.0"
+        ],
+        "iOSSimulatorSDKBuildVersion": [
+          "22F76"
+        ],
+        "iOSSimulatorSDKVersion": [
+          "18.5"
+        ],
+        "macOSSDKBuildVersion": [
+          "24F74"
+        ],
+        "macOSSDKVersion": [
+          "15.5"
+        ],
+        "swiftVersion": [
+          "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)",
+          "Target: arm64-apple-macosx15.0"
+        ],
+        "xcodebuildVersion": [
+          "Xcode 16.4",
+          "Build version 16F6"
+        ]
+      }
+    }
+  },
+  "externalPositiveMultiTargetWorkspace": "deferred-post-1.0",
+  "fullMixedMigration": {
+    "baselineBuild": "passed",
+    "consumerBytesUnchanged": true,
+    "dryRunUnchanged": true,
+    "environment": {
+      "artifactID": 11056165559,
+      "capturedAt": "2026-09-29T19:00:58.475555Z",
+      "member": "environment.json",
+      "observationProfileSHA256": "e5355c1a7f5c51edcec05092258e0cd09617011ea07f8ac56b15d7abea2498fe",
+      "rawReceiptSHA256": "537a3124d815e729ca58f5cd007014694f81e3a5461e618bc8d8e4ce1982a80e",
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "trackedChanges": false
+    },
+    "hashReceipt": {
+      "artifactID": 11056165559,
+      "member": "full-migration/hashes.txt",
+      "rawReceiptSHA256": "c4601e96bacdc232167d7d76b091d6b79f3fedea555a5cbd3ba6a557a3b4ee72"
+    },
+    "rawSummary": {
+      "artifactID": 11056165559,
+      "member": "full-migration/summary.md",
+      "rawReceiptSHA256": "5c90436d12a700b3f589a49311057458d6f62eae81c32faf0c382e9a79ead8ef"
+    },
+    "status": "passed",
+    "verification": {
+      "checks": {
+        "build": true,
+        "build_settings": true,
+        "package_https://github.com/SDWebImage/SDWebImage": true,
+        "pod_removed_SDWebImage": true,
+        "product_SDWebImage_PkgLiftMixedFixture": true,
+        "project_parses": true,
+        "resolve_dependencies": true
+      },
+      "passed": true,
+      "pkgLiftVersion": "1.0.0",
+      "receipt": {
+        "artifactID": 11056165559,
+        "member": "full-migration/verification.json",
+        "rawReceiptSHA256": "cd1a5bee8c2a6c12fd47fea5929433839e707a728ebc282fb2d264cc5381b5af"
+      }
+    }
+  },
+  "independentExtractionValidation": {
+    "allSelectedSameJobEnvironmentsComplete": true,
+    "innerArchiveBinaryAndRegistryBundleDigestsVerified": true,
+    "localAcceptanceNotAssessed": true,
+    "noBuildsOrCandidateExecutionsPerformed": true,
+    "productionApprovalNotPerformed": true,
+    "releaseArtifactZIPDigestsVerified": 3,
+    "stagedArchiveAndChecksumByteEqualityVerified": true,
+    "stagingArtifactZIPDigestVerified": true,
+    "uniqueRawReceiptsComparedToZIPMembers": 11
+  },
+  "localMacOS27AcceptanceStatus": "requires-separate-completed-receipt-before-production-approval",
+  "manifestCommitM": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+  "partialMixedMigration": {
+    "environment": {
+      "artifactID": 11056165559,
+      "capturedAt": "2026-09-29T19:03:03.576428Z",
+      "member": "partial-migration/environment.json",
+      "observationProfileSHA256": "e5355c1a7f5c51edcec05092258e0cd09617011ea07f8ac56b15d7abea2498fe",
+      "rawReceiptSHA256": "ba3f2f8864798aec672d98e2d5ffcbc0b96fc3428ab4a235c89b4d9ead9e01bc",
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "trackedChanges": false
+    },
+    "rawSummary": {
+      "artifactID": 11056165559,
+      "member": "partial-migration/summary.json",
+      "rawReceiptSHA256": "f410bf05a1394d59f1cf6b2547f643bf9e69955709069700bfd52333409f237e"
+    },
+    "result": {
+      "baselineBuild": "passed",
+      "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+      "buildSettings": {
+        "architecture": "arm64",
+        "configuration": "Debug",
+        "iOSDeploymentTarget": "15.0"
+      },
+      "case": "PartialMixed",
+      "configurationUnchanged": true,
+      "consumerBytesUnchanged": true,
+      "consumerLanguages": [
+        "objectiveC",
+        "swift"
+      ],
+      "dryRunUnchanged": true,
+      "exactAutoSet": true,
+      "fixtureSHA256": "539a9e0f0ad93b2c81c23429d08f87327bffcae16cfb7c2f566f29e0783adcea",
+      "freshMigratedBuild": true,
+      "migrated": "SDWebImage",
+      "migratedBuild": "passed",
+      "releaseAcceptance": false,
+      "repositoryFixtureUnchanged": true,
+      "repositoryOwned": true,
+      "resolvedRevision": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+      "retained": "KeychainAccess",
+      "retainedPodsManifest": true,
+      "retentionPolicy": "migration.deny",
+      "runnerSHA256": "274f3197b79a531726ab08703f57e28bc533fe94b970f15d38101019fe3fb27c",
+      "schemaVersion": 1,
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "sourceResourceMembershipUnchanged": true,
+      "status": "passed",
+      "swiftPMLinkedExactlyOnce": true,
+      "workingTreeHasChanges": false
+    },
+    "verification": {
+      "checks": {
+        "package_https://github.com/SDWebImage/SDWebImage": true,
+        "pod_removed_SDWebImage": true,
+        "product_SDWebImage_PkgLiftMixedFixture": true,
+        "project_parses": true
+      },
+      "passed": true,
+      "pkgLiftVersion": "1.0.0",
+      "receipt": {
+        "artifactID": 11056165559,
+        "member": "partial-migration/verification.json",
+        "rawReceiptSHA256": "24282ccea4c4e0a445ca5a7d7a2a67265694791f88db4bb98cb0e15591082505"
+      }
+    }
+  },
+  "preparedAt": "2026-09-29T19:12:25.708201+00:00",
+  "publicationStatus": "not-certified-by-this-cloud-only-record",
+  "recordKind": "cloud-final-manifest-candidate-acceptance",
+  "releaseRun": {
+    "conclusion": "success",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "jobID": 109566641331,
+        "name": "package",
+        "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778/job/109566641331"
+      },
+      {
+        "conclusion": "success",
+        "jobID": 109569158059,
+        "name": "Signed candidate consumer acceptance",
+        "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778/job/109569158059"
+      },
+      {
+        "conclusion": "success",
+        "jobID": 109569158132,
+        "name": "Signed candidate runtime (macOS 14)",
+        "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778/job/109569158132"
+      }
+    ],
+    "jobsReceiptSHA256": "7684fef40941b3d6f97285d6e9644b0d183bc2d7e5ffb9b2f7030f35874f42c9",
+    "rawReceiptSHA256": "d61c695321cf744c7c6f410bb73edf06481b494e38b01c0321a1ba39c4af92f5",
+    "runAttempt": 1,
+    "runID": 36615292778,
+    "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+    "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778"
+  },
+  "schemaVersion": 1,
+  "signingNotarizationWorkflowSteps": {
+    "Notarize Distribution": "success",
+    "Sign Release Binary": "success",
+    "Verify Quarantined CLI": "success"
+  },
+  "sourceChecksOnM": [
+    {
+      "conclusion": "success",
+      "rawAPIReceiptSHA256": "3ef53c153fd24b492f084f90ce24fa35912656f1f847210e5b372327f6f5eb87",
+      "runAttempt": 1,
+      "runID": 36615269853,
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615269853",
+      "workflow": ".github/workflows/positive-e2e.yml"
+    },
+    {
+      "conclusion": "success",
+      "rawAPIReceiptSHA256": "9f1b58adea8f8c29da3b291751fd4d759c64ee7ca667183956732aa3a0d6a3d8",
+      "runAttempt": 1,
+      "runID": 36615269699,
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615269699",
+      "workflow": ".github/workflows/codeql.yml"
+    },
+    {
+      "conclusion": "success",
+      "rawAPIReceiptSHA256": "d7846cbf7709f8bd842a98980128aeaa2d47572d33f5082d5972aac42b986abf",
+      "runAttempt": 1,
+      "runID": 36615269808,
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615269808",
+      "workflow": ".github/workflows/quality.yml"
+    }
+  ],
+  "sourceFtoMBinding": {
+    "finalSourceCommitF": "1839cbfe614c3affeecd6c790bb43ca2053a334a",
+    "gitParentChangedPathAndManifestHashIndependentlyChecked": true,
+    "manifestCommitM": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+    "manifestSHA256": "96b2db2cfba6d3001a392e10fb2cdd69b1b162982e634d0cf007ef47f91867ed",
+    "onlyAddedPath": ".github/releases/v1.0.0.json",
+    "pairedBuildReceiptSHA256": "ee1de0af2611ba1b8a2173dd233c8d65967fb99f640c521806f49a13e510f7a8",
+    "rawReceiptSHA256": "9cb1e8c382a2a634c832cb8854b1c49d227d58bc8b09f9113b200eba4737f173",
+    "requiresDistinctSignedMArtifact": true,
+    "schemaVersion": 1,
+    "singleParent": "1839cbfe614c3affeecd6c790bb43ca2053a334a",
+    "sourceAndHarnessChangesAfterF": false,
+    "status": "passed",
+    "unchangedBuildInputCount": 194
+  },
+  "sourcePreparationCommitF": "1839cbfe614c3affeecd6c790bb43ca2053a334a",
+  "stagedPublicationInput": {
+    "archiveAndChecksumByteIdenticalToAcceptedMCandidate": true,
+    "archiveSHA256": "402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1",
+    "artifactID": 11055666531,
+    "artifactName": "pkglift-publication-input-207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+    "artifactZIP_SHA256": "dba570b8814473c598edb9df901f2e5d8698bd33b24dae7a1d0ca840469b1245",
+    "metadataReceiptSHA256": "cc5558eb0b2196f595aa23dbdbd4332b2b24d1dac1969529441c2190611cf5b6",
+    "publishWorkflowRun": 36615269741,
+    "rawBindingReceiptSHA256": "ce008663dc9a62a099d7550c9aeaca043f192abcb5c5a1dc1ea38da62a9ffb76",
+    "scope": "Artifact identity only; this receipt does not certify local completion or production approval.",
+    "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+    "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615269741"
+  },
+  "version": "1.0.0"
+}

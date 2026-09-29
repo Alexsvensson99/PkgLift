@@ -89,7 +89,10 @@ public struct XcodeProjectAnalyzer: Sendable {
         
         let xcodeproj: XcodeProj
         do {
+            try XcodeProjectFormatGuard.validate(at: projectURL.path)
             xcodeproj = try XcodeProj(pathString: projectURL.path)
+        } catch let error as UnsupportedXcodeProjectFormatError {
+            throw error
         } catch {
             throw XcodeProjectAnalyzerError.invalidProject(path)
         }

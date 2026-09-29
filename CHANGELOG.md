@@ -7,9 +7,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Refuse unsupported `.xcproj` project definitions before analysis or migration,
+  including bundles that also contain a PBX project. Check again before editor
+  writes, and before a direct migration-library call can change Podfile or
+  create recovery state. This prevents dependency reader upgrades from silently
+  converting a JSON project into a second PBX definition.
+- Preserve the public 1.0 API and existing incomplete-recovery refusal priority.
+
+
+## [1.0.0] - 2026-09-29
+
+Published as [PkgLift 1.0.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0) and available through the
+[Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/2317ae83bc8e1095877c8f79bfd53dbc1b7945e3/Formula/pkglift.rb). See the
+[release notes](Documentation/ReleaseNotes-1.0.0.md) for release verification.
+
+### Added
+- Define the 1.x compatibility policy for the public CLI, JSON contracts and six
+  library products. Saved executable plans remain bound to the exact PkgLift
+  version that created them.
+- Add exact-candidate release acceptance for the Developer ID-signed,
+  Apple-notarized archive: a complete migration and build, a partial migration
+  retaining CocoaPods, a conservative mutation-free refusal and an Apple Silicon
+  runtime/structural-apply check on the observed macOS 14 runner.
+- Record bounded environment, partial-migration, recovery and safety evidence
+  without turning fixture, historical or refusal results into broader positive
+  support claims.
+
+### Fixed
+- Carry forward the unpublished 0.11 safety changes for registry-source and
+  header-import evidence, saved-plan path containment, pre-write freshness,
+  retained-CocoaPods validation and unrelated Xcode project metadata.
+- Refuse automatic migration when the available mapping, source, target,
+  language, platform, header-import or configuration evidence is incomplete or
+  conflicting.
+
+### Changed
+- Freeze the initial 1.0 positive qualification envelope around the reviewed
+  repository fixtures and named single-target evidence. Positive external
+  multi-target/workspace migration is explicitly deferred and is not advertised
+  as a 1.0 success case; existing discovery and refusal behavior remains.
+- Preserve Apple Silicon as the distribution architecture. Record the observed
+  macOS 14.8.9 core runtime and separate consumer toolchain cells from exact
+  signed-candidate acceptance; no unobserved macOS patch or continuous Xcode
+  range is inferred.
+- Regenerate analysis and migration plans with 1.0.0 before dry run or apply.
+  Do not edit producer-version or evidence fields to reuse older plans.
+
+## [0.11.0] - 2026-09-27
+
+Source preparation only; 0.11.0 has not been published. The date records this
+preparation, not public availability. See the [release notes](Documentation/ReleaseNotes-0.11.0.md).
+
+### Added
+- Capture bounded header-import and configuration evidence for C-family targets.
+  Refuse automatic migration when imports may depend on CocoaPods header search
+  paths, inspection is incomplete, or saved C-family evidence is missing.
+- Reconcile statically recognized public CocoaPods source declarations with
+  lockfile `SPEC REPOS` evidence. Carry registry-source provenance in schema-2
+  plans and report typed missing, unsupported or conflicting evidence.
+- Add public library-contract coverage, partial Swift and mixed-language
+  migration fixtures, existing-SwiftPM coexistence checks, same-job environment
+  receipts, and eleven local full-baseline recovery drills.
+
+### Fixed
+- Constrain saved-plan writes to checked project/state directories using
+  no-follow directory descriptors and atomic replacement. Reject symlinked
+  `.pkglift` directories, unsafe plan destinations and observed binding changes.
+  This is not a filesystem transaction against concurrent directory renames.
+- Tighten static Podfile parsing, target attribution and retained-CocoaPods
+  source-mode validation; reject hidden existing-package requirement conflicts.
+- Preserve unrelated Xcode schemes and breakpoints when editing the PBX file;
+  resolve the bundled registry in both command-line and macOS resource layouts.
+
+### Changed
+- Add five public migration reason codes and optional report evidence fields.
+  Swift clients with exhaustive `MigrationReasonCode` switches need new cases;
+  some previously automatic classifications now require review.
+- Set the source version to `0.11.0`. Regenerate saved plans with the upgraded
+  executable before dry run or apply. Do not edit producer-version or evidence
+  fields to reuse an older plan.
+- Keep all registry mappings, minimum-version thresholds and platform support
+  promises unchanged. Header inspection is bounded risk evidence, not a build
+  result; the new qualification records do not complete the 1.0 gates.
+
 ## [0.10.0] - 2026-09-16
 
-PkgLift 0.10.0 is the current public release.
+PkgLift 0.10.0 was published on 2026-09-16.
 
 ### Added
 - Add the exact CryptoSwift 1.10.0 registry mapping for complete Swift iOS

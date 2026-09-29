@@ -228,8 +228,8 @@ The existing minimumVersion threshold policy remains unchanged; the concrete
 build evidence is limited to 1.10.0.
 
 [PkgLift 0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0)
-is the current public release at `7d976d70e66a584e2e25db9852ac0e53bb6201b9`. Its Developer
-ID-signed, Apple-notarized archive is also available through the
+was published at `7d976d70e66a584e2e25db9852ac0e53bb6201b9`. Its Developer
+ID-signed, Apple-notarized archive was distributed through the
 [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
 The [0.10 plan](Documentation/Plan-0.10.md),
 [release notes](Documentation/ReleaseNotes-0.10.0.md), and [distribution contract](Documentation/Distribution.md)
@@ -238,6 +238,36 @@ record the shipped boundaries for [issue #59](https://github.com/Alexsvensson99/
 SwiftSoup and DGCharts remain independent research candidates. No additional
 platform, language, package generation or automatic-migration shortcut is
 included in this release target.
+
+## v1.0 — Production-Grade CocoaPods Modernization
+
+[PkgLift 1.0.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0) was published on 2026-09-29
+and distributed through the [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/2317ae83bc8e1095877c8f79bfd53dbc1b7945e3/Formula/pkglift.rb).
+The [release notes](Documentation/ReleaseNotes-1.0.0.md),
+[qualification record](Documentation/Qualification-1.0.md) and
+[environment matrix](Documentation/Environments-1.0.md) bind this milestone to
+its tested scope and exact release artifact.
+
+Completed scope:
+
+- Document the 1.x CLI, JSON, configuration, registry and public Swift API
+  compatibility contracts, including regeneration of version-bound executable
+  plans after upgrading.
+- Qualify the reviewed complete and partial migration fixtures, SwiftPM
+  coexistence, named registry consumers and the AWS single-target partial
+  migration; preserve explicit refusal outcomes for unsupported projects.
+- Verify the exact signed candidate's core runtime on the observed Apple Silicon
+  macOS 14.8.9 host and its selected consumer workflows on separate
+  Xcode 16.4 and Xcode 27 cells.
+- Record interruption recovery, baseline restoration and migration-integrity
+  regression evidence without weakening the existing safety checks.
+- Publish the signed, notarized archive and verify Homebrew distribution against
+  the same public archive checksum.
+
+Positive external multi-target/workspace migration is deferred after 1.0. This
+milestone does not claim every CocoaPods project, mapping version or Xcode
+release is qualified. See the [compatibility contract](Documentation/Compatibility-1.0.md)
+for the adopted boundary.
 
 ---
 
@@ -311,40 +341,13 @@ The graph solver must prefer a safe partial migration over forcing an all-or-not
 
 # Long-term
 
-## v1.0 — Production-Grade CocoaPods Modernization
-
-v1.0 should represent maturity, not simply a feature count.
-
-The [1.0 readiness plan](Documentation/Plan-1.0.md) maps the released 0.10.0
-baseline to the quality bar below, with ordered compatibility, environment,
-real-project, recovery, safety and release gates. The [G1 compatibility contract](Documentation/Compatibility-1.0.md)
-is implemented and locally verified; G2–G6 remain open. This does not expand
-current support or declare a 1.0 release ready.
-
-The target is a production-grade tool that can be given a broad range of native CocoaPods-based Xcode projects and:
-
-1. build a deterministic dependency and target model;
-2. identify everything that has a safe SwiftPM representation;
-3. produce a reviewable migration plan;
-4. migrate only supported items;
-5. preserve unsupported CocoaPods integration where necessary;
-6. verify structure and build behavior;
-7. clearly explain every remaining manual decision.
-
-### v1.0 quality bar
-
-A future v1.0 should require, at minimum:
-
-- a documented and stable migration-plan schema or explicit compatibility policy;
-- repeatable build verification across the supported host/toolchain matrix;
-- broad real-world pilot coverage across common native Xcode project shapes;
-- strong rollback/recovery guidance for the full documented workflow;
-- a mature registry and/or semantic evidence system with contribution validation;
-- clear support boundaries for Swift, Objective-C, Objective-C++, C, and C++;
-- documented behavior for partial migrations and mixed CocoaPods/SwiftPM projects;
-- no known critical migration-integrity defects.
-
 ## Beyond v1.0
+
+The deferred qualification item is a positive external multi-target/workspace
+migration with a reproducible CocoaPods baseline, reviewed apply, retained
+integration and preservation checks, and a fresh successful consumer build.
+Discovery and refusal evidence do not close this item. The
+[adopted scope](Documentation/ScopeProposal-1.0.md) records its acceptance boundary.
 
 Possible later directions include:
 

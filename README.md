@@ -56,20 +56,39 @@ After review, only the `AUTO` entry may be added as a Swift package. The unknown
 
 CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on December 2, 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). The plan explicitly keeps existing trunk and CDN builds available, and does not mean CocoaPods itself or private spec repositories stop working. PkgLift provides a reviewable path for native Xcode projects that want to move supported dependencies to SwiftPM without pretending every pod or project shape can be converted automatically.
 
-## v0.6.0 — Released
+## 1.0.0 — Stable compatibility and conservative migration contracts
 
-PkgLift v0.6.0 was released on **2026-09-05** and is available as a signed and notarized [GitHub download](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.6.0) and through [Homebrew](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb). The [release notes](Documentation/ReleaseNotes-0.6.0.md) describe the shipped scope, and the [release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) records the completed verification.
+[PkgLift 1.0.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0) was published on 2026-09-29
+and is available through the [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/2317ae83bc8e1095877c8f79bfd53dbc1b7945e3/Formula/pkglift.rb). See the
+[release notes](Documentation/ReleaseNotes-1.0.0.md) for the verified release and
+upgrade guidance.
 
-The release adds a narrow library API in `PkgLiftCocoaPods` for caller-supplied evidence under `pkglift.synthetic-local/v1`; a positive result uses the `single-swift-library/v1` blueprint shape. The S1 fixture is repository-owned. Given an already available Podspec JSON document and explicit inventory evidence, it can return a deterministic, read-only structural blueprint candidate for one Swift library. The result retains the exact v0.5 declaration assessment and reasons; it never turns that assessment into package-validity or migration evidence.
+Version 1.0 defines the documented 1.x compatibility policy for the CLI, JSON
+contracts and six public Swift library products. It includes the safety work
+prepared after 0.10.0: registry-source and header-import evidence, safer saved-plan
+writes, stricter preflight checks and project-preservation coverage. Regenerate
+saved plans after upgrading; executable plans remain bound to the exact PkgLift
+version that created them.
 
-The API does not read, expand, traverse, hash, or otherwise verify local files. It does not verify source provenance, resolve packages or products, generate `Package.swift`, load Podspecs through the CLI, change a migration plan, mutate an Xcode project, remove CocoaPods, or broaden `AUTO` eligibility. See the [v0.6.0 release notes](Documentation/ReleaseNotes-0.6.0.md), [generated-package evidence contract](Documentation/GeneratedPackageEvidence.md), [Stage 1 validation record](Documentation/GeneratedPackageStage1Validation.md), and [v0.6 release evidence](Documentation/GeneratedPackageV06ReleaseEvidence.md) for the pinned S1 boundary and verification results.
+The initial positive qualification covers the reviewed repository fixtures and
+the named AWS single-target partial migration. Positive external multi-target
+or workspace migration remains deferred. Discovery, explicit selection and
+conservative refusal remain available for those projects.
+
+The released archive passed signing and notarization. Its core runtime passed
+acceptance on Apple Silicon macOS 14.8.9. Complete and partial migration builds
+passed on the separate macOS 15/Xcode 16.4 and macOS 27/Xcode 27 consumer cells;
+conservative refusal also passed in the signed acceptance workflow. See the
+[environment matrix](Documentation/Environments-1.0.md) for the separate receipts.
+These observations do not imply support for untested macOS patches or every
+Xcode version between the two tested toolchains.
 
 ## 0.10.0 — CryptoSwift mapping
 
 [PkgLift 0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0)
-is the current public release at `7d976d70e66a584e2e25db9852ac0e53bb6201b9` and is available
+was published at `7d976d70e66a584e2e25db9852ac0e53bb6201b9` and distributed
 through the [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
-It adds an exact CryptoSwift mapping for Swift-only
+It added an exact CryptoSwift mapping for Swift-only
 iOS consumers targeting iOS 15 or later. The concrete evidence builds
 CryptoSwift 1.10.0 through CocoaPods and SwiftPM, binds all 113 compiled core
 Swift source files, and verifies the named built privacy resources. The mapping
@@ -170,11 +189,19 @@ PkgLift targets partial CocoaPods-to-SwiftPM migration in native Xcode projects.
 | Local `:path` pod | Detected as an external source; typed local provenance and automatic migration are not implemented |
 | Podspec JSON declarations | Released v0.5.0/v0.6.0 APIs inspect caller-supplied in-memory declarations and one synthetic S1 blueprint shape. The local-report command is separate, observes only explicitly selected bytes, and cannot authorize migration |
 
-Host support remains macOS 14 or later on Apple Silicon (`arm64`). Distribution is through a Developer ID-signed and Apple-notarized binary, Homebrew, or a source build. See [Limitations](#limitations) for the intentionally conservative boundaries.
+The distribution requires Apple Silicon (`arm64`) and declares macOS 14 as its
+package minimum. Exact 1.0 runtime acceptance was performed on macOS 14.8.9;
+consumer builds have separately recorded host/toolchain cells. Use the
+[qualified environment matrix](Documentation/Environments-1.0.md) for tested
+versions, and [Limitations](#limitations) for the migration boundaries. Package
+metadata does not establish that macOS 14.0 or every later environment was tested.
 
 ## Installation
 
-PkgLift stable releases are distributed as Developer ID-signed and Apple-notarized Apple Silicon binaries for macOS 14 or later.
+PkgLift stable releases are distributed as Developer ID-signed and
+Apple-notarized Apple Silicon binaries. The package minimum is macOS 14; check
+the [tested runtime and consumer environments](Documentation/Environments-1.0.md)
+when selecting a host and Xcode toolchain.
 
 Install with Homebrew:
 
@@ -206,6 +233,8 @@ sudo ln -sf /usr/local/libexec/pkglift/pkglift /usr/local/bin/pkglift
 ```
 
 ## Quick Start
+
+Trying PkgLift for the first time? Follow the [first pilot guide](Documentation/FirstPilot.md) for a short, reviewed workflow that ends at dry run and a small feedback template.
 
 1. Navigate to the repository root containing the `Podfile`; Xcode projects and workspaces may be nested beneath it.
 2. Run `pkglift analyze` to see what PkgLift can classify.

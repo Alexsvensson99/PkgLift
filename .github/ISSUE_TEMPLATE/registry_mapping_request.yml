@@ -88,6 +88,25 @@ body:
       required: true
 
   - type: textarea
+    id: supported_consumer_platforms
+    attributes:
+      label: Verified consumer platforms and minimum deployment targets
+      description: List every proposed schema-2 platform and the exact minimum deployment target covered by consumer evidence.
+      placeholder: |
+        iOS: 15.0
+        macOS: 14.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: platform_evidence
+    attributes:
+      label: Consumer-platform evidence
+      description: Link to or describe the reproducible compiling consumer for every listed platform and deployment target. Upstream manifest or podspec metadata alone is not consumer build evidence.
+    validations:
+      required: true
+
+  - type: textarea
     id: module_mapping
     attributes:
       label: Module-name or subspec notes
@@ -115,4 +134,6 @@ body:
         - label: The minimum version is supported by concrete upstream evidence rather than an assumption.
           required: true
         - label: Every selected consumer language is supported by concrete evidence rather than inference from implementation language.
+          required: true
+        - label: Every listed platform and minimum deployment target is supported by a reproducible compiling consumer.
           required: true

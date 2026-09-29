@@ -192,7 +192,10 @@ public struct XcodeProjectEditor: Sendable {
         }
         
         do {
+            try XcodeProjectFormatGuard.validate(at: path)
             return try XcodeProj(pathString: path)
+        } catch let error as UnsupportedXcodeProjectFormatError {
+            throw error
         } catch {
             throw XcodeProjectEditorError.invalidProject(path)
         }
@@ -200,6 +203,9 @@ public struct XcodeProjectEditor: Sendable {
     
     private func saveProject(_ xcodeproj: XcodeProj, at path: String) throws {
         do {
+            // Recheck immediately before writing in case the directory changed
+            // after openProject. This is not a filesystem-wide atomicity claim.
+            try XcodeProjectFormatGuard.validate(at: path)
             // Package mutations only change the PBX graph. Writing the whole
             // XcodeProj also reserializes unrelated workspaces, schemes, and
             // breakpoint files, creating out-of-scope apply deltas.
@@ -208,6 +214,8 @@ public struct XcodeProjectEditor: Sendable {
                 override: true,
                 outputSettings: PBXOutputSettings()
             )
+        } catch let error as UnsupportedXcodeProjectFormatError {
+            throw error
         } catch {
             throw XcodeProjectEditorError.saveFailed(path)
         }

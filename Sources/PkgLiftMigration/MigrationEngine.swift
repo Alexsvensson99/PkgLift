@@ -55,6 +55,9 @@ public struct MigrationEngine: Sendable {
     ) throws {
         try AtomicMigration.checkForIncompleteMigration(backupDir: backupDir)
         try checkCancellation()
+        // A library caller can enter here without the CLI's analyzer. Refuse
+        // unsupported formats before creating recovery state or changing Podfile.
+        try XcodeProjectFormatGuard.validate(at: projectPath)
         let podfileEditor = PodfileEditor()
         let podfileContent = try String(contentsOf: podfileURL, encoding: .utf8)
         let podfileEdit = podfileEditor.removeWithResult(
