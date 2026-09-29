@@ -17,6 +17,12 @@ PkgLift 0.3.0 broadens evidence-backed CocoaPods migration coverage without rela
 - Adds exact direct and subspec mappings for Firebase Auth, Firestore, Remote Config, and Storage at the verified `11.12.0` Swift and Objective-C consumer boundary.
 - Keeps `Firebase`, `Firebase/Core`, unknown Firebase subspecs, and every other unmatched identity unmapped. Direct and subspec entries do not inherit from a base-pod fallback.
 
+Evidence clarification (2026-09-29): the consumer-boundary wording above
+refers to reviewed upstream mapping metadata and language evidence. The
+linked 0.3.0 pilots were read-only; they did not compile Lottie or Firebase
+consumer migrations. See the [1.0 evidence ledger](RegistryEvidence-1.0.md)
+for the distinction between upstream mapping evidence and compiled cells.
+
 ## Migration safety
 
 - Every new automatic path still requires an exact verified registry identity, a supported stable lockfile version, a representable literal declaration, exact target attribution, a complete non-empty target profile, support for every consumer language, and unchanged preflight evidence.

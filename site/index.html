@@ -31,7 +31,6 @@
   "name": "PkgLift",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS 14 or later on Apple Silicon",
-  "softwareVersion": "0.6.0",
   "description": "A conservative command-line tool for partial CocoaPods-to-SwiftPM migration in native Xcode projects.",
   "url": "https://www.svensson.design/PkgLift/",
   "downloadUrl": "https://github.com/Alexsvensson99/PkgLift/releases/latest",
@@ -108,18 +107,18 @@ Preserved 2 CocoaPods dependencies.
 <section class="section section-border" aria-labelledby="latest-release">
   <div class="container grid-2 release-grid" style="align-items:center">
     <div>
-      <div class="eyebrow">Latest release</div>
-      <h2 class="anchor-heading" id="latest-release">PkgLift 0.6.0 is available</h2>
-      <p class="lead">Use the CLI to analyze and plan supported migrations. The new work in 0.6.0 explores package structure through an experimental library API.</p>
-      <p>Install through Homebrew or download the signed, notarized macOS release. Already using PkgLift? Run <code>brew update &amp;&amp; brew upgrade pkglift</code> to update a Homebrew installation.</p>
+      <div class="eyebrow">Stable releases</div>
+      <h2 class="anchor-heading" id="latest-release">Install the latest signed release</h2>
+      <p class="lead">Use the CLI to analyze, plan, apply, and verify supported migrations while uncertain dependencies stay under CocoaPods.</p>
+      <p>Install through Homebrew or download the latest signed, notarized macOS release. Already using PkgLift? Run <code>brew update &amp;&amp; brew upgrade pkglift</code> to update a Homebrew installation.</p>
       <div class="hero-actions">
-        <a class="button button-primary" href="https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.6.0">Read the v0.6.0 release</a>
-        <a class="button" href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/GeneratedPackageEvidence.md">Explore the library API</a>
+        <a class="button button-primary" href="https://github.com/Alexsvensson99/PkgLift/releases/latest">View the latest release</a>
+        <a class="button" href="https://github.com/Alexsvensson99/PkgLift/blob/main/CHANGELOG.md">Read the changelog</a>
       </div>
     </div>
     <div class="grid-2">
-      <div class="card"><h3>Use today: migration CLI</h3><p class="subtle">Review a plan, preview the changes, and apply only entries backed by exact registry, version, target, and language evidence. Uncertain dependencies stay with CocoaPods.</p><p class="subtle">The automatic migration scope is unchanged in 0.6.0.</p></div>
-      <div class="card"><h3>Experimental: package structure</h3><p class="subtle">The library API assesses a possible package structure for one synthetic Swift library, using in-memory Podspec JSON and evidence supplied by the caller.</p><p class="subtle">It does not inspect source files, generate <code>Package.swift</code>, or authorize migration. The CLI does not load Podspecs.</p></div>
+      <div class="card"><h3>Evidence-backed migration</h3><p class="subtle">Review a plan, preview the changes, and apply only entries backed by exact registry, version, target, and language evidence.</p><p class="subtle">Build verification checks the resulting package linkage before you accept the migration.</p></div>
+      <div class="card"><h3>Conservative boundaries</h3><p class="subtle">Uncertain dependencies stay with CocoaPods, and unsupported project shapes are reported instead of guessed.</p><p class="subtle">Dry run remains the default so you can inspect the proposed change first.</p></div>
     </div>
   </div>
 </section>

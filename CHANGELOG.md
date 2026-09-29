@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-29
+
+Source preparation only; 1.0.0 has not been published. The current public
+release remains 0.10.0. See the
+[release notes](Documentation/ReleaseNotes-1.0.0.md).
+
+### Added
+- Define the 1.x compatibility policy for the public CLI, JSON contracts and six
+  library products. Saved executable plans remain bound to the exact PkgLift
+  version that created them.
+- Add exact-candidate release acceptance for the Developer ID-signed,
+  Apple-notarized archive: a complete migration and build, a partial migration
+  retaining CocoaPods, a conservative mutation-free refusal and an Apple Silicon
+  runtime/structural-apply check on the observed macOS 14 runner.
+- Record bounded environment, partial-migration, recovery and safety evidence
+  without turning fixture, historical or refusal results into broader positive
+  support claims.
+
+### Fixed
+- Carry forward the unpublished 0.11 safety changes for registry-source and
+  header-import evidence, saved-plan path containment, pre-write freshness,
+  retained-CocoaPods validation and unrelated Xcode project metadata.
+- Refuse automatic migration when the available mapping, source, target,
+  language, platform, header-import or configuration evidence is incomplete or
+  conflicting.
+
+### Changed
+- Freeze the initial 1.0 positive qualification envelope around the reviewed
+  repository fixtures and named single-target evidence. Positive external
+  multi-target/workspace migration is explicitly deferred and is not advertised
+  as a 1.0 success case; existing discovery and refusal behavior remains.
+- Preserve Apple Silicon as the distribution architecture. The final supported
+  runtime floor and exact toolchain cells must come from the exact signed
+  candidate runs; no unobserved macOS patch or continuous Xcode range is inferred.
+- Regenerate analysis and migration plans with 1.0.0 before dry run or apply.
+  Do not edit producer-version or evidence fields to reuse older plans.
+
 ## [0.11.0] - 2026-09-27
 
 Source preparation only; 0.11.0 has not been published. The date records this

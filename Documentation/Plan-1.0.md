@@ -1,9 +1,13 @@
 # PkgLift 1.0 plan: a verified support and compatibility contract
 
 Status: planning complete; G1 compatibility contract and repository-owned partial
-migration pilots are merged and qualified on main. G2 environment qualification
-is in progress; G3 remains open for its other shapes, and G4–G6 and public 1.0
-release qualification remain open. Reviewed on 2026-09-16 against main
+migration pilots are merged and qualified on main. On 2026-09-29, the initial
+1.0 scope deferred only the external positive multi-target/workspace cell and
+selected evidence-bound G2 environment rules. G2 and the non-deferred G3 rows
+remain in qualification. G4 candidate-source recovery passed locally; G5 has no
+confirmed critical/high finding in the targeted review. Protected integration,
+remaining candidate receipts and G6 public release qualification remain open.
+Originally reviewed on 2026-09-16 against main
 [`72f19b3e3163d401b57950d02bd5fc191328ce2a`](https://github.com/Alexsvensson99/PkgLift/commit/72f19b3e3163d401b57950d02bd5fc191328ce2a),
 the merge commit for [PR #120](https://github.com/Alexsvensson99/PkgLift/pull/120).
 The public baseline is [0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0),
@@ -12,12 +16,24 @@ This document proposes acceptance criteria; it does not declare 1.0 ready or cha
 
 ## Latest checkpoint
 
+The [2026-09-29 candidate record](Qualification-1.0.md) sets source version `1.0.0`, adds a
+[25-mapping evidence ledger](RegistryEvidence-1.0.md), a [targeted safety
+review](SafetyReview-1.0.md), a [public API baseline](API-1.0.md), and exact signed
+candidate full/partial/refusal plus macOS 14 runtime gates. All 646 local Swift
+tests pass (413 XCTest and 233 Swift Testing). All eleven [recovery scenarios](Recovery-1.0.md#candidate-source-rerun-on-2026-09-29)
+pass on the exact source inventory recorded with the paired CLI/test artifacts.
+These are local candidate-source results, not protected main, signed artifact
+or public release acceptance. The final evidence must bind those remaining gates.
+
 The [2026-09-26 qualification checkpoint](Qualification-2026-09-26.md) records
 current-main local source and PartialMixed success, remaining G2 cells, and a
 pre-1.0 maintenance-release assessment. PR #132 changes ZBNetworking into a
 header-import refusal case; the old positive ZB protocol cannot close G3. The
 historical progress narrative below remains evidence for its named commits,
-not a claim of current positive ZB eligibility. G2–G6 remain open.
+not a claim of current positive ZB eligibility. The adopted
+[initial support envelope](ScopeProposal-1.0.md) defers that one missing external
+positive multi-target/workspace cell instead of calling it complete or replacing
+it with fixture/refusal evidence. G2, the non-deferred G3 rows and G4–G6 remain open.
 
 ## Outcome and scope
 
@@ -31,11 +47,15 @@ The first work package is the support/compatibility contract below, followed by
 evidence for each promised workflow. Adding more registry identities is not a
 substitute for these gates.
 
-Recommended boundaries for this plan:
+Adopted boundaries for this plan:
 
-- Retain Apple Silicon distribution and the current macOS 14 minimum as the
-  starting proposal. Record tested host and toolchain combinations before making
-  a 1.0 support promise; a Mach-O deployment target alone is not runtime evidence.
+- Retain Apple Silicon distribution. Set the supported runtime floor to the
+  lowest macOS version on which the exact final candidate passes runtime
+  acceptance; the historical macOS 14.8.9 result is a baseline, not final-candidate
+  evidence, and exact 14.0 support must not be inferred from deployment metadata.
+- Qualify the selected Xcode 16.4/Swift 6.1.2 and Xcode 27/Swift 6.4 cells as
+  distinct cells. Do not infer support for toolchains between or after them, and
+  do not treat a source-build result as consumer-migration evidence.
 - Preserve exact mapping, target, language, platform, version and live-preflight
   requirements. Swift, Objective-C and mixed targets remain mapping-dependent.
   Detection of Objective-C++, C or C++ does not imply automatic migration support.
@@ -55,12 +75,12 @@ support promise, not a demonstrated implementation defect.
 | Roadmap requirement | Established evidence | Remaining 1.0 gate |
 |---|---|---|
 | Stable plan schema or explicit compatibility policy | [JSON contracts](JSONSchema.md), schema 1, additive inspection compatibility and exact `pkgLiftVersion` equality in [preflight](../Sources/PkgLiftMigration/MigrationPlanPreflight.swift). Older incomplete AUTO entries are refused. The [versioned compatibility policy](Compatibility-1.0.md) and focused examples/tests were integrated by PR #119 and qualified on main `9d2951…`. | G6 must freeze the exact release API baseline. |
-| Supported host/toolchain matrix | [Ordinary CI](../.github/workflows/positive-e2e.yml), [CodeQL](../.github/workflows/codeql.yml) and [release CI](../.github/workflows/release.yml) use macOS 15 with Xcode 16.4. [Distribution](Distribution.md) advertises arm64 macOS 14+. | G2: validate the lower host boundary and every advertised toolchain cell; distinguish binary execution from source compilation and project migration. |
-| Broad real-project coverage | [Ten pinned upstream pilots](Pilots.md) exercise analysis, planning, inert dry run and conservative outcomes. Amazon IVS full migration is historical v0.2.0 evidence. Current recurring full apply/build runs use repository-owned fixtures. | G3: current repeatable full-workflow evidence across real project shapes; historical success and read-only results do not close this gap. |
+| Supported host/toolchain matrix | [Ordinary CI](../.github/workflows/positive-e2e.yml), [CodeQL](../.github/workflows/codeql.yml) and [release CI](../.github/workflows/release.yml) use macOS 15 with Xcode 16.4. [Distribution](Distribution.md) advertises arm64 macOS 14+. | G2: set the supported Apple Silicon runtime floor from the exact final candidate's lowest passing host and qualify the selected Xcode 16.4 and Xcode 27 cells separately. Historical 14.8.9 does not prove the candidate or exact 14.0; no toolchain range is implied. |
+| Broad real-project coverage | [Ten pinned upstream pilots](Pilots.md) exercise analysis, planning, inert dry run and conservative outcomes. Amazon IVS full migration is historical v0.2.0 evidence. Current recurring full apply/build runs use repository-owned fixtures. | G3: obtain current-candidate evidence for every non-deferred promised shape. The external positive multi-target/workspace cell is explicitly deferred post-1.0; historical success, fixtures and refusals do not convert it into a positive result. |
 | Recovery guidance for the complete workflow | [Migration safety](MigrationSafety.md#rollback-boundary), [interruption evidence](InterruptedMigrationValidation.md), [atomic tests](../Tests/PkgLiftMigrationTests/AtomicMigrationTests.swift) and [subprocess tests](../Tests/PkgLiftCLITests/MigrateInterruptionTests.swift) cover errors, handled signals, SIGKILL markers and refusal to reapply. | G4: a tested user recovery drill including the separate `pod install` and final-build boundary. Manual recovery may satisfy the gate. |
 | Mature registry and contribution validation | 25 mappings in the verified 0.10.0 distribution; [contribution rules](ContributingMappings.md), duplicate registry copies, schema validation and [three Swift consumer pilots](VerifiedConsumerMappings.md). | G5: audit the evidence and published claims for the mappings included in the support contract; do not present a minimum version as proof of every later version. |
 | Clear language boundaries | [Compatibility table](../README.md#compatibility), PBX source profiles and mapping-specific language refusal tests. Repository-owned SDWebImage fixture builds Swift and Objective-C consumers together. | G1/G3: publish a tested language/project-shape table with explicit detection-only and unsupported rows. |
-| Partial and mixed-manager migrations | On main `72f19b3…`, [PartialSwift, PartialMixed and PartialSwiftCoexistence](PartialMigration-1.0.md#main-qualification-on-2026-09-16) passed their baseline/post-migration builds, retained-pod refresh/lock checks and structural verification under macOS 15.7.9/arm64, Xcode 16.4, Swift 6.1.2 and CocoaPods 1.17.0. The [build/pilot](https://github.com/Alexsvensson99/PkgLift/actions/runs/35128107267), [Quality](https://github.com/Alexsvensson99/PkgLift/actions/runs/35128107306) and [CodeQL](https://github.com/Alexsvensson99/PkgLift/actions/runs/35128107438) runs contain 25 completed, successful checks in total. | G3: qualify multi-target/workspace selection and the planned [pinned real-project cases](RealProjectQualification-1.0.md). The repository fixtures and conflict-refusal coverage do not close those shapes. |
+| Partial and mixed-manager migrations | On main `72f19b3…`, [PartialSwift, PartialMixed and PartialSwiftCoexistence](PartialMigration-1.0.md#main-qualification-on-2026-09-16) passed their baseline/post-migration builds, retained-pod refresh/lock checks and structural verification under macOS 15.7.9/arm64, Xcode 16.4, Swift 6.1.2 and CocoaPods 1.17.0. The [build/pilot](https://github.com/Alexsvensson99/PkgLift/actions/runs/35128107267), [Quality](https://github.com/Alexsvensson99/PkgLift/actions/runs/35128107306) and [CodeQL](https://github.com/Alexsvensson99/PkgLift/actions/runs/35128107438) runs contain 25 completed, successful checks in total. | G3: requalify the non-deferred partial/refusal rows and planned [pinned real-project cases](RealProjectQualification-1.0.md) against the candidate. Repository multi-target regressions remain regression evidence; external positive multi-target/workspace proof is deferred, not closed. |
 | No known critical migration-integrity defects | Protected CI and CodeQL passed for the baseline. Only [SwiftSoup #57](https://github.com/Alexsvensson99/PkgLift/issues/57) and [DGCharts #56](https://github.com/Alexsvensson99/PkgLift/issues/56) were open in the live issue inventory on 2026-09-16. | G5/G6: targeted safety review, triaged findings and exact-candidate checks. An empty defect tracker is not proof that no defects exist. |
 
 The completed [0.10 publication](https://github.com/Alexsvensson99/PkgLift/actions/runs/35066745671)
@@ -98,12 +118,16 @@ plan execution or newly automatic dependency is introduced.
 
 ### G2 — Qualify the declared environments
 
-**Priority: second; depends on G1. Status: in progress.** The
+**Priority: second; depends on G1. Status: boundary selected on 2026-09-29;
+candidate qualification in progress.** The
 [environment matrix and reproducible records](Environments-1.0.md) document
 baseline evidence and the local Xcode 27 source/runtime checks. The registry
 resource-layout compatibility fix passes both build engines. Hosted macOS
-14.8.9/arm64 runtime smoke also passed. Exact 14.0 runtime evidence,
-support-boundary decisions and complete consumer cells remain requirements below.
+14.8.9/arm64 runtime smoke also passed. The supported runtime floor will be the
+lowest macOS host on which the exact final candidate passes; 14.8.9 remains
+historical evidence until repeated for that candidate, and 14.0 is not inferred.
+The selected Xcode 16.4 and Xcode 27 cells and complete consumer rows remain
+requirements below.
 
 - Distinguish three promises: running the distributed CLI, building PkgLift from
   source, and migrating/building a consumer project. Record exact macOS, CPU,
@@ -112,8 +136,9 @@ support-boundary decisions and complete consumer cells remain requirements below
   and core workflow on the lowest promised host OS. For each supported source
   build cell, pass build/test/registry. For each migration toolchain cell, pass
   baseline and post-migration builds plus a representative partial-migration case.
-- Select concrete lower and upper supported toolchains from available, tested
-  environments; do not claim “all newer Xcode versions” from the single current cell.
+- Qualify Xcode 16.4/Swift 6.1.2 and Xcode 27/Swift 6.4 as separate selected
+  cells for the workloads assigned to them in the final matrix. Do not claim a
+  continuous range, every Swift 6 toolchain or “all newer Xcode versions.”
 - If a required environment is unavailable, leave the row pending. Narrowing an
   existing advertised support promise requires an explicit documented decision.
   Neither a skipped job nor a minimum deployment setting closes the gate.
@@ -124,7 +149,9 @@ compilation. Do not trigger full workflows merely to estimate runtime.
 
 ### G3 — Prove real and partial migrations
 
-**Priority: third; test design can proceed alongside G2 after G1. Status: in progress.**
+**Priority: third; test design can proceed alongside G2 after G1. Status: the
+initial envelope was adopted on 2026-09-29; non-deferred candidate evidence is
+still in progress.**
 All three [repository-owned partial-migration cases](PartialMigration-1.0.md#main-qualification-on-2026-09-16),
 including existing-SwiftPM coexistence, passed on main `72f19b3…` with fresh
 hosted post-migration builds and complete environment records. Conflicting-requirement
@@ -136,19 +163,25 @@ records the next uncovered positive shape. ZBNetworking's hosted baseline built,
 but the final consumer build failed on a flat `SDImageCache.h` import. PR #132
 added bounded header-import evidence, and the unchanged consumer must now remain
 REVIEW. Its earlier AUTO screening is superseded. The positive runner correctly
-stops before apply; select and review a replacement candidate instead of rerunning
-it for a positive result. Additional toolchain/shape evidence remains open.
-Deliver an evidence matrix separating read-only, repository-fixture and real-project results.
+stops before apply. Any future attempt to qualify the deferred cell must select
+and review a replacement candidate instead of rerunning ZBNetworking for a
+positive result. The missing external positive multi-target/workspace cell is
+deferred to explicit post-1.0 qualification. This does not make it pass,
+turn a refusal into positive evidence or change retained CLI behavior. Additional
+non-deferred toolchain/shape evidence remains open. Deliver an evidence matrix
+separating qualified positive, qualified refusal, regression-only,
+historical-only, pending and deferred results.
 
 - Preserve the ten upstream read-only pilots and their current prohibition on
   upstream apply/build. Review a separate, explicitly authorized protocol for
   disposable real-project copies or reproducible maintainer-provided reports.
   Source availability alone is not permission to run a project's scripts.
-- Proposed minimum: three pinned real-project cases across at least two independent
-  upstream repositories. Cover a supported Swift app, a partial migration with
-  retained CocoaPods dependencies, and an explicit workspace/project or multi-target
-  selection. Record positive and refusal coverage for every language/shape promised
-  in G1; these three cases are a floor, not universal-compatibility proof.
+- Initial 1.0 minimum: retain the three pinned real-project cases across three
+  independent upstream repositories: the AWS positive partial migration and the
+  FirebaseUI/Hammerspoon intentional refusal controls. Requalify any result used
+  in the candidate claim. These cases are not universal-compatibility proof, and
+  the refusal controls do not substitute for the deferred external positive
+  multi-target/workspace cell.
 - For each positive case: record upstream SHA and license, project/scheme and
   toolchain; pass the baseline build; review the exact AUTO set; prove dry run is
   inert; apply; refresh dependencies explicitly; verify structure and the final
@@ -160,16 +193,20 @@ Deliver an evidence matrix separating read-only, repository-fixture and real-pro
   exactly once to the intended target. Include existing SwiftPM coexistence and
   conflicting-requirement refusal in the coverage matrix.
 - An unbuildable upstream baseline is inconclusive, not a migration success or
-  regression. Select a suitable replacement or record a support blocker. Never
-  edit classifications, simplify unsupported semantics or weaken checks to pass.
+  regression. Replace a non-deferred positive case or record its support blocker;
+  do not restart an unbounded search for the deferred external multi-target cell.
+  Never edit classifications, simplify unsupported semantics or weaken checks to pass.
 
-**Exit:** each promised workflow/shape has reproducible positive or intentional
-refusal evidence. Reports identify source SHA, commands, artifact/binary identity,
-environment, expected actions, remaining dependencies and redacted results.
+**Exit:** each non-deferred promised workflow/shape has reproducible
+current-candidate positive or intentional-refusal evidence. Reports identify
+source SHA, commands, artifact/binary identity, environment, expected actions,
+remaining dependencies and redacted results. The external positive
+multi-target/workspace cell remains visibly deferred with its post-1.0 protocol;
+fixture regressions and safe refusals are never counted as its positive evidence.
 
 ### G4 — Verify recovery as a user procedure
 
-**Priority: fourth; can proceed alongside G3. Status: eleven local recovery scenarios passed; protected integration pending.**
+**Priority: fourth; can proceed alongside G3. Status: eleven candidate-source scenarios passed again on 2026-09-29; protected integration pending.**
 The [recovery runbook and executable drill](Recovery-1.0.md) exercise eleven
 controlled scenarios on the repository-owned PartialSwift consumer. All restored
 copies built and passed fresh planning/dry-run checks on 2026-09-26. This local
@@ -195,7 +232,7 @@ optional unless the drill demonstrates that the manual route is insufficient.
 
 ### G5 — Close safety and evidence findings
 
-**Priority: before candidate freeze; depends on G1–G4 findings. Status: open.**
+**Priority: before candidate freeze; depends on G1–G4 findings. Status: targeted review and registry audit complete; final integration pending.**
 
 - Review migration-integrity paths: static parsing, target/platform/language
   attribution, path containment, saved-plan freshness, registry/product identity,
@@ -228,22 +265,27 @@ is not an exhaustive security audit and does not close this gate.
 - Finish public release notes, support/recovery documentation and final live readback.
 
 **Exit:** all six gates have dated, source-bound evidence and the approved release
-is publicly verified. Prior approval of 0.10.0 publication is not 1.0 publication approval.
+is publicly verified. The 2026-09-29 standing 1.0 delivery mandate supplies
+operator authorization; all technical gates and protected-environment approvals
+still apply.
 
 ## Current work direction
 
-The approved next work is G4 recovery qualification; the broad public replacement
-search is stopped. [A concrete 0.11 proposal](ReleaseProposal-0.11.md) separates
-maintenance release preparation from 1.0, while the [initial 1.0 scope proposal](ScopeProposal-1.0.md)
-identifies the precise external multi-target cell that could be deferred. Neither
-proposal changes current classifications, support promises or release status.
-G3 is not silently declared complete.
+The broad public replacement search is stopped. The adopted
+[initial 1.0 support envelope](ScopeProposal-1.0.md) defers only the external
+positive multi-target/workspace cell and retains it as concrete post-1.0 work.
+The selected G2 cells and all non-deferred G3 rows still require exact-candidate
+qualification. [A concrete 0.11 proposal](ReleaseProposal-0.11.md) remains a
+separate historical preparation record. These decisions do not change current
+classifications or release status, and G3 is not silently declared complete.
 
 ## Prioritization and version decision
 
-With **G1 merged and main-qualified**, the next work package is G2's environment matrix;
-the repository-owned G3 partial pilots and conflict-refusal coverage are also main-qualified,
-while the planned real-project protocol and remaining project shapes determine the rest of G3.
+With **G1 merged and main-qualified**, the next work package is G2 candidate
+qualification in the selected exact environment cells. The repository-owned G3
+partial pilots and conflict-refusal coverage are also main-qualified; the
+non-deferred real-project protocol determines the remaining initial G3 evidence,
+while external positive multi-target/workspace qualification is tracked post-1.0.
 Perform G2–G4, integrate their fixes through G5 and
 prepare G6. Use one reviewed tracking item and bounded issues for these work
 packages when implementation is started; this local plan creates no GitHub issues

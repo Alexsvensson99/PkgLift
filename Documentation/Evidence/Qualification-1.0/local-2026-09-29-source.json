@@ -1,0 +1,47 @@
+{
+  "apiBaselineSHA256": "e1304e183ba5fa1fb621d3665fc129c90aaae83e1945ef782ecad2f8f655c4d9",
+  "baseCommit": "c5c32ee8e3598975a97dc53207b29596724f65f1",
+  "hostedAcceptance": false,
+  "partialCases": [
+    "PartialSwift",
+    "PartialMixed",
+    "PartialSwiftCoexistence"
+  ],
+  "pythonPolicyTests": {
+    "count": 298,
+    "exitCode": 0,
+    "logSHA256": "cd4d43448e0ecf7cd37a6f94ee7faa3dc79995e6b8dc0bf75ec0eb202a12459d"
+  },
+  "registryMappings": 25,
+  "releaseAcceptance": false,
+  "releaseBinarySHA256": "640195cd5500c0b9974cffb5501e65a8ab822a063948d52d8d857d498527307d",
+  "schemaVersion": 1,
+  "sourceValidation": [
+    {
+      "check": "full-swift-tests",
+      "exitCode": 0,
+      "logSHA256": "66fd7cb53d502b7f97dd1f2b10ffd943b46f6edb0caa8a697f08e65401bea512",
+      "seconds": 29.78
+    },
+    {
+      "check": "release-build",
+      "exitCode": 0,
+      "logSHA256": "74bc3a9b2f7cc4c36bc86404a69455d005301a140dc55a8d0a729498539240b3",
+      "seconds": 52.53
+    },
+    {
+      "check": "registry",
+      "exitCode": 0,
+      "logSHA256": "8e20708c93cecf83abe678d5d81138606825b7ce2db40a6639a90f998abed680",
+      "seconds": 1.02
+    }
+  ],
+  "swiftTests": {
+    "exitCode": 0,
+    "swiftTesting": 233,
+    "total": 646,
+    "xctest": 413
+  },
+  "version": "1.0.0",
+  "workingTreeHasPreparationChanges": true
+}

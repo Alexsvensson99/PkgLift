@@ -1,0 +1,16 @@
+{
+  "environmentCaptureBoundary": "All host/toolchain probes passed. captureStatus is incomplete because tracked preparation changes exist; the paired source inventory binds those exact bytes. runnerImage null is valid for local execution.",
+  "hostedAcceptance": false,
+  "independentReview": "Current input inventory, paired artifacts, all expected scenario exits, log digests, baseline/incident preservation and portable privacy independently checked; no remaining material finding.",
+  "pairedBuildReceiptSHA256": "64ddfe81fb526c44f23774ed92ac90aa13acadb2421548176b510f7dd76b06eb",
+  "recoveryCommandCount": 97,
+  "recoveryLogCount": 194,
+  "recoveryScenariosPassed": 11,
+  "recoverySummarySHA256": "1767b1868389f6fad013d41f01298583d0f08d778f0d0692d662ea7fe0047d97",
+  "releaseAcceptance": false,
+  "schemaVersion": 1,
+  "sourceInputCount": 194,
+  "sourceInputsMatchCurrentTree": true,
+  "sourceVersion": "1.0.0",
+  "status": "passed"
+}
