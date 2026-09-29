@@ -4,6 +4,35 @@ import PkgLiftCore
 @testable import PkgLiftMigration
 
 final class MigrationEngineTests: XCTestCase {
+    func testUnsupportedProjectFormatRefusesBeforePodfileWriteOrRecoveryState() throws {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let project = root.appendingPathComponent("App.xcodeproj")
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        let json = project.appendingPathComponent("project.xcproj")
+        let jsonBytes = Data("unsupported project definition".utf8)
+        try jsonBytes.write(to: json)
+        let podfile = root.appendingPathComponent("Podfile")
+        let podfileBytes = Data("target 'App' do\n  pod 'Alamofire'\nend\n".utf8)
+        try podfileBytes.write(to: podfile)
+        let backup = root.appendingPathComponent("backup")
+        var stages: [MigrationStage] = []
+        XCTAssertThrowsError(try MigrationEngine().execute(
+            prepared: PreparedMigration(podsToRemove: ["Alamofire"], packagesToAdd: [], productsToLink: []),
+            podfileURL: podfile, projectPath: project.path, backupDir: backup,
+            checkpoint: { stages.append($0) }
+        )) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Unsupported Xcode project format"))
+            XCTAssertTrue(error.localizedDescription.contains("project.xcproj"))
+        }
+        XCTAssertTrue(stages.isEmpty)
+        XCTAssertEqual(try Data(contentsOf: podfile), podfileBytes)
+        XCTAssertEqual(try Data(contentsOf: json), jsonBytes)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: project.appendingPathComponent("project.pbxproj").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: backup.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("migration-in-progress").path))
+    }
+
     func testFailedPodfilePostconditionRestoresBothOriginals() throws {
         let root = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -158,15 +187,21 @@ final class MigrationEngineTests: XCTestCase {
         try FileManager.default.createDirectory(at: backup, withIntermediateDirectories: false)
         let original = Data("known-good Podfile".utf8)
         try original.write(to: backup.appendingPathComponent("Podfile"))
+        let project = root.appendingPathComponent("unsupported.xcodeproj")
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: false)
+        let json = project.appendingPathComponent("project.xcproj")
+        let jsonBytes = Data("unsupported project definition".utf8)
+        try jsonBytes.write(to: json)
         for _ in 0..<2 {
             XCTAssertThrowsError(try MigrationEngine().execute(
                 prepared: PreparedMigration(podsToRemove: [], packagesToAdd: [], productsToLink: []),
                 podfileURL: root.appendingPathComponent("missing-Podfile"),
-                projectPath: root.appendingPathComponent("missing.xcodeproj").path,
+                projectPath: project.path,
                 backupDir: backup
             )) { XCTAssertTrue($0.localizedDescription.lowercased().contains("incomplete")) }
             XCTAssertEqual(try Data(contentsOf: marker), markerData)
             XCTAssertEqual(try Data(contentsOf: backup.appendingPathComponent("Podfile")), original)
+            XCTAssertEqual(try Data(contentsOf: json), jsonBytes)
         }
     }
 
@@ -203,8 +238,12 @@ final class MigrationEngineTests: XCTestCase {
     }
 
     private func makeTemporaryDirectory() throws -> URL {
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("PkgLiftEngine-\(UUID().uuidString)")
+        let temporaryRoot = ProcessInfo.processInfo.environment["PKGLIFT_TEST_TEMP_ROOT"]
+            .map { URL(fileURLWithPath: $0, isDirectory: true) } ?? FileManager.default.temporaryDirectory
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: temporaryRoot.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else { throw CocoaError(.fileNoSuchFile) }
+        let url = temporaryRoot.appendingPathComponent("PkgLiftEngine-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         return url
     }

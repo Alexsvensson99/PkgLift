@@ -1,5 +1,7 @@
 # Post-release maintenance review — 2026-09-29
 
+Follow-up: the [format guard is now fixed and verified locally](FormatGuardVerification-2026-09-29.md). The findings below record the original review; the referenced PR head is unchanged.
+
 The first-pilot guide is prepared locally. **Hold XcodeProj PR #133:** the
 candidate reproduces an unintended project-format conversion. CodeQL PR #134
 has no identified defect in the reviewed patch, but needs current-base checks
