@@ -1,42 +1,44 @@
 # PkgLift 1.0 environment qualification
 
-Status: **the initial G2 boundary was adopted on 2026-09-29; final-candidate
-qualification remains open.** PR [#119](https://github.com/Alexsvensson99/PkgLift/pull/119)
-merged to main as [`9d2951fb8e2d8bc2326cc4cb7c9e41f0ba9d78cf`](https://github.com/Alexsvensson99/PkgLift/commit/9d2951fb8e2d8bc2326cc4cb7c9e41f0ba9d78cf).
-Its main qualification recorded 24 completed, successful checks, including the
-two retained-CocoaPods pilots below. This evidence inventory implements the
-[1.0 plan](Plan-1.0.md) environment work package; it is not a 1.0 release
-or a promise of universal support. Running a distributed executable, compiling
-PkgLift and migrating/building a consumer project are separate qualifications.
+Status: **1.0 published on 2026-09-29 within the adopted evidence-bound
+matrix.** The [final qualification](Qualification-1.0.md) distinguishes source
+preparation, signed M acceptance and public distribution. Running the CLI,
+compiling PkgLift and migrating/building a consumer remain separate workloads.
+The dated evidence below is retained as history.
 
 ## Adopted initial 1.0 matrix
 
-The initial 1.0 host boundary is **Apple Silicon only**. Its runtime floor is
-evidence-bound: it will be the lowest macOS version on which the exact signed
-final candidate passes runtime acceptance. The historical macOS 14.8.9 result
-below remains useful baseline evidence, but it does not qualify that final
-candidate and it does not establish exact macOS 14.0. Package deployment metadata
-does not substitute for a runtime receipt.
+The initial host boundary is **Apple Silicon only**. The lowest observed signed
+1.0 runtime host is **macOS 14.8.9 (23J631)**. The accepted M artifact, rather
+than the historical 0.10 binary, passed on that host. No exact macOS 14.0 claim
+or unobserved patch claim follows from deployment metadata.
 
-The source and consumer matrix selects two independent toolchain cells:
+| Cell | Qualified toolchain | Boundary |
+| --- | --- | --- |
+| G2-16 | Xcode 16.4 (16F6), Swift 6.1.2 (`swiftlang-6.1.2.1.2`) | Named hosted source/consumer cases at their own recorded commits; signed M full/partial/refusal acceptance. |
+| G2-27 | Xcode 27.0 (27A266a), Swift 6.4 (`swiftlang-6.4.0.34.1`) | Historical source qualification bound by unchanged build inputs, plus separate signed M local runtime and four-consumer acceptance. |
 
-| Cell | Exact selected toolchain | Qualification rule |
-|---|---|---|
-| G2-16 | Xcode 16.4 (16F6), Swift 6.1.2 (`swiftlang-6.1.2.1.2`) | Run the final claimed source/consumer workloads in this exact cell and retain same-run host, SDK, CocoaPods, source and artifact identity. |
-| G2-27 | Xcode 27.0 (27A266a), Swift 6.4 (`swiftlang-6.4.0.34.1`) | Run the final claimed source/consumer workloads in this exact cell and retain the same fields independently. |
+These are independent cells, not a continuous supported range or a promise for
+all newer Xcode/Swift versions. The external positive multi-target/workspace
+cell remains deferred after 1.0; repository fixtures and refusals have the
+narrower meanings recorded in the [scope contract](ScopeProposal-1.0.md).
 
-Passing one cell does not qualify the other, interpolate Xcode/Swift versions
-between them or promise all later releases. A local 1.0 source build has
-completed during candidate preparation. It is not the final protected-CI or
-signed-artifact receipt and therefore does not by itself close either published
-cell. Final release evidence will bind the frozen candidate source and artifacts
-to these cells without requiring this planning document to predict a future
-commit or binary hash.
+## Final 1.0 evidence matrix
 
-This G2 adoption does not close G3. The external positive multi-target/workspace
-migration cell is explicitly deferred from the initial 1.0 positive envelope.
-The remaining non-deferred positive and refusal rows still require exact-candidate
-reruns; repository fixtures and safe refusals retain their narrower meanings.
+M is `207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9` and its accepted archive/binary hashes are
+`402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1` /
+`4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b`.
+The M rows below all refer to these bytes. Each environment is captured in its
+own job or local execution; a missing field is not supplied from another row.
+
+| Cell/source | Exact observations | Actual result and evidence |
+| --- | --- | --- |
+| Signed M core runtime | macOS 14.8.9 (23J631), arm64; image `macos14` / `20260831.0302.1` | Signature/quarantine, version, registry, analyze, plan, dry run and structural apply passed. No consumer build. [M runtime job](https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778/job/109569158132), [receipt](Evidence/Qualification-1.0/cloud-final-M-acceptance.json). |
+| Signed M consumer acceptance | macOS 15.7.9 (24G830), arm64; image `macos15` / `20260907.0337.1`; Xcode 16.4 (16F6), Swift 6.1.2 (`swiftlang-6.1.2.1.2`); CocoaPods 1.17.0; iOS Simulator SDK 18.5 (22F76); macOS SDK 15.5 (24F74) | Complete mixed migration/build, PartialMixed migration/build with retained KeychainAccess, Hammerspoon refusal. [M acceptance job](https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778/job/109569158059), [same-job receipts](Evidence/Qualification-1.0/cloud-final-M-acceptance.json). |
+| Signed M local runtime and four consumers | macOS 27.0 (26A428), arm64; Xcode 27.0 (27A266a), Swift 6.4 (`swiftlang-6.4.0.34.1`); CocoaPods 1.17.0; iOS Simulator SDK 27.0 (24A430); macOS SDK 27.0 (26A425); `runnerImage: null` | Core runtime, PartialSwift, PartialMixed, PartialSwiftCoexistence and fresh full mixed migration/build passed with M's exact archive; Debug/arm64, iOS deployment 15.0. [Local acceptance](Evidence/Qualification-1.0/local-final-M-acceptance.json), [before](Evidence/Qualification-1.0/local-signed-M-environment-before.json), [after](Evidence/Qualification-1.0/local-signed-M-environment-after.json). The full case retains its failed iOS-9 baseline and separately bound iOS-15 retry. |
+| Final source F consumer qualification | Source `1839cbfe614c3affeecd6c790bb43ca2053a334a`; each named consumer records macOS 15.7.9 (24G830)/arm64 and its own Xcode 16.4/Swift 6.1.2/SDK/CocoaPods capture | Seven repository-owned consumer cases passed. These use the F source pilot artifact, not the signed M archive. [F run](https://github.com/Alexsvensson99/PkgLift/actions/runs/36610656058), [source receipt and artifact identities](Evidence/Qualification-1.0/source-qualification.json). |
+| Historical local 1.0 source preparation | Intentionally dirty preparation based on `c5c32ee…`; macOS 27.0 (26A428), Xcode 27.0 (27A266a), Swift 6.4, CocoaPods 1.17.0 | 646 Swift tests, build/registry, API, recovery and partial-consumer evidence retain their original receipts. All 194 build inputs bind through F/M. [Historical source record](Qualification-1.0.md#local-source-preparation-2026-09-29), [binding](Evidence/Qualification-1.0/source-qualification.json). |
+| Public M archive and Homebrew | Tag `v1.0.0` targets M; public archive SHA `402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1`; formula commit `2317ae83bc8e1095877c8f79bfd53dbc1b7945e3` | Public checksum/signature/binary and hosted Homebrew install/test/uninstall verified separately. Local strict audit was unavailable because Command Line Tools were outdated; no local installation was started. [Public readback](Evidence/Qualification-1.0/public-distribution.json), [formula](https://github.com/Alexsvensson99/homebrew-tap/blob/2317ae83bc8e1095877c8f79bfd53dbc1b7945e3/Formula/pkglift.rb). Package minimum `arm64`/macOS 14 and `:sonoma` are distribution policy, not proof of every 14.x runtime. |
 
 ## Current-main checkpoint on 2026-09-26
 
@@ -45,9 +47,8 @@ source build, 403 XCTest plus 233 Swift Testing tests, 25 mappings and a complet
 PartialMixed migration on main `cbff61f…`, with exact local Xcode 27 metadata.
 It also reconciles the historical matrix below: all three partial/coexistence
 fixtures were subsequently main-qualified on `72f19b3…`. Those are historical
-baselines. The later 2026-09-29 decision selected the matrix above; G2 remains
-open for the exact signed-candidate runtime floor and missing final same-run
-records. No support promise is inferred from the checkpoint alone.
+baselines. The later 2026-09-29 decision selected the matrix above. Its final M acceptance
+is recorded separately; no support promise is inferred from this checkpoint alone.
 
 ## Historical evidence matrix
 
@@ -60,13 +61,14 @@ records. No support promise is inferred from the checkpoint alone.
 | Source, local macOS 27 arm64 | macOS 27.0 (26A428), Xcode 27.0 (27A266a), Swift 6.4 (`swiftlang-6.4.0.34.1`), macOS SDK 27.0 (26A425) | Historical G2 checks are recorded below. The Xcode 27/Swift 6.4 cell is now selected, but this older observation is not the final-candidate receipt. |
 | Swift/iOS consumers, baseline | Xcode 16.4 (16F6), CocoaPods 1.17.0, iPhoneSimulator SDK 18.5 (22F76), Debug/generic iOS Simulator, deployment 15.0 | KeychainAccess, DeviceKit and CryptoSwift baseline/SwiftPM/migrated builds passed on source `cbb0eb1c…` in run 35056724222. Their artifacts record these versions but omit host OS/CPU/Swift. Both simulator architecture slices are not Intel-host evidence. |
 | Swift + Objective-C consumer | SDWebImage job passed in run 35056724222 | The job result is recorded; a complete environment artifact is missing from the retained local evidence. Qualify the combined cell before expanding claims. |
-| Retained CocoaPods + migrated SwiftPM | macOS 15.7.9 (24G830), arm64; Xcode 16.4 (16F6); Swift 6.1.2 (`swiftlang-6.1.2.1.2`); CocoaPods 1.17.0; iPhoneSimulator SDK 18.5 (22F76); Debug/arm64 iOS Simulator, deployment 15.0 | On main `9d2951…`, [PartialSwift](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753608) and [PartialMixed](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753582) passed baseline and post-migration builds, retained-pod refresh/lock checks and structural verification. This qualifies those historical repository-owned cells at that commit. All three fixture/coexistence cells and conflict-refusal coverage were subsequently main-qualified on `72f19b3…`; see [the complete partial-pilot record](PartialMigration-1.0.md#main-qualification-on-2026-09-16). Their non-deferred release rows still need exact-candidate reruns; the external positive multi-target/workspace cell is deferred rather than satisfied by them. |
+| Retained CocoaPods + migrated SwiftPM | macOS 15.7.9 (24G830), arm64; Xcode 16.4 (16F6); Swift 6.1.2 (`swiftlang-6.1.2.1.2`); CocoaPods 1.17.0; iPhoneSimulator SDK 18.5 (22F76); Debug/arm64 iOS Simulator, deployment 15.0 | On main `9d2951…`, [PartialSwift](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753608) and [PartialMixed](https://github.com/Alexsvensson99/PkgLift/actions/runs/35110617046/job/104844753582) passed baseline and post-migration builds, retained-pod refresh/lock checks and structural verification. This qualifies those historical repository-owned cells at that commit. All three fixture/coexistence cells and conflict-refusal coverage were subsequently main-qualified on `72f19b3…`; see [the complete partial-pilot record](PartialMigration-1.0.md#main-qualification-on-2026-09-16). Their final 1.0 counterparts are recorded in the matrix above; the external positive multi-target/workspace cell remains deferred. |
 
 The public artifact in all released-CLI rows is version **0.10.0**, archive
 SHA-256 `ad0747b3c10794ca93f23dc51953b3d234ddcfdabf4af1b5d4de5cd14876bd12`,
 binary SHA-256 `9b3160a9853324a49a67f3022e8492326cf90b56fba4dfa01f31e2623d26fd00`.
 Do not substitute the earlier private candidate or a newly compiled binary for
-this exact released-artifact test. A future 1.0 candidate needs its own acceptance.
+this exact historical released-artifact test. The independent final 1.0 acceptance
+is recorded above.
 
 ## Reproducible environment records
 
@@ -120,8 +122,8 @@ The exported tree was byte-compared against all tracked source files.
 Retained records: [environment](Evidence/Environments-1.0/local-environment.json),
 [source results and log digests](Evidence/Environments-1.0/local-validation.json),
 and [released CLI smoke](Evidence/Environments-1.0/released-cli-local-smoke.json).
-These local records do not replace protected CI or the future candidate's
-artifact acceptance. The temporary source/build copy occupies approximately
+These historical local records do not replace the separate protected CI or
+final M artifact acceptance above. The temporary source/build copy occupies approximately
 618 MiB and is retained for inspection; no cleanup was performed.
 
 ## GitHub runtime qualification
@@ -131,9 +133,9 @@ lists `macos-14` as arm64 and standard runners as free for public repositories.
 PkgLift's repository is public. The runner label still must be checked against
 the actual OS version and architecture at runtime; do not trust the label alone.
 The [runner image inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-14-arm64-Readme.md)
-documented deprecation of that historical macOS 14 image. If the final candidate
-sets its floor within macOS 14, continuing evidence needs an available replacement
-environment; the historical runner does not determine the adopted floor.
+documented deprecation of that historical macOS 14 image. Continued maintenance qualification needs an available
+environment for the observed macOS 14 floor; a runner label or its historical
+availability does not establish a runtime result.
 
 The bounded runtime workflow used read-only repository permissions and the
 already published archive. It neither builds/signs a new release nor requires
@@ -150,20 +152,13 @@ acceptance of the branch. Its `qualifiesMinimumHost` field means the required
 macOS 14/arm64 family in that historical workflow matched. It is not the adopted
 1.0 runtime-floor decision and does not mean that 14.0 was exercised.
 
-## Adopted decisions and remaining gates
+## Adopted decisions and maintenance boundaries
 
-- The historical macOS 14.8.9 runtime observation is complete for the released
-  0.10 artifact. Set the 1.0 floor only from the exact signed final candidate's
-  lowest passing host; do not infer exact 14.0.
-- Qualify Xcode 16.4/Swift 6.1.2 and Xcode 27.0/Swift 6.4 as independent cells.
-  Do not interpolate the versions between them or turn the Xcode 27 result into
-  an “all newer Xcode” promise.
-- The local 1.0 source build is complete preparation evidence. Final protected
-  CI, signed/notarized artifact identity and installed-style acceptance remain
-  pending and must be bound in the release receipts.
-- The two retained-CocoaPods fixture rows now have complete hosted environment
-  records at their historical commits. Repeat the non-deferred promised rows
-  against the exact candidate. The external positive multi-target/workspace cell
-  remains explicit post-1.0 work and is not filled by fixtures or refusals.
-- Review/integrate changes through protected checks and repeat exact release
-  acceptance for the future 1.0 artifact at G6.
+- Signed M passes the observed macOS 14.8.9/arm64 runtime cell; exact 14.0 is
+  not inferred. Maintain fresh evidence when future releases change the artifact.
+- Xcode 16.4/Swift 6.1.2 and Xcode 27.0/Swift 6.4 remain separate qualified
+  cells. Do not interpolate versions or claim all later toolchains.
+- Source qualification, signed archive acceptance, public readback and Homebrew
+  tests have separate receipts in [final qualification](Qualification-1.0.md).
+- The external positive multi-target/workspace case remains post-1.0 work. It
+  cannot be closed by repository fixtures, source-only pilots or refusals.

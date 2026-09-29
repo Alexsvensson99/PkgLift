@@ -44,13 +44,15 @@
 <article class="article reading">
   <div class="callout"><strong>What PkgLift automates:</strong> discovery, classification, planning, typed Xcode project changes, and verification for entries with complete evidence. It deliberately leaves uncertain dependencies under CocoaPods.</div>
   <h2 class="anchor-heading" id="before">Before you begin</h2>
-  <ul><li>Use an Apple Silicon Mac running macOS 14 or later.</li><li>Start from a native Xcode repository with a valid baseline build.</li><li>Check the <a href="/PkgLift/compatibility/">compatibility matrix</a>, especially for Objective-C, mixed-language, Carthage, or cross-platform projects.</li><li>Commit or stash every existing change. PkgLift refuses to apply a migration to a dirty Git worktree.</li><li>Know the shared Xcode scheme used by your normal build or CI.</li></ul>
+  <ul><li>The distribution requires Apple Silicon and has macOS 14 as its installation minimum.</li><li>Start from a native Xcode repository with a valid baseline build.</li><li>Check the <a href="/PkgLift/compatibility/">compatibility matrix</a>, especially for Objective-C, mixed-language, Carthage, or cross-platform projects.</li><li>Commit or stash every existing change. PkgLift refuses to apply a migration to a dirty Git worktree.</li><li>Know the shared Xcode scheme used by your normal build or CI.</li></ul>
+  <p>The signed CLI runtime was verified on macOS 14.8.9 without an Xcode consumer build. Check the <a href="https://github.com/Alexsvensson99/PkgLift/blob/main/Documentation/Environments-1.0.md">exact environment matrix</a> for the separately verified consumer toolchains; the installation minimum does not prove every macOS patch or a continuous range of Xcode versions.</p>
   <h2 class="anchor-heading" id="install">1. Install PkgLift</h2>
   <div class="command-card"><code>brew install Alexsvensson99/tap/pkglift</code><button class="copy-button" type="button" data-copy="brew install Alexsvensson99/tap/pkglift" aria-label="Copy install command">Copy</button></div>
   <pre><code>pkglift version
 pkglift registry validate</code></pre>
   <p>The release binary is Developer ID-signed and Apple-notarized. The registry validation confirms that the bundled exact mappings can be loaded.</p>
   <p>Check the <a href="https://github.com/Alexsvensson99/PkgLift/releases/latest">latest GitHub release</a> for the current version. To update an existing Homebrew installation, run <code>brew update &amp;&amp; brew upgrade pkglift</code>.</p>
+  <p>After upgrading to <a href="https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0">1.0.0</a>, regenerate saved migration plans before dry run or apply: executable plans are bound to their exact producer version. Review the new plan instead of editing its version or evidence fields.</p>
   <h2 class="anchor-heading" id="analyze">2. Run your first analysis</h2>
   <p>Open Terminal in your project's folder, or replace the example path below with your repository's location:</p>
   <pre><code>cd /path/to/your/repository</code></pre>

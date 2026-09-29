@@ -1,0 +1,838 @@
+{
+  "aggregateReceipt": {
+    "member": "local-signed-acceptance.json",
+    "rawReceiptSHA256": "2454fd39f0e51d5b83def41b2b9423fea8394f3684294d6110b1ad53fbe9fd4b"
+  },
+  "aggregateResult": {
+    "archiveSHA256": "402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1",
+    "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+    "candidateBytesUnchanged": true,
+    "canonicalSSDHelperSHA256": "d342e591464bf90ea0ce568bc24c77672fc4181db9c0d9b3b43505e770e263f5",
+    "commands": {
+      "full-mixed-ios15": {
+        "exitCode": 0,
+        "logSHA256": "3772a0bb292a5fbdbb33e209e8812fcbfa796f82f2da826989506ff00fb751d6",
+        "receiptSHA256": "06baca7b7fe21c9c0684e268c807bc0dcf6c5190849eada9d0048e25551a7b2c"
+      },
+      "partial-mixed": {
+        "exitCode": 0,
+        "logSHA256": "940b1f6d5523c81306a11b84f16db61a6db0486fd09b41fa5336a071151d7acf",
+        "receiptSHA256": "bb8f5017467d741b4ec1d1b485babc406217712e6037db9e0cd97134fcd7a493"
+      },
+      "partial-swift": {
+        "exitCode": 0,
+        "logSHA256": "9310df9fda58c81b44507f4d678b7940f3e3c20e8e07d0957d29c268d9ca81d2",
+        "receiptSHA256": "1ef88e7b9f3f9d239c489a8cfaf1d4cf29826a7080ee15cc6272a4812792ee38"
+      },
+      "partial-swift-coexistence": {
+        "exitCode": 0,
+        "logSHA256": "9add2b156f69385e90f645e74024a81ca0a70f1d8e565901d8c025d907be63f8",
+        "receiptSHA256": "c2dee31af25c4d5ba4f2ee1f9a05573ee6441b32e1e637a6c4c66ee12574da96"
+      },
+      "runtime-macos27": {
+        "exitCode": 0,
+        "logSHA256": "2c91741ff4613e65de23eab75e2e9befe68001136e7f1620cbedc6ef5c917d14",
+        "receiptSHA256": "2aa95805e2f4ed1af163f1770891135b7948cf90cc4ffd43db52935ebea1bfad"
+      }
+    },
+    "environmentAfterSHA256": "ac1af74838386574639daaf20636ce897594dafd8e1edca51a766cc461887dc2",
+    "environmentBeforeSHA256": "72af43ef6e28553838434d122faf97150ac94ca2a1655930b3af3a4eee57ae1e",
+    "executionKind": "local-exact-signed-candidate",
+    "fullMixedBuildSettings": {
+      "ARCHS": "arm64",
+      "IPHONEOS_DEPLOYMENT_TARGET": "15.0"
+    },
+    "fullMixedConsumer": "passed",
+    "fullMixedWrapperEvidenceSHA256": "36daefc3a8829acf354bf925ef77ab826b454b8f87068382fd041f45d83623c1",
+    "fullMixedWrapperSHA256": "15e19d0f3e9a4dbffedcf5b446226484c0690cb0a8cd8524872017cba745fa02",
+    "localWrapperSHA256": "268080bfdc4fe009a9db2c0d824de662c733ab535b3388c78c03cddf5863a7fd",
+    "notGitHubHostedEvidence": true,
+    "partialConsumers": {
+      "PartialMixed": {
+        "status": "passed",
+        "summarySHA256": "f410bf05a1394d59f1cf6b2547f643bf9e69955709069700bfd52333409f237e"
+      },
+      "PartialSwift": {
+        "status": "passed",
+        "summarySHA256": "da4719dbedfc928f0d5f29046bf05930704ada12fdaf3e28b8750e12ab32ff21"
+      },
+      "PartialSwiftCoexistence": {
+        "status": "passed",
+        "summarySHA256": "9bf74e98ef94c7a3cb0806691bf6d3576f77bdd6fc1e845fca556b2371305709"
+      }
+    },
+    "priorFullMixedFailure": {
+      "baselineBuildLogSHA256": "cb4289b54b5b757e661c36849a70ebb9eb3137f60f9906db4791ee8e5a0fb4a2",
+      "exitCode": 65,
+      "label": "full-mixed",
+      "logSHA256": "c55edf48e66c5f7105c19eb851ccf52e51449b17f58bbb5566199996dda0a7fb",
+      "migrationStarted": false,
+      "phase": "cocoapods-baseline-build",
+      "receiptSHA256": "610f838a784ba2e6f5034e2c2ffed2841f84ba679afc33cb6f07ab2a4c6b2995"
+    },
+    "producerReleaseRunAttempt": 1,
+    "producerReleaseRunID": 36615292778,
+    "recordedAt": "2026-09-29T19:18:10.963889+00:00",
+    "registryBundleTreeSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "repositoryUnchanged": true,
+    "runtime": "passed",
+    "schemaVersion": 1,
+    "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+    "sourceScriptsSHA256": {
+      "capture-environment.py": "2da5e32078bce351fe39aad4cefc50cc5c09eddc88ccd71d0ebbf9390fa6df29",
+      "hash-pilot-tree.py": "da680bc0a053441cdeb9a9c4531ce15f7a3c3f4c83c49a3f8e32073104f01329",
+      "run-partial-migration-pilot.py": "274f3197b79a531726ab08703f57e28bc533fe94b970f15d38101019fe3fb27c",
+      "run-positive-e2e-pilot.sh": "d0c5cf14a30d833095c4d8b7373e8f2a3d235b13b4c2f9fe0298bdf9b296f011",
+      "run-registry-consumer-pilot.py": "e2d94401ac8fea5d5e25a2895bb406327f8e3b8d367d437458a2a4a680ddab0a",
+      "run-with-timeout.py": "09539febcfc5fab1755097ee9580cf16eb4945566558391084e7df01d6de1f60",
+      "verify-candidate-runtime.py": "5b7c7b7052a3f2d9d3317bc8fabbaabc102cdf1bac1277a39ba86b4a607129f6",
+      "verify-runtime-environment.py": "25d6dd0aa1f0ef240ff4244676f0609c2a4d831db978f3b2d16b47aaf8262c34"
+    },
+    "status": "passed",
+    "version": "1.0.0"
+  },
+  "candidateIdentity": {
+    "archiveSHA256": "402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1",
+    "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+    "executionKind": "local-exact-signed-candidate",
+    "producerReleaseRunAttempt": 1,
+    "producerReleaseRunID": 36615292778,
+    "registryBundleTreeSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+    "version": "1.0.0"
+  },
+  "coreRuntimeMacOS27": {
+    "rawSummary": {
+      "member": "runtime-macos27/summary.json",
+      "rawReceiptSHA256": "2c91741ff4613e65de23eab75e2e9befe68001136e7f1620cbedc6ef5c917d14"
+    },
+    "result": {
+      "acceptanceScope": "signed-core-runtime-structural-apply",
+      "archiveSHA256": "402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1",
+      "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+      "changedProjectFiles": [
+        "PkgLiftMixedFixture.xcodeproj/project.pbxproj",
+        "Podfile"
+      ],
+      "commands": {
+        "analyze": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "apply": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "codesignVerify": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "dryRun": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "gitAdd": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "gitBaseline": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "gitClean": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "gitInit": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "macOSBuildVersion": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "plan": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "readQuarantine": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "registryValidate": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "setQuarantine": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "structuralVerify": {
+          "exitCode": 0,
+          "status": "passed"
+        },
+        "version": {
+          "exitCode": 0,
+          "status": "passed"
+        }
+      },
+      "consumerBuildTested": false,
+      "dryRunUnchanged": true,
+      "expectedArchiveSHA256": "402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1",
+      "expectedBinarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+      "host": {
+        "cpu": "arm64",
+        "macOSBuild": "26A428",
+        "macOSVersion": "27.0",
+        "qualifiesRequiredHost": true,
+        "requiredMacOSMajor": 27,
+        "system": "Darwin"
+      },
+      "metadataOnly": false,
+      "quarantinePresent": true,
+      "recordedAt": "2026-09-29T19:06:20.346166+00:00",
+      "repositoryFixtureUnchanged": true,
+      "runner": {
+        "imageOS": "unknown",
+        "imageVersion": "unknown"
+      },
+      "schemaVersion": 1,
+      "signaturePassed": true,
+      "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+      "status": "passed",
+      "version": "1.0.0"
+    },
+    "verification": {
+      "checks": {
+        "cocoapods_removed": true,
+        "package_https://github.com/SDWebImage/SDWebImage": true,
+        "pod_removed_SDWebImage": true,
+        "product_SDWebImage_PkgLiftMixedFixture": true,
+        "project_parses": true
+      },
+      "passed": true,
+      "pkgLiftVersion": "1.0.0",
+      "receipt": {
+        "member": "runtime-macos27/structural-verification.json",
+        "rawReceiptSHA256": "b5d49e9c640039a367b41c2f732e0f356ee3c1fa2f2e9e0dadd65ee418c8c0e3"
+      }
+    }
+  },
+  "environmentAfter": {
+    "captureStatus": "complete",
+    "capturedAt": "2026-09-29T19:18:10.087700Z",
+    "member": "environment-after.json",
+    "observationProfileSHA256": "92b0227a02f68be990c78b61d4da1bda7ab4faf3b14952affc49e639543432ff",
+    "rawReceiptSHA256": "ac1af74838386574639daaf20636ce897594dafd8e1edca51a766cc461887dc2",
+    "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+    "trackedChanges": false
+  },
+  "environmentBefore": {
+    "captureStatus": "complete",
+    "capturedAt": "2026-09-29T19:06:14.641323Z",
+    "member": "environment-before.json",
+    "observationProfileSHA256": "92b0227a02f68be990c78b61d4da1bda7ab4faf3b14952affc49e639543432ff",
+    "rawReceiptSHA256": "72af43ef6e28553838434d122faf97150ac94ca2a1655930b3af3a4eee57ae1e",
+    "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+    "trackedChanges": false
+  },
+  "environmentObservationProfiles": {
+    "92b0227a02f68be990c78b61d4da1bda7ab4faf3b14952affc49e639543432ff": {
+      "runnerImage": null,
+      "system": {
+        "macOS": {
+          "build": "26A428",
+          "status": "passed",
+          "version": "27.0"
+        },
+        "machine": "arm64"
+      },
+      "toolVersions": {
+        "cocoaPodsVersion": [
+          "1.17.0"
+        ],
+        "iOSSimulatorSDKBuildVersion": [
+          "24A430"
+        ],
+        "iOSSimulatorSDKVersion": [
+          "27.0"
+        ],
+        "macOSSDKBuildVersion": [
+          "26A425"
+        ],
+        "macOSSDKVersion": [
+          "27.0"
+        ],
+        "swiftVersion": [
+          "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)",
+          "Target: arm64-apple-macosx27.0.0"
+        ],
+        "xcodebuildVersion": [
+          "Xcode 27.0",
+          "Build version 27A266a"
+        ]
+      }
+    }
+  },
+  "environmentObservationsUnchanged": true,
+  "executionKind": "local-exact-signed-candidate",
+  "executionResults": {
+    "full-mixed-ios15": {
+      "logReceipt": {
+        "member": "logs/full-mixed-ios15.log",
+        "rawReceiptSHA256": "3772a0bb292a5fbdbb33e209e8812fcbfa796f82f2da826989506ff00fb751d6"
+      },
+      "receipt": {
+        "member": "receipts/full-mixed-ios15.json",
+        "rawReceiptSHA256": "06baca7b7fe21c9c0684e268c807bc0dcf6c5190849eada9d0048e25551a7b2c"
+      },
+      "result": {
+        "exitCode": 0,
+        "finishedAt": "2026-09-29T19:17:47.479232+00:00",
+        "jobs": "4",
+        "label": "full-mixed-ios15",
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "startedAt": "2026-09-29T19:17:21.904653+00:00"
+      }
+    },
+    "partial-mixed": {
+      "logReceipt": {
+        "member": "logs/partial-mixed.log",
+        "rawReceiptSHA256": "940b1f6d5523c81306a11b84f16db61a6db0486fd09b41fa5336a071151d7acf"
+      },
+      "receipt": {
+        "member": "receipts/partial-mixed.json",
+        "rawReceiptSHA256": "bb8f5017467d741b4ec1d1b485babc406217712e6037db9e0cd97134fcd7a493"
+      },
+      "result": {
+        "exitCode": 0,
+        "finishedAt": "2026-09-29T19:07:55.961490+00:00",
+        "jobs": "4",
+        "label": "partial-mixed",
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "startedAt": "2026-09-29T19:07:27.244748+00:00"
+      }
+    },
+    "partial-swift": {
+      "logReceipt": {
+        "member": "logs/partial-swift.log",
+        "rawReceiptSHA256": "9310df9fda58c81b44507f4d678b7940f3e3c20e8e07d0957d29c268d9ca81d2"
+      },
+      "receipt": {
+        "member": "receipts/partial-swift.json",
+        "rawReceiptSHA256": "1ef88e7b9f3f9d239c489a8cfaf1d4cf29826a7080ee15cc6272a4812792ee38"
+      },
+      "result": {
+        "exitCode": 0,
+        "finishedAt": "2026-09-29T19:07:06.096860+00:00",
+        "jobs": "4",
+        "label": "partial-swift",
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "startedAt": "2026-09-29T19:06:37.573516+00:00"
+      }
+    },
+    "partial-swift-coexistence": {
+      "logReceipt": {
+        "member": "logs/partial-swift-coexistence.log",
+        "rawReceiptSHA256": "9add2b156f69385e90f645e74024a81ca0a70f1d8e565901d8c025d907be63f8"
+      },
+      "receipt": {
+        "member": "receipts/partial-swift-coexistence.json",
+        "rawReceiptSHA256": "c2dee31af25c4d5ba4f2ee1f9a05573ee6441b32e1e637a6c4c66ee12574da96"
+      },
+      "result": {
+        "exitCode": 0,
+        "finishedAt": "2026-09-29T19:09:10.441267+00:00",
+        "jobs": "4",
+        "label": "partial-swift-coexistence",
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "startedAt": "2026-09-29T19:08:36.218549+00:00"
+      }
+    },
+    "runtime-macos27": {
+      "logReceipt": {
+        "member": "logs/runtime-macos27.log",
+        "rawReceiptSHA256": "2c91741ff4613e65de23eab75e2e9befe68001136e7f1620cbedc6ef5c917d14"
+      },
+      "receipt": {
+        "member": "receipts/runtime-macos27.json",
+        "rawReceiptSHA256": "2aa95805e2f4ed1af163f1770891135b7948cf90cc4ffd43db52935ebea1bfad"
+      },
+      "result": {
+        "exitCode": 0,
+        "finishedAt": "2026-09-29T19:06:21.283287+00:00",
+        "jobs": null,
+        "label": "runtime-macos27",
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "startedAt": "2026-09-29T19:06:20.311633+00:00"
+      }
+    }
+  },
+  "externalPositiveMultiTargetWorkspace": "deferred-post-1.0",
+  "fullMixedMigration": {
+    "baselineBuild": "passed",
+    "baselineBuildLog": {
+      "observedBuildSettings": {
+        "ARCHS": "arm64",
+        "IPHONEOS_DEPLOYMENT_TARGET": "15.0"
+      },
+      "observedBuildSucceeded": true,
+      "receipt": {
+        "member": "full-mixed-runner-ios15/pkglift-positive-e2e-report/baseline-build.log",
+        "rawReceiptSHA256": "9c95699a67c66a599f60a272435962e5763478f437c59897ca17b9c04dc872d6"
+      }
+    },
+    "buildRequestObservations": {
+      "baseline": {
+        "observedBuildSettings": {
+          "ARCHS": "arm64",
+          "IPHONEOS_DEPLOYMENT_TARGET": "15.0"
+        },
+        "observedFieldPath": "parameters.overrides.commandLine.table",
+        "receipt": {
+          "member": "full-mixed-runner-ios15/pkglift-positive-baseline-derived/Build/Intermediates.noindex/XCBuildData/f20a3be7b870a57500e0b0e6630b05e9.xcbuilddata/build-request.json",
+          "rawReceiptSHA256": "3ba8542312629f118818bdfe44f9aeb30fca14fdc1fccd184a1147328793634a"
+        }
+      },
+      "verification": {
+        "observedBuildSettings": {
+          "ARCHS": "arm64",
+          "IPHONEOS_DEPLOYMENT_TARGET": "15.0"
+        },
+        "observedFieldPath": "parameters.overrides.commandLine.table",
+        "receipt": {
+          "member": "full-mixed-runner-ios15/pkglift-positive-verification-derived/Build/Intermediates.noindex/XCBuildData/57d652f4189cd3351e5e2b0c140fb6a1.xcbuilddata/build-request.json",
+          "rawReceiptSHA256": "2e9e52b72abf0fc19fa1a9e26a24e67a8a4ad0e39d87bf0455ec148c0c1535d8"
+        }
+      }
+    },
+    "case": "MixedLanguageSDWebImage",
+    "classification": {
+      "countsByClassification": {
+        "AUTO": 1
+      },
+      "entries": [
+        {
+          "classification": "AUTO",
+          "currentVersion": "5.18.1",
+          "podName": "SDWebImage",
+          "targetName": "PkgLiftMixedFixture"
+        }
+      ],
+      "receipt": {
+        "member": "full-mixed-runner-ios15/pkglift-positive-e2e-report/plan.json",
+        "rawReceiptSHA256": "ff58fc62662e5e571111b1ed1fc92daaaedb62e9c7faf0c61970d7916dd03a36"
+      }
+    },
+    "consumerBytesUnchanged": true,
+    "dryRunUnchanged": true,
+    "environmentObservationScope": "The independently captured before/after environment brackets local runtime and all four consumer flows. No separate full-mixed JSON environment receipt is invented.",
+    "fullMixedEnvironmentTextReceipt": {
+      "member": "full-mixed-runner-ios15/pkglift-positive-e2e-report/environment.txt",
+      "rawReceiptSHA256": "848c3a85c93d99a886f914f0f114d62458cbfa5012cfffea39187fe1303a3da8"
+    },
+    "hashReceipt": {
+      "member": "full-mixed-runner-ios15/pkglift-positive-e2e-report/hashes.txt",
+      "rawReceiptSHA256": "78abc22028f6cc7c36c875fb106d65b44d350f59920e6f12293bc7bbdabe9e2b"
+    },
+    "protectedHashes": {
+      "dry_run_tree_after": "3df4744a99850937a81e7cf8283c38ac6b79ee43b5e7548b8f91389a293b50d3",
+      "dry_run_tree_before": "3df4744a99850937a81e7cf8283c38ac6b79ee43b5e7548b8f91389a293b50d3",
+      "protected_after": "e8495b73905906fe68ff488da07f9400776d75e0c39026e497e9a37823150b4a",
+      "protected_before": "e8495b73905906fe68ff488da07f9400776d75e0c39026e497e9a37823150b4a"
+    },
+    "rawSummary": {
+      "member": "full-mixed-runner-ios15/pkglift-positive-e2e-report/summary.md",
+      "rawReceiptSHA256": "5c90436d12a700b3f589a49311057458d6f62eae81c32faf0c382e9a79ead8ef"
+    },
+    "repositoryOwned": true,
+    "retryWrapper": {
+      "receipt": {
+        "member": "full-mixed-ios15-wrapper.json",
+        "rawReceiptSHA256": "36daefc3a8829acf354bf925ef77ab826b454b8f87068382fd041f45d83623c1"
+      },
+      "result": {
+        "appliesTo": [
+          "cocoapods-baseline-build",
+          "package-resolution",
+          "post-migration-build"
+        ],
+        "buildSettings": {
+          "ARCHS": "arm64",
+          "IPHONEOS_DEPLOYMENT_TARGET": "15.0"
+        },
+        "fullMixedWrapperSHA256": "15e19d0f3e9a4dbffedcf5b446226484c0690cb0a8cd8524872017cba745fa02",
+        "originalWrapperSHA256": "268080bfdc4fe009a9db2c0d824de662c733ab535b3388c78c03cddf5863a7fd",
+        "priorFailure": {
+          "baselineBuildLogSHA256": "cb4289b54b5b757e661c36849a70ebb9eb3137f60f9906db4791ee8e5a0fb4a2",
+          "exitCode": 65,
+          "label": "full-mixed",
+          "logSHA256": "c55edf48e66c5f7105c19eb851ccf52e51449b17f58bbb5566199996dda0a7fb",
+          "migrationStarted": false,
+          "phase": "cocoapods-baseline-build",
+          "receiptSHA256": "610f838a784ba2e6f5034e2c2ffed2841f84ba679afc33cb6f07ab2a4c6b2995"
+        },
+        "schemaVersion": 1,
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9"
+      },
+      "wrapperFileReceipt": {
+        "member": "full-mixed-ios15-bin/xcodebuild",
+        "rawReceiptSHA256": "15e19d0f3e9a4dbffedcf5b446226484c0690cb0a8cd8524872017cba745fa02"
+      }
+    },
+    "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+    "status": "passed",
+    "verification": {
+      "checks": {
+        "build": true,
+        "build_settings": true,
+        "package_https://github.com/SDWebImage/SDWebImage": true,
+        "pod_removed_SDWebImage": true,
+        "product_SDWebImage_PkgLiftMixedFixture": true,
+        "project_parses": true,
+        "resolve_dependencies": true
+      },
+      "passed": true,
+      "pkgLiftVersion": "1.0.0",
+      "receipt": {
+        "member": "full-mixed-runner-ios15/pkglift-positive-e2e-report/verification.json",
+        "rawReceiptSHA256": "ce37b91040c46eb0d3dbafebdfc1dfc60563306a861f31489fc09013daf56a10"
+      }
+    }
+  },
+  "independentExtractionValidation": {
+    "aggregateAndAllReferencedCommandReceiptAndLogHashesVerified": true,
+    "baselineAndPostMigrationBuildRequestOverridesDirectlyObserved": true,
+    "beforeAfterAndPartialEnvironmentProfilesEqual": true,
+    "noBuildsOrCandidateExecutionsPerformedByExtractor": true,
+    "partialReleaseAcceptanceFalsePreserved": true,
+    "previousFailedAttemptPreserved": true,
+    "productionApprovalNotPerformedByExtractor": true,
+    "sourceScriptHashesComparedWithManifestCommit": 8,
+    "uniqueRawReceiptsHashed": 41
+  },
+  "inputIdentityReceipt": {
+    "member": "input-identity.json",
+    "rawReceiptSHA256": "95f3d4a1df0f1f39aa09da299b3326780e51d3f190c9b064e9950c3dfbb249e9"
+  },
+  "manifestCommitM": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+  "notGitHubHostedEvidence": true,
+  "partialConsumers": [
+    {
+      "classification": {
+        "countsByClassification": {
+          "AUTO": 1,
+          "BLOCKED": 1
+        },
+        "entries": [
+          {
+            "classification": "AUTO",
+            "currentVersion": "4.2.2",
+            "podName": "KeychainAccess",
+            "targetName": "SwiftKeychainAccess"
+          },
+          {
+            "classification": "BLOCKED",
+            "currentVersion": "5.18.1",
+            "podName": "SDWebImage",
+            "targetName": "SwiftKeychainAccess"
+          }
+        ],
+        "receipt": {
+          "member": "PartialSwift/report/plan.json",
+          "rawReceiptSHA256": "401eb8a1316f46ce9c8777490167790a7669620b0f6b9e4e8aa7e0695b73c60c"
+        }
+      },
+      "environment": {
+        "captureStatus": "complete",
+        "capturedAt": "2026-09-29T19:06:37.640627Z",
+        "member": "PartialSwift/report/environment.json",
+        "observationProfileSHA256": "92b0227a02f68be990c78b61d4da1bda7ab4faf3b14952affc49e639543432ff",
+        "rawReceiptSHA256": "d379c8c9dae51349e3f99f383f7b80f8e4afa5a3f8e9a7fa3dad212dae01ee1f",
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "trackedChanges": false
+      },
+      "rawSummary": {
+        "member": "PartialSwift/report/summary.json",
+        "rawReceiptSHA256": "da4719dbedfc928f0d5f29046bf05930704ada12fdaf3e28b8750e12ab32ff21"
+      },
+      "result": {
+        "baselineBuild": "passed",
+        "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+        "buildSettings": {
+          "architecture": "arm64",
+          "configuration": "Debug",
+          "iOSDeploymentTarget": "15.0"
+        },
+        "case": "PartialSwift",
+        "configurationUnchanged": true,
+        "consumerBytesUnchanged": true,
+        "consumerLanguages": [
+          "swift"
+        ],
+        "dryRunUnchanged": true,
+        "exactAutoSet": true,
+        "fixtureSHA256": "8e414b3a457cacf3d74ae3f669e01ce54623b08f6b82f353c44c09bd0917489a",
+        "freshMigratedBuild": true,
+        "migrated": "KeychainAccess",
+        "migratedBuild": "passed",
+        "releaseAcceptance": false,
+        "repositoryFixtureUnchanged": true,
+        "repositoryOwned": true,
+        "resolvedRevision": "84e546727d66f1adc5439debad16270d0fdd04e7",
+        "retained": "SDWebImage",
+        "retainedPodsManifest": true,
+        "retentionPolicy": "migration.deny",
+        "runnerSHA256": "274f3197b79a531726ab08703f57e28bc533fe94b970f15d38101019fe3fb27c",
+        "schemaVersion": 1,
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "sourceResourceMembershipUnchanged": true,
+        "status": "passed",
+        "swiftPMLinkedExactlyOnce": true,
+        "workingTreeHasChanges": false
+      },
+      "verification": {
+        "checks": {
+          "package_https://github.com/kishikawakatsumi/KeychainAccess": true,
+          "pod_removed_KeychainAccess": true,
+          "product_KeychainAccess_SwiftKeychainAccess": true,
+          "project_parses": true
+        },
+        "passed": true,
+        "pkgLiftVersion": "1.0.0",
+        "receipt": {
+          "member": "PartialSwift/report/verification.json",
+          "rawReceiptSHA256": "0aedf6ce17da9b4c62f011893bef1f3bf7e57d5f583ddbd247beb1fa17cb3ce5"
+        }
+      }
+    },
+    {
+      "classification": {
+        "countsByClassification": {
+          "AUTO": 1,
+          "BLOCKED": 1
+        },
+        "entries": [
+          {
+            "classification": "AUTO",
+            "currentVersion": "5.18.1",
+            "podName": "SDWebImage",
+            "targetName": "PkgLiftMixedFixture"
+          },
+          {
+            "classification": "BLOCKED",
+            "currentVersion": "4.2.2",
+            "podName": "KeychainAccess",
+            "targetName": "PkgLiftMixedFixture"
+          }
+        ],
+        "receipt": {
+          "member": "PartialMixed/report/plan.json",
+          "rawReceiptSHA256": "674a3a463730d9d773bdc4c7d2730cef5597a427a8061c4761c6009312b49bf2"
+        }
+      },
+      "environment": {
+        "captureStatus": "complete",
+        "capturedAt": "2026-09-29T19:07:27.308723Z",
+        "member": "PartialMixed/report/environment.json",
+        "observationProfileSHA256": "92b0227a02f68be990c78b61d4da1bda7ab4faf3b14952affc49e639543432ff",
+        "rawReceiptSHA256": "d5a0bb63aab0521b96ad65d6ffee6459f5605f8694a8a1c936f5ed37c78797ce",
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "trackedChanges": false
+      },
+      "rawSummary": {
+        "member": "PartialMixed/report/summary.json",
+        "rawReceiptSHA256": "f410bf05a1394d59f1cf6b2547f643bf9e69955709069700bfd52333409f237e"
+      },
+      "result": {
+        "baselineBuild": "passed",
+        "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+        "buildSettings": {
+          "architecture": "arm64",
+          "configuration": "Debug",
+          "iOSDeploymentTarget": "15.0"
+        },
+        "case": "PartialMixed",
+        "configurationUnchanged": true,
+        "consumerBytesUnchanged": true,
+        "consumerLanguages": [
+          "objectiveC",
+          "swift"
+        ],
+        "dryRunUnchanged": true,
+        "exactAutoSet": true,
+        "fixtureSHA256": "539a9e0f0ad93b2c81c23429d08f87327bffcae16cfb7c2f566f29e0783adcea",
+        "freshMigratedBuild": true,
+        "migrated": "SDWebImage",
+        "migratedBuild": "passed",
+        "releaseAcceptance": false,
+        "repositoryFixtureUnchanged": true,
+        "repositoryOwned": true,
+        "resolvedRevision": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+        "retained": "KeychainAccess",
+        "retainedPodsManifest": true,
+        "retentionPolicy": "migration.deny",
+        "runnerSHA256": "274f3197b79a531726ab08703f57e28bc533fe94b970f15d38101019fe3fb27c",
+        "schemaVersion": 1,
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "sourceResourceMembershipUnchanged": true,
+        "status": "passed",
+        "swiftPMLinkedExactlyOnce": true,
+        "workingTreeHasChanges": false
+      },
+      "verification": {
+        "checks": {
+          "package_https://github.com/SDWebImage/SDWebImage": true,
+          "pod_removed_SDWebImage": true,
+          "product_SDWebImage_PkgLiftMixedFixture": true,
+          "project_parses": true
+        },
+        "passed": true,
+        "pkgLiftVersion": "1.0.0",
+        "receipt": {
+          "member": "PartialMixed/report/verification.json",
+          "rawReceiptSHA256": "b4cbf2c6d27d3fed008abc2b0910287e95de030d5c651a6e5afaf2700a8ed696"
+        }
+      }
+    },
+    {
+      "classification": {
+        "countsByClassification": {
+          "AUTO": 1,
+          "BLOCKED": 1
+        },
+        "entries": [
+          {
+            "classification": "AUTO",
+            "currentVersion": "4.2.2",
+            "podName": "KeychainAccess",
+            "targetName": "SwiftKeychainAccess"
+          },
+          {
+            "classification": "BLOCKED",
+            "currentVersion": "5.18.1",
+            "podName": "SDWebImage",
+            "targetName": "SwiftKeychainAccess"
+          }
+        ],
+        "receipt": {
+          "member": "PartialSwiftCoexistence/report/plan.json",
+          "rawReceiptSHA256": "6d6c4daaada743fe5d9098592d2e65986fa83a87ea0914f235586fdd130fba2d"
+        }
+      },
+      "environment": {
+        "captureStatus": "complete",
+        "capturedAt": "2026-09-29T19:08:36.286736Z",
+        "member": "PartialSwiftCoexistence/report/environment.json",
+        "observationProfileSHA256": "92b0227a02f68be990c78b61d4da1bda7ab4faf3b14952affc49e639543432ff",
+        "rawReceiptSHA256": "a60086fec3abdf60a0a6cde07b1666d37a7da97f00777a7efdeb96a05f977965",
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "trackedChanges": false
+      },
+      "rawSummary": {
+        "member": "PartialSwiftCoexistence/report/summary.json",
+        "rawReceiptSHA256": "9bf74e98ef94c7a3cb0806691bf6d3576f77bdd6fc1e845fca556b2371305709"
+      },
+      "result": {
+        "baselineBuild": "passed",
+        "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+        "buildSettings": {
+          "architecture": "arm64",
+          "configuration": "Debug",
+          "iOSDeploymentTarget": "15.0"
+        },
+        "case": "PartialSwiftCoexistence",
+        "configurationUnchanged": true,
+        "consumerBytesUnchanged": true,
+        "consumerLanguages": [
+          "swift"
+        ],
+        "dryRunUnchanged": true,
+        "exactAutoSet": true,
+        "existingSwiftPM": [
+          "DeviceKit"
+        ],
+        "existingSwiftPMObjectsUnchanged": true,
+        "existingSwiftPMPinsUnchanged": true,
+        "existingSwiftPMRevisions": {
+          "DeviceKit": "56b997e8a61707218f9af09f32b2a1d1806fd792"
+        },
+        "fixtureSHA256": "29d481bf902d790d7b35f9265fde0aa8ecd8284646108d767f7593d43ac2afcb",
+        "freshMigratedBuild": true,
+        "migrated": "KeychainAccess",
+        "migratedBuild": "passed",
+        "releaseAcceptance": false,
+        "repositoryFixtureUnchanged": true,
+        "repositoryOwned": true,
+        "resolvedRevision": "84e546727d66f1adc5439debad16270d0fdd04e7",
+        "retained": "SDWebImage",
+        "retainedPodsManifest": true,
+        "retentionPolicy": "migration.deny",
+        "runnerSHA256": "274f3197b79a531726ab08703f57e28bc533fe94b970f15d38101019fe3fb27c",
+        "schemaVersion": 1,
+        "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+        "sourceResourceMembershipUnchanged": true,
+        "status": "passed",
+        "swiftPMLinkedExactlyOnce": true,
+        "workingTreeHasChanges": false
+      },
+      "verification": {
+        "checks": {
+          "package_https://github.com/kishikawakatsumi/KeychainAccess": true,
+          "pod_removed_KeychainAccess": true,
+          "product_KeychainAccess_SwiftKeychainAccess": true,
+          "project_parses": true
+        },
+        "passed": true,
+        "pkgLiftVersion": "1.0.0",
+        "receipt": {
+          "member": "PartialSwiftCoexistence/report/verification.json",
+          "rawReceiptSHA256": "e48ffc8a89915d6844d733af6ce958edf523e957ebe521ac3192be9d23945f6f"
+        }
+      }
+    }
+  ],
+  "preparedAt": "2026-09-29T19:26:17.599339+00:00",
+  "priorFullMixedFailure": {
+    "baselineBuildLogReceipt": {
+      "member": "full-mixed-runner/pkglift-positive-e2e-report/baseline-build.log",
+      "rawReceiptSHA256": "cb4289b54b5b757e661c36849a70ebb9eb3137f60f9906db4791ee8e5a0fb4a2"
+    },
+    "baselineDiagnosticObserved": {
+      "buildFailed": true,
+      "dependencyProject": "Pods",
+      "dependencyTarget": "SDWebImage",
+      "rejectedIOSDeploymentTarget": "9.0",
+      "reportedSupportedRange": "15.0 to 27.0.x"
+    },
+    "claimBoundary": "This attempt failed before migration and does not count as a passing consumer run. The distinct full-mixed-ios15 retry above passed with the same explicit arm64/iOS 15.0 settings observed in both baseline and post-migration build requests.",
+    "executionReceipt": {
+      "member": "receipts/full-mixed.json",
+      "rawReceiptSHA256": "610f838a784ba2e6f5034e2c2ffed2841f84ba679afc33cb6f07ab2a4c6b2995"
+    },
+    "logReceipt": {
+      "member": "logs/full-mixed.log",
+      "rawReceiptSHA256": "c55edf48e66c5f7105c19eb851ccf52e51449b17f58bbb5566199996dda0a7fb"
+    },
+    "result": {
+      "baselineBuildLogSHA256": "cb4289b54b5b757e661c36849a70ebb9eb3137f60f9906db4791ee8e5a0fb4a2",
+      "exitCode": 65,
+      "label": "full-mixed",
+      "logSHA256": "c55edf48e66c5f7105c19eb851ccf52e51449b17f58bbb5566199996dda0a7fb",
+      "migrationStarted": false,
+      "phase": "cocoapods-baseline-build",
+      "receiptSHA256": "610f838a784ba2e6f5034e2c2ffed2841f84ba679afc33cb6f07ab2a4c6b2995"
+    }
+  },
+  "producerReleaseRun": {
+    "runAttempt": 1,
+    "runID": 36615292778,
+    "scope": "producer identity; this acceptance was executed locally",
+    "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778"
+  },
+  "publicationStatus": "not-certified-by-this-local-only-record",
+  "recordKind": "local-final-manifest-candidate-acceptance",
+  "schemaVersion": 1,
+  "status": "passed",
+  "version": "1.0.0"
+}

@@ -1,39 +1,30 @@
 # PkgLift 1.0 plan: a verified support and compatibility contract
 
-Status: planning complete; G1 compatibility contract and repository-owned partial
-migration pilots are merged and qualified on main. On 2026-09-29, the initial
-1.0 scope deferred only the external positive multi-target/workspace cell and
-selected evidence-bound G2 environment rules. G2 and the non-deferred G3 rows
-remain in qualification. G4 candidate-source recovery passed locally; G5 has no
-confirmed critical/high finding in the targeted review. Protected integration,
-remaining candidate receipts and G6 public release qualification remain open.
-Originally reviewed on 2026-09-16 against main
-[`72f19b3e3163d401b57950d02bd5fc191328ce2a`](https://github.com/Alexsvensson99/PkgLift/commit/72f19b3e3163d401b57950d02bd5fc191328ce2a),
-the merge commit for [PR #120](https://github.com/Alexsvensson99/PkgLift/pull/120).
-The public baseline is [0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0),
-release commit `7d976d70e66a584e2e25db9852ac0e53bb6201b9`.
-This document proposes acceptance criteria; it does not declare 1.0 ready or change current support.
+Status: **1.0 published on 2026-09-29 within the adopted scope.**
+Final source F is `1839cbfe614c3affeecd6c790bb43ca2053a334a`; manifest-only M is
+`207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9`. [Final qualification](Qualification-1.0.md),
+[public Release](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0) and [Homebrew readback](Evidence/Qualification-1.0/public-distribution.json)
+record G1–G6 completion within the envelope. The external positive
+multi-target/workspace cell remains explicitly deferred post-1.0.
 
-## Latest checkpoint
+## Completion record
 
-The [2026-09-29 candidate record](Qualification-1.0.md) sets source version `1.0.0`, adds a
-[25-mapping evidence ledger](RegistryEvidence-1.0.md), a [targeted safety
-review](SafetyReview-1.0.md), a [public API baseline](API-1.0.md), and exact signed
-candidate full/partial/refusal plus macOS 14 runtime gates. All 646 local Swift
-tests pass (413 XCTest and 233 Swift Testing). All eleven [recovery scenarios](Recovery-1.0.md#candidate-source-rerun-on-2026-09-29)
-pass on the exact source inventory recorded with the paired CLI/test artifacts.
-These are local candidate-source results, not protected main, signed artifact
-or public release acceptance. The final evidence must bind those remaining gates.
+| Gate | Dated outcome and evidence |
+| --- | --- |
+| G1 | Public CLI/JSON/config/registry/library rules and the 1,931-symbol API baseline are frozen for 1.0. [Compatibility](Compatibility-1.0.md), [API](API-1.0.md). |
+| G2 | Signed M macOS 14.8.9 core runtime, hosted Xcode 16.4 consumer acceptance and independent local Xcode 27 signed runtime/four-consumer acceptance passed on 2026-09-29. [Environment matrix](Environments-1.0.md#final-10-evidence-matrix). |
+| G3 | Named repository-owned flows and source-bound AWS/FirebaseUI/Hammerspoon cases passed. Only the external positive multi-target/workspace case is deferred. [Qualification](Qualification-1.0.md#final-protected-and-public-qualification). |
+| G4 | All 11 candidate-source recovery scenarios and 97 commands passed on 2026-09-29; the original paired-artifact/build-input identities are preserved and bound through F/M. [Recovery](Recovery-1.0.md#candidate-source-rerun-on-2026-09-29). |
+| G5 | Targeted review has no confirmed unresolved critical/high migration-integrity finding; the public caller precondition is documented, 25 mapping claims audited and the API baseline captured. [Safety](SafetyReview-1.0.md), [registry](RegistryEvidence-1.0.md), [API](API-1.0.md). |
+| G6 | Exact M cloud and local acceptance preceded protected publication; public tag/checksum/binary and the Homebrew PR lifecycle were separately verified; Homebrew main CI passed. [Release notes](ReleaseNotes-1.0.0.md), [distribution readback](Evidence/Qualification-1.0/public-distribution.json). |
 
-The [2026-09-26 qualification checkpoint](Qualification-2026-09-26.md) records
-current-main local source and PartialMixed success, remaining G2 cells, and a
-pre-1.0 maintenance-release assessment. PR #132 changes ZBNetworking into a
-header-import refusal case; the old positive ZB protocol cannot close G3. The
-historical progress narrative below remains evidence for its named commits,
-not a claim of current positive ZB eligibility. The adopted
-[initial support envelope](ScopeProposal-1.0.md) defers that one missing external
-positive multi-target/workspace cell instead of calling it complete or replacing
-it with fixture/refusal evidence. G2, the non-deferred G3 rows and G4–G6 remain open.
+The original plan was reviewed on 2026-09-16 against main `72f19b3…` and public
+0.10.0. Its baseline gap tables and original acceptance criteria below remain
+historical context. The [2026-09-26 checkpoint](Qualification-2026-09-26.md)
+records why the former ZBNetworking positive screen became a REVIEW case; that
+superseded screen is not positive 1.0 evidence. The [adopted scope](ScopeProposal-1.0.md)
+defers the missing external positive cell without weakening safety or renaming
+refusals as successes.
 
 ## Outcome and scope
 
@@ -42,7 +33,7 @@ within an explicit, tested support envelope. A successful partial migration must
 preserve dependencies that still need CocoaPods. Unsupported inputs must retain
 their conservative classifications and useful explanations.
 
-The [roadmap quality bar](../ROADMAP.md#v10-quality-bar) remains the release standard.
+The [roadmap quality bar](../ROADMAP.md#v10--production-grade-cocoapods-modernization) remains the release standard.
 The first work package is the support/compatibility contract below, followed by
 evidence for each promised workflow. Adding more registry identities is not a
 substitute for these gates.
@@ -51,8 +42,9 @@ Adopted boundaries for this plan:
 
 - Retain Apple Silicon distribution. Set the supported runtime floor to the
   lowest macOS version on which the exact final candidate passes runtime
-  acceptance; the historical macOS 14.8.9 result is a baseline, not final-candidate
-  evidence, and exact 14.0 support must not be inferred from deployment metadata.
+  acceptance. Signed M subsequently passed macOS 14.8.9 independently of the
+  earlier 0.10 baseline; exact 14.0 support must not be inferred from deployment
+  metadata.
 - Qualify the selected Xcode 16.4/Swift 6.1.2 and Xcode 27/Swift 6.4 cells as
   distinct cells. Do not infer support for toolchains between or after them, and
   do not treat a source-build result as consumer-migration evidence.
@@ -66,7 +58,7 @@ Adopted boundaries for this plan:
   migration authority. No new package generation, Ruby execution, external-source
   migration, platform expansion or automatic recovery command is included by default.
 
-## Evidence and gaps at the baseline
+## Historical evidence and gaps at the baseline
 
 “Established” below means a baseline capability or recorded result, not fresh
 qualification of a future 1.0 binary. “Gap” means missing coverage or an unresolved
@@ -118,16 +110,11 @@ plan execution or newly automatic dependency is introduced.
 
 ### G2 — Qualify the declared environments
 
-**Priority: second; depends on G1. Status: boundary selected on 2026-09-29;
-candidate qualification in progress.** The
-[environment matrix and reproducible records](Environments-1.0.md) document
-baseline evidence and the local Xcode 27 source/runtime checks. The registry
-resource-layout compatibility fix passes both build engines. Hosted macOS
-14.8.9/arm64 runtime smoke also passed. The supported runtime floor will be the
-lowest macOS host on which the exact final candidate passes; 14.8.9 remains
-historical evidence until repeated for that candidate, and 14.0 is not inferred.
-The selected Xcode 16.4 and Xcode 27 cells and complete consumer rows remain
-requirements below.
+**Status: completed for the adopted 1.0 cells on 2026-09-29.** The
+[final environment matrix](Environments-1.0.md#final-10-evidence-matrix) binds
+signed M runtime at macOS 14.8.9 and the independent Xcode 16.4/27 consumer cells.
+Historical observations and deployment metadata are not substituted for them.
+The original acceptance criteria remain below.
 
 - Distinguish three promises: running the distributed CLI, building PkgLift from
   source, and migrating/building a consumer project. Record exact macOS, CPU,
@@ -149,28 +136,14 @@ compilation. Do not trigger full workflows merely to estimate runtime.
 
 ### G3 — Prove real and partial migrations
 
-**Priority: third; test design can proceed alongside G2 after G1. Status: the
-initial envelope was adopted on 2026-09-29; non-deferred candidate evidence is
-still in progress.**
-All three [repository-owned partial-migration cases](PartialMigration-1.0.md#main-qualification-on-2026-09-16),
-including existing-SwiftPM coexistence, passed on main `72f19b3…` with fresh
-hosted post-migration builds and complete environment records. Conflicting-requirement
-refusal coverage is also integrated. The selected [pinned real-project protocol](RealProjectQualification-1.0.md)
-passed one real AWS partial migration and two intentional refusal controls on
-main `6dcfc7b` in [run 35149953474](https://github.com/Alexsvensson99/PkgLift/actions/runs/35149953474).
-The [multi-target intake and preservation protocol](MultiTargetQualification-1.0.md)
-records the next uncovered positive shape. ZBNetworking's hosted baseline built,
-but the final consumer build failed on a flat `SDImageCache.h` import. PR #132
-added bounded header-import evidence, and the unchanged consumer must now remain
-REVIEW. Its earlier AUTO screening is superseded. The positive runner correctly
-stops before apply. Any future attempt to qualify the deferred cell must select
-and review a replacement candidate instead of rerunning ZBNetworking for a
-positive result. The missing external positive multi-target/workspace cell is
-deferred to explicit post-1.0 qualification. This does not make it pass,
-turn a refusal into positive evidence or change retained CLI behavior. Additional
-non-deferred toolchain/shape evidence remains open. Deliver an evidence matrix
-separating qualified positive, qualified refusal, regression-only,
-historical-only, pending and deferred results.
+**Status: completed for non-deferred 1.0 rows; external positive multi-target/workspace qualification remains deferred.**
+[Final qualification](Qualification-1.0.md#final-protected-and-public-qualification)
+records source-bound AWS migration/build and FirebaseUI/Hammerspoon refusals on
+P, all named repository-owned partial/coexistence cases on F, and separate signed
+M cloud/local acceptance. Unchanged production/registry/harness bytes bind P/F/M;
+the real-project run is not relabeled as a signed M execution. ZBNetworking
+remains a REVIEW case, and no refusal or fixture replaces the deferred cell.
+The original acceptance criteria remain below.
 
 - Preserve the ten upstream read-only pilots and their current prohibition on
   upstream apply/build. Review a separate, explicitly authorized protocol for
@@ -206,7 +179,7 @@ fixture regressions and safe refusals are never counted as its positive evidence
 
 ### G4 — Verify recovery as a user procedure
 
-**Priority: fourth; can proceed alongside G3. Status: eleven candidate-source scenarios passed again on 2026-09-29; protected integration pending.**
+**Status: completed as source-bound recovery qualification on 2026-09-29.**
 The [recovery runbook and executable drill](Recovery-1.0.md) exercise eleven
 controlled scenarios on the repository-owned PartialSwift consumer. All restored
 copies built and passed fresh planning/dry-run checks on 2026-09-26. This local
@@ -232,7 +205,7 @@ optional unless the drill demonstrates that the manual route is insufficient.
 
 ### G5 — Close safety and evidence findings
 
-**Priority: before candidate freeze; depends on G1–G4 findings. Status: targeted review and registry audit complete; final integration pending.**
+**Status: completed; targeted review, registry claim audit and API baseline integrated in the final source.**
 
 - Review migration-integrity paths: static parsing, target/platform/language
   attribution, path containment, saved-plan freshness, registry/product identity,
@@ -245,12 +218,12 @@ optional unless the drill demonstrates that the manual route is insufficient.
   explicit rationale and tests; an unsupported input must remain a safe refusal.
 
 **Exit:** support claims and evidence agree, safety findings have reviewable
-dispositions, and no blocking correctness defect remains. This planning review
-is not an exhaustive security audit and does not close this gate.
+dispositions, and no blocking correctness defect remains. The [targeted review and dispositions](SafetyReview-1.0.md) close this scoped
+gate; they are not an exhaustive security audit or proof that no defects exist.
 
 ### G6 — Qualify and publish the exact 1.0 candidate
 
-**Priority: last; depends on G1–G5. Status: open.**
+**Status: public release verified on 2026-09-29 after exact signed M cloud/local acceptance; Homebrew main CI passed.**
 
 - Freeze the candidate scope and version, document upgrade/plan regeneration,
   and pass the mandatory build, tests, registry, pilot and CodeQL checks on the
@@ -271,15 +244,14 @@ still apply.
 
 ## Current work direction
 
-The broad public replacement search is stopped. The adopted
-[initial 1.0 support envelope](ScopeProposal-1.0.md) defers only the external
-positive multi-target/workspace cell and retains it as concrete post-1.0 work.
-The selected G2 cells and all non-deferred G3 rows still require exact-candidate
-qualification. [A concrete 0.11 proposal](ReleaseProposal-0.11.md) remains a
-separate historical preparation record. These decisions do not change current
-classifications or release status, and G3 is not silently declared complete.
+Maintain the shipped 1.x compatibility and safety boundaries. The next unmet
+qualification item is the [explicit deferred external positive multi-target/workspace protocol](ScopeProposal-1.0.md#what-the-deferred-g3-cell-would-require).
+It requires a reviewed replacement source and complete positive evidence; it
+must not be closed by rerunning the ZBNetworking refusal or by a repository fixture.
+The [0.11 proposal](ReleaseProposal-0.11.md) remains a historical preparation
+record; its safety changes shipped within 1.0.
 
-## Prioritization and version decision
+## Historical prioritization and version decision
 
 With **G1 merged and main-qualified**, the next work package is G2 candidate
 qualification in the selected exact environment cells. The repository-owned G3
@@ -321,4 +293,5 @@ failure involving Finder metadata; this is not a qualified G2 support cell.
 No public integration, consumer migration qualification or 1.0 publication is
 claimed by this local result. PR #120 subsequently supplied main qualification
 for G1, all three repository-owned G3 partial pilots and conflict-refusal coverage;
-the planned real-project protocol, remaining G2/G3 coverage and G4–G6 remain open.
+the planned real-project protocol and remaining gates were open at that
+historical checkpoint. Their 1.0 disposition is recorded at the top of this document.

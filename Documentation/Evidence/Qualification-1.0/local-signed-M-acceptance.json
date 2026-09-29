@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "recordedAt": "2026-09-29T19:18:10.963889+00:00",
+  "executionKind": "local-exact-signed-candidate",
+  "version": "1.0.0",
+  "sourceCommit": "207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9",
+  "producerReleaseRunID": 36615292778,
+  "producerReleaseRunAttempt": 1,
+  "archiveSHA256": "402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1",
+  "binarySHA256": "4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b",
+  "registryBundleTreeSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+  "volumeUUID": "025EA65B-F122-443A-B6CB-C21C02EBE6E1",
+  "notGitHubHostedEvidence": true,
+  "environmentBeforeSHA256": "72af43ef6e28553838434d122faf97150ac94ca2a1655930b3af3a4eee57ae1e",
+  "environmentAfterSHA256": "ac1af74838386574639daaf20636ce897594dafd8e1edca51a766cc461887dc2",
+  "runtime": "passed",
+  "partialConsumers": {
+    "PartialSwift": {
+      "status": "passed",
+      "summarySHA256": "da4719dbedfc928f0d5f29046bf05930704ada12fdaf3e28b8750e12ab32ff21"
+    },
+    "PartialMixed": {
+      "status": "passed",
+      "summarySHA256": "f410bf05a1394d59f1cf6b2547f643bf9e69955709069700bfd52333409f237e"
+    },
+    "PartialSwiftCoexistence": {
+      "status": "passed",
+      "summarySHA256": "9bf74e98ef94c7a3cb0806691bf6d3576f77bdd6fc1e845fca556b2371305709"
+    }
+  },
+  "fullMixedConsumer": "passed",
+  "commands": {
+    "runtime-macos27": {
+      "exitCode": 0,
+      "receiptSHA256": "2aa95805e2f4ed1af163f1770891135b7948cf90cc4ffd43db52935ebea1bfad",
+      "logSHA256": "2c91741ff4613e65de23eab75e2e9befe68001136e7f1620cbedc6ef5c917d14"
+    },
+    "partial-swift": {
+      "exitCode": 0,
+      "receiptSHA256": "1ef88e7b9f3f9d239c489a8cfaf1d4cf29826a7080ee15cc6272a4812792ee38",
+      "logSHA256": "9310df9fda58c81b44507f4d678b7940f3e3c20e8e07d0957d29c268d9ca81d2"
+    },
+    "partial-mixed": {
+      "exitCode": 0,
+      "receiptSHA256": "bb8f5017467d741b4ec1d1b485babc406217712e6037db9e0cd97134fcd7a493",
+      "logSHA256": "940b1f6d5523c81306a11b84f16db61a6db0486fd09b41fa5336a071151d7acf"
+    },
+    "partial-swift-coexistence": {
+      "exitCode": 0,
+      "receiptSHA256": "c2dee31af25c4d5ba4f2ee1f9a05573ee6441b32e1e637a6c4c66ee12574da96",
+      "logSHA256": "9add2b156f69385e90f645e74024a81ca0a70f1d8e565901d8c025d907be63f8"
+    },
+    "full-mixed-ios15": {
+      "exitCode": 0,
+      "receiptSHA256": "06baca7b7fe21c9c0684e268c807bc0dcf6c5190849eada9d0048e25551a7b2c",
+      "logSHA256": "3772a0bb292a5fbdbb33e209e8812fcbfa796f82f2da826989506ff00fb751d6"
+    }
+  },
+  "sourceScriptsSHA256": {
+    "verify-candidate-runtime.py": "5b7c7b7052a3f2d9d3317bc8fabbaabc102cdf1bac1277a39ba86b4a607129f6",
+    "verify-runtime-environment.py": "25d6dd0aa1f0ef240ff4244676f0609c2a4d831db978f3b2d16b47aaf8262c34",
+    "run-partial-migration-pilot.py": "274f3197b79a531726ab08703f57e28bc533fe94b970f15d38101019fe3fb27c",
+    "run-registry-consumer-pilot.py": "e2d94401ac8fea5d5e25a2895bb406327f8e3b8d367d437458a2a4a680ddab0a",
+    "run-positive-e2e-pilot.sh": "d0c5cf14a30d833095c4d8b7373e8f2a3d235b13b4c2f9fe0298bdf9b296f011",
+    "capture-environment.py": "2da5e32078bce351fe39aad4cefc50cc5c09eddc88ccd71d0ebbf9390fa6df29",
+    "run-with-timeout.py": "09539febcfc5fab1755097ee9580cf16eb4945566558391084e7df01d6de1f60",
+    "hash-pilot-tree.py": "da680bc0a053441cdeb9a9c4531ce15f7a3c3f4c83c49a3f8e32073104f01329"
+  },
+  "localWrapperSHA256": "268080bfdc4fe009a9db2c0d824de662c733ab535b3388c78c03cddf5863a7fd",
+  "fullMixedWrapperSHA256": "15e19d0f3e9a4dbffedcf5b446226484c0690cb0a8cd8524872017cba745fa02",
+  "fullMixedBuildSettings": {
+    "IPHONEOS_DEPLOYMENT_TARGET": "15.0",
+    "ARCHS": "arm64"
+  },
+  "fullMixedWrapperEvidenceSHA256": "36daefc3a8829acf354bf925ef77ab826b454b8f87068382fd041f45d83623c1",
+  "priorFullMixedFailure": {
+    "label": "full-mixed",
+    "exitCode": 65,
+    "phase": "cocoapods-baseline-build",
+    "migrationStarted": false,
+    "receiptSHA256": "610f838a784ba2e6f5034e2c2ffed2841f84ba679afc33cb6f07ab2a4c6b2995",
+    "logSHA256": "c55edf48e66c5f7105c19eb851ccf52e51449b17f58bbb5566199996dda0a7fb",
+    "baselineBuildLogSHA256": "cb4289b54b5b757e661c36849a70ebb9eb3137f60f9906db4791ee8e5a0fb4a2"
+  },
+  "canonicalSSDHelperSHA256": "d342e591464bf90ea0ce568bc24c77672fc4181db9c0d9b3b43505e770e263f5",
+  "candidateBytesUnchanged": true,
+  "repositoryUnchanged": true
+}

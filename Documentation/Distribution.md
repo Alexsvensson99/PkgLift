@@ -1,13 +1,36 @@
 # Distribution
 
-PkgLift v0.1.1 and later is distributed for Apple Silicon on macOS 14 or later.
+PkgLift v0.1.1 and later uses an Apple Silicon/macOS 14 distribution minimum.
+For 1.0, the lowest observed exact signed-artifact runtime is macOS 14.8.9
+(23J631); deployment metadata and Homebrew `:sonoma` do not prove exact 14.0.
 The public archive must contain a Developer ID-signed, Apple-notarized executable
 and the adjacent `PkgLift_PkgLiftRegistry.bundle` resource directory.
 
-[PkgLift v0.10.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.10.0)
-is the current public release at `7d976d70e66a584e2e25db9852ac0e53bb6201b9` and is available through the
-[Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/main/Formula/pkglift.rb).
-See the [0.10.0 release notes](ReleaseNotes-0.10.0.md) for its bounded CryptoSwift scope.
+[PkgLift v1.0.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0) is the current public release,
+published on 2026-09-29 at M, `207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9`.
+The downloaded public archive SHA-256 is `402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1` and its
+binary SHA-256 is `4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b`. The [Homebrew formula](https://github.com/Alexsvensson99/homebrew-tap/blob/2317ae83bc8e1095877c8f79bfd53dbc1b7945e3/Formula/pkglift.rb)
+at commit `2317ae83bc8e1095877c8f79bfd53dbc1b7945e3` uses that same public archive.
+See [1.0 release notes](ReleaseNotes-1.0.0.md) and the [observed environment matrix](Environments-1.0.md#final-10-evidence-matrix).
+
+### 1.0 publication evidence
+
+- Final source F, `1839cbfe614c3affeecd6c790bb43ca2053a334a`, was prepared by [PR #138](https://github.com/Alexsvensson99/PkgLift/pull/138).
+  [PR #139](https://github.com/Alexsvensson99/PkgLift/pull/139) added only the reviewed manifest, making M its sole direct child.
+- [Exact M Release run](https://github.com/Alexsvensson99/PkgLift/actions/runs/36615292778) passed signing/notarization,
+  full/partial/refusal consumer acceptance and the observed macOS 14 runtime.
+  [Local M acceptance](Evidence/Qualification-1.0/local-final-M-acceptance.json) separately passed core runtime and four consumer flows on macOS 27/Xcode 27 before production approval.
+- [Protected publication](https://github.com/Alexsvensson99/PkgLift/actions/runs/36615269741) and the
+  [public readback](Evidence/Qualification-1.0/public-distribution.json) bind tag, downloadable archive/checksum and extracted binary.
+- [Homebrew PR](https://github.com/Alexsvensson99/homebrew-tap/pull/17), [PR CI](https://github.com/Alexsvensson99/homebrew-tap/actions/runs/36619218315)
+  and [main CI](https://github.com/Alexsvensson99/homebrew-tap/actions/runs/36619431921) verify the clean hosted install/test/uninstall lifecycle,
+  qualifying the formula update separately from GitHub publication. Both runs passed.
+- Local formula style passed. Local `brew audit --strict --online` stopped on
+  outdated Command Line Tools before any local install. No system components
+  were changed and no local Homebrew lifecycle success is claimed.
+
+The [0.10.0 release notes](ReleaseNotes-0.10.0.md) retain their historical
+bounded CryptoSwift qualification.
 
 [PkgLift v0.9.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v0.9.0)
 was published at `eaecabf570d06ccff905ef45723c5e49d126c0ba`.
@@ -87,8 +110,8 @@ artifacts to a public GitHub Release receives `contents: write` permission.
   that retains CocoaPods dependencies through apply and build, and a
   conservative refusal that must leave the fixture unchanged. A dependent
   Apple Silicon macOS 14 job downloads that exact private artifact, records the
-  observed host patch and toolchain, and repeats the bounded runtime and
-  structural-apply checks. The workflow must succeed in full before the
+  observed host patch/build and CPU, and repeats the bounded runtime and
+  structural-apply checks without compiling a consumer. The workflow must succeed in full before the
   manifest workflow can publish. Manual runs never create a GitHub Release,
   and runs from other refs are skipped.
 - Direct tag pushes never start a distribution or publication workflow. The
