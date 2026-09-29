@@ -9,7 +9,7 @@ body:
       value: |
         Thank you for testing PkgLift on a real project.
 
-        Please remove secrets, private repository names, customer information, signing identities, and proprietary source code before submitting. Successful, partial, and unsuccessful migrations are all useful.
+        Please remove secrets, private repository names, customer information, signing identities, and proprietary source code before submitting. Installation problems, dry runs, safe refusals, partial migrations, and completed migrations are all useful. You do not need to apply a migration to report a result.
 
         `pkglift diagnostics --path . --output pkglift-diagnostics.json` can create a minimized local report. Open and review the JSON before attaching it. PkgLift never uploads it automatically.
 
@@ -17,8 +17,8 @@ body:
     id: pkglift_version
     attributes:
       label: PkgLift version
-      description: Run `pkglift version` and paste the result.
-      placeholder: 0.5.0
+      description: Run `pkglift version` and paste the result, or write "not installed" if installation failed.
+      placeholder: 1.0.0
     validations:
       required: true
 
@@ -26,8 +26,22 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: Include macOS, Xcode, Swift, and CocoaPods versions.
+      description: Include macOS, Xcode, Swift, and CocoaPods versions; mark unavailable tools as not installed or not checked.
       placeholder: macOS 15.6, Xcode 16.4, Swift 6.1, CocoaPods 1.16.2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: stopping_point
+    attributes:
+      label: Where did you stop?
+      options:
+        - Installation or registry validation
+        - Baseline build
+        - Analysis
+        - Plan review
+        - Dry run (no apply)
+        - Apply or later verification
     validations:
       required: true
 
@@ -36,6 +50,7 @@ body:
     attributes:
       label: Project shape
       options:
+        - Not reached (installation only)
         - Single Xcode project
         - Workspace with one project
         - Workspace with multiple projects
@@ -48,7 +63,7 @@ body:
     id: consumer_languages
     attributes:
       label: Consumer target source languages
-      description: Choose the PBX source profile reported for the target that consumes the dependency.
+      description: Choose the PBX source profile reported for the target that consumes the dependency, or unknown if analysis was not reached.
       options:
         - Swift only
         - Objective-C only
@@ -89,7 +104,7 @@ body:
     id: dependency_summary
     attributes:
       label: Dependency and classification summary
-      description: List relevant pod identifiers and their AUTO, REVIEW, BLOCKED, or UNKNOWN classifications. Do not include private package names unless you are comfortable publishing them.
+      description: Give classification counts and relevant public pod identifiers, or say analysis was not reached. Replace private dependency names with placeholders.
       placeholder: |
         Alamofire 5.9.1 — AUTO
         InternalAnalytics — UNKNOWN (name redacted)
@@ -138,7 +153,7 @@ body:
     attributes:
       label: Safety confirmation
       options:
-        - label: I tested on a clean Git worktree, disposable branch, or copy of the project.
+        - label: If I tested on a project, I used a clean Git worktree, disposable branch, or recoverable copy.
           required: true
         - label: If a plan was generated, I reviewed it before applying any changes.
           required: true

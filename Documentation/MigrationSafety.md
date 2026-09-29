@@ -78,6 +78,21 @@ Multi-project workspaces require `--workspace` together with `--project`, and th
 selected project must be an actual non-Pods reference in that workspace.
 Unsupported workspace location schemes are refused instead of guessed.
 
+## Project format boundary
+
+PkgLift's qualified project format is PBX. The unreleased format guard rejects
+any immediate `.xcproj` entry in the selected `.xcodeproj` bundle, including a
+JSON-only project, a bundle containing both definitions, case variants, and
+symbolic links. It checks entry names without parsing the unsupported data.
+A newer XcodeProj reader does not expand PkgLift's migration support.
+
+Analysis refuses before classification or plan creation. The editor checks
+before reading and again before writing. Direct migration-library execution
+also checks before Podfile changes or recovery-state creation; an existing
+incomplete-recovery marker still takes priority. Ordinary PBX filename and
+parse behavior are retained. The repeated checks do not promise filesystem-wide
+atomicity against concurrent external changes.
+
 ## Preflight and mutation
 
 `pkglift migrate` is a dry run. Before parsing a saved plan or project, `pkglift migrate --apply` checks the fixed recovery marker at `.pkglift/migration-in-progress`. A present marker always refuses apply, including with `--allow-dirty`. Its bounded JSON records only recovery backup and path context, never source content. This early refusal prevents a later invocation from overwriting the backup needed to recover an interrupted migration.

@@ -4,6 +4,8 @@ PkgLift is a maintainer-led open-source project. Support is best effort and has 
 
 ## Choose a path
 
+For a first test, use the [dry-run pilot guide and short feedback template](Documentation/FirstPilot.md). Installation problems and safe refusals are useful results too.
+
 - Use the [bug report](https://github.com/Alexsvensson99/PkgLift/issues/new?template=bug_report.md) for a reproducible defect in PkgLift.
 - Use the [real-world migration report](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) for successful, partial, refused, or unsupported project results.
 - Use the [registry mapping proposal](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml) for an exact CocoaPods-to-SwiftPM mapping backed by official upstream evidence.

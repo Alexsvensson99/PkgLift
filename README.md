@@ -234,6 +234,8 @@ sudo ln -sf /usr/local/libexec/pkglift/pkglift /usr/local/bin/pkglift
 
 ## Quick Start
 
+Trying PkgLift for the first time? Follow the [first pilot guide](Documentation/FirstPilot.md) for a short, reviewed workflow that ends at dry run and a small feedback template.
+
 1. Navigate to the repository root containing the `Podfile`; Xcode projects and workspaces may be nested beneath it.
 2. Run `pkglift analyze` to see what PkgLift can classify.
 3. Run `pkglift plan` to generate `.pkglift/plan.json`.

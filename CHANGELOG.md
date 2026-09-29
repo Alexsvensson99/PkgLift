@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Refuse unsupported `.xcproj` project definitions before analysis or migration,
+  including bundles that also contain a PBX project. Check again before editor
+  writes, and before a direct migration-library call can change Podfile or
+  create recovery state. This prevents dependency reader upgrades from silently
+  converting a JSON project into a second PBX definition.
+- Preserve the public 1.0 API and existing incomplete-recovery refusal priority.
+
+
 ## [1.0.0] - 2026-09-29
 
 Published as [PkgLift 1.0.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0) and available through the
