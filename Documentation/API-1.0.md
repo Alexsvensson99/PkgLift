@@ -19,15 +19,18 @@ The `pkglift` executable and the internal `PkgLiftInspection` and
 artifacts with Apple's `swift-symbolgraph-extract`. The compiler output records
 public declarations, signatures, nested members, protocol requirements,
 extensions and relationships such as `memberOf`. Absolute source locations are
-removed, symbols and relationships are sorted, and the complete normalized
-graphs are retained rather than reducing the API to a list of top-level names.
+removed, including doc-comment line positions, while doc-comment text is kept.
+Symbols and relationships are sorted, and the complete normalized graphs are
+retained rather than reducing the API to a list of top-level names.
 
 The capture also records every Swift source path, byte count and SHA-256 digest
 under the six targets, the aggregate source digest, each loaded module's digest,
 the toolchain/SDK/target identity, and the build receipt digest. Before extraction,
-every current source digest must equal the successful `build-tests` receipt.
-Missing modules, missing sources, stale receipts, empty symbol graphs and compiler
-errors fail the capture.
+every current source digest must equal a passed `build-tests` receipt whose source
+inventory is unchanged before and after the build. The resolved path, size and
+SHA-256 digest of every loaded module must also equal that receipt, and each module
+is hashed again after extraction. Missing modules, missing sources, stale or
+incomplete receipts, empty symbol graphs and compiler errors fail the capture.
 
 This is a compiler-generated **source API inventory**, not a promise of Swift
 binary ABI or module stability. PkgLift is not built with library evolution, and
@@ -35,18 +38,38 @@ the baseline does not claim cross-toolchain ABI compatibility. It is also not an
 API usability test; the separate `PkgLiftPublicContractTests` compile representative
 external-client calls without `@testable` imports.
 
+The committed [module-bound build receipt](Evidence/API-1.0/local-2026-09-29-build.json)
+retains portable paths plus the original local receipt digest. Its 194 build
+inputs match the earlier recovery qualification; the new API graph differs only
+by removal of doc-comment positions and still contains 1,931 public symbols.
+
 ## Capture and compare
 
 Use products from the exact completed candidate build. On Alexander's Mac, all
 compiler cache and temporary output must remain on the mounted `SanDisk-Arbete`
-volume. Example paths for the 1.0 qualification build are:
+volume. First create a new module-bound receipt from the existing qualification
+scratch and cache. The output directory must not exist:
+
+```bash
+python3 Scripts/build-recovery-inputs.py \
+  --scratch-path /Volumes/SanDisk-Arbete/Xcode/Projects/PkgLift/Qualification-20260926/build \
+  --cache-path /Volumes/SanDisk-Arbete/Xcode/SwiftPM/UserCache \
+  --output /Volumes/SanDisk-Arbete/Xcode/Projects/PkgLift/OneZero-20260929/api-paired-build \
+  --jobs 4 \
+  --record-public-modules
+```
+
+This reuses the SwiftPM scratch for an incremental `--build-tests` check but writes
+a separate receipt and logs. Existing recovery receipts and drill evidence remain
+unchanged. Then capture the API from the exact product paths bound by that new
+receipt:
 
 ```bash
 API_ROOT=/Volumes/SanDisk-Arbete/Xcode/Projects/PkgLift/OneZero-20260929/api
 mkdir -p "$API_ROOT/module-cache" "$API_ROOT/tmp"
 TMPDIR="$API_ROOT/tmp" python3 Scripts/capture-public-api.py \
   --products-dir /Volumes/SanDisk-Arbete/Xcode/Projects/PkgLift/Qualification-20260926/build/out/Products/Debug \
-  --build-receipt /Volumes/SanDisk-Arbete/Xcode/Projects/PkgLift/OneZero-20260929/paired-build/build-receipt.json \
+  --build-receipt /Volumes/SanDisk-Arbete/Xcode/Projects/PkgLift/OneZero-20260929/api-paired-build/build-receipt.json \
   --symbolgraph-extract "$(xcrun --find swift-symbolgraph-extract)" \
   --sdk "$(xcrun --sdk macosx --show-sdk-path)" \
   --target arm64-apple-macosx14.0 \

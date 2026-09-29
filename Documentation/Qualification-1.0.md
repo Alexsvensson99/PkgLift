@@ -18,7 +18,7 @@ commit. Raw logs and disposable consumers remain in task-owned external storage.
 | Check | Actual result | Evidence |
 | --- | --- | --- |
 | Swift build/test and registry | Debug/test and release builds passed; 413 XCTest plus 233 Swift Testing cases passed; 25 mappings validated | [Source record](Evidence/Qualification-1.0/local-2026-09-29-source.json) |
-| Public library inventory | 1,931 symbols across six modules; repeated compiler capture matched after removing provenance URIs | [API contract and baseline](API-1.0.md) |
+| Public library inventory | 1,931 symbols across six modules; repeated compiler capture matched after removing provenance URIs and doc-comment positions | [API contract and baseline](API-1.0.md) |
 | Recovery procedure | All 11 scenarios and 97 commands passed; all 194 logs and source inputs independently reconciled | [Recovery record](Recovery-1.0.md#candidate-source-rerun-on-2026-09-29) |
 | Swift partial migration | Baseline and fresh migrated builds passed; exact AUTO set, retained CocoaPods manifest and consumer preservation passed | [PartialSwift](Evidence/Qualification-1.0/local-2026-09-29-PartialSwift-summary.json), [same-run environment](Evidence/Qualification-1.0/local-2026-09-29-PartialSwift-environment.json) |
 | Mixed-language partial migration | The same checks passed for Swift/Objective-C SDWebImage migration with KeychainAccess retained | [PartialMixed](Evidence/Qualification-1.0/local-2026-09-29-PartialMixed-summary.json), [environment](Evidence/Qualification-1.0/local-2026-09-29-PartialMixed-environment.json) |

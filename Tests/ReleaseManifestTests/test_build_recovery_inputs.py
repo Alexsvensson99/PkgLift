@@ -60,6 +60,11 @@ class BuildRecoveryInputsTests(unittest.TestCase):
             product.mkdir(parents=True)
             (product / "pkglift").write_bytes(b"binary")
             (product / "PkgLiftCLITests.xctest").mkdir()
+            for module in builder.PUBLIC_MODULES:
+                container = product / (module + ".swiftmodule")
+                container.mkdir()
+                (container / "arm64-apple-macos.swiftmodule").write_bytes(
+                    (module + " module").encode())
 
             def process_for(command, **kwargs):
                 if "--show-bin-path" in command:
@@ -70,12 +75,18 @@ class BuildRecoveryInputsTests(unittest.TestCase):
 
             output = root / "success"
             with mock.patch.object(builder.subprocess, "Popen", side_effect=process_for):
-                builder.main(["--output", str(output), "--scratch-path", str(scratch), "--cache-path", str(cache)])
+                builder.main(["--output", str(output), "--scratch-path", str(scratch),
+                              "--cache-path", str(cache), "--record-public-modules"])
             receipt = json.loads((output / "build-receipt.json").read_text())
             self.assertTrue(receipt["buildsBothArtifacts"])
             self.assertEqual(receipt["exitCode"], 0)
             self.assertEqual(len(receipt["binarySHA256"]), 64)
             self.assertEqual(len(receipt["signalTestBundleSHA256"]), 64)
+            self.assertEqual(set(builder.PUBLIC_MODULES), set(receipt["publicModuleArtifacts"]))
+            for module, artifact in receipt["publicModuleArtifacts"].items():
+                self.assertTrue(Path(artifact["path"]).is_absolute(), module)
+                self.assertEqual(64, len(artifact["sha256"]), module)
+                self.assertGreater(artifact["bytes"], 0, module)
 
             changed_output = root / "changed"
             values = [{"same": "before"}, {"different": "after"}, {"different": "after"}]
@@ -86,6 +97,33 @@ class BuildRecoveryInputsTests(unittest.TestCase):
             changed = json.loads((changed_output / "build-receipt.json").read_text())
             self.assertFalse(changed["buildsBothArtifacts"])
             self.assertEqual(changed["status"], "failed")
+
+    def test_default_recovery_receipt_does_not_require_public_module_artifacts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            scratch = root / "scratch"
+            cache = root / "cache"
+            scratch.mkdir()
+            cache.mkdir()
+            product = scratch / "arm64-apple-macosx" / "debug"
+            product.mkdir(parents=True)
+            (product / "pkglift").write_bytes(b"binary")
+            (product / "PkgLiftCLITests.xctest").mkdir()
+
+            def process_for(command, **kwargs):
+                if "--show-bin-path" in command:
+                    kwargs["stdout"].write((str(product) + "\n").encode())
+                process = mock.Mock()
+                process.wait.return_value = 0
+                return process
+
+            output = root / "recovery-only"
+            with mock.patch.object(builder.subprocess, "Popen", side_effect=process_for):
+                builder.main(["--output", str(output), "--scratch-path", str(scratch),
+                              "--cache-path", str(cache)])
+            receipt = json.loads((output / "build-receipt.json").read_text())
+            self.assertEqual("passed", receipt["status"])
+            self.assertIsNone(receipt["publicModuleArtifacts"])
 
 
 if __name__ == "__main__":

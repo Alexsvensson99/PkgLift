@@ -8,7 +8,6 @@ import hashlib
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -137,6 +136,11 @@ def normalize_graph(value: Any) -> Any:
         if isinstance(normalized.get("relationships"), list):
             normalized["relationships"] = sorted(
                 normalized["relationships"], key=lambda item: json.dumps(item, sort_keys=True))
+        doc_comment = normalized.get("docComment")
+        if isinstance(doc_comment, dict) and isinstance(doc_comment.get("lines"), list):
+            for line in doc_comment["lines"]:
+                if isinstance(line, dict):
+                    line.pop("range", None)
         return {key: normalized[key] for key in sorted(normalized)}
     if isinstance(value, list):
         return [normalize_graph(item) for item in value]
@@ -151,11 +155,40 @@ def module_artifact(products_dir: Path, module: str, architecture: str) -> Path:
     return artifact
 
 
-def extract_module(*, module: str, products_dir: Path, source_root: Path, sdk: Path,
+def validated_module_artifacts(products_dir: Path, architecture: str,
+                               receipt: dict[str, Any]) -> dict[str, tuple[Path, str]]:
+    bindings = receipt.get("publicModuleArtifacts")
+    require(isinstance(bindings, dict), "Build receipt has no publicModuleArtifacts object.")
+    require(set(bindings) == set(MODULES),
+            "Build receipt does not bind exactly the six public module artifacts.")
+    artifacts: dict[str, tuple[Path, str]] = {}
+    for module in MODULES:
+        record = bindings[module]
+        require(isinstance(record, dict), f"Build receipt has an invalid module record: {module}")
+        path_value, size, digest = record.get("path"), record.get("bytes"), record.get("sha256")
+        require(isinstance(path_value, str) and Path(path_value).is_absolute(),
+                f"Build receipt has no absolute module path for {module}.")
+        require(isinstance(size, int) and size >= 0,
+                f"Build receipt has an invalid module size for {module}.")
+        require(isinstance(digest, str) and SHA256_RE.fullmatch(digest) is not None,
+                f"Build receipt has an invalid module digest for {module}.")
+        artifact = module_artifact(products_dir, module, architecture)
+        try:
+            receipt_path = Path(path_value).resolve(strict=True)
+        except OSError as error:
+            raise InventoryError(f"Build receipt module path is unavailable for {module}.") from error
+        require(receipt_path == artifact.resolve(),
+                f"Built module path does not match the build receipt: {module}")
+        require(artifact.stat().st_size == size and sha256_file(artifact) == digest,
+                f"Built module bytes do not match the build receipt: {module}")
+        artifacts[module] = (artifact, digest)
+    return artifacts
+
+
+def extract_module(*, module: str, artifact: Path, expected_artifact_digest: str,
+                   products_dir: Path, source_root: Path, sdk: Path,
                    target: str, module_cache: Path, extractor: Path,
                    include_paths: list[Path]) -> dict[str, Any]:
-    architecture = target.split("-", 1)[0]
-    artifact = module_artifact(products_dir, module, architecture)
     with tempfile.TemporaryDirectory(prefix=f"{module}-", dir=module_cache) as temporary:
         output_dir = Path(temporary) / "symbolgraphs"
         output_dir.mkdir()
@@ -185,10 +218,13 @@ def extract_module(*, module: str, products_dir: Path, source_root: Path, sdk: P
             symbol_count += len(symbols)
             graphs.append({"file": path.name, "graph": graph})
         require(symbol_count > 0, f"Compiler emitted an empty public API for {module}.")
+    artifact_digest = sha256_file(artifact)
+    require(artifact_digest == expected_artifact_digest,
+            f"Built module changed during public API extraction: {module}")
     surface_bytes = json.dumps(graphs, sort_keys=True, separators=(",", ":")).encode()
     return {
         "name": module,
-        "moduleArtifact": {"bytes": artifact.stat().st_size, "sha256": sha256_file(artifact)},
+        "moduleArtifact": {"bytes": artifact.stat().st_size, "sha256": artifact_digest},
         "symbolCount": symbol_count,
         "symbolGraphs": graphs,
         "apiSurfaceSHA256": sha256_bytes(surface_bytes),
@@ -212,11 +248,19 @@ def capture(args: argparse.Namespace) -> dict[str, Any]:
     require(extractor.is_file() and os.access(extractor, os.X_OK), "Symbol graph extractor is not executable.")
     require(all(path.is_dir() for path in include_paths), "Every include path must be an existing directory.")
     receipt = load_json(receipt_path, "Build receipt")
+    require(receipt.get("status") == "passed" and receipt.get("exitCode") == 0
+            and receipt.get("buildsBothArtifacts") is True
+            and receipt.get("sourceInputsAfter") == receipt.get("sourceInputs"),
+            "Build receipt does not prove a successful build with unchanged source inputs.")
     commands = receipt.get("commands")
     require(isinstance(commands, list) and any(isinstance(item, dict) and item.get("label") == "build-tests"
             and item.get("exitCode") == 0 for item in commands), "Build receipt has no successful build-tests command.")
     sources, source_digest, version = source_inventory(source_root, receipt)
-    modules = [extract_module(module=module, products_dir=products_dir, source_root=source_root, sdk=sdk,
+    architecture = args.target.split("-", 1)[0]
+    artifacts = validated_module_artifacts(products_dir, architecture, receipt)
+    modules = [extract_module(module=module, artifact=artifacts[module][0],
+                              expected_artifact_digest=artifacts[module][1],
+                              products_dir=products_dir, source_root=source_root, sdk=sdk,
                               target=args.target, module_cache=module_cache, extractor=extractor,
                               include_paths=include_paths)
                for module in MODULES]

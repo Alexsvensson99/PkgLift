@@ -1,5 +1,5 @@
 {
-  "apiBaselineSHA256": "e1304e183ba5fa1fb621d3665fc129c90aaae83e1945ef782ecad2f8f655c4d9",
+  "apiBaselineSHA256": "b505c47176ce58490ee2df3adc96041c6224bd80c314dc13051157a59835fd5f",
   "baseCommit": "c5c32ee8e3598975a97dc53207b29596724f65f1",
   "hostedAcceptance": false,
   "partialCases": [
@@ -8,9 +8,9 @@
     "PartialSwiftCoexistence"
   ],
   "pythonPolicyTests": {
-    "count": 298,
+    "count": 300,
     "exitCode": 0,
-    "logSHA256": "cd4d43448e0ecf7cd37a6f94ee7faa3dc79995e6b8dc0bf75ec0eb202a12459d"
+    "logSHA256": "485237fc8f9b609ea7eb3bf9b5c965112d9aa29dc9beddb9c13a93bf55e79fda"
   },
   "registryMappings": 25,
   "releaseAcceptance": false,
