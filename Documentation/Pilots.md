@@ -1,5 +1,7 @@
 # Pinned Real-Project Pilots
 
+For a first dry-run-only test on your own project, use [Your first PkgLift 1.0 pilot](FirstPilot.md).
+
 PkgLift uses a small set of public Xcode projects to complement synthetic fixtures. Each pilot is pinned to an exact commit and has an explicit expected safety outcome. The purpose is to reveal real project shapes and migration boundaries without changing upstream repositories or treating every refusal as a defect.
 
 ## Read-only pilot matrix

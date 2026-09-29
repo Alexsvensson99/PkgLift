@@ -1,0 +1,260 @@
+// Temporary PR #133 review probe. Install in Tests/PkgLiftCLITests only for a
+// focused run; this is not a production regression test or a project fixture.
+import Darwin
+import Dispatch
+import Foundation
+import PathKit
+import XCTest
+import XcodeProj
+import PkgLiftCore
+@testable import PkgLiftCLI
+
+final class PostreleaseXCProjProbeTests: XCTestCase {
+    private static let applyRootEnvironment = "POSTRELEASE_PROBE_APPLY_ROOT"
+
+    func testXCProjImplicitSwiftTypesRefuseAuto() async throws {
+        try await runProbe(explicitSwiftTypes: false)
+    }
+
+    func testXCProjExplicitSwiftTypesDoNotCreateASecondProjectFormat() async throws {
+        try await runProbe(explicitSwiftTypes: true)
+    }
+
+    private func runProbe(explicitSwiftTypes: Bool) async throws {
+        let artifactRoot = try XCTUnwrap(
+            ProcessInfo.processInfo.environment["POSTRELEASE_PROBE_ROOT"],
+            "Set POSTRELEASE_PROBE_ROOT to an existing external-SSD output directory."
+        )
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: artifactRoot, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            throw ProbeError.invalidArtifactRoot(artifactRoot)
+        }
+        let probeID = UUID().uuidString
+        let artifactDirectory = URL(fileURLWithPath: artifactRoot, isDirectory: true)
+        let mode = explicitSwiftTypes ? "explicit" : "implicit"
+        let root = artifactDirectory
+            .appendingPathComponent("xcproj-\(mode)-\(probeID)", isDirectory: true)
+        let baseline = artifactDirectory
+            .appendingPathComponent("xcproj-baseline-\(mode)-\(probeID)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
+        // Intentionally preserve root, including Git state, plan and backup, for review.
+
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // PkgLiftCLITests
+            .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // checkout root
+        let source = repositoryRoot.appendingPathComponent("Fixtures/PartialSwift", isDirectory: true)
+        for name in ["Podfile", "Podfile.lock", ".pkglift.yml", "App"] {
+            try FileManager.default.copyItem(
+                at: source.appendingPathComponent(name),
+                to: root.appendingPathComponent(name)
+            )
+        }
+
+        let projectName = "SwiftKeychainAccess.xcodeproj"
+        let originalProject = source.appendingPathComponent(projectName, isDirectory: true)
+        let project = root.appendingPathComponent(projectName, isDirectory: true)
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: false)
+        let original = try XcodeProj(pathString: originalProject.path)
+        if explicitSwiftTypes {
+            // In project.xcproj, `type` is the optional explicit file type.
+            // The upstream converter intentionally drops pbxproj's inferred
+            // lastKnownFileType. Add truthful type metadata for the two real
+            // Swift members; do not change registry or PkgLift safety rules.
+            var typedSources = 0
+            for target in original.pbxproj.nativeTargets {
+                for buildFile in try target.sourcesBuildPhase()?.files ?? [] {
+                    guard let reference = buildFile.file as? PBXFileReference,
+                          reference.lastKnownFileType == "sourcecode.swift" else { continue }
+                    reference.explicitFileType = "sourcecode.swift"
+                    typedSources += 1
+                }
+            }
+            XCTAssertEqual(typedSources, 2, "Fixture should have exactly two compiled Swift files.")
+            guard typedSources == 2 else { return }
+        }
+        try original.writeXCProj(path: Path(project.path))
+        let originalSharedData = originalProject.appendingPathComponent("xcshareddata", isDirectory: true)
+        if FileManager.default.fileExists(atPath: originalSharedData.path) {
+            try FileManager.default.copyItem(
+                at: originalSharedData,
+                to: project.appendingPathComponent("xcshareddata", isDirectory: true)
+            )
+        }
+
+        let xcproj = project.appendingPathComponent("project.xcproj")
+        let pbxproj = project.appendingPathComponent("project.pbxproj")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: xcproj.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: pbxproj.path))
+        XCTAssertEqual(try XcodeProj(pathString: project.path).projectFormat, .xcproj)
+        let originalXCProjBytes = try Data(contentsOf: xcproj)
+
+        // The plan is the only ignored file. All input files are committed, so
+        // --apply must pass the normal Git cleanliness check without --allow-dirty.
+        try ".pkglift/plan.json\n".write(
+            to: root.appendingPathComponent(".gitignore"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try runGit(["init", "--quiet"], in: root)
+        try runGit(["config", "user.email", "probe@example.invalid"], in: root)
+        try runGit(["config", "user.name", "PkgLift Review Probe"], in: root)
+        try runGit(["config", "commit.gpgsign", "false"], in: root)
+        try runGit(["add", "."], in: root)
+        try runGit(["commit", "--quiet", "-m", "probe baseline"], in: root)
+
+        let arguments = ["--path", root.path, "--project", project.path]
+        let context = try await CommandContext.load(from: CommonOptions.parse(arguments))
+        let preview = context.buildMigrationPlan()
+        if !explicitSwiftTypes {
+            XCTAssertTrue(preview.autoEntries.isEmpty,
+                          "Absent file types must remain a safe refusal.")
+            XCTAssertEqual(preview.entries.first { $0.podName == "KeychainAccess" }?.classification,
+                           .review)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: pbxproj.path))
+            print("POSTRELEASE_PROBE_IMPLICIT_REFUSAL=\(root.path)")
+            return
+        }
+        XCTAssertEqual(preview.autoEntries.map(\.podName), ["KeychainAccess"],
+                       "Probe must have a real registry-backed AUTO entry before testing apply.")
+        guard preview.autoEntries.map(\.podName) == ["KeychainAccess"] else { return }
+
+        var planCommand = try PlanCommand.parse(arguments)
+        try await planCommand.run()
+        XCTAssertEqual(try gitOutput(["status", "--porcelain"], in: root), "",
+                       "The Git guard must see a clean project after plan generation.")
+        guard try gitOutput(["status", "--porcelain"], in: root).isEmpty else { return }
+
+        // Save a complete pre-apply sibling. The released 1.0 binary can run
+        // `analyze --path <baseline>` against this copy after candidate apply;
+        // no later mutation in this test touches it.
+        try FileManager.default.copyItem(at: root, to: baseline)
+        let baselineProject = baseline.appendingPathComponent(projectName, isDirectory: true)
+        XCTAssertEqual(
+            try Data(contentsOf: baselineProject.appendingPathComponent("project.xcproj")),
+            originalXCProjBytes
+        )
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: baselineProject.appendingPathComponent("project.pbxproj").path
+        ))
+        print("POSTRELEASE_PROBE_BASELINE=\(baseline.path)")
+        print("POSTRELEASE_PROBE_APPLY=\(root.path)")
+
+        try runApplyInFreshXCTestProcess(root: root)
+
+        // A safe successful apply must not add a second project definition.
+        // On the candidate implementation this is expected to fail. The old
+        // project.xcproj bytes are retained as independent evidence.
+        XCTAssertTrue(FileManager.default.fileExists(atPath: xcproj.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: pbxproj.path),
+                       "Apply created project.pbxproj beside project.xcproj at \(root.path)")
+        if FileManager.default.fileExists(atPath: pbxproj.path) {
+            XCTAssertEqual(try Data(contentsOf: xcproj), originalXCProjBytes,
+                           "Expected original JSON project to remain unchanged in the dual-format case.")
+        }
+    }
+
+    /// A successful apply owns process-global signal handlers, so run it once
+    /// in its own XCTest process as the existing CLI tests do.
+    func testChildProcessAppliesXCProjProbe() async throws {
+        guard let root = ProcessInfo.processInfo.environment[Self.applyRootEnvironment] else {
+            return
+        }
+        let project = URL(fileURLWithPath: root, isDirectory: true)
+            .appendingPathComponent("SwiftKeychainAccess.xcodeproj", isDirectory: true)
+        var command = try MigrateCommand.parse([
+            "--path", root, "--project", project.path, "--apply",
+        ])
+        try await command.run()
+    }
+
+    private func runApplyInFreshXCTestProcess(root: URL) throws {
+        let xctest = try xctestExecutableURL()
+        let process = Process()
+        process.executableURL = xctest
+        process.arguments = [
+            "-XCTest",
+            "PkgLiftCLITests.PostreleaseXCProjProbeTests/testChildProcessAppliesXCProjProbe",
+            Bundle(for: Self.self).bundleURL.path,
+        ]
+        var environment = ProcessInfo.processInfo.environment
+        environment[Self.applyRootEnvironment] = root.path
+        process.environment = environment
+        process.standardOutput = FileHandle.nullDevice
+        let standardError = Pipe()
+        process.standardError = standardError
+        let finished = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in finished.signal() }
+        try process.run()
+        guard finished.wait(timeout: .now() + 60) == .success else {
+            _ = Darwin.kill(process.processIdentifier, SIGKILL)
+            process.waitUntilExit()
+            throw ProbeError.childTimedOut(root.path)
+        }
+        let errorText = String(
+            data: standardError.fileHandleForReading.readDataToEndOfFile(),
+            encoding: .utf8
+        ) ?? ""
+        XCTAssertEqual(process.terminationReason, .exit, errorText)
+        XCTAssertEqual(process.terminationStatus, 0, errorText)
+        guard process.terminationReason == .exit, process.terminationStatus == 0 else {
+            throw ProbeError.childApplyFailed(root.path, errorText)
+        }
+    }
+
+    private func xctestExecutableURL() throws -> URL {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+        process.arguments = ["--find", "xctest"]
+        let output = Pipe()
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { throw ProbeError.xctestUnavailable }
+        let path = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else { throw ProbeError.xctestUnavailable }
+        return URL(fileURLWithPath: path)
+    }
+
+    private func runGit(_ arguments: [String], in root: URL) throws {
+        _ = try gitOutput(arguments, in: root)
+    }
+
+    private func gitOutput(_ arguments: [String], in root: URL) throws -> String {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        process.arguments = arguments
+        process.currentDirectoryURL = root
+        let output = Pipe()
+        process.standardOutput = output
+        process.standardError = output
+        try process.run()
+        process.waitUntilExit()
+        let value = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        guard process.terminationStatus == 0 else {
+            throw ProbeError.gitFailed(arguments.joined(separator: " "), value)
+        }
+        return value.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private enum ProbeError: LocalizedError {
+        case invalidArtifactRoot(String)
+        case xctestUnavailable
+        case childTimedOut(String)
+        case childApplyFailed(String, String)
+        case gitFailed(String, String)
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidArtifactRoot(let path): "Probe output root must already exist: \(path)"
+            case .xctestUnavailable: "Could not locate xctest."
+            case .childTimedOut(let path): "Probe apply timed out; inspect \(path)."
+            case .childApplyFailed(let path, let detail): "Probe apply failed at \(path): \(detail)"
+            case .gitFailed(let command, let detail): "git \(command) failed: \(detail)"
+            }
+        }
+    }
+}
