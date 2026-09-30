@@ -2,7 +2,7 @@
 // Core version constant for PkgLift.
 
 /// The current version of PkgLift.
-public let pkgLiftVersion = "1.0.0"
+public let pkgLiftVersion = "1.0.1"
 
 /// The product tagline.
 public let pkgLiftTagline = "Modernize Apple dependencies safely."
