@@ -6,14 +6,60 @@ For 1.0, the lowest observed exact signed-artifact runtime is macOS 14.8.9
 The public archive must contain a Developer ID-signed, Apple-notarized executable
 and the adjacent `PkgLift_PkgLiftRegistry.bundle` resource directory.
 
-[PkgLift v1.0.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0) is the current public release,
-published on 2026-09-29 at M, `207ff4e92b2fc4ed39c5fd8a4c2270eb0093faf9`.
-The downloaded public archive SHA-256 is `402a8bec302af870ae6e86955e310e0b95cd2386123790e17924edf5946a84e1` and its
-binary SHA-256 is `4e7997c6a03e19cf41d6413d90066dd17064f2975feddd066d5ef606556f998b`. The [Homebrew formula](https://github.com/Alexsvensson99/homebrew-tap/blob/2317ae83bc8e1095877c8f79bfd53dbc1b7945e3/Formula/pkglift.rb)
-at commit `2317ae83bc8e1095877c8f79bfd53dbc1b7945e3` uses that same public archive.
-See [1.0 release notes](ReleaseNotes-1.0.0.md) and the [observed environment matrix](Environments-1.0.md#final-10-evidence-matrix).
+[PkgLift v1.0.1](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.1)
+is the current public release. GitHub published release ID `401431070` at
+`2026-10-01T23:31:14Z` (`2026-10-02` Europe/Stockholm), with tag `v1.0.1`
+targeting M, `030b8a21d936a96e76090ca39ac78dd68c4df51c`. The downloaded
+public archive SHA-256 is
+`eaee546af04f11df66d1f16cbbbf66dea881969e0dd34795d1a5b74e65b9e591`,
+its binary SHA-256 is
+`b7409899d57ed6e90c4afaa11c46e29da85a889eb5ec7028189191c2c4cb8173`,
+and its registry-bundle tree SHA-256 is
+`14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510`.
+The immutable [1.0.1 Homebrew formula](https://github.com/Alexsvensson99/homebrew-tap/blob/0f1faf8805b00c575f1989075235b3609c89a7ea/Formula/pkglift.rb)
+at commit `0f1faf8805b00c575f1989075235b3609c89a7ea` uses that same public archive.
+See [1.0.1 release notes](ReleaseNotes-1.0.1.md), the
+[complete qualification](Qualification-1.0.1.md) and the
+[observed environment evidence](Environments-1.0.md#101-maintenance-evidence-2026-10-02).
 
-### 1.0 publication evidence
+### 1.0.1 publication evidence
+
+- Final source F, `76dd1f9712f9e5da3609bacc26e0d0022e2ae290`, was prepared by
+  [PR #142](https://github.com/Alexsvensson99/PkgLift/pull/142). Manifest-only
+  [PR #143](https://github.com/Alexsvensson99/PkgLift/pull/143) made M its sole
+  direct child and bound it to successful exact-F main pilot run
+  [36764966069](https://github.com/Alexsvensson99/PkgLift/actions/runs/36764966069).
+- [G3 source run 36765095908](https://github.com/Alexsvensson99/PkgLift/actions/runs/36765095908)
+  passed the named AWS partial migration and mutation-protected FirebaseUI and
+  Hammerspoon refusals on F. The
+  [source receipt](Evidence/Qualification-1.0.1/source-qualification.json)
+  also binds the local 655 Swift tests, 300 policy tests and unchanged six-module
+  API result.
+- [Exact M release run 36769614583](https://github.com/Alexsvensson99/PkgLift/actions/runs/36769614583),
+  attempt 1, passed signing/notarization, full/partial/refusal consumer acceptance
+  and the observed macOS 14 runtime. The cloud and
+  [local M acceptance](Evidence/Qualification-1.0.1/local-final-M-acceptance.json)
+  use the exact public archive, binary and registry-bundle hashes above.
+- Protected publication run
+  [36769590339](https://github.com/Alexsvensson99/PkgLift/actions/runs/36769590339)
+  completed successfully. The
+  [public readback](Evidence/Qualification-1.0.1/public-distribution.json) binds
+  exact M, release ID `401431070`, both downloadable assets, strict signature,
+  version `1.0.1`, 25 registry mappings and the accepted candidate bytes.
+- [Homebrew PR #18](https://github.com/Alexsvensson99/homebrew-tap/pull/18)
+  merged at `2026-10-01T23:46:19Z` as
+  `0f1faf8805b00c575f1989075235b3609c89a7ea`. The formula Git blob is
+  `87d540096631337027fa06cbffb65569360e8fbe` and its SHA-256 is
+  `544ef889e0b6970360136cc6c220e5df3ecd193896744d3a86900c86b7470b47`.
+  [PR CI 36942357174](https://github.com/Alexsvensson99/homebrew-tap/actions/runs/36942357174)
+  on `aacff2e56f4dc6a317610da82de921e79a49c99f` and
+  [main CI 36942559400](https://github.com/Alexsvensson99/homebrew-tap/actions/runs/36942559400)
+  on the merge commit, both attempt 1, passed Apple Silicon, local-tap setup,
+  style, audit, install, installed verification, formula test and uninstall.
+  Local syntax, style and diff checks passed; no local install or audit was
+  performed for 1.0.1, and no system components were changed.
+
+### 1.0.0 publication evidence
 
 - Final source F, `1839cbfe614c3affeecd6c790bb43ca2053a334a`, was prepared by [PR #138](https://github.com/Alexsvensson99/PkgLift/pull/138).
   [PR #139](https://github.com/Alexsvensson99/PkgLift/pull/139) added only the reviewed manifest, making M its sole direct child.

@@ -1,0 +1,310 @@
+{
+  "externalProjectAudit": {
+    "aws": {
+      "baselineBuild": "passed",
+      "freshFinalBuild": true,
+      "migrated": "SDWebImage 5.18.1",
+      "partialMigration": "passed",
+      "retained": "AmazonIVSPlayer 1.40.0"
+    },
+    "independentReview": "release_101_gates: no blocker",
+    "notClaimed": [
+      "signed-candidate acceptance",
+      "macOS14 runtime",
+      "external positive multi-target/workspace support"
+    ],
+    "observedEnvironment": {
+      "CocoaPods": "1.17.0",
+      "Swift": "6.1.2",
+      "Xcode": "16.4",
+      "arch": "arm64",
+      "macOS": "15.7.9"
+    },
+    "refusalCases": {
+      "firebaseui-project": "passed-refusal",
+      "hammerspoon-workspace": "passed-refusal"
+    },
+    "refusalScope": "Plan creation may add .pkglift/plan.json; protected source and index unchanged, subsequent dry run mutation-free. Apply, install and build not run.",
+    "reportsSHA256": {
+      "g3-reports/pkglift-g3-aws-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/environment.json": "3cdd35835af3c7d1255431ed63bf6058aa8bf770a87292083c261db87f63eac6",
+      "g3-reports/pkglift-g3-aws-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/portable-analysis.json": "9a64188a1ab400ba32cf023fd25c5285a53e90fcdfa3380413ac6bb96630758a",
+      "g3-reports/pkglift-g3-aws-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/portable-plan.json": "660c3e424b965e296f7f0c7356363b55a6096d94cdfdd628119e4373061f1570",
+      "g3-reports/pkglift-g3-aws-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/structural-verification.json": "189b1395f07f3260f2231883f55bf4de691e319d43a01972f73474bc1a2885e9",
+      "g3-reports/pkglift-g3-aws-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/summary.json": "af6089ed76f75ca2b7adceba74685c55a3d4a7b056ebeaa8cf028b1f231af714",
+      "g3-reports/pkglift-g3-firebaseui-project-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/analysis.json": "56ce081af2b95209e39e1113c3c3501b7de99b05b56d9aba11613dde728c761a",
+      "g3-reports/pkglift-g3-firebaseui-project-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/dry-run.txt": "ca7b58d285b0d9487b12277e1bc05e8b3eb6d8d4ea280c138dc8dfad57dd96c5",
+      "g3-reports/pkglift-g3-firebaseui-project-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/environment.json": "7a7cdc3bab318512ac38856455eff0e1ec0ec5cdca4a1c62fc5b850bd9e07f93",
+      "g3-reports/pkglift-g3-firebaseui-project-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/plan.json": "abff38fc497544fce324f93160d3f0e2368fbbc4bd436e9c98658edbdfa83714",
+      "g3-reports/pkglift-g3-firebaseui-project-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/result.json": "6e849072b1587852ba1fa590b0c58e031d6dc5698e8bf10bce2b71330bf73fa2",
+      "g3-reports/pkglift-g3-firebaseui-project-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/summary.md": "235b4a2a492d5843a5e1caac03e071d26a69397c4eebc2f113334d1580de4e2e",
+      "g3-reports/pkglift-g3-hammerspoon-workspace-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/analysis.json": "192b7a73a38c0c10257d21e5719a0fc622c22b6bd401f1299ab4a0cbe2ac2e9c",
+      "g3-reports/pkglift-g3-hammerspoon-workspace-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/dry-run.txt": "ca7b58d285b0d9487b12277e1bc05e8b3eb6d8d4ea280c138dc8dfad57dd96c5",
+      "g3-reports/pkglift-g3-hammerspoon-workspace-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/environment.json": "6689c9d2bb3a5f6dd9c3790efaf737592c567c9361b128a0594f7e5d59c2e266",
+      "g3-reports/pkglift-g3-hammerspoon-workspace-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/plan.json": "fe93699bd025de4be8a59660e7befa7a59fbec87a8c8ac0614cc59af8d28b2a3",
+      "g3-reports/pkglift-g3-hammerspoon-workspace-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/result.json": "d707bde4ba6e9d4b1bab2c451f5178f1d75431d0bdcfebfeda8b592b8bef478d",
+      "g3-reports/pkglift-g3-hammerspoon-workspace-76dd1f9712f9e5da3609bacc26e0d0022e2ae290-1/summary.md": "bba8f2f55ab7fcf9a5210b58cdc11a6474938ce36bd4545da960603bc52fa9d0"
+    },
+    "reviewedAt": "2026-09-30T19:36:39.702466+00:00",
+    "sourceCommit": "76dd1f9712f9e5da3609bacc26e0d0022e2ae290",
+    "status": "passed-bounded-source-qualification",
+    "workflowRun": 36765095908,
+    "workflowRunAttempt": 1
+  },
+  "localSourceValidation": {
+    "artifacts": {
+      "logs/prep-1.0.1-packaging.log": "038071f7c396a0300e1887194426cf2a130d0f8eaffacd867bb58e5bb1aef561",
+      "logs/prep-1.0.1-release-build.log": "4924a674af201bd351a476460294089bc6b5533d6312fc32cc0e708726a6c2d2",
+      "logs/prep-1.0.1-release-policy-tests.log": "78f1c0959af247f0f189c90e9246f8735b4d605d4ce747c6b83a9b35b77d82fa",
+      "logs/prep-1.0.1-tests.log": "c546482d6a4a698f6e7bdf582bcdb9dfc4e40034b89ebec7d2f25393e62466cc",
+      "prep-1.0.1-api-command.json": "496d4d0a440d89ac3f6395ef66cea2dfb1860a98dbee9f18160f0482f4e6787e",
+      "prep-1.0.1-paired-build/build-receipt.json": "9f66a325ad22d7be5169091641b6a9affec36eec387cd0dc598d6a0c1754f0a1",
+      "prep-1.0.1-public-api.json": "10e92b8af0eb1600b38acb61f1920735e1af3c60528a9fc7844c338d8d56446d",
+      "prep-1.0.1-release-build.json": "e4de21a275b8661336efeab8fb34e1ebdb8be64bc33fc541ffcbb661310247ec",
+      "prep-1.0.1-tests.json": "6518536cf1d3861e41d76e462cb7827974228dabca599c9a7f6f35a29085983e"
+    },
+    "createdAt": "2026-09-29T23:29:30.510528+00:00",
+    "debugBuild": "passed",
+    "packagingSmoke": "passed",
+    "publicAPIModulesUnchanged": 6,
+    "registryMappingsPassed": 25,
+    "releaseArm64Build": "passed",
+    "releasePolicyTestsPassed": 300,
+    "sourceInputsMatched": 197,
+    "swiftTestingPassed": 233,
+    "testedLocalCommit": "152c632714ed3614573f4bc01b5568d08540f4ee",
+    "xctestPassed": 422
+  },
+  "localTestedTreeToReviewedHead": {
+    "environmentAfterSHA256": "4dbc1927d0ae37602bf6c807e5df3d689b313cbb7d437fdec1d1d2ad1fb97803",
+    "identicalTree": true,
+    "localVerificationSHA256": "748cf729fe984c5d5b4ab46035c0040e7acedbf44018b20053262a17a6b89035",
+    "mainParent": "c56de17458e967841b314b645fecff4d5f6f22a1",
+    "rebasedLocalCommit": "990207c566c0df517ed0a85dcd36d9780bc032da",
+    "testedLocalCommit": "152c632714ed3614573f4bc01b5568d08540f4ee"
+  },
+  "originalReceiptSHA256": {
+    "final-F-to-M-binding.json": "a4effac19f2095e300cdc72415e40e273402b8b83f07ef425957e1ce4b341b20",
+    "g3-independent-audit.json": "0c49729f1c83c95532d15f326e959ce390358796696aa57b556ad9b5a64da9f6",
+    "source-P-to-F-binding.json": "896e0a67031d73c34666a3257820acce686efcbffcb5172c25446a606ba11aa3",
+    "source-preparation-binding.json": "b1fdbf4d09fee5d465d3f11eb6c49350d4ccf6bb57368ca636003bc4f73d4d77"
+  },
+  "reviewedHeadToMerge": {
+    "freshG3Run": 36765095908,
+    "gitTree": "96971542d90c36ada9344d53ff07f0ea1d264c54",
+    "identicalTree": true,
+    "localAPIReceiptSHA256": "10e92b8af0eb1600b38acb61f1920735e1af3c60528a9fc7844c338d8d56446d",
+    "localBuildReceiptSHA256": "9f66a325ad22d7be5169091641b6a9affec36eec387cd0dc598d6a0c1754f0a1",
+    "recordedAt": "2026-09-30T19:23:09.352927+00:00",
+    "reviewedHead": "990207c566c0df517ed0a85dcd36d9780bc032da",
+    "sourceF": "76dd1f9712f9e5da3609bacc26e0d0022e2ae290",
+    "sourcePR": 142,
+    "unchangedBuildInputs": 197
+  },
+  "schemaVersion": 1,
+  "scope": "Source validation is bound through 197 unchanged build inputs and the identical reviewed-head/merge tree. Signed manifest-M acceptance is recorded separately.",
+  "sourceChecks": {
+    "allSuccess": true,
+    "receiptSHA256": "22349f4fd0b69a1bdc9157eedb76b3e7929e7233bd7bf8fda431acdea1f71f05",
+    "reportedCount": 30
+  },
+  "sourcePreparation": {
+    "baseMain": "c56de17458e967841b314b645fecff4d5f6f22a1",
+    "createdAt": "2026-09-30T19:02:30.010276+00:00",
+    "evidence": {
+      "independent-final-review.json": "0f6122f7e41bcc79a2d3ca9d8851720173d4520bd9e66c3d773da1270798fe70",
+      "prep-1.0.1-environment-after.json": "4dbc1927d0ae37602bf6c807e5df3d689b313cbb7d437fdec1d1d2ad1fb97803",
+      "prep-1.0.1-final-source-binding.json": "114bda3b18104f7f14eab0bca3c20da95db9d1fd150dcfb9e41bddbcd2c8bd74",
+      "prep-1.0.1-local-verification.json": "748cf729fe984c5d5b4ab46035c0040e7acedbf44018b20053262a17a6b89035",
+      "prep-1.0.1-public-api.json": "10e92b8af0eb1600b38acb61f1920735e1af3c60528a9fc7844c338d8d56446d"
+    },
+    "sourceHead": "990207c566c0df517ed0a85dcd36d9780bc032da",
+    "sourcePR": 142,
+    "unchangedBuildInputs": 197,
+    "version": "1.0.1"
+  },
+  "sourceToManifest": {
+    "changedPath": ".github/releases/v1.0.1.json",
+    "contract": "passed",
+    "manifest": {
+      "positivePilotWorkflowRun": 36764966069,
+      "releasePullRequest": 142,
+      "schemaVersion": 1,
+      "sourcePreparationCommit": "76dd1f9712f9e5da3609bacc26e0d0022e2ae290",
+      "version": "1.0.1"
+    },
+    "manifestCommit": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+    "parents": [
+      "76dd1f9712f9e5da3609bacc26e0d0022e2ae290"
+    ],
+    "sourceCommit": "76dd1f9712f9e5da3609bacc26e0d0022e2ae290",
+    "verifiedAt": "2026-09-30T20:00:55.602835+00:00"
+  },
+  "sourceWorkflows": [
+    {
+      "conclusion": "success",
+      "databaseId": 36764966069,
+      "event": "push",
+      "headSha": "76dd1f9712f9e5da3609bacc26e0d0022e2ae290",
+      "jobs": [
+        {
+          "conclusion": "success",
+          "name": "build"
+        },
+        {
+          "conclusion": "success",
+          "name": "test"
+        },
+        {
+          "conclusion": "success",
+          "name": "Partial migration (PartialMixed)"
+        },
+        {
+          "conclusion": "success",
+          "name": "Mixed-Language Migration and Build"
+        },
+        {
+          "conclusion": "success",
+          "name": "Registry consumer (CryptoSwift)"
+        },
+        {
+          "conclusion": "success",
+          "name": "Registry consumer (DeviceKit)"
+        },
+        {
+          "conclusion": "success",
+          "name": "Partial migration (PartialSwiftCoexistence)"
+        },
+        {
+          "conclusion": "success",
+          "name": "XcodeBenchmark read-only compatibility"
+        },
+        {
+          "conclusion": "success",
+          "name": "Mixed classifications"
+        },
+        {
+          "conclusion": "success",
+          "name": "Tinode read-only compatibility"
+        },
+        {
+          "conclusion": "success",
+          "name": "fastlane CocoaPods example"
+        },
+        {
+          "conclusion": "success",
+          "name": "Partial migration (PartialSwift)"
+        },
+        {
+          "conclusion": "success",
+          "name": "Hammerspoon read-only compatibility"
+        },
+        {
+          "conclusion": "success",
+          "name": "Registry consumer (KeychainAccess)"
+        },
+        {
+          "conclusion": "success",
+          "name": "AWS Grid Feed source-only safety"
+        },
+        {
+          "conclusion": "success",
+          "name": "Conservative refusal"
+        },
+        {
+          "conclusion": "success",
+          "name": "Firebase Legacy Auth Quickstart"
+        },
+        {
+          "conclusion": "success",
+          "name": "AcknowList read-only compatibility"
+        },
+        {
+          "conclusion": "success",
+          "name": "FirebaseUI Swift example"
+        },
+        {
+          "conclusion": "success",
+          "name": "Pinned Pilot Gate"
+        },
+        {
+          "conclusion": "success",
+          "name": "Mixed-Language Pilot Gate"
+        },
+        {
+          "conclusion": "success",
+          "name": "Registry Gate"
+        }
+      ],
+      "receiptSHA256": "792f349c259ee03494cdc3a245016f8de2e4f4828f7e644e99f1df937b92cf9f",
+      "status": "completed",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36764966069"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 36764966003,
+      "event": "push",
+      "headSha": "76dd1f9712f9e5da3609bacc26e0d0022e2ae290",
+      "jobs": [
+        {
+          "conclusion": "success",
+          "name": "Swift Analysis"
+        },
+        {
+          "conclusion": "success",
+          "name": "CodeQL"
+        }
+      ],
+      "receiptSHA256": "a7622280a6dec20f9a7d0f5bfb30a25ad3e2885b761d94ba1eedfbd9ef2a0e62",
+      "status": "completed",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36764966003"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 36764965992,
+      "event": "push",
+      "headSha": "76dd1f9712f9e5da3609bacc26e0d0022e2ae290",
+      "jobs": [
+        {
+          "conclusion": "success",
+          "name": "repository"
+        }
+      ],
+      "receiptSHA256": "31435241c9213c77e213ff46c46865d52e83079bc3c0e8960cfba623eebe29b8",
+      "status": "completed",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36764965992"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 36765095908,
+      "event": "workflow_dispatch",
+      "headSha": "76dd1f9712f9e5da3609bacc26e0d0022e2ae290",
+      "jobs": [
+        {
+          "conclusion": "success",
+          "name": "Build reviewed G3 toolchain"
+        },
+        {
+          "conclusion": "success",
+          "name": "G3 refusal (firebaseui-project)"
+        },
+        {
+          "conclusion": "success",
+          "name": "G3 refusal (hammerspoon-workspace)"
+        },
+        {
+          "conclusion": "success",
+          "name": "G3 AWS baseline and partial migration"
+        },
+        {
+          "conclusion": "success",
+          "name": "G3 selected cases gate"
+        }
+      ],
+      "receiptSHA256": "52580798678a4c1f8bc24560f52b91580fd4b8eb3f0be96e6adad28297f0b46d",
+      "status": "completed",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36765095908"
+    }
+  ],
+  "status": "passed-source-qualification",
+  "version": "1.0.1"
+}
