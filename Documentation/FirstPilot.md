@@ -11,7 +11,7 @@ brew install Alexsvensson99/tap/pkglift
 pkglift version
 ```
 
-Record the actual installed version. This guide was checked with 1.0.0; the Homebrew formula can advance. After an upgrade, generate a new plan. Work from the directory containing the `Podfile`:
+Record the actual installed version. The command sequence below was checked with the released 1.0.1 binary on a repository-owned fixture. Homebrew installation was verified separately in clean hosted checks; see the [verification record](FirstPilot-1.0.1-Verification.md). The Homebrew formula can advance. After an upgrade, generate a new plan. Work from the directory containing the `Podfile`:
 
 ```bash
 pkglift registry validate --path .
