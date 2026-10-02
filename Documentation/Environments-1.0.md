@@ -1,10 +1,37 @@
 # PkgLift 1.0 environment qualification
 
-Status: **1.0 published on 2026-09-29 within the adopted evidence-bound
-matrix.** The [final qualification](Qualification-1.0.md) distinguishes source
-preparation, signed M acceptance and public distribution. Running the CLI,
-compiling PkgLift and migrating/building a consumer remain separate workloads.
-The dated evidence below is retained as history.
+Status: **1.0.1 published on 2026-10-02 within the adopted evidence-bound
+matrix.** The [1.0.1 qualification](Qualification-1.0.1.md) distinguishes source
+preparation, signed M acceptance, public distribution and Homebrew distribution.
+Running the CLI, compiling PkgLift and migrating/building a consumer remain
+separate workloads. The complete 1.0.0 matrix below is retained as history.
+
+## 1.0.1 maintenance evidence (2026-10-02)
+
+M is `030b8a21d936a96e76090ca39ac78dd68c4df51c`. Its accepted archive,
+binary and registry-bundle tree hashes are respectively
+`eaee546af04f11df66d1f16cbbbf66dea881969e0dd34795d1a5b74e65b9e591`,
+`b7409899d57ed6e90c4afaa11c46e29da85a889eb5ec7028189191c2c4cb8173`
+and `14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510`.
+The signed-M rows below all refer to those exact bytes. Each environment is
+captured in its own job or local execution; a missing field is not supplied from
+another row.
+
+| Cell/source | Exact observations | Actual result and evidence |
+| --- | --- | --- |
+| Signed M core runtime | macOS 14.8.9 (23J631), arm64; image `macos14` / `20260831.0302.1` | Signature/quarantine, version, registry, analyze, plan, dry run and structural apply passed. No consumer build. [Runtime job](https://github.com/Alexsvensson99/PkgLift/actions/runs/36769614583/job/110074835329), [receipt](Evidence/Qualification-1.0.1/cloud-final-M-acceptance.json). |
+| Signed M hosted consumers | macOS 15.7.9 (24G830), arm64; image `macos15` / `20260907.0337.1`; Xcode 16.4 (16F6); Swift 6.1.2 (`swiftlang-6.1.2.1.2`); CocoaPods 1.17.0; iOS Simulator SDK 18.5 (22F76); macOS SDK 15.5 (24F74) | Complete mixed migration/build, PartialMixed migration/build retaining KeychainAccess, and protected-source/index-preserving Hammerspoon refusal passed. Planning may add `.pkglift/plan.json`; the subsequent dry run was mutation-free. [Acceptance job](https://github.com/Alexsvensson99/PkgLift/actions/runs/36769614583/job/110074835323), [receipt](Evidence/Qualification-1.0.1/cloud-final-M-acceptance.json). |
+| Signed M local runtime and consumers | macOS 27.0 (26A428), arm64; Xcode 27.0 (27A266a); Swift 6.4 (`swiftlang-6.4.0.34.1`); CocoaPods 1.17.0; iOS Simulator SDK 27.0 (24A430); macOS SDK 27.0 (26A425); `runnerImage: null` | Core runtime, PartialSwift, PartialMixed, PartialSwiftCoexistence and fresh full mixed migration/build passed. Builds used Debug/arm64 with iOS deployment target 15.0. [Local acceptance](Evidence/Qualification-1.0.1/local-final-M-acceptance.json). |
+| Final source F qualification | F `76dd1f9712f9e5da3609bacc26e0d0022e2ae290`; G3 observed macOS 15.7.9/arm64, Xcode 16.4, Swift 6.1.2 and CocoaPods 1.17.0; the tree-matched local preparation separately observed macOS 27/Xcode 27 | All 30 reported F checks passed. [Main pilot 36764966069](https://github.com/Alexsvensson99/PkgLift/actions/runs/36764966069) and [G3 run 36765095908](https://github.com/Alexsvensson99/PkgLift/actions/runs/36765095908) passed; the source receipt binds the 655 local Swift tests, 300 policy tests and unchanged six-module API comparison. [Receipt](Evidence/Qualification-1.0.1/source-qualification.json). |
+
+These rows do not define a continuous Xcode range, establish exact macOS 14.0
+support, or add positive external multi-target/workspace migration support.
+The external positive cell remains deferred. The public tag and downloaded
+bytes were separately verified in the
+[public-distribution receipt](Evidence/Qualification-1.0.1/public-distribution.json).
+That receipt also binds the immutable
+[Homebrew formula](https://github.com/Alexsvensson99/homebrew-tap/blob/0f1faf8805b00c575f1989075235b3609c89a7ea/Formula/pkglift.rb)
+to successful hosted PR and main install/test/uninstall lifecycles.
 
 ## Adopted initial 1.0 matrix
 

@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.1] - 2026-09-30
+## [1.0.1] - 2026-10-02
 
-**Local source preparation only; not published.** The date above records
-preparation, not publication. The current public release remains 1.0.0.
-See the [release notes](Documentation/ReleaseNotes-1.0.1.md) for the remaining
-candidate qualification and distribution steps.
+Published as [PkgLift 1.0.1](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.1).
+It is available through the
+[Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/0f1faf8805b00c575f1989075235b3609c89a7ea/Formula/pkglift.rb). See the
+[release notes](Documentation/ReleaseNotes-1.0.1.md) for exact-candidate
+acceptance, environment observations and upgrade guidance.
 
 ### Added
 - Add a first-pilot guide ending at a reviewed dry run and improve the migration

@@ -1,0 +1,500 @@
+{
+  "consumerEnvironment": {
+    "captureStatus": "complete",
+    "capturedAt": "2026-09-30T20:08:49.333164Z",
+    "commands": {
+      "cocoaPodsVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "1.17.0"
+        ]
+      },
+      "iOSSimulatorSDKBuildVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "22F76"
+        ]
+      },
+      "iOSSimulatorSDKVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "18.5"
+        ]
+      },
+      "macOSSDKBuildVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "24F74"
+        ]
+      },
+      "macOSSDKVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "15.5"
+        ]
+      },
+      "swiftVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)",
+          "Target: arm64-apple-macosx15.0"
+        ]
+      },
+      "xcodebuildVersion": {
+        "exitCode": 0,
+        "status": "passed",
+        "versionOutput": [
+          "Xcode 16.4",
+          "Build version 16F6"
+        ]
+      }
+    },
+    "metadataOnly": true,
+    "repository": {
+      "commit": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+      "status": "passed",
+      "trackedChanges": false
+    },
+    "runnerImage": {
+      "imageOS": "macos15",
+      "imageVersion": "20260907.0337.1",
+      "status": "passed"
+    },
+    "schemaVersion": 1,
+    "system": {
+      "macOS": {
+        "build": "24G830",
+        "status": "passed",
+        "version": "15.7.9"
+      },
+      "machine": "arm64"
+    }
+  },
+  "fullMigration": "passed",
+  "identity": {
+    "archive_sha256": "eaee546af04f11df66d1f16cbbbf66dea881969e0dd34795d1a5b74e65b9e591",
+    "binary_sha256": "b7409899d57ed6e90c4afaa11c46e29da85a889eb5ec7028189191c2c4cb8173",
+    "registry_bundle_sha256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "repository": "Alexsvensson99/PkgLift",
+    "run_attempt": "1",
+    "run_id": "36769614583",
+    "source_sha": "030b8a21d936a96e76090ca39ac78dd68c4df51c"
+  },
+  "independentReview": "release_101_gates: no mismatch or blocker",
+  "jobResults": {
+    "Signed candidate consumer acceptance": {
+      "conclusion": "success",
+      "id": 110074835323
+    },
+    "Signed candidate runtime (macOS 14)": {
+      "conclusion": "success",
+      "id": 110074835329
+    },
+    "package": {
+      "conclusion": "success",
+      "id": 110072380791
+    }
+  },
+  "limitations": [
+    "macOS14 consumer builds not tested",
+    "package runner exact OS patch not inferred from consumer runner",
+    "local acceptance and main M CI separate"
+  ],
+  "macOS14Runtime": {
+    "acceptanceScope": "signed-core-runtime-structural-apply",
+    "archiveSHA256": "eaee546af04f11df66d1f16cbbbf66dea881969e0dd34795d1a5b74e65b9e591",
+    "binarySHA256": "b7409899d57ed6e90c4afaa11c46e29da85a889eb5ec7028189191c2c4cb8173",
+    "changedProjectFiles": [
+      "PkgLiftMixedFixture.xcodeproj/project.pbxproj",
+      "Podfile"
+    ],
+    "commands": {
+      "analyze": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "apply": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "codesignVerify": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "dryRun": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "gitAdd": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "gitBaseline": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "gitClean": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "gitInit": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "macOSBuildVersion": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "plan": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "readQuarantine": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "registryValidate": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "setQuarantine": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "structuralVerify": {
+        "exitCode": 0,
+        "status": "passed"
+      },
+      "version": {
+        "exitCode": 0,
+        "status": "passed"
+      }
+    },
+    "consumerBuildTested": false,
+    "dryRunUnchanged": true,
+    "expectedArchiveSHA256": "eaee546af04f11df66d1f16cbbbf66dea881969e0dd34795d1a5b74e65b9e591",
+    "expectedBinarySHA256": "b7409899d57ed6e90c4afaa11c46e29da85a889eb5ec7028189191c2c4cb8173",
+    "host": {
+      "cpu": "arm64",
+      "macOSBuild": "23J631",
+      "macOSVersion": "14.8.9",
+      "qualifiesRequiredHost": true,
+      "requiredMacOSMajor": 14,
+      "system": "Darwin"
+    },
+    "metadataOnly": false,
+    "quarantinePresent": true,
+    "recordedAt": "2026-09-30T20:07:33.794572+00:00",
+    "repositoryFixtureUnchanged": true,
+    "runner": {
+      "imageOS": "macos14",
+      "imageVersion": "20260831.0302.1"
+    },
+    "schemaVersion": 1,
+    "signaturePassed": true,
+    "sourceCommit": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+    "status": "passed",
+    "version": "1.0.1"
+  },
+  "mainManifestWorkflows": [
+    {
+      "conclusion": "success",
+      "databaseId": 36769590074,
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+      "jobs": [
+        {
+          "conclusion": "success",
+          "name": "build"
+        },
+        {
+          "conclusion": "success",
+          "name": "Partial migration (PartialSwift)"
+        },
+        {
+          "conclusion": "success",
+          "name": "Partial migration (PartialSwiftCoexistence)"
+        },
+        {
+          "conclusion": "success",
+          "name": "test"
+        },
+        {
+          "conclusion": "success",
+          "name": "Partial migration (PartialMixed)"
+        },
+        {
+          "conclusion": "success",
+          "name": "Mixed-Language Migration and Build"
+        },
+        {
+          "conclusion": "success",
+          "name": "Mixed classifications"
+        },
+        {
+          "conclusion": "success",
+          "name": "AWS Grid Feed source-only safety"
+        },
+        {
+          "conclusion": "success",
+          "name": "Conservative refusal"
+        },
+        {
+          "conclusion": "success",
+          "name": "Tinode read-only compatibility"
+        },
+        {
+          "conclusion": "success",
+          "name": "Registry consumer (KeychainAccess)"
+        },
+        {
+          "conclusion": "success",
+          "name": "Registry consumer (CryptoSwift)"
+        },
+        {
+          "conclusion": "success",
+          "name": "FirebaseUI Swift example"
+        },
+        {
+          "conclusion": "success",
+          "name": "fastlane CocoaPods example"
+        },
+        {
+          "conclusion": "success",
+          "name": "Registry consumer (DeviceKit)"
+        },
+        {
+          "conclusion": "success",
+          "name": "Hammerspoon read-only compatibility"
+        },
+        {
+          "conclusion": "success",
+          "name": "Firebase Legacy Auth Quickstart"
+        },
+        {
+          "conclusion": "success",
+          "name": "AcknowList read-only compatibility"
+        },
+        {
+          "conclusion": "success",
+          "name": "XcodeBenchmark read-only compatibility"
+        },
+        {
+          "conclusion": "success",
+          "name": "Pinned Pilot Gate"
+        },
+        {
+          "conclusion": "success",
+          "name": "Mixed-Language Pilot Gate"
+        },
+        {
+          "conclusion": "success",
+          "name": "Registry Gate"
+        }
+      ],
+      "receiptSHA256": "e3a05d85836c8b7a68230d53c4c923ef364e25a720ea0ae593e88e644f97125e",
+      "status": "completed",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36769590074",
+      "workflowName": "Mixed-Language End-to-End Pilot"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 36769590060,
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+      "jobs": [
+        {
+          "conclusion": "success",
+          "name": "Swift Analysis"
+        },
+        {
+          "conclusion": "success",
+          "name": "CodeQL"
+        }
+      ],
+      "receiptSHA256": "8b3eed0a35bf7b6297899373623e642f9df20e6b182b23a5ae5b0a76b653159b",
+      "status": "completed",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36769590060",
+      "workflowName": "CodeQL"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 36769590040,
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+      "jobs": [
+        {
+          "conclusion": "success",
+          "name": "repository"
+        }
+      ],
+      "receiptSHA256": "0eebd77f7080a570d6c2f9a181bd143691f8b033bb8d8b39df9080a8265ac533",
+      "status": "completed",
+      "url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36769590040",
+      "workflowName": "Quality"
+    }
+  ],
+  "originalReceiptSHA256": "281cbd7997229251c8a7f4fe2e9ccc1c2f2e1570d6caad7f77d84c38992b6a49",
+  "packageRequiredSteps": {
+    "Build Release": "success",
+    "Notarize Distribution": "success",
+    "Sign Release Binary": "success",
+    "Test": "success",
+    "Validate Registry": "success",
+    "Verify Quarantined CLI": "success"
+  },
+  "partialMigration": {
+    "baselineBuild": "passed",
+    "binarySHA256": "b7409899d57ed6e90c4afaa11c46e29da85a889eb5ec7028189191c2c4cb8173",
+    "buildSettings": {
+      "architecture": "arm64",
+      "configuration": "Debug",
+      "iOSDeploymentTarget": "15.0"
+    },
+    "case": "PartialMixed",
+    "configurationUnchanged": true,
+    "consumerBytesUnchanged": true,
+    "consumerLanguages": [
+      "objectiveC",
+      "swift"
+    ],
+    "dryRunUnchanged": true,
+    "exactAutoSet": true,
+    "fixtureSHA256": "539a9e0f0ad93b2c81c23429d08f87327bffcae16cfb7c2f566f29e0783adcea",
+    "freshMigratedBuild": true,
+    "migrated": "SDWebImage",
+    "migratedBuild": "passed",
+    "releaseAcceptance": false,
+    "repositoryFixtureUnchanged": true,
+    "repositoryOwned": true,
+    "resolvedRevision": "6e844d19679c9e0833ccc363d7f5a7c5f0c5f5d7",
+    "retained": "KeychainAccess",
+    "retainedPodsManifest": true,
+    "retentionPolicy": "migration.deny",
+    "runnerSHA256": "274f3197b79a531726ab08703f57e28bc533fe94b970f15d38101019fe3fb27c",
+    "schemaVersion": 1,
+    "sourceCommit": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+    "sourceResourceMembershipUnchanged": true,
+    "status": "passed",
+    "swiftPMLinkedExactlyOnce": true,
+    "workingTreeHasChanges": false
+  },
+  "refusal": {
+    "apply": "not-run",
+    "build": "not-run",
+    "case": "hammerspoon-workspace",
+    "dependencyInstall": "not-run",
+    "exactAutoSet": [],
+    "indexUnchanged": true,
+    "sourceUnchanged": true,
+    "status": "passed-refusal"
+  },
+  "reviewedAt": "2026-09-30T20:18:24.324561+00:00",
+  "schemaVersion": 1,
+  "scope": "Signed-candidate acceptance captured before publication. Public distribution is recorded separately.",
+  "sourceFilesSHA256": {
+    "artifact-metadata.json": "e853d7d78b30dba36a8e18ddc278b36adb171901201c454b4f0d41dc218776a9",
+    "cloud-acceptance/candidate-identity.txt": "3e37243217a82983afe5d76324163a2a0e1b8cd54552c3de63b9e6ec8e419382",
+    "cloud-acceptance/conservative-refusal/analysis.json": "674c89ae4bb4ca1147811ef2627501f42a41d7e9c4ea90f03c4235128f85abb9",
+    "cloud-acceptance/conservative-refusal/dry-run.txt": "ca7b58d285b0d9487b12277e1bc05e8b3eb6d8d4ea280c138dc8dfad57dd96c5",
+    "cloud-acceptance/conservative-refusal/environment.json": "083825972af5a74b3b90314918fa3a5f6aa1c77b97b0d7265e7a4d504675296b",
+    "cloud-acceptance/conservative-refusal/plan.json": "6b0e31424f815376ee45761eea16561f8b68bb14537b24f0fbb877dd640a994d",
+    "cloud-acceptance/conservative-refusal/result.json": "22943e9b5d40cc29f35eeb27462d83d6271ece7092f7ad4852855a24820c6ec1",
+    "cloud-acceptance/conservative-refusal/summary.md": "bba8f2f55ab7fcf9a5210b58cdc11a6474938ce36bd4545da960603bc52fa9d0",
+    "cloud-acceptance/environment.json": "d25ed0a8eb994bd7f5858d9a195478f626995a2aeafb310530747bc12d75203e",
+    "cloud-acceptance/full-migration/analysis.json": "178db4175baff70568a5b75e8d79738a411b5b158ddeff8ef13040e788a49659",
+    "cloud-acceptance/full-migration/apply.txt": "e0fed92c65ab4b45ceee6dd0f16b7bce5044e690f7c3b951012dedf4006466cb",
+    "cloud-acceptance/full-migration/baseline-build.log": "3a49dd85fbf80d92a7f36c0459e8395eea038a50829ffaf8145268db97166c33",
+    "cloud-acceptance/full-migration/baseline-lockfile.txt": "3d038a1e4bd4b60a3056c8fe7e3f4d603247855d6388df0b8afdecd6313aae19",
+    "cloud-acceptance/full-migration/baseline-pod-install.log": "3531d32cfa90e74512ec6e00c26c183d77cd8175761163fbb361a800727e9b92",
+    "cloud-acceptance/full-migration/dry-run.txt": "4131021f65fd55510d9e4520d47d1c309b6045cb375ea2a2c92751920a2026c9",
+    "cloud-acceptance/full-migration/environment.txt": "af8cc0800a6c9cdb90d54c0ddb6291d39494b1e0ec19ed0a5307314f543cfc8a",
+    "cloud-acceptance/full-migration/hashes.txt": "daf57a3a31162a58b227d5a1e5212415c0ac26eabcc1a2c1390ace3e2f52dc55",
+    "cloud-acceptance/full-migration/migrated-pod-install.log": "1c7c219a0827ca011c01ced13ea0fa16afc9befb6343b5b8d20f2ce2042107bb",
+    "cloud-acceptance/full-migration/migration-baseline-pod-install.log": "57a49e703972672194248f760255e713a96263384baf619c63c427c23a8459c5",
+    "cloud-acceptance/full-migration/plan-command.json": "5b81888a4223557cd680c9b8a4176ae725ba07f9f198ba295b719cacd4265da2",
+    "cloud-acceptance/full-migration/plan.json": "71bc8c620f77fbab7289dcef2fea3b1725e6240ffb3d3db414a9c7b27dfcb1a8",
+    "cloud-acceptance/full-migration/schemes.json": "35166bd4fb6f2498b9f24bb6ce76aae1818d337731ac4b15e02ae592076dd4ab",
+    "cloud-acceptance/full-migration/schemes.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cloud-acceptance/full-migration/source.txt": "212886673edf48919d153999575197f88ffe471456ec49850049d5e1b435d940",
+    "cloud-acceptance/full-migration/summary.md": "5c90436d12a700b3f589a49311057458d6f62eae81c32faf0c382e9a79ead8ef",
+    "cloud-acceptance/full-migration/verification.json": "f370bebfe7992b402887fc1a694e607a7aae37483c4ac99082372c9376323790",
+    "cloud-acceptance/full-migration/verification.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cloud-acceptance/partial-migration/Package.resolved": "738dda0f076e6add21e1f92ce02b45576d1f6830bf6138e1cc06f7505fe26039",
+    "cloud-acceptance/partial-migration/analysis.json": "77882bd427f31225cfbbf931fe9ec02e4d2acf10dd3a6672975d39de6c6d6ce8",
+    "cloud-acceptance/partial-migration/analysis.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cloud-acceptance/partial-migration/apply.log": "e0fed92c65ab4b45ceee6dd0f16b7bce5044e690f7c3b951012dedf4006466cb",
+    "cloud-acceptance/partial-migration/arch.log": "c1669e1d8edca98769c37d494b76442a1d6e5ffffd7b4da1fb63aef8ebaf6f01",
+    "cloud-acceptance/partial-migration/baseline-Podfile.lock": "09492ab2b102174f03593d9fe39524e1fc2712e3f6309e4420f342bf302ebd6d",
+    "cloud-acceptance/partial-migration/baseline-build.log": "107569fb025bb9f596763278d8f7ea7098acd39da954f75ae442ee8d94119d25",
+    "cloud-acceptance/partial-migration/baseline-install.log": "7f1efcdba4524e6f383801567cbea68a7a827c2a50683efbf3ffe2c624ffe8e8",
+    "cloud-acceptance/partial-migration/baseline-project.json": "92424b59a991672d00621ed1bdf9484d5b2b0004557d77b11077f94ea6f39e63",
+    "cloud-acceptance/partial-migration/dry-run.log": "4131021f65fd55510d9e4520d47d1c309b6045cb375ea2a2c92751920a2026c9",
+    "cloud-acceptance/partial-migration/environment.json": "200453927e3f0e9ea2248f5d8aebfffb72d1545ec883c5e2b4644cd25de69395",
+    "cloud-acceptance/partial-migration/migrated-build.log": "c4832f3b332cb56f2fb0c4deed06711122ecbc5f57a585040bb1c9db0c1ca463",
+    "cloud-acceptance/partial-migration/os.log": "31fd674ddb951680692d7b68cafdeab5baa6b3e82aae843269dad73b53f25fc5",
+    "cloud-acceptance/partial-migration/plan-command.json": "5aa7febdb11e2b2d68321dd3f97f76adac7c3f8eedcff509ab536eaaf067923f",
+    "cloud-acceptance/partial-migration/plan-command.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cloud-acceptance/partial-migration/plan.json": "14d0732099f152ae066bba7335f8b643065576ec7a50729ec4be1e1488b11fdd",
+    "cloud-acceptance/partial-migration/pods.log": "00afc49f1599e59129a59b64c2b019de3fe35300c05bb9d96cb25002576ff43b",
+    "cloud-acceptance/partial-migration/refresh-pods.log": "e12c424974008a190f58d0148793a292fed1bb2d0008a36c5c181e29266fe55c",
+    "cloud-acceptance/partial-migration/retained-Podfile.lock": "9b68b432fa56dbe9665f35a85822b0d973f381f43e06a5dc57bc2bd6c5ed3f17",
+    "cloud-acceptance/partial-migration/summary.json": "187c3faa751f99f7669ea57562a54403758dd4b4db36dbc33a623746148707f4",
+    "cloud-acceptance/partial-migration/swift.log": "72d273d214e5f1b03fe2e3738d3f23046e0b6d5fc013e6e35fa1bd5a5f4d2ae6",
+    "cloud-acceptance/partial-migration/verification.json": "4f836245248dd44d9b9b4f9233ba75c9e92579deabdff29e5e97978b9a79d0c2",
+    "cloud-acceptance/partial-migration/verification.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cloud-acceptance/partial-migration/version.log": "44e161e4495cac2cf7858043e9e6418e9579f0ddcfae826f9a372622968ce066",
+    "cloud-acceptance/partial-migration/xcode.log": "a8be4f9af0a29137fe7e59b9928056d4a0df297bb46ba40f80eaa6b0ae982f12",
+    "cloud-runtime-macos14/fixture/App/AppDelegate.swift": "ec363001dabc351cc361cc7193ac25f15ebda23cd3f8d7b9568c561054d0fd32",
+    "cloud-runtime-macos14/fixture/App/Fixture.txt": "79c28b36b05d90e64a95e56040ebb2b627d8c1f9d0aec0ab5c02fbf328f4ed75",
+    "cloud-runtime-macos14/fixture/App/LegacyImageLoader.m": "ec23d78510cc6132bc32c5c654e5de85c7467be8c0b626f024ccf77d95b68f42",
+    "cloud-runtime-macos14/fixture/PkgLiftMixedFixture.xcodeproj/project.pbxproj": "ec8de3856911c06f15b0b59ac9c2639bd63ac1155fc96bd06dee29b045d2d2ae",
+    "cloud-runtime-macos14/fixture/PkgLiftMixedFixture.xcodeproj/xcshareddata/xcschemes/PkgLiftMixedFixture.xcscheme": "5c2851357c0ec09b6929b0f233313ea5c81f98ae5034c93c0b15728e2d7132f9",
+    "cloud-runtime-macos14/fixture/Podfile": "0c904b3d9b85a6c6b73464677c7ccdaf129f2eb55abf0de476163cbfee15a38b",
+    "cloud-runtime-macos14/fixture/Podfile.lock": "7994716b1f763df31dbc6aacf478527e615798367b76d98190284b5e016821a4",
+    "cloud-runtime-macos14/fixture/README.md": "b9d68e9b26de18c446cdf50f0a0a063d8052c9da6c5d6877200a09167a75cf4d",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/A/Alamofire.yml": "fbb6468cd1dfd1652a1ddda226b22a5b3a0579e74bd693da7dc0cddf9489b48d",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/C/CryptoSwift.yml": "68b3a00342d40c5b15b6ebee54fbca5e194d074eeb4f95ecdd477a219abf73bb",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/D/DeviceKit.yml": "986c6bbb40d914c8fd3e52c42363d3513f3158247d4a31af31a82ee0c51a5f67",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseAnalytics.yml": "2f49398b1ef44cb704ccc2c844446d144996f5cae2b94593d19d50af73b28de8",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseAnalyticsDirect.yml": "999adab234305d75a78d483d99055e04d05579cf5e8a4c63f3e9b3fd23f5d660",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseAuth.yml": "0ac1960d8977fbaf723dbbd3a38520c7e553a4e6fd23d9cd36e31b05f6b2bbdb",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseAuthDirect.yml": "aec94b0e6c321283d35da856c3450116024c7a5c0eb39a73cce1b11ca675be1e",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseCrashlytics.yml": "a8be863289258ab4a00f7c9a9d8bd1069a161c3090957a5f27411e5532914c5a",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseCrashlyticsDirect.yml": "a0fb0c7743998dd17564b140a2c867cc4945a7e5671ba4b33eae94e8195cdd0d",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseFirestore.yml": "e86d4c1cb954673d9c775a2d4d75320377ec524a31f9a3803200cdeb11e26097",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseFirestoreDirect.yml": "e5b89419e156a6ce22c1238f3956dfa550b7857989329908daaff56d4e20e9f4",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseMessaging.yml": "1f648b6f01a094f6a9862a959386e743508cce3b4531f7c1c38d165eaa24ed0a",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseMessagingDirect.yml": "7483033b4ae10b5a14d9992093c5b97affc497e4dd4a4ca803be8433079f7f88",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseRemoteConfig.yml": "fbc512877fdfc3c8dd43a8e7109a776a6058555beeaf82bad3bddb5b6fbdfda0",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseRemoteConfigDirect.yml": "7bcd88b48d61b2c4da63b54b994d978844b1b5b7651574b578eb3f413a967f21",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseStorage.yml": "16b7367479da43a62e6d7930d6567137b21a744ed8f73e8f9c7eb3485305acb0",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/F/FirebaseStorageDirect.yml": "675fc6838a20118f20e368a1dcffe631d3a7e6c0d662a67ecb17d1ee459f7735",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/K/KeychainAccess.yml": "0f5481cd96fe1df15f41ff79f722019a77a0ebab3363db6b009047ccca44f37d",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/K/Kingfisher.yml": "9efaffcf7dcea8e5b5936fc76e73d45035755a47b21d3f5382fc6c4f59f4fd93",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/L/Lottie.yml": "c483d8b6b3d5276200e5bffbd274255fb32f147fb353def716b83276c7e04960",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/M/Moya.yml": "95223e37c0cdd9545d8744eba253c7fdc49b78cfe67a88559b0bb3cd7dfa2620",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/S/SDWebImage.yml": "530c0dfe3ee94dfd61c6162963bcfb96dc538ccbe24e03484abddee2011986e5",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/S/Sentry.yml": "46cec717a5d6783aac516bf6937a8afdfaa37f6c2ab6a6bba1401a70076a8dca",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/S/SnapKit.yml": "e8ab05a4074bfab93dd7770b9b088a62ca7fac185b9392d489b7a2b46facdff1",
+    "cloud-runtime-macos14/quarantined-cli/PkgLift_PkgLiftRegistry.bundle/BundledRegistry/S/SwiftyJSON.yml": "a5af0d378c2a0f33a04077d55585c99c3d8e1df34d947be84bd5a82cb9e27194",
+    "cloud-runtime-macos14/quarantined-cli/pkglift": "b7409899d57ed6e90c4afaa11c46e29da85a889eb5ec7028189191c2c4cb8173",
+    "cloud-runtime-macos14/structural-verification.json": "a0633b9814e56f0cdba5d4abb7d3ff9becc3fea8fea362387ddfc5b2582d1646",
+    "cloud-runtime-macos14/summary.json": "75a57d519bd9100be78756099332f1032d13922d1efd21d64403cc647d78fd8b",
+    "jobs.json": "6a7c7dd5fbbbf2006393956e2961a6b88645629b45b9fde7c85ee413d72a1f74",
+    "run.json": "42620e760b024ec210f8bee1ae160fc6bdc5406b3b4933cbcf924c5e34a21fd7"
+  },
+  "status": "passed-cloud-signed-candidate-acceptance",
+  "version": "1.0.1",
+  "workflowAttempt": 1,
+  "workflowURL": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36769614583"
+}

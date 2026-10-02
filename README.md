@@ -56,32 +56,36 @@ After review, only the `AUTO` entry may be added as a Swift package. The unknown
 
 CocoaPods has [announced a plan for trunk to stop accepting new Podspecs on December 2, 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). The plan explicitly keeps existing trunk and CDN builds available, and does not mean CocoaPods itself or private spec repositories stop working. PkgLift provides a reviewable path for native Xcode projects that want to move supported dependencies to SwiftPM without pretending every pod or project shape can be converted automatically.
 
-## 1.0.0 — Stable compatibility and conservative migration contracts
+## 1.0.1 — Project-format safety and dependency maintenance
 
-[PkgLift 1.0.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0) was published on 2026-09-29
-and is available through the [Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/2317ae83bc8e1095877c8f79bfd53dbc1b7945e3/Formula/pkglift.rb). See the
-[release notes](Documentation/ReleaseNotes-1.0.0.md) for the verified release and
-upgrade guidance.
+[PkgLift 1.0.1](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.1)
+was published on 2026-10-02 Europe/Stockholm and is available through the
+[Homebrew tap](https://github.com/Alexsvensson99/homebrew-tap/blob/0f1faf8805b00c575f1989075235b3609c89a7ea/Formula/pkglift.rb). See the
+[release notes](Documentation/ReleaseNotes-1.0.1.md),
+[qualification record](Documentation/Qualification-1.0.1.md) and
+[environment evidence](Documentation/Environments-1.0.md#101-maintenance-evidence-2026-10-02).
 
-Version 1.0 defines the documented 1.x compatibility policy for the CLI, JSON
-contracts and six public Swift library products. It includes the safety work
-prepared after 0.10.0: registry-source and header-import evidence, safer saved-plan
-writes, stricter preflight checks and project-preservation coverage. Regenerate
-saved plans after upgrading; executable plans remain bound to the exact PkgLift
-version that created them.
+Version 1.0.1 fails closed on unsupported `.xcproj` definitions before analysis,
+migration or a direct migration-library write, including bundles that contain
+both PBX and JSON definitions. XcodeProj 9.17.5 required fresh exact-binary
+acceptance; it does not expand PkgLift's supported project-format boundary or
+add JSON-project migration.
 
-The initial positive qualification covers the reviewed repository fixtures and
-the named AWS single-target partial migration. Positive external multi-target
-or workspace migration remains deferred. Discovery, explicit selection and
-conservative refusal remain available for those projects.
+The documented 1.x CLI, JSON and six public Swift library contracts remain
+unchanged. Positive external multi-target/workspace migration remains deferred;
+discovery, explicit selection and conservative refusal keep their existing
+boundaries. Regenerate analysis and executable plans with 1.0.1 before dry run
+or apply, including plans created by 1.0.0.
 
-The released archive passed signing and notarization. Its core runtime passed
-acceptance on Apple Silicon macOS 14.8.9. Complete and partial migration builds
-passed on the separate macOS 15/Xcode 16.4 and macOS 27/Xcode 27 consumer cells;
-conservative refusal also passed in the signed acceptance workflow. See the
-[environment matrix](Documentation/Environments-1.0.md) for the separate receipts.
-These observations do not imply support for untested macOS patches or every
-Xcode version between the two tested toolchains.
+The signed and notarized archive passed core runtime acceptance on Apple Silicon
+macOS 14.8.9. Hosted release acceptance passed complete and partial consumer
+builds on macOS 15.7.9/Xcode 16.4. Separate local validation passed core runtime
+and four migration/build cases on macOS 27.0/Xcode 27.0. These observations do
+not define a continuous Xcode range or imply support for untested macOS patches.
+
+[PkgLift 1.0.0](https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.0)
+and its [release notes](Documentation/ReleaseNotes-1.0.0.md) remain the historical
+initial 1.0 publication record.
 
 ## 0.10.0 — CryptoSwift mapping
 

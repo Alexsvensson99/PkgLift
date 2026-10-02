@@ -1,0 +1,295 @@
+{
+  "finalManifestChecks": {
+    "allSuccess": true,
+    "receiptSHA256": "660924e2e47430dc4ab0ba3f05d2743c7d0ddf0815fbf12eff2d417cce4d10e0",
+    "reportedCount": 30,
+    "sourceCommit": "030b8a21d936a96e76090ca39ac78dd68c4df51c"
+  },
+  "homebrew": {
+    "formulaGitBlobSHA": "87d540096631337027fa06cbffb65569360e8fbe",
+    "formulaSHA256": "544ef889e0b6970360136cc6c220e5df3ecd193896744d3a86900c86b7470b47",
+    "formulaURL": "https://github.com/Alexsvensson99/homebrew-tap/blob/0f1faf8805b00c575f1989075235b3609c89a7ea/Formula/pkglift.rb",
+    "localValidation": {
+      "diffWhitespace": "passed",
+      "formulaStyle": "passed",
+      "formulaSyntax": "passed",
+      "localAuditPerformed": false,
+      "localInstallPerformed": false,
+      "note": "Clean hosted PR and main CI provide the full install/verification/test/uninstall lifecycle evidence. No local installation was performed for 1.0.1.",
+      "systemComponentsChanged": false
+    },
+    "mergeCommit": "0f1faf8805b00c575f1989075235b3609c89a7ea",
+    "mergedAt": "2026-10-01T23:46:19Z",
+    "publicArchiveChecksumMatched": true,
+    "pullRequest": 18,
+    "pullRequestURL": "https://github.com/Alexsvensson99/homebrew-tap/pull/18",
+    "sourceHead": "aacff2e56f4dc6a317610da82de921e79a49c99f",
+    "status": "passed",
+    "verification": {
+      "main": {
+        "attempt": 1,
+        "event": "push",
+        "jobsMetadataSHA256": "ee6d645ab221f3efc514c02c62d248ad7a45ee7b5177f5d7532bb9447b48b6aa",
+        "logSHA256": "0c69d7c9cc4a9bd5d7915c7eed74a2a85abb92e229c2b718da85535268a8a4db",
+        "requiredSteps": [
+          {
+            "name": "Require Apple Silicon",
+            "status": "success"
+          },
+          {
+            "name": "Configure Local Tap",
+            "status": "success"
+          },
+          {
+            "name": "Style",
+            "status": "success"
+          },
+          {
+            "name": "Audit",
+            "status": "success"
+          },
+          {
+            "name": "Install",
+            "status": "success"
+          },
+          {
+            "name": "Verify Installation",
+            "status": "success"
+          },
+          {
+            "name": "Formula Test",
+            "status": "success"
+          },
+          {
+            "name": "Uninstall",
+            "status": "success"
+          }
+        ],
+        "runID": 36942559400,
+        "runMetadataSHA256": "bb1f355620a29364dad715710b9ad72f8064dfe9e968aa6df863fa80fcd35cc4",
+        "sourceCommit": "0f1faf8805b00c575f1989075235b3609c89a7ea",
+        "status": "passed",
+        "url": "https://github.com/Alexsvensson99/homebrew-tap/actions/runs/36942559400"
+      },
+      "pullRequest": {
+        "attempt": 1,
+        "event": "pull_request",
+        "jobsMetadataSHA256": "b194dc2aaf325cd20cad9ef18596e744b013232baa7c4c657a677e489f590af9",
+        "logSHA256": "e72cba5dbf992f8699dbe0ee2ee21e8ea21be841821cb6027821f45fe1d7f45a",
+        "requiredSteps": [
+          {
+            "name": "Require Apple Silicon",
+            "status": "success"
+          },
+          {
+            "name": "Configure Local Tap",
+            "status": "success"
+          },
+          {
+            "name": "Style",
+            "status": "success"
+          },
+          {
+            "name": "Audit",
+            "status": "success"
+          },
+          {
+            "name": "Install",
+            "status": "success"
+          },
+          {
+            "name": "Verify Installation",
+            "status": "success"
+          },
+          {
+            "name": "Formula Test",
+            "status": "success"
+          },
+          {
+            "name": "Uninstall",
+            "status": "success"
+          }
+        ],
+        "runID": 36942357174,
+        "runMetadataSHA256": "26ee192928c66a2afad4d14b8b3a9f3b6c53473ebb9dcf39fb85efa38afcf554",
+        "sourceCommit": "aacff2e56f4dc6a317610da82de921e79a49c99f",
+        "status": "passed",
+        "url": "https://github.com/Alexsvensson99/homebrew-tap/actions/runs/36942357174"
+      }
+    }
+  },
+  "publicRelease": {
+    "archiveSHA256": "eaee546af04f11df66d1f16cbbbf66dea881969e0dd34795d1a5b74e65b9e591",
+    "archiveValidationAdjustment": {
+      "candidateChanged": false,
+      "correction": "allow exactly the expected root resource-bundle directory; retain regular-file/directory-only, no-links, no-traversal and bounded-size checks",
+      "initialReadback": "public file hashes passed; local archive-layout guard rejected the root bundle directory name normalized by Python tarfile",
+      "publicFilesRedownloaded": false
+    },
+    "assets": [
+      {
+        "browser_download_url": "https://github.com/Alexsvensson99/PkgLift/releases/download/v1.0.1/pkglift-macos-arm64.tar.gz",
+        "digest": "sha256:eaee546af04f11df66d1f16cbbbf66dea881969e0dd34795d1a5b74e65b9e591",
+        "id": 604351908,
+        "name": "pkglift-macos-arm64.tar.gz",
+        "size": 3696851
+      },
+      {
+        "browser_download_url": "https://github.com/Alexsvensson99/PkgLift/releases/download/v1.0.1/pkglift-macos-arm64.tar.gz.sha256",
+        "digest": "sha256:ba4767986d16eea416843d9a486a0a5b59333a00c0fdfc50801a6c0ec20cb111",
+        "id": 604351906,
+        "name": "pkglift-macos-arm64.tar.gz.sha256",
+        "size": 93
+      }
+    ],
+    "binarySHA256": "b7409899d57ed6e90c4afaa11c46e29da85a889eb5ec7028189191c2c4cb8173",
+    "commandWorkingDirectory": "isolated-public-readback",
+    "commands": {
+      "installedVersion": {
+        "exitCode": 0,
+        "logSHA256": "44e161e4495cac2cf7858043e9e6418e9579f0ddcfae826f9a372622968ce066",
+        "output": "1.0.1"
+      },
+      "registry": {
+        "exitCode": 0,
+        "logSHA256": "8e20708c93cecf83abe678d5d81138606825b7ce2db40a6639a90f998abed680",
+        "output": "Registry validation passed for 25 mapping(s)."
+      },
+      "signature": {
+        "exitCode": 0,
+        "output": ""
+      },
+      "version": {
+        "exitCode": 0,
+        "output": "1.0.1"
+      }
+    },
+    "draft": false,
+    "initialRegistryProbe": {
+      "result": {
+        "exitCode": 0,
+        "output": "Registry validation passed for 25 mapping(s)."
+      },
+      "scope": "repository-current-directory"
+    },
+    "installedRelativeSymlink": true,
+    "matchesAcceptedSignedCandidate": true,
+    "prerelease": false,
+    "publicReleaseURL": "https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.1",
+    "publicationDateEuropeStockholm": "2026-10-02",
+    "publishedAt": "2026-10-01T23:31:14Z",
+    "registryBundleTreeSHA256": "14e6d8975c87f7ad88b6d92bd43319662db9a43893f134ca0000abf0234e5510",
+    "releaseBodySHA256": "41484414afa64ab7ee28ef66af810b8d6bca10dcf327409651cfdf9e85f758db",
+    "releaseID": 401431070,
+    "releaseMetadataSHA256": "0b3d4339c8e7ca41c858fa9cd5293fcbfc7a18036722d58c2939cd19ebcf98b9",
+    "sourceCommit": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+    "status": "passed",
+    "tag": "v1.0.1",
+    "tagMetadataSHA256": "5bbeb7327f17c252d4dcba0f13c0aa846e837e0bac9ddb15cec665c9e0523f16"
+  },
+  "publishManifestRun": {
+    "conclusion": "success",
+    "head_sha": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+    "html_url": "https://github.com/Alexsvensson99/PkgLift/actions/runs/36769590339",
+    "id": 36769590339,
+    "jobs": [
+      {
+        "conclusion": "success",
+        "id": 110072291927,
+        "name": "validate-and-package",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job"
+          },
+          {
+            "conclusion": "success",
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+          },
+          {
+            "conclusion": "success",
+            "name": "Validate Release Manifest"
+          },
+          {
+            "conclusion": "success",
+            "name": "Reuse or Dispatch Signed Distribution Validation"
+          },
+          {
+            "conclusion": "success",
+            "name": "Locate Validated Distribution Artifact"
+          },
+          {
+            "conclusion": "success",
+            "name": "Download and Verify Validated Distribution"
+          },
+          {
+            "conclusion": "success",
+            "name": "Stage Validated Distribution for Publication"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job"
+          }
+        ]
+      },
+      {
+        "conclusion": "success",
+        "id": 110077427614,
+        "name": "publish",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Set up job"
+          },
+          {
+            "conclusion": "success",
+            "name": "Checkout Validated Release Policy"
+          },
+          {
+            "conclusion": "success",
+            "name": "Download Validated Publication Input"
+          },
+          {
+            "conclusion": "success",
+            "name": "Validate Publication Input Before Tagging"
+          },
+          {
+            "conclusion": "success",
+            "name": "Recheck Distribution Checksum"
+          },
+          {
+            "conclusion": "success",
+            "name": "Atomically Create and Verify Release Tag"
+          },
+          {
+            "conclusion": "success",
+            "name": "Create GitHub Release from Verified Tag"
+          },
+          {
+            "conclusion": "success",
+            "name": "Verify Published Tag and Assets"
+          },
+          {
+            "conclusion": "success",
+            "name": "Post Checkout Validated Release Policy"
+          },
+          {
+            "conclusion": "success",
+            "name": "Complete job"
+          }
+        ]
+      }
+    ],
+    "jobsMetadataSHA256": "3c2faa656913caa9a747bf8af86f3d7f3757079f22f86e474e4d12cd32183581",
+    "runMetadataSHA256": "fe58f49ffca910d88f7f2c842b2edef9306ee69202b3b02a15c5d1a722355625",
+    "run_attempt": 1
+  },
+  "recordedAt": "2026-10-01T23:48:35.937416+00:00",
+  "schemaVersion": 1,
+  "status": "passed",
+  "version": "1.0.1"
+}
