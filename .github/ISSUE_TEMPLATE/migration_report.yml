@@ -18,7 +18,7 @@ body:
     attributes:
       label: PkgLift version
       description: Run `pkglift version` and paste the result, or write "not installed" if installation failed.
-      placeholder: 1.0.0
+      placeholder: 1.0.1
     validations:
       required: true
 
@@ -27,7 +27,7 @@ body:
     attributes:
       label: Environment
       description: Include macOS, Xcode, Swift, and CocoaPods versions; mark unavailable tools as not installed or not checked.
-      placeholder: macOS 15.6, Xcode 16.4, Swift 6.1, CocoaPods 1.16.2
+      placeholder: macOS 15.7.9, Xcode 16.4, Swift 6.1.2, CocoaPods 1.17.0
     validations:
       required: true
 

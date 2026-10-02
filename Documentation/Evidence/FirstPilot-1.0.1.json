@@ -1,0 +1,250 @@
+{
+  "applyPerformed": false,
+  "archiveSHA256": "eaee546af04f11df66d1f16cbbbf66dea881969e0dd34795d1a5b74e65b9e591",
+  "baselineEvidence": {
+    "case": "PartialSwift",
+    "fixtureTreeSHA256": "8e414b3a457cacf3d74ae3f669e01ce54623b08f6b82f353c44c09bd0917489a",
+    "newBuildPerformed": false,
+    "receipt": "Qualification-1.0.1/local-final-M-acceptance.json",
+    "receiptSHA256": "52bb420d33586a14b0f55360cc9509503b584e60fd673065967b71b7b5c9c811",
+    "sameFixtureBytes": true
+  },
+  "binarySHA256": "b7409899d57ed6e90c4afaa11c46e29da85a889eb5ec7028189191c2c4cb8173",
+  "commands": {
+    "analyze": {
+      "argv": [
+        "pkglift",
+        "analyze",
+        "--path",
+        "."
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "dfc3e2f508fc21771162f442db119893a83f767686f670b2ce49fa72ec0a6e86"
+    },
+    "dry-run": {
+      "argv": [
+        "pkglift",
+        "migrate",
+        "--path",
+        "."
+      ],
+      "exitCode": 0,
+      "invocationNote": "Equivalent absolute --path selected the isolated fixture; default mode is dry run. No --apply flag.",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "61ad7ee8db16e94e05f5daf9fe88892ac1f20f201f9299a6cd5eb96d4d57d82e"
+    },
+    "final-status": {
+      "argv": [
+        "git",
+        "status",
+        "--short"
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "856ca2638e1065babb5cc46caecc653bc1dbcc338ca86cde52b5c3f64746e0bc"
+    },
+    "git-add": {
+      "argv": [
+        "git",
+        "add",
+        "."
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "git-baseline": {
+      "argv": [
+        "git",
+        "-c",
+        "user.name=PkgLift Guide Verification",
+        "-c",
+        "user.email=pkglift-guide@example.invalid",
+        "commit",
+        "-qm",
+        "Qualified fixture baseline"
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "git-init": {
+      "argv": [
+        "git",
+        "init",
+        "-q"
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "initial-status": {
+      "argv": [
+        "git",
+        "status",
+        "--short"
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "plan": {
+      "argv": [
+        "pkglift",
+        "plan",
+        "--path",
+        "."
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "1e06e0a65303b10db09f365c5912768d273099d8b4aafb0696d9851a0a9a8c1b"
+    },
+    "registry": {
+      "argv": [
+        "pkglift",
+        "registry",
+        "validate",
+        "--path",
+        "."
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "8e20708c93cecf83abe678d5d81138606825b7ce2db40a6639a90f998abed680"
+    },
+    "staged-diff": {
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--exit-code"
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "version": {
+      "argv": [
+        "pkglift",
+        "version"
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "44e161e4495cac2cf7858043e9e6418e9579f0ddcfae826f9a372622968ce066"
+    },
+    "working-diff": {
+      "argv": [
+        "git",
+        "diff",
+        "--exit-code"
+      ],
+      "exitCode": 0,
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "completedAt": "2026-10-02T15:24:54.101133+00:00",
+  "counts": {
+    "AUTO": 1,
+    "BLOCKED": 1,
+    "REVIEW": 0,
+    "UNKNOWN": 0
+  },
+  "createdAt": "2026-10-02T15:20:52.987861+00:00",
+  "externalUserReport": false,
+  "fixture": "Fixtures/PartialSwift",
+  "fixtureFilesSHA256": {
+    ".pkglift.yml": "d19ffb4ecd4a1c3f1d1e27f096548a4e103bab40d3b9d5f6c13e41b852d29672",
+    "App/AppDelegate.swift": "8eee1e4ff86751d141895bc5e926dce2d90fe8320646928883c174dd90911af0",
+    "App/Consumer.swift": "6e4c63960d2901f97a105c951541260b7b06882f5475bfb3c6e55fbd8eab3801",
+    "App/Fixture.txt": "2ca57a7fadf1b89429c4a07da9c2d4a3a1309e2c1d117ce8a8e135f1a531fa13",
+    "Podfile": "4161d7c2e95b8944e01721c594c67994db40a92da0132b561b88751098532667",
+    "Podfile.lock": "2323c7eea6ad592c4bca04fa9788d54da33166aa60952545ef6ef45b37e821e9",
+    "README.md": "c596b8fabada870d5e0f8e0d97d6841a290aebac0f8390ad54cee4eb0a6aed01",
+    "SwiftKeychainAccess.xcodeproj/project.pbxproj": "614882e84c76f911186cb6f58e5319a91e64538ec181953a8d663953fe45141a",
+    "SwiftKeychainAccess.xcodeproj/xcshareddata/xcschemes/SwiftKeychainAccess.xcscheme": "a6e923a0730490465bb34adbc24b25954d36c9c2b3650bcad234ea6b25406f71"
+  },
+  "fixtureTreeSHA256": "8e414b3a457cacf3d74ae3f669e01ce54623b08f6b82f353c44c09bd0917489a",
+  "fixtureUnchanged": true,
+  "generatedFiles": [
+    ".pkglift/plan.json"
+  ],
+  "guide": "Documentation/FirstPilot.md",
+  "guideSHA256": "45835870d700c496173409f18d7e7b9ad1d8118556a040663c4e8592d06397aa",
+  "host": {
+    "architecture": "arm64",
+    "build": "26A428",
+    "macOS": "27.0"
+  },
+  "installation": "separately verified by Homebrew PR18 and main lifecycle; no local Homebrew install performed",
+  "installationEvidence": {
+    "localInstallationPerformed": false,
+    "mainRun": 36942559400,
+    "pullRequestRun": 36942357174,
+    "receipt": "Qualification-1.0.1/public-distribution.json",
+    "receiptSHA256": "c8c47896b87e8767be9f53eed580f937091ef2f7b40f4f306d95da2d9d7ad1dd",
+    "scope": "Separate clean hosted Homebrew install, version, bundled registry, signature, test and uninstall with identical public archive."
+  },
+  "localReceiptSHA256": "6f0f6d602b2ba0e18bbce4a7764b01fec59fc1a74b1fbaf610fe6eae2baab98f",
+  "newBaselineBuildPerformed": false,
+  "originalFileCount": 9,
+  "planSHA256": "fa205e9d1adde42f333aa006d9d600da13d96ffb1e32d68b1cac98424e782f25",
+  "priorQualifiedBaseline": {
+    "baselineBuildLogSHA256": "b673de2b16c11368d5946c92d29cac6f6422394a752e23e0e2d456868b1caff2",
+    "receiptSHA256": "402ccfd389b72c59d1dd5ce999ae3540530865ac5ef4dcbb7a4802039ac9ef83",
+    "summary": {
+      "baselineBuild": "passed",
+      "binarySHA256": "b7409899d57ed6e90c4afaa11c46e29da85a889eb5ec7028189191c2c4cb8173",
+      "buildSettings": {
+        "architecture": "arm64",
+        "configuration": "Debug",
+        "iOSDeploymentTarget": "15.0"
+      },
+      "case": "PartialSwift",
+      "configurationUnchanged": true,
+      "consumerBytesUnchanged": true,
+      "consumerLanguages": [
+        "swift"
+      ],
+      "dryRunUnchanged": true,
+      "exactAutoSet": true,
+      "fixtureSHA256": "8e414b3a457cacf3d74ae3f669e01ce54623b08f6b82f353c44c09bd0917489a",
+      "freshMigratedBuild": true,
+      "migrated": "KeychainAccess",
+      "migratedBuild": "passed",
+      "releaseAcceptance": false,
+      "repositoryFixtureUnchanged": true,
+      "repositoryOwned": true,
+      "resolvedRevision": "84e546727d66f1adc5439debad16270d0fdd04e7",
+      "retained": "SDWebImage",
+      "retainedPodsManifest": true,
+      "retentionPolicy": "migration.deny",
+      "runnerSHA256": "274f3197b79a531726ab08703f57e28bc533fe94b970f15d38101019fe3fb27c",
+      "schemaVersion": 1,
+      "sourceCommit": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+      "sourceResourceMembershipUnchanged": true,
+      "status": "passed",
+      "swiftPMLinkedExactlyOnce": true,
+      "workingTreeHasChanges": false
+    }
+  },
+  "releaseSourceCommit": "030b8a21d936a96e76090ca39ac78dd68c4df51c",
+  "retainedEntry": {
+    "pod": "SDWebImage",
+    "reason": "configuration_denied",
+    "version": "5.18.1"
+  },
+  "reviewedEntry": {
+    "pod": "KeychainAccess",
+    "product": "KeychainAccess",
+    "repositoryURL": "https://github.com/kishikawakatsumi/KeychainAccess",
+    "target": "SwiftKeychainAccess",
+    "version": "4.2.2"
+  },
+  "schemaVersion": 1,
+  "scope": "documentation-command-smoke-on-repository-owned-fixture",
+  "signedRelease": "https://github.com/Alexsvensson99/PkgLift/releases/tag/v1.0.1",
+  "status": "passed",
+  "verificationRepositoryCommit": "f9d67c8403cffc18c79b36a30ec3a606f19aaf7a",
+  "version": "1.0.1"
+}
