@@ -2,6 +2,20 @@
 
 This short pilot stops after a dry run. It helps you see which direct CocoaPods dependencies PkgLift can safely identify in a native Xcode project. A `REVIEW`, `BLOCKED`, or `UNKNOWN` result is useful: it means PkgLift kept an uncertain dependency out of automatic migration.
 
+## Start with the repository fixture
+
+If you want to see the complete dry-run path before using your own code, install PkgLift and run this command from a source checkout of the PkgLift repository:
+
+```bash
+bash Scripts/run-five-minute-fixture.sh
+```
+
+The script copies the public `Fixtures/PartialSwift` example into a new temporary Git repository. It runs registry validation, analysis, plan generation, and `migrate` without `--apply`, then verifies the plan did not change and Git has no tracked, staged, or unexpected untracked changes. It does not run CocoaPods, `xcodebuild`, a simulator, or any project of yours. The temporary copy is removed after success; add `--keep` to inspect it or `--pkglift /absolute/path/to/pkglift` to select an executable.
+
+This source-checkout demonstration proves only the bounded fixture behavior. It does not establish that your project, host environment, or dependency set is supported.
+
+## Continue with your project
+
 Use a disposable clone or recoverable branch with a committed `Podfile`, `Podfile.lock`, and Xcode project/workspace. Start with a clean Git worktree and a successful baseline build using your project's normal command. Record its result and your macOS, Xcode, Swift, and CocoaPods versions. If the baseline cannot build, report that limitation and stop before judging migration or build compatibility. The [real-project testing guide](RealWorldTesting.md) covers the fuller baseline and later apply flow.
 
 Check the [verified environment matrix](Environments-1.0.md), then install PkgLift on an Apple Silicon Mac. The package minimum alone does not prove that every macOS or Xcode version is tested. If Homebrew reports a prerequisite problem, record it and stop at installation; do not bypass the check.
@@ -48,15 +62,12 @@ pkglift migrate --path . --workspace Workspaces/Products.xcworkspace --project P
 
 ## Pilot feedback
 
-Keep raw plans, logs, source, and private project details local. Portable analysis and plan JSON still contain dependency and target names. `pkglift diagnostics` creates a minimized local report that omits those names, but it must also be reviewed before sharing. See [Diagnostics](Diagnostics.md) for the exact privacy boundary. The [migration report form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) is available for a safe public report. A small report is enough:
+Keep raw plans, logs, source, and private project details local. Portable analysis and plan JSON still contain dependency and target names. `pkglift diagnostics` creates a minimized local report that omits those names, but it must also be reviewed before sharing. See [Diagnostics](Diagnostics.md) for the exact privacy boundary. The short [First Pilot feedback form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=first_pilot_report.yml) asks for five short fields. Use the detailed [migration report form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) later for apply, verification, or a fuller reproduction. If the issue form is unavailable, use the same five fields in a new issue:
 
 ```text
-PkgLift version / macOS / Xcode / Swift / CocoaPods:
-Project shape (single project, multi-project workspace, target count):
-Baseline build (command and pass/fail, without private output):
-Commands run and where the pilot stopped:
+PkgLift version:
+Where did you stop?:
 Direct dependency counts: AUTO __ / REVIEW __ / BLOCKED __ / UNKNOWN __
-Expected result versus observed result (redacted):
-Did tracked project content remain unchanged after dry run? Yes / No / Unknown
-Smallest safe reproduction or relevant reason codes:
+What happened? (redacted; say if you only ran the repository fixture):
+Did tracked project content remain unchanged after dry run? Yes / No / Unknown / Not reached
 ```

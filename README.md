@@ -12,13 +12,25 @@ No blind conversions. No guesswork.
 
 **Analyze → Plan → Migrate → Verify**
 
-[Project website](https://www.svensson.design/PkgLift/) · [Installation](#installation) · [Quick Start](#quick-start) · [Compatibility](#compatibility) · [Safety Philosophy](#safety-philosophy) · [Pilot Evidence](https://www.svensson.design/PkgLift/pilots/) · [Diagnostics](Documentation/Diagnostics.md) · [Support](SUPPORT.md) · [Report a Migration](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
+[Project website](https://www.svensson.design/PkgLift/) · [Five-minute fixture](#try-pkglift-without-your-project) · [Installation](#installation) · [Quick Start](#quick-start) · [Compatibility](#compatibility) · [Safety Philosophy](#safety-philosophy) · [Pilot Evidence](https://www.svensson.design/PkgLift/pilots/) · [Diagnostics](Documentation/Diagnostics.md) · [Support](SUPPORT.md) · [First Pilot feedback](https://github.com/Alexsvensson99/PkgLift/issues/new?template=first_pilot_report.yml) · [Propose a Registry Mapping](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml)
 
-![PkgLift v0.4.0 analyzing, planning, and dry-running the repo-owned mixed-language fixture](Documentation/Assets/pkglift-terminal-demo.gif)
+![PkgLift 1.0.1 analyzing, planning, and dry-running the repository-owned PartialSwift fixture](Documentation/Assets/pkglift-terminal-demo.gif)
 
-_Condensed from PkgLift v0.4.0 output against the repository-owned mixed-language fixture. This demo stops at dry run; the separate end-to-end workflow is the apply-and-build proof. See the [full pilot boundary](Documentation/Pilots.md)._
+_Condensed from the [verified PkgLift 1.0.1 First Pilot](Documentation/FirstPilot-1.0.1-Verification.md) on the repository-owned `PartialSwift` fixture. It generated `.pkglift/plan.json`, classified KeychainAccess as `AUTO`, kept SDWebImage `BLOCKED` by explicit policy, and left tracked and staged content unchanged after dry run. No apply was performed. See the [portable receipt](Documentation/Evidence/FirstPilot-1.0.1.json)._
 
-If PkgLift helps with a migration, [star the repository](https://github.com/Alexsvensson99/PkgLift) or share a redacted [migration report](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml). Both make the next unsupported project shape easier to prioritize.
+If PkgLift helps, [star the repository](https://github.com/Alexsvensson99/PkgLift). If you try the dry run, share the four classification counts through the short [First Pilot feedback form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=first_pilot_report.yml). A safe refusal or early stop is useful evidence too. If you only ran the repository fixture, identify it as a fixture result rather than a result from your project.
+
+## Try PkgLift without your project
+
+The source repository includes a five-minute path that works only on a fresh copy of the public `PartialSwift` fixture. Install PkgLift, clone this repository, and run:
+
+```bash
+bash Scripts/run-five-minute-fixture.sh
+```
+
+The script runs registry validation, analysis, plan generation, and `migrate` in dry-run mode. It verifies the reviewed plan stays unchanged, tracked and staged content stay clean, and that plan is the only untracked file. It then removes the disposable copy after a successful run. It never runs `--apply`, CocoaPods, `xcodebuild`, a simulator, or code from your project. Pass `--keep` to inspect the copy afterward or `--pkglift /absolute/path/to/pkglift` to use a locally built executable.
+
+This is a source-checkout demonstration, not a compatibility result for your app. Continue with the [First Pilot guide](Documentation/FirstPilot.md) when you are ready to test a recoverable copy of your own project.
 
 ## What PkgLift Does
 
@@ -238,7 +250,7 @@ sudo ln -sf /usr/local/libexec/pkglift/pkglift /usr/local/bin/pkglift
 
 ## Quick Start
 
-Trying PkgLift for the first time? Follow the [first pilot guide](Documentation/FirstPilot.md) for a short, reviewed workflow that ends at dry run and a small feedback template.
+Trying PkgLift for the first time? Start with the [repository-owned five-minute fixture](#try-pkglift-without-your-project), then follow the [First Pilot guide](Documentation/FirstPilot.md) for a reviewed workflow on a recoverable copy of your project that ends at dry run.
 
 1. Navigate to the repository root containing the `Podfile`; Xcode projects and workspaces may be nested beneath it.
 2. Run `pkglift analyze` to see what PkgLift can classify.
@@ -311,7 +323,8 @@ pkglift diagnostics \
 
 Review the JSON before sharing it. The report contains counts, flags, tool versions, Git state, and typed failure stages; it excludes source code, complete Podfiles, dependency and target names, repository URLs, changed filenames, arbitrary error messages, and absolute user paths. See [Privacy-Preserving Diagnostics](Documentation/Diagnostics.md).
 
-- Use the [real-world migration report](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) for successful, partial, and intentionally refused migrations.
+- Use the short [First Pilot feedback form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=first_pilot_report.yml) for installation, analysis, plan-review, and dry-run results.
+- Use the detailed [real-world migration report](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) for apply, verification, or a fuller reproduction.
 - Use the [registry mapping proposal](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml) when an exact CocoaPods-to-SwiftPM mapping can be supported by official upstream evidence.
 - Read [Testing PkgLift on a Real Project](Documentation/RealWorldTesting.md) before applying changes, and remove private or proprietary information before publishing a report.
 
