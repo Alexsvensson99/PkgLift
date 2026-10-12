@@ -1,0 +1,65 @@
+name: First Pilot feedback
+description: Share a short result from the reviewed, dry-run-only First Pilot.
+title: "[First pilot]: "
+labels:
+  - help wanted
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for trying PkgLift. A safe refusal or an early stop is useful feedback.
+
+        Keep plans, logs, portable JSON, diagnostics, source, private dependency or target names, credentials, customer information, and proprietary details out of this public issue. Do not attach those files to this short form. Use the detailed migration report only after reviewing anything you choose to share.
+
+        If you only ran the repository fixture, say so in “What happened?” so the result is not mistaken for evidence from your project.
+
+  - type: input
+    id: pkglift_version
+    attributes:
+      label: PkgLift version
+      description: Run `pkglift version`, or write `not installed` if installation failed.
+      placeholder: 1.0.1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: stopping_point
+    attributes:
+      label: Where did you stop?
+      options:
+        - Installation or registry validation
+        - Baseline build
+        - Analysis
+        - Plan review
+        - Dry run (no apply)
+    validations:
+      required: true
+
+  - type: input
+    id: classification_counts
+    attributes:
+      label: Direct dependency counts
+      description: Enter the four counts, or write `not reached` if analysis did not complete.
+      placeholder: AUTO 1 / REVIEW 0 / BLOCKED 1 / UNKNOWN 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed_result
+    attributes:
+      label: What happened?
+      description: In one or two sentences, describe the observed result or smallest relevant reason code. Redact private names and details.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: dry_run_unchanged
+    attributes:
+      label: Did tracked project content remain unchanged after dry run?
+      options:
+        - Yes — tracked project content stayed unchanged
+        - No — tracked project content changed
+        - Unknown — I could not verify
+        - Not reached — dry run was not completed
+    validations:
+      required: true

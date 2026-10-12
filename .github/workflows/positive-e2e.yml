@@ -57,6 +57,13 @@ jobs:
       - name: Validate Registry
         run: swift run --skip-build pkglift registry validate
 
+      - name: Run Five-Minute Fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin_directory="$(swift build --show-bin-path)"
+          bash Scripts/run-five-minute-fixture.sh --pkglift "$bin_directory/pkglift"
+
       - name: Build PkgLift Once
         shell: bash
         run: swift build -c release -j 2 --arch arm64

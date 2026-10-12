@@ -51,7 +51,7 @@ Pull requests run independent Build, Test, Quality, CodeQL, Registry Gate, Pinne
 
 Read [Testing PkgLift on a Real Project](Documentation/RealWorldTesting.md) before applying a migration. Use a clean Git worktree, disposable branch, or recoverable copy; establish a successful baseline build; inspect the generated plan; and review the complete diff afterward.
 
-Submit successful, partial, and unsuccessful results through the [real-world migration report form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml). Remove secrets, private identifiers, proprietary code, and unnecessary project details before publishing.
+Submit installation, analysis, plan-review, and dry-run results through the short [First Pilot feedback form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=first_pilot_report.yml). Use the detailed [real-world migration report form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) for apply, verification, or a fuller reproduction. Remove secrets, private identifiers, proprietary code, and unnecessary project details before publishing.
 
 ## Adding Registry Mappings
 
@@ -81,7 +81,7 @@ Use the Bug Report template for a defect in PkgLift itself. Include:
 - the expected and actual behavior;
 - redacted output and a minimal reproduction when available.
 
-Use the real-world migration report form instead when the main purpose is to describe the outcome of testing an existing project.
+Use the short [First Pilot feedback form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=first_pilot_report.yml) for installation, analysis, plan-review, or dry-run results from an existing project. Use the detailed [real-world migration report form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) after apply, for verification results, or when a fuller reproduction is needed.
 
 ## Proposing Features
 

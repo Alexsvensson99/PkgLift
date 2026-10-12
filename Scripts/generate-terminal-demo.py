@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the README terminal demo from the recorded v0.4.0 fixture output."""
+"""Render the README terminal demo from the verified PkgLift 1.0.1 First Pilot."""
 
 from __future__ import annotations
 
@@ -17,22 +17,23 @@ TEXT = "#dbe7f3"
 MUTED = "#778697"
 ACCENT = "#62e6a7"
 BLUE = "#8ab4ff"
+WARNING = "#ffd166"
 
 TRANSCRIPT = [
-    ("command", "$ pkglift analyze --no-color"),
-    ("muted", "Project: Fixtures/MixedLanguageSDWebImage"),
-    ("plain", "Readiness score: 80/100"),
-    ("plain", "Direct dependencies: 1"),
-    ("accent", "AUTO     SDWebImage 5.18.1"),
-    ("muted", "         exact registry + Swift/Objective-C evidence"),
+    ("command", "$ pkglift analyze --path ."),
+    ("muted", "Project: SwiftKeychainAccess.xcodeproj"),
+    ("plain", "Readiness score: 35/100 · Direct dependencies: 2"),
+    ("accent", "AUTO     KeychainAccess 4.2.2"),
+    ("warning", "BLOCKED  SDWebImage 5.18.1"),
+    ("muted", "         configuration_denied · stays on CocoaPods"),
     ("blank", ""),
-    ("command", "$ pkglift plan --no-color"),
-    ("plain", "Plan saved: .pkglift/plan.json"),
-    ("accent", "AUTO 1  ·  REVIEW 0  ·  BLOCKED 0  ·  UNKNOWN 0"),
+    ("command", "$ pkglift plan --path ."),
+    ("plain", "Plan generated: .pkglift/plan.json"),
+    ("accent", "AUTO 1  ·  REVIEW 0  ·  BLOCKED 1  ·  UNKNOWN 0"),
     ("blank", ""),
-    ("command", "$ pkglift migrate --no-color"),
-    ("plain", "Dry run mode. Add --apply to execute."),
-    ("accent", "1 AUTO migration: SDWebImage → SwiftPM"),
+    ("command", "$ pkglift migrate --path ."),
+    ("plain", "Dry run mode. Add --apply to execute the migration plan."),
+    ("accent", "1 AUTO migration: KeychainAccess → SwiftPM"),
 ]
 
 VISIBLE_COUNTS = [1, 4, 6, 9, 10, 14]
@@ -59,13 +60,14 @@ def render_frame(visible_count: int) -> Image.Image:
     draw.rectangle((0, 0, WIDTH, 46), fill=CHROME)
     for x, color in [(22, "#ff6b6b"), (44, "#ffd166"), (66, ACCENT)]:
         draw.ellipse((x - 6, 17, x + 6, 29), fill=color)
-    draw.text((92, 15), "PkgLift v0.4.0 · repo-owned fixture · dry run", font=title_font, fill=MUTED)
+    draw.text((92, 15), "PkgLift 1.0.1 · PartialSwift fixture · dry run", font=title_font, fill=MUTED)
 
     palette = {
         "command": TEXT,
         "plain": TEXT,
         "muted": MUTED,
         "accent": ACCENT,
+        "warning": WARNING,
         "blank": TEXT,
     }
     y = 76
@@ -78,7 +80,7 @@ def render_frame(visible_count: int) -> Image.Image:
         y += 29
 
     draw.rounded_rectangle((30, 493, 930, 521), radius=8, fill="#101720", outline="#263341")
-    draw.text((44, 498), "Condensed from v0.4.0 analysis, plan, and dry-run output — no apply performed", font=title_font, fill=BLUE)
+    draw.text((44, 498), "Verified 1.0.1 dry run · plan created · tracked/staged diffs empty · no apply", font=title_font, fill=BLUE)
     return image
 
 

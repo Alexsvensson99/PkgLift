@@ -4,10 +4,11 @@ PkgLift is a maintainer-led open-source project. Support is best effort and has 
 
 ## Choose a path
 
-For a first test, use the [dry-run pilot guide and short feedback template](Documentation/FirstPilot.md). Installation problems and safe refusals are useful results too.
+For a first test, use the [dry-run pilot guide](Documentation/FirstPilot.md) and the [short First Pilot feedback form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=first_pilot_report.yml). Installation problems and safe refusals are useful results too.
 
 - Use the [bug report](https://github.com/Alexsvensson99/PkgLift/issues/new?template=bug_report.md) for a reproducible defect in PkgLift.
-- Use the [real-world migration report](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) for successful, partial, refused, or unsupported project results.
+- Use the [First Pilot feedback form](https://github.com/Alexsvensson99/PkgLift/issues/new?template=first_pilot_report.yml) for a short installation, analysis, plan-review, or dry-run result.
+- Use the detailed [real-world migration report](https://github.com/Alexsvensson99/PkgLift/issues/new?template=migration_report.yml) for apply, verification, or a fuller reproduction.
 - Use the [registry mapping proposal](https://github.com/Alexsvensson99/PkgLift/issues/new?template=registry_mapping_request.yml) for an exact CocoaPods-to-SwiftPM mapping backed by official upstream evidence.
 - Use the [feature request](https://github.com/Alexsvensson99/PkgLift/issues/new?template=feature_request.md) for a concrete product improvement.
 - Read [Testing PkgLift on a Real Project](Documentation/RealWorldTesting.md) before opening a support report about project selection, clean-worktree refusal, planning, or verification.
