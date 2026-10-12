@@ -81,7 +81,7 @@ jobs:
             "$RUNNER_TEMP/pkglift-pilot-artifact"
 
       - name: Upload Shared PkgLift
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.package.outputs.artifact_name }}
           path: |
@@ -91,7 +91,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Source Build Environment
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pkglift-source-environment-${{ github.sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/pkglift-source-environment.json
@@ -245,7 +245,7 @@ jobs:
           persist-credentials: false
 
       - name: Download Shared PkgLift
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ needs.build_pilot_toolchain.outputs.artifact_name }}
           path: ${{ runner.temp }}/pkglift-pilot-artifact
@@ -270,7 +270,7 @@ jobs:
 
       - name: Upload Redacted Pilot Report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pkglift-pilot-${{ matrix.case }}-${{ github.sha }}
           path: ${{ runner.temp }}/pkglift-pilot-report/${{ matrix.case }}
@@ -310,7 +310,7 @@ jobs:
           persist-credentials: false
 
       - name: Download Shared PkgLift
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ needs.build_pilot_toolchain.outputs.artifact_name }}
           path: ${{ runner.temp }}/pkglift-pilot-artifact
@@ -343,7 +343,7 @@ jobs:
 
       - name: Upload Pilot Report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pkglift-positive-e2e-${{ github.sha }}
           path: |
@@ -410,7 +410,7 @@ jobs:
           persist-credentials: false
 
       - name: Download Shared PkgLift
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ needs.build_pilot_toolchain.outputs.artifact_name }}
           path: ${{ runner.temp }}/pkglift-pilot-artifact
@@ -443,7 +443,7 @@ jobs:
 
       - name: Upload Registry Consumer Evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pkglift-registry-${{ matrix.library }}-${{ github.sha }}
           path: ${{ env.REGISTRY_REPORT_DIR }}
@@ -471,7 +471,7 @@ jobs:
           persist-credentials: false
 
       - name: Download Shared PkgLift
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ needs.build_pilot_toolchain.outputs.artifact_name }}
           path: ${{ runner.temp }}/pkglift-pilot-artifact
@@ -496,7 +496,7 @@ jobs:
 
       - name: Upload Partial Migration Evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pkglift-partial-${{ matrix.case }}-${{ github.sha }}
           path: ${{ runner.temp }}/pkglift-partial-${{ matrix.case }}/report
