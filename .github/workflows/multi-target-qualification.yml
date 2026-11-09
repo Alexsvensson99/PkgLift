@@ -55,7 +55,7 @@ jobs:
           bin_directory="$(swift build -c release --arch arm64 --show-bin-path)"
           bash Scripts/package-pilot-artifact.sh "$bin_directory" "$RUNNER_TEMP/pkglift-pilot-artifact"
       - name: Upload verified toolchain
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.package.outputs.artifact_name }}
           path: |
@@ -78,7 +78,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ needs.build_pilot_toolchain.outputs.artifact_name }}
           path: ${{ runner.temp }}/pkglift-pilot-artifact
@@ -102,7 +102,7 @@ jobs:
           --pkglift "$PKGLIFT_BIN" --output "$RUNNER_TEMP/pkglift-g3-refusal"
       - name: Upload portable refusal evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pkglift-g3-${{ matrix.case }}-${{ github.sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/pkglift-g3-refusal/report
@@ -118,7 +118,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ needs.build_pilot_toolchain.outputs.artifact_name }}
           path: ${{ runner.temp }}/pkglift-pilot-artifact
@@ -148,7 +148,7 @@ jobs:
           --output "$RUNNER_TEMP/pkglift-g3-zb" --jobs 2
       - name: Upload portable multi-target evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pkglift-g3-zb-${{ github.sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/pkglift-g3-zb/report
