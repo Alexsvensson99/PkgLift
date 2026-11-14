@@ -226,7 +226,7 @@ if pilot_jobs.is_a?(Hash)
     partial_steps = Array(partial_migrations["steps"])
     expected_download = {
       "name" => "Download Shared PkgLift",
-      "uses" => "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+      "uses" => "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
       "with" => {
         "name" => "${{ needs.build_pilot_toolchain.outputs.artifact_name }}",
         "path" => "${{ runner.temp }}/pkglift-pilot-artifact",
